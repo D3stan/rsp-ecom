@@ -2,13 +2,14 @@ import { type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-    Search, 
     ShoppingCart, 
     User, 
-    Heart
+    Heart,
+    Globe
 } from 'lucide-react';
+import useTranslation from '@/hooks/useTranslation';
 
 interface HeaderProps {
     currentPage?: 'home' | 'products' | 'about' | 'contact';
@@ -17,11 +18,14 @@ interface HeaderProps {
 
 export default function Header({ currentPage = 'home', transparent = false }: HeaderProps) {
     const { auth } = usePage<SharedData>().props;
-
-    const isActive = (page: string) => currentPage === page;
+    const { t, locale, changeLocale, isLoading } = useTranslation();
 
     return (
-        <header className={`border-b ${transparent ? 'border-white/20 bg-transparent backdrop-blur-sm' : 'border-gray-200 bg-white'}`}>
+        <header className={`sticky top-0 z-50 border-b transition-all duration-300 ${
+            transparent 
+                ? 'border-white/20 bg-transparent backdrop-blur-md' 
+                : 'border-gray-200 bg-white/95 backdrop-blur-md'
+        }`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
@@ -31,50 +35,38 @@ export default function Header({ currentPage = 'home', transparent = false }: He
                         </Link>
                     </div>
 
-                    {/* Search Bar */}
-                    <div className="flex-1 max-w-2xl mx-8">
-                        <div className="relative">
-                            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${transparent ? 'text-white/60' : 'text-gray-400'}`} />
-                            <Input 
-                                type="search"
-                                placeholder="Search products..."
-                                className={`pl-10 pr-4 ${transparent ? 'bg-white/10 border-white/20 text-white placeholder:text-white/60' : ''}`}
-                            />
-                        </div>
-                    </div>
+                    {/* Center Spacer */}
+                    <div className="flex-1" />
 
-                    {/* Navigation & Actions */}
+                    {/* Right Side Actions */}
                     <div className="flex items-center space-x-4">
-                        <nav className="hidden md:flex space-x-6">
-                            <Link 
-                                href="/products" 
-                                className={isActive('products') 
-                                    ? `font-medium ${transparent ? 'text-white' : 'text-black'}` 
-                                    : `${transparent ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-black'}`
-                                }
-                            >
-                                Categories
-                            </Link>
-                            <Link 
-                                href="/about" 
-                                className={isActive('about') 
-                                    ? `font-medium ${transparent ? 'text-white' : 'text-black'}` 
-                                    : `${transparent ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-black'}`
-                                }
-                            >
-                                About
-                            </Link>
-                            <Link 
-                                href="/contact" 
-                                className={isActive('contact') 
-                                    ? `font-medium ${transparent ? 'text-white' : 'text-black'}` 
-                                    : `${transparent ? 'text-white/80 hover:text-white' : 'text-gray-600 hover:text-black'}`
-                                }
-                            >
-                                Contact
-                            </Link>
-                        </nav>
+                        {/* Language & Currency Selectors */}
+                        <div className="hidden md:flex items-center space-x-3">
+                            {/* Language Selector */}
+                            <div className="flex items-center space-x-1">
+                                <Globe className={`w-4 h-4 ${transparent ? 'text-white/80' : 'text-gray-600'}`} />
+                                <Select value={locale} onValueChange={changeLocale} disabled={isLoading}>
+                                    <SelectTrigger className={`w-16 h-8 border-none bg-transparent ${
+                                        transparent ? 'text-white hover:bg-white/10' : 'text-gray-700 hover:bg-gray-100'
+                                    } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                        {isLoading ? (
+                                            <div className="animate-spin rounded-full h-3 w-3 border border-current border-t-transparent" />
+                                        ) : (
+                                            <SelectValue />
+                                        )}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="en">EN</SelectItem>
+                                        <SelectItem value="es">ES</SelectItem>
+                                        <SelectItem value="fr">FR</SelectItem>
+                                        <SelectItem value="de">DE</SelectItem>
+                                        <SelectItem value="it">IT</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
 
+                        {/* User Actions */}
                         <div className="flex items-center space-x-3">
                             {auth.user ? (
                                 <>
@@ -103,12 +95,12 @@ export default function Header({ currentPage = 'home', transparent = false }: He
                                     </Button>
                                     <Link href={route('login')}>
                                         <Button variant={transparent ? "ghost" : "outline"} size="sm" className={transparent ? 'text-white border-white/20 hover:bg-white/10' : ''}>
-                                            Login
+                                            {t('login')}
                                         </Button>
                                     </Link>
                                     <Link href={route('register')}>
                                         <Button size="sm" className={transparent ? 'bg-white text-black hover:bg-white/90' : ''}>
-                                            Register
+                                            {t('register')}
                                         </Button>
                                     </Link>
                                 </>

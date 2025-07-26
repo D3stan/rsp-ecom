@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/header';
 import { useEffect, useRef, useState } from 'react';
+import useTranslation from '@/hooks/useTranslation';
 import { 
     Star, 
     ArrowRight,
@@ -13,7 +14,9 @@ import {
     Headphones,
     Watch,
     Camera,
-    Gamepad2
+    Gamepad2,
+    Facebook,
+    Instagram
 } from 'lucide-react';
 
 interface Product {
@@ -31,7 +34,7 @@ interface Category {
     id: number;
     name: string;
     slug: string;
-    icon: any;
+    icon: React.ComponentType<{ className?: string }>;
     count: number;
 }
 
@@ -94,12 +97,12 @@ const FEATURED_PRODUCTS: Product[] = [
 ];
 
 const CATEGORIES: Category[] = [
-    { id: 1, name: "Smartphones", slug: "smartphones", icon: Smartphone, count: 45 },
-    { id: 2, name: "Laptops", slug: "laptops", icon: Laptop, count: 32 },
-    { id: 3, name: "Audio", slug: "audio", icon: Headphones, count: 78 },
-    { id: 4, name: "Wearables", slug: "wearables", icon: Watch, count: 23 },
-    { id: 5, name: "Cameras", slug: "cameras", icon: Camera, count: 19 },
-    { id: 6, name: "Gaming", slug: "gaming", icon: Gamepad2, count: 56 }
+    { id: 1, name: "categories.smartphones", slug: "smartphones", icon: Smartphone, count: 45 },
+    { id: 2, name: "categories.laptops", slug: "laptops", icon: Laptop, count: 32 },
+    { id: 3, name: "categories.audio", slug: "audio", icon: Headphones, count: 78 },
+    { id: 4, name: "categories.wearables", slug: "wearables", icon: Watch, count: 23 },
+    { id: 5, name: "categories.cameras", slug: "cameras", icon: Camera, count: 19 },
+    { id: 6, name: "categories.gaming", slug: "gaming", icon: Gamepad2, count: 56 }
 ];
 
 const renderStars = (rating: number) => {
@@ -114,6 +117,7 @@ const renderStars = (rating: number) => {
 export default function Home() {
     const parallaxRef = useRef<HTMLDivElement>(null);
     const [videoLoaded, setVideoLoaded] = useState(false);
+    const { t, isLoading } = useTranslation();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -139,15 +143,28 @@ export default function Home() {
 
     return (
         <>
-            <Head title="Home - Your Store" />
+            <Head title="Home" />
             
-            <div className="min-h-screen bg-white">
+            {/* Loading Overlay for Language Changes */}
+            {isLoading && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center">
+                    <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black"></div>
+                        <span className="text-black font-medium">Loading...</span>
+                    </div>
+                </div>
+            )}
+            
+            <div className={`min-h-screen bg-white transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
+                {/* Header */}
+                <Header currentPage="home" transparent={true} />
+                
                 {/* Hero Section with Video Background */}
-                <section className="hero-section relative flex items-center justify-center overflow-hidden">
+                <section className="hero-section relative flex items-center justify-center overflow-hidden -mt-16 pt-16">
                     {/* Background Media Container */}
                     <div 
                         ref={parallaxRef}
-                        className="absolute inset-0 transform scale-110"
+                        className="absolute inset-0 transform scale-110 -top-16"
                         style={{ willChange: 'transform' }}
                     >
                         {/* Video Background */}
@@ -180,27 +197,21 @@ export default function Home() {
                         style={{ background: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5))' }} 
                     />
                     
-                    {/* Header */}
-                    <div className="absolute top-0 left-0 right-0 z-20">
-                        <Header currentPage="home" transparent={true} />
-                    </div>
-                    
                     {/* Hero Content */}
                     <div className="relative z-10 text-center text-white px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
                         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight drop-shadow-lg">
-                            Discover Amazing
-                            <span className="block">Products</span>
+                            {t('discover_amazing_products')}
                         </h1>
                         <p className="text-lg sm:text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90 leading-relaxed drop-shadow-md">
-                            Find the perfect tech products for your lifestyle. Quality, innovation, and style in every purchase.
+                            {t('find_perfect_tech')}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Button size="lg" className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg bg-white text-black hover:bg-gray-100 font-semibold">
-                                Shop Now
+                                {t('shop_now')}
                                 <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
                             </Button>
                             <Button variant="outline" size="lg" className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg border-2 border-white text-white hover:bg-white hover:text-black font-semibold">
-                                View Deals
+                                {t('view_deals')}
                             </Button>
                         </div>
                     </div>
@@ -219,9 +230,9 @@ export default function Home() {
                 <section className="py-16 lg:py-24 bg-white relative z-10">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-12">
-                            <h2 className="text-3xl font-bold text-black mb-4">Featured Products</h2>
+                            <h2 className="text-3xl font-bold text-black mb-4">{t('featured_products')}</h2>
                             <p className="text-gray-600 max-w-2xl mx-auto">
-                                Discover our most popular and highly-rated products
+                                {t('featured_products_description')}
                             </p>
                         </div>
 
@@ -243,7 +254,7 @@ export default function Home() {
                                             size="sm" 
                                             className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
-                                            Add to Cart
+                                            {t('add_to_cart')}
                                         </Button>
                                     </div>
                                     <CardContent className="p-4">
@@ -273,7 +284,7 @@ export default function Home() {
 
                         <div className="text-center mt-12">
                             <Button variant="outline" size="lg">
-                                View All Products
+                                {t('view_all_products')}
                                 <ArrowRight className="w-4 h-4 ml-2" />
                             </Button>
                         </div>
@@ -284,9 +295,9 @@ export default function Home() {
                 <section className="py-16 lg:py-24 bg-gray-50 relative z-10">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-12">
-                            <h2 className="text-3xl font-bold text-black mb-4">Shop by Category</h2>
+                            <h2 className="text-3xl font-bold text-black mb-4">{t('shop_by_category')}</h2>
                             <p className="text-gray-600 max-w-2xl mx-auto">
-                                Explore our wide range of product categories
+                                {t('category_description')}
                             </p>
                         </div>
 
@@ -305,10 +316,10 @@ export default function Home() {
                                                     <IconComponent className="w-6 h-6" />
                                                 </div>
                                                 <h3 className="font-semibold text-black mb-1">
-                                                    {category.name}
+                                                    {t(category.name)}
                                                 </h3>
                                                 <p className="text-sm text-gray-500">
-                                                    {category.count} products
+                                                    {t('products_count', { count: category.count })}
                                                 </p>
                                             </CardContent>
                                         </Card>
@@ -326,53 +337,53 @@ export default function Home() {
                             <div>
                                 <h3 className="text-xl font-bold mb-4">Store</h3>
                                 <p className="text-gray-400 mb-4">
-                                    Your trusted destination for quality tech products and exceptional service.
+                                    {t('store_description')}
                                 </p>
                             </div>
                             
                             <div>
-                                <h4 className="font-semibold mb-4">Quick Links</h4>
+                                <h4 className="font-semibold mb-4">{t('quick_links')}</h4>
                                 <ul className="space-y-2 text-gray-400">
-                                    <li><Link href="/about" className="hover:text-white">About Us</Link></li>
-                                    <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
-                                    <li><Link href="/faq" className="hover:text-white">FAQ</Link></li>
-                                    <li><Link href="/shipping" className="hover:text-white">Shipping Info</Link></li>
+                                    <li><Link href="/about" className="hover:text-white">{t('about_us')}</Link></li>
+                                    <li><Link href="/contact" className="hover:text-white">{t('contact')}</Link></li>
+                                    <li><Link href="/faq" className="hover:text-white">{t('faq')}</Link></li>
+                                    <li><Link href="/shipping" className="hover:text-white">{t('shipping_info')}</Link></li>
                                 </ul>
                             </div>
                             
                             <div>
-                                <h4 className="font-semibold mb-4">Legal</h4>
+                                <h4 className="font-semibold mb-4">{t('legal')}</h4>
                                 <ul className="space-y-2 text-gray-400">
-                                    <li><Link href="/privacy" className="hover:text-white">Privacy Policy</Link></li>
-                                    <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
-                                    <li><Link href="/returns" className="hover:text-white">Returns</Link></li>
+                                    <li><Link href="/privacy" className="hover:text-white">{t('privacy_policy')}</Link></li>
+                                    <li><Link href="/terms" className="hover:text-white">{t('terms_of_service')}</Link></li>
+                                    <li><Link href="/returns" className="hover:text-white">{t('returns')}</Link></li>
                                 </ul>
                             </div>
                             
                             <div>
-                                <h4 className="font-semibold mb-4">Follow Us</h4>
+                                <h4 className="font-semibold mb-4">{t('follow_us')}</h4>
                                 <p className="text-gray-400 mb-4">
-                                    Stay connected for updates and special offers.
+                                    {t('stay_connected')}
                                 </p>
                                 <div className="flex space-x-4">
-                                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
-                                        <span className="sr-only">Facebook</span>
-                                        📘
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
-                                        <span className="sr-only">Twitter</span>
-                                        🐦
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
-                                        <span className="sr-only">Instagram</span>
-                                        📷
-                                    </Button>
+                                    <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+                                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
+                                            <Facebook className="w-5 h-5" />
+                                            <span className="sr-only">Facebook</span>
+                                        </Button>
+                                    </a>
+                                    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+                                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
+                                            <Instagram className="w-5 h-5" />
+                                            <span className="sr-only">Instagram</span>
+                                        </Button>
+                                    </a>
                                 </div>
                             </div>
                         </div>
                         
                         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-                            <p>&copy; 2025 Store. All rights reserved.</p>
+                            <p>&copy; 2025 Store. {t('rights_reserved')}</p>
                         </div>
                     </div>
                 </footer>
