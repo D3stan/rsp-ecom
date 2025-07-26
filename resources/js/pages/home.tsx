@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/header';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { 
     Star, 
     ArrowRight,
@@ -35,147 +35,152 @@ interface Category {
     count: number;
 }
 
+// Mock data - in real app this would come from props
+const FEATURED_PRODUCTS: Product[] = [
+    {
+        id: 1,
+        name: "Wireless Bluetooth Headphones",
+        price: 79.99,
+        originalPrice: 99.99,
+        rating: 4.5,
+        reviews: 124,
+        image: "/api/placeholder/300/300",
+        badge: "Best Seller"
+    },
+    {
+        id: 2,
+        name: "Smart Fitness Watch",
+        price: 199.99,
+        rating: 4.8,
+        reviews: 89,
+        image: "/api/placeholder/300/300",
+        badge: "New"
+    },
+    {
+        id: 3,
+        name: "Portable Laptop Stand",
+        price: 29.99,
+        originalPrice: 39.99,
+        rating: 4.3,
+        reviews: 67,
+        image: "/api/placeholder/300/300"
+    },
+    {
+        id: 4,
+        name: "Wireless Phone Charger",
+        price: 24.99,
+        rating: 4.6,
+        reviews: 203,
+        image: "/api/placeholder/300/300"
+    },
+    {
+        id: 5,
+        name: "USB-C Hub",
+        price: 49.99,
+        rating: 4.4,
+        reviews: 156,
+        image: "/api/placeholder/300/300"
+    },
+    {
+        id: 6,
+        name: "Mechanical Keyboard",
+        price: 129.99,
+        originalPrice: 149.99,
+        rating: 4.7,
+        reviews: 91,
+        image: "/api/placeholder/300/300",
+        badge: "Sale"
+    }
+];
+
+const CATEGORIES: Category[] = [
+    { id: 1, name: "Smartphones", slug: "smartphones", icon: Smartphone, count: 45 },
+    { id: 2, name: "Laptops", slug: "laptops", icon: Laptop, count: 32 },
+    { id: 3, name: "Audio", slug: "audio", icon: Headphones, count: 78 },
+    { id: 4, name: "Wearables", slug: "wearables", icon: Watch, count: 23 },
+    { id: 5, name: "Cameras", slug: "cameras", icon: Camera, count: 19 },
+    { id: 6, name: "Gaming", slug: "gaming", icon: Gamepad2, count: 56 }
+];
+
+const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+        <Star 
+            key={i} 
+            className={`w-4 h-4 ${i < Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+        />
+    ));
+};
+
 export default function Home() {
     const parallaxRef = useRef<HTMLDivElement>(null);
+    const [videoLoaded, setVideoLoaded] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
-            if (parallaxRef.current) {
+            if (parallaxRef.current && window.innerWidth > 768) {
                 const scrolled = window.pageYOffset;
-                const parallax = parallaxRef.current;
                 const speed = 0.5;
                 
-                // Only apply parallax on desktop to avoid performance issues on mobile
-                // Also check if the element is in viewport
-                if (window.innerWidth > 768 && scrolled < window.innerHeight) {
-                    // Use requestAnimationFrame for smooth animation
+                if (scrolled < window.innerHeight) {
                     requestAnimationFrame(() => {
-                        if (parallax) {
-                            parallax.style.transform = `translateY(${scrolled * speed}px) scale(1.1)`;
+                        if (parallaxRef.current) {
+                            parallaxRef.current.style.transform = `translateY(${scrolled * speed}px) scale(1.1)`;
                         }
                     });
-                } else if (window.innerWidth <= 768) {
-                    // Reset transform on mobile
-                    parallax.style.transform = 'scale(1.1)';
                 }
             }
         };
 
-        // Use passive listener for better performance
         window.addEventListener('scroll', handleScroll, { passive: true });
-        
-        // Call once to set initial state
         handleScroll();
         
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
-
-    // Test image loading
-    useEffect(() => {
-        const img = new Image();
-        img.onerror = () => console.error('Failed to load homepage image');
-        img.src = '/images/homepage.png';
-    }, []);
-
-    // Mock data - in real app this would come from props
-    const featuredProducts: Product[] = [
-        {
-            id: 1,
-            name: "Wireless Bluetooth Headphones",
-            price: 79.99,
-            originalPrice: 99.99,
-            rating: 4.5,
-            reviews: 124,
-            image: "/api/placeholder/300/300",
-            badge: "Best Seller"
-        },
-        {
-            id: 2,
-            name: "Smart Fitness Watch",
-            price: 199.99,
-            rating: 4.8,
-            reviews: 89,
-            image: "/api/placeholder/300/300",
-            badge: "New"
-        },
-        {
-            id: 3,
-            name: "Portable Laptop Stand",
-            price: 29.99,
-            originalPrice: 39.99,
-            rating: 4.3,
-            reviews: 67,
-            image: "/api/placeholder/300/300"
-        },
-        {
-            id: 4,
-            name: "Wireless Phone Charger",
-            price: 24.99,
-            rating: 4.6,
-            reviews: 203,
-            image: "/api/placeholder/300/300"
-        },
-        {
-            id: 5,
-            name: "USB-C Hub",
-            price: 49.99,
-            rating: 4.4,
-            reviews: 156,
-            image: "/api/placeholder/300/300"
-        },
-        {
-            id: 6,
-            name: "Mechanical Keyboard",
-            price: 129.99,
-            originalPrice: 149.99,
-            rating: 4.7,
-            reviews: 91,
-            image: "/api/placeholder/300/300",
-            badge: "Sale"
-        }
-    ];
-
-    const categories: Category[] = [
-        { id: 1, name: "Smartphones", slug: "smartphones", icon: Smartphone, count: 45 },
-        { id: 2, name: "Laptops", slug: "laptops", icon: Laptop, count: 32 },
-        { id: 3, name: "Audio", slug: "audio", icon: Headphones, count: 78 },
-        { id: 4, name: "Wearables", slug: "wearables", icon: Watch, count: 23 },
-        { id: 5, name: "Cameras", slug: "cameras", icon: Camera, count: 19 },
-        { id: 6, name: "Gaming", slug: "gaming", icon: Gamepad2, count: 56 }
-    ];
-
-    const renderStars = (rating: number) => {
-        return Array.from({ length: 5 }, (_, i) => (
-            <Star 
-                key={i} 
-                className={`w-4 h-4 ${i < Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
-            />
-        ));
-    };
 
     return (
         <>
             <Head title="Home - Your Store" />
             
             <div className="min-h-screen bg-white">
-                {/* Hero Section with Background Image */}
+                {/* Hero Section with Video Background */}
                 <section className="hero-section relative flex items-center justify-center overflow-hidden">
-                    {/* Background Image with Parallax Effect */}
+                    {/* Background Media Container */}
                     <div 
                         ref={parallaxRef}
-                        className="parallax-bg absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-110"
-                        style={{
-                            backgroundImage: `url(/images/homepage.png)`,
-                            willChange: 'transform'
-                        }}
+                        className="absolute inset-0 transform scale-110"
+                        style={{ willChange: 'transform' }}
+                    >
+                        {/* Video Background */}
+                        <video
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className={`w-full h-full object-cover transition-opacity duration-1000 ${
+                                videoLoaded ? 'opacity-100' : 'opacity-0'
+                            }`}
+                            onLoadedData={() => setVideoLoaded(true)}
+                            onError={() => setVideoLoaded(false)}
+                        >
+                            <source src="/videos/homepage.mp4" type="video/mp4" />
+                        </video>
+                        
+                        {/* Fallback Background Image */}
+                        <div 
+                            className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ${
+                                videoLoaded ? 'opacity-0' : 'opacity-100'
+                            }`}
+                            style={{ backgroundImage: 'url(/images/homepage.png)' }}
+                        />
+                    </div>
+                    
+                    {/* Overlay for Text Readability */}
+                    <div 
+                        className="absolute inset-0 z-5" 
+                        style={{ background: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5))' }} 
                     />
                     
-                    {/* Light Overlay for Better Text Readability */}
-                    <div className="absolute inset-0 z-5" style={{
-                        background: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5))'
-                    }} />
-                    
-                    {/* Header - Positioned over the hero */}
+                    {/* Header */}
                     <div className="absolute top-0 left-0 right-0 z-20">
                         <Header currentPage="home" transparent={true} />
                     </div>
@@ -221,7 +226,7 @@ export default function Home() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {featuredProducts.map((product) => (
+                            {FEATURED_PRODUCTS.map((product: Product) => (
                                 <Card key={product.id} className="group cursor-pointer hover:shadow-lg transition-shadow">
                                     <div className="relative overflow-hidden rounded-t-xl">
                                         <img 
@@ -286,7 +291,7 @@ export default function Home() {
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                            {categories.map((category) => {
+                            {CATEGORIES.map((category: Category) => {
                                 const IconComponent = category.icon;
                                 return (
                                     <Link 
