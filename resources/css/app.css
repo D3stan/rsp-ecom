@@ -148,4 +148,23 @@
         -webkit-line-clamp: 2;
         line-clamp: 2;
     }
+    
+    /* Smooth scrolling for the entire page */
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Optimize performance for mobile devices */
+    @media (max-width: 768px) {
+        .parallax-bg {
+            transform: none !important;
+            background-attachment: scroll;
+        }
+    }
+    
+    /* Ensure proper sizing for hero section */
+    .hero-section {
+        min-height: 100vh;
+        min-height: 100dvh; /* Use dynamic viewport height on mobile */
+    }
 }

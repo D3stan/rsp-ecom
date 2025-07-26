@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/header';
+import { useEffect, useRef } from 'react';
 import { 
     Star, 
     ArrowRight,
@@ -35,6 +36,46 @@ interface Category {
 }
 
 export default function Home() {
+    const parallaxRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (parallaxRef.current) {
+                const scrolled = window.pageYOffset;
+                const parallax = parallaxRef.current;
+                const speed = 0.5;
+                
+                // Only apply parallax on desktop to avoid performance issues on mobile
+                // Also check if the element is in viewport
+                if (window.innerWidth > 768 && scrolled < window.innerHeight) {
+                    // Use requestAnimationFrame for smooth animation
+                    requestAnimationFrame(() => {
+                        if (parallax) {
+                            parallax.style.transform = `translateY(${scrolled * speed}px) scale(1.1)`;
+                        }
+                    });
+                } else if (window.innerWidth <= 768) {
+                    // Reset transform on mobile
+                    parallax.style.transform = 'scale(1.1)';
+                }
+            }
+        };
+
+        // Use passive listener for better performance
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        
+        // Call once to set initial state
+        handleScroll();
+        
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Test image loading
+    useEffect(() => {
+        const img = new Image();
+        img.onerror = () => console.error('Failed to load homepage image');
+        img.src = '/images/homepage.png';
+    }, []);
 
     // Mock data - in real app this would come from props
     const featuredProducts: Product[] = [
@@ -117,35 +158,60 @@ export default function Home() {
             <Head title="Home - Your Store" />
             
             <div className="min-h-screen bg-white">
-                {/* Header */}
-                <Header currentPage="home" />
-
-                {/* Hero Section */}
-                <section className="bg-gray-50 py-20">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="text-center">
-                            <h1 className="text-4xl md:text-6xl font-bold text-black mb-6">
-                                Discover Amazing
-                                <span className="block">Products</span>
-                            </h1>
-                            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                                Find the perfect tech products for your lifestyle. Quality, innovation, and style in every purchase.
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                <Button size="lg" className="px-8">
-                                    Shop Now
-                                    <ArrowRight className="w-4 h-4 ml-2" />
-                                </Button>
-                                <Button variant="outline" size="lg" className="px-8">
-                                    View Deals
-                                </Button>
+                {/* Hero Section with Background Image */}
+                <section className="hero-section relative flex items-center justify-center overflow-hidden">
+                    {/* Background Image with Parallax Effect */}
+                    <div 
+                        ref={parallaxRef}
+                        className="parallax-bg absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-110"
+                        style={{
+                            backgroundImage: `url(/images/homepage.png)`,
+                            willChange: 'transform'
+                        }}
+                    />
+                    
+                    {/* Light Overlay for Better Text Readability */}
+                    <div className="absolute inset-0 z-5" style={{
+                        background: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5))'
+                    }} />
+                    
+                    {/* Header - Positioned over the hero */}
+                    <div className="absolute top-0 left-0 right-0 z-20">
+                        <Header currentPage="home" transparent={true} />
+                    </div>
+                    
+                    {/* Hero Content */}
+                    <div className="relative z-10 text-center text-white px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight drop-shadow-lg">
+                            Discover Amazing
+                            <span className="block">Products</span>
+                        </h1>
+                        <p className="text-lg sm:text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90 leading-relaxed drop-shadow-md">
+                            Find the perfect tech products for your lifestyle. Quality, innovation, and style in every purchase.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <Button size="lg" className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg bg-white text-black hover:bg-gray-100 font-semibold">
+                                Shop Now
+                                <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
+                            </Button>
+                            <Button variant="outline" size="lg" className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg border-2 border-white text-white hover:bg-white hover:text-black font-semibold">
+                                View Deals
+                            </Button>
+                        </div>
+                    </div>
+                    
+                    {/* Scroll Indicator */}
+                    <div className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-10">
+                        <div className="animate-bounce">
+                            <div className="w-5 sm:w-6 h-8 sm:h-10 border-2 border-white rounded-full flex justify-center">
+                                <div className="w-1 h-2 sm:h-3 bg-white rounded-full mt-1.5 sm:mt-2 animate-pulse" />
                             </div>
                         </div>
                     </div>
                 </section>
 
                 {/* Featured Products */}
-                <section className="py-16">
+                <section className="py-16 lg:py-24 bg-white relative z-10">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-12">
                             <h2 className="text-3xl font-bold text-black mb-4">Featured Products</h2>
@@ -210,7 +276,7 @@ export default function Home() {
                 </section>
 
                 {/* Categories Section */}
-                <section className="py-16 bg-gray-50">
+                <section className="py-16 lg:py-24 bg-gray-50 relative z-10">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-12">
                             <h2 className="text-3xl font-bold text-black mb-4">Shop by Category</h2>
