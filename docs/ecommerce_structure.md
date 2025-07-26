@@ -7,6 +7,7 @@ In particular it has:
 - React 19
 - Intertiajs 2.0
 - MySQL 8.0
+- Shadcn react library
 
 ### Fronted Structure
 ```
