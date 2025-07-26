@@ -1,5 +1,25 @@
 # Ecommerce Website Structure & User Experience Guide
 
+## Tech Stack
+The project is based on Laravel and React served with Inertiajs.
+In particular it has:
+- Laravel 12
+- React 19
+- Intertiajs 2.0
+- MySQL 8.0
+
+
+### Fronted Structure
+```
+resources/js/
+├── components/    # Reusable React components
+├── hooks/         # React hooks
+├── layouts/       # Application layouts
+├── lib/           # Utility functions and configuration
+├── pages/         # Page components
+└── types/         # TypeScript definitions
+```
+
 ## Public Pages (Not Logged In)
 
 ### Home Page Layout
