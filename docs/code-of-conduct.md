@@ -163,6 +163,17 @@ To avoid conflicts between developers:
 - Fix broken tests immediately
 - Add tests for every bug fix
 
+
+## 4. Shell Interaction
+
+### 4.1 Banned Commands
+You must not execute commands that are aimed to:
+* installing libraries or dependencies
+* running the server itself (composer run dev, npm run, etc)
+* running DB commands (migrations, deletions etc)
+
+Each time you find yourself needing to run these commands you should just report the supervisor why and how to run them.
+
 <!-- ## 4. Inter-Developer Communication
 
 ### 4.1 Question Protocol
