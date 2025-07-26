@@ -8,7 +8,6 @@ In particular it has:
 - Intertiajs 2.0
 - MySQL 8.0
 
-
 ### Fronted Structure
 ```
 resources/js/
@@ -69,7 +68,7 @@ resources/js/
 
 ### Key UX Principles
 - **Mobile-first design** - responsive on all devices
-- **Fast loading** - optimized images and lazy loading
+- **Minimalistic style** - simple components and few colors
 - **Clear navigation** - breadcrumbs, intuitive menu structure
 - **Trust signals** - customer reviews, secure payment badges
 - **Search functionality** - prominent search with filters
