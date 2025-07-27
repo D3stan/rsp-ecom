@@ -108,7 +108,7 @@ export default function Products() {
     
     // Local state for filters
     const [searchTerm, setSearchTerm] = useState(filters.search);
-    const [selectedCategory, setSelectedCategory] = useState(filters.category);
+    const [selectedCategory, setSelectedCategory] = useState(filters.category || 'all');
     const [priceMin, setPriceMin] = useState(filters.min_price ? parseInt(filters.min_price) : priceRange.min);
     const [priceMax, setPriceMax] = useState(filters.max_price ? parseInt(filters.max_price) : priceRange.max);
     const [sortBy, setSortBy] = useState(filters.sort);
@@ -118,7 +118,7 @@ export default function Products() {
     const applyFilters = useCallback((newFilters: Record<string, string | number> = {}) => {
         const params: Record<string, string | number> = {
             search: searchTerm,
-            category: selectedCategory,
+            category: selectedCategory === 'all' ? '' : selectedCategory,
             min_price: priceMin !== priceRange.min ? priceMin.toString() : '',
             max_price: priceMax !== priceRange.max ? priceMax.toString() : '',
             sort: sortBy,
@@ -152,7 +152,7 @@ export default function Products() {
 
     const clearFilters = () => {
         setSearchTerm('');
-        setSelectedCategory('');
+        setSelectedCategory('all');
         setPriceMin(priceRange.min);
         setPriceMax(priceRange.max);
         setSortBy('name');
@@ -177,15 +177,15 @@ export default function Products() {
         <>
             <Head title="Products - Your Store" />
             
-            <div className="min-h-screen bg-white">
+            <div className="min-h-screen bg-gray-50">
                 {/* Header */}
-                <Header currentPage="products" />
+                <Header />
                 
                 {/* Main Content */}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {/* Page Header */}
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-black mb-4">All Products</h1>
+                    <div className="mb-10">
+                        <h1 className="text-4xl font-bold text-gray-900 mb-6">All Products</h1>
                         
                         {/* Search Bar */}
                         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
@@ -276,26 +276,28 @@ export default function Products() {
 
                     <div className="flex gap-8">
                         {/* Desktop Filters Sidebar */}
-                        <div className="hidden lg:block w-64 flex-shrink-0">
-                            <FilterSection 
-                                categories={categories}
-                                priceRange={priceRange}
-                                selectedCategory={selectedCategory}
-                                setSelectedCategory={setSelectedCategory}
-                                priceMin={priceMin}
-                                setPriceMin={setPriceMin}
-                                priceMax={priceMax}
-                                setPriceMax={setPriceMax}
-                                applyFilters={applyFilters}
-                                clearFilters={clearFilters}
-                            />
+                        <div className="hidden lg:block w-72 flex-shrink-0">
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6">
+                                <FilterSection 
+                                    categories={categories}
+                                    priceRange={priceRange}
+                                    selectedCategory={selectedCategory}
+                                    setSelectedCategory={setSelectedCategory}
+                                    priceMin={priceMin}
+                                    setPriceMin={setPriceMin}
+                                    priceMax={priceMax}
+                                    setPriceMax={setPriceMax}
+                                    applyFilters={applyFilters}
+                                    clearFilters={clearFilters}
+                                />
+                            </div>
                         </div>
 
                         {/* Products Grid */}
                         <div className="flex-1">
                             {/* Results Summary */}
-                            <div className="flex items-center justify-between mb-6">
-                                <p className="text-gray-600">
+                            <div className="flex items-center justify-between mb-8">
+                                <p className="text-lg font-medium text-gray-700">
                                     Showing {pagination.from || 0}-{pagination.to || 0} of {pagination.total} products
                                 </p>
                             </div>
@@ -303,9 +305,9 @@ export default function Products() {
                             {/* Products Grid/List */}
                             {products.data.length > 0 ? (
                                 <>
-                                    <div className={`grid gap-6 ${
+                                    <div className={`grid gap-8 ${
                                         viewMode === 'grid' 
-                                            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                                            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
                                             : 'grid-cols-1'
                                     }`}>
                                         {products.data.map((product: Product) => (
@@ -432,10 +434,14 @@ export default function Products() {
                                     )}
                                 </>
                             ) : (
-                                <div className="text-center py-20">
-                                    <h2 className="text-xl font-semibold text-gray-900 mb-2">No products found</h2>
-                                    <p className="text-gray-600 mb-4">Try adjusting your search or filters</p>
-                                    <Button onClick={clearFilters}>Clear all filters</Button>
+                                <div className="text-center py-24 bg-white rounded-xl shadow-sm border border-gray-200">
+                                    <div className="max-w-md mx-auto">
+                                        <h2 className="text-2xl font-bold text-gray-900 mb-3">No products found</h2>
+                                        <p className="text-gray-600 mb-6 text-lg">Try adjusting your search or filters to find what you're looking for</p>
+                                        <Button onClick={clearFilters} size="lg" className="bg-black hover:bg-gray-900 font-semibold">
+                                            Clear all filters
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -473,10 +479,10 @@ function FilterSection({
     clearFilters
 }: FilterSectionProps) {
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Filters</h3>
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <h3 className="text-xl font-bold text-gray-900">Filters</h3>
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-600 hover:text-gray-900">
                     <X className="w-4 h-4 mr-1" />
                     Clear
                 </Button>
@@ -484,13 +490,13 @@ function FilterSection({
 
             {/* Categories */}
             <div>
-                <Label className="text-base font-medium mb-3 block">Category</Label>
+                <Label className="text-base font-semibold mb-4 block text-gray-900">Category</Label>
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger>
                         <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All Categories</SelectItem>
+                        <SelectItem value="all">All Categories</SelectItem>
                         {categories.map((category) => (
                             <SelectItem key={category.id} value={category.slug}>
                                 {category.name} ({category.count})
@@ -502,10 +508,10 @@ function FilterSection({
 
             {/* Price Range */}
             <div>
-                <Label className="text-base font-medium mb-3 block">Price Range</Label>
-                <div className="space-y-2">
+                <Label className="text-base font-semibold mb-4 block text-gray-900">Price Range</Label>
+                <div className="space-y-3">
                     {PRICE_RANGES.map((range, index) => (
-                        <div key={index} className="flex items-center space-x-2">
+                        <div key={index} className="flex items-center space-x-3">
                             <input
                                 type="radio"
                                 id={`price-range-${index}`}
@@ -518,9 +524,9 @@ function FilterSection({
                                     setPriceMin(range.min ?? priceRange.min);
                                     setPriceMax(range.max ?? priceRange.max);
                                 }}
-                                className="w-4 h-4 text-black border-gray-300 focus:ring-black"
+                                className="w-4 h-4 text-black border-gray-300 focus:ring-black focus:ring-2"
                             />
-                            <Label htmlFor={`price-range-${index}`} className="text-sm cursor-pointer">
+                            <Label htmlFor={`price-range-${index}`} className="text-sm cursor-pointer text-gray-700 font-medium">
                                 {range.label}
                             </Label>
                         </div>
@@ -528,39 +534,39 @@ function FilterSection({
                 </div>
                 
                 {/* Custom Range Inputs */}
-                <div className="mt-4 space-y-3">
-                    <Label className="text-sm font-medium">Custom Range</Label>
+                <div className="mt-6 space-y-4 pt-4 border-t border-gray-200">
+                    <Label className="text-sm font-semibold text-gray-900">Custom Range</Label>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <Label className="text-xs text-gray-600">Min</Label>
+                            <Label className="text-xs text-gray-600 font-medium">Min</Label>
                             <Input 
                                 type="number" 
                                 value={priceMin}
                                 onChange={(e) => setPriceMin(parseInt(e.target.value) || priceRange.min)}
                                 min={priceRange.min}
                                 max={priceRange.max}
-                                className="h-8"
+                                className="h-10 border-gray-300 focus:border-black focus:ring-black"
                             />
                         </div>
                         <div>
-                            <Label className="text-xs text-gray-600">Max</Label>
+                            <Label className="text-xs text-gray-600 font-medium">Max</Label>
                             <Input 
                                 type="number" 
                                 value={priceMax}
                                 onChange={(e) => setPriceMax(parseInt(e.target.value) || priceRange.max)}
                                 min={priceRange.min}
                                 max={priceRange.max}
-                                className="h-8"
+                                className="h-10 border-gray-300 focus:border-black focus:ring-black"
                             />
                         </div>
                     </div>
-                    <div className="text-xs text-gray-600 text-center">
+                    <div className="text-sm text-gray-700 text-center font-medium bg-gray-50 py-2 px-3 rounded-md">
                         ${priceMin} - ${priceMax}
                     </div>
                 </div>
             </div>
 
-            <Button onClick={applyFilters} className="w-full">
+            <Button onClick={applyFilters} className="w-full h-12 font-semibold text-base bg-black hover:bg-gray-900">
                 Apply Filters
             </Button>
         </div>
@@ -730,65 +736,67 @@ function ProductCard({ product, viewMode }: ProductCardProps) {
     };
     if (viewMode === 'list') {
         return (
-            <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200">
                 <div className="flex">
-                    <div className="w-48 h-48 flex-shrink-0">
+                    <div className="w-48 h-48 flex-shrink-0 bg-gray-50">
                         <img 
                             src={product.image} 
                             alt={product.name}
                             className="w-full h-full object-cover"
                         />
                     </div>
-                    <CardContent className="flex-1 p-6">
+                    <CardContent className="flex-1 p-8 bg-white">
                         <div className="flex justify-between h-full">
                             <div className="flex-1">
                                 {product.badge && (
                                     <Badge 
                                         variant={product.badge === 'Sale' ? 'destructive' : 'secondary'}
-                                        className="mb-2"
+                                        className="mb-3 font-medium"
                                     >
                                         {product.badge}
                                     </Badge>
                                 )}
-                                <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
+                                <h3 className="text-2xl font-bold mb-2 text-gray-900">{product.name}</h3>
                                 {product.category && (
-                                    <p className="text-sm text-gray-600 mb-2">{product.category.name}</p>
+                                    <p className="text-base text-gray-600 mb-3 font-medium">{product.category.name}</p>
                                 )}
-                                <div className="flex items-center space-x-2 mb-3">
+                                <div className="flex items-center space-x-2 mb-4">
                                     <div className="flex">
                                         {renderStars(product.rating)}
                                     </div>
-                                    <span className="text-sm text-gray-600">({product.reviews})</span>
+                                    <span className="text-base text-gray-500 font-medium">({product.reviews})</span>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                    <span className="text-2xl font-bold text-black">${product.price}</span>
+                                <div className="flex items-center space-x-3">
+                                    <span className="text-3xl font-bold text-gray-900">${product.price}</span>
                                     {product.originalPrice && (
-                                        <span className="text-lg text-gray-500 line-through">
+                                        <span className="text-xl text-gray-500 line-through">
                                             ${product.originalPrice}
                                         </span>
                                     )}
                                 </div>
                             </div>
-                            <div className="flex flex-col space-y-2 ml-6">
+                            <div className="flex flex-col space-y-3 ml-8">
                                 <Button 
-                                    size="sm" 
-                                    className="w-full"
+                                    size="lg" 
+                                    variant="outline"
+                                    className="w-full font-semibold"
                                     onClick={() => setIsQuickViewOpen(true)}
                                 >
-                                    <Eye className="w-4 h-4 mr-2" />
+                                    <Eye className="w-5 h-5 mr-2" />
                                     Quick View
                                 </Button>
                                 <Button 
-                                    size="sm" 
+                                    size="lg" 
                                     disabled={!product.inStock}
-                                    className="w-full"
+                                    className="w-full font-semibold"
                                     onClick={handleAddToCart}
                                 >
-                                    <ShoppingCart className="w-4 h-4 mr-2" />
+                                    <ShoppingCart className="w-5 h-5 mr-2" />
                                     {product.inStock ? 'Add to Cart' : 'Out of Stock'}
                                 </Button>
-                                <Button variant="outline" size="sm">
-                                    <Heart className="w-4 h-4" />
+                                <Button variant="outline" size="lg" className="w-full">
+                                    <Heart className="w-5 h-5 mr-2" />
+                                    Wishlist
                                 </Button>
                             </div>
                         </div>
@@ -808,12 +816,12 @@ function ProductCard({ product, viewMode }: ProductCardProps) {
     }
 
     return (
-        <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
+        <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200">
             <div className="relative">
                 {product.badge && (
                     <Badge 
                         variant={product.badge === 'Sale' ? 'destructive' : 'secondary'}
-                        className="absolute top-3 left-3 z-10"
+                        className="absolute top-4 left-4 z-10 font-medium"
                     >
                         {product.badge}
                     </Badge>
@@ -821,11 +829,11 @@ function ProductCard({ product, viewMode }: ProductCardProps) {
                 <Button 
                     variant="outline" 
                     size="icon" 
-                    className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white hover:bg-gray-50"
                 >
                     <Heart className="w-4 h-4" />
                 </Button>
-                <div className="aspect-square overflow-hidden">
+                <div className="aspect-square overflow-hidden bg-gray-50">
                     <img 
                         src={product.image} 
                         alt={product.name}
@@ -834,7 +842,7 @@ function ProductCard({ product, viewMode }: ProductCardProps) {
                 </div>
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
                     <Button 
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                         size="sm"
                         onClick={() => setIsQuickViewOpen(true)}
                     >
@@ -843,33 +851,33 @@ function ProductCard({ product, viewMode }: ProductCardProps) {
                     </Button>
                 </div>
             </div>
-            <CardContent className="p-4">
+            <CardContent className="p-6 bg-white">
                 {product.category && (
-                    <p className="text-sm text-gray-600 mb-1">{product.category.name}</p>
+                    <p className="text-sm text-gray-600 mb-2 font-medium">{product.category.name}</p>
                 )}
-                <h3 className="font-semibold mb-2 line-clamp-2">{product.name}</h3>
-                <div className="flex items-center space-x-2 mb-3">
+                <h3 className="font-bold text-lg mb-3 line-clamp-2 text-gray-900 leading-tight">{product.name}</h3>
+                <div className="flex items-center space-x-2 mb-4">
                     <div className="flex">
                         {renderStars(product.rating)}
                     </div>
-                    <span className="text-sm text-gray-600">({product.reviews})</span>
+                    <span className="text-sm text-gray-500 font-medium">({product.reviews})</span>
                 </div>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
-                        <span className="text-lg font-bold text-black">${product.price}</span>
+                        <span className="text-xl font-bold text-gray-900">${product.price}</span>
                         {product.originalPrice && (
-                            <span className="text-sm text-gray-500 line-through">
+                            <span className="text-base text-gray-500 line-through">
                                 ${product.originalPrice}
                             </span>
                         )}
                     </div>
                 </div>
                 <Button 
-                    className="w-full" 
+                    className="w-full h-11 font-semibold" 
                     disabled={!product.inStock}
                     onClick={handleAddToCart}
                 >
-                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    <ShoppingCart className="w-5 h-5 mr-2" />
                     {product.inStock ? 'Add to Cart' : 'Out of Stock'}
                 </Button>
             </CardContent>

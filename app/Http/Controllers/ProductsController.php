@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -79,6 +80,14 @@ class ProductsController extends Controller
 
         // Transform products for frontend
         $productsData = $products->through(function (Product $product) {
+            // Get the main image URL or use default
+            $imageUrl = $product->main_image_url;
+            
+            // If no image is set or the file doesn't exist, use default
+            if (!$imageUrl || !$this->imageExists($imageUrl)) {
+                $imageUrl = '/images/product.png';
+            }
+            
             return [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -87,7 +96,7 @@ class ProductsController extends Controller
                 'originalPrice' => $product->compare_price,
                 'rating' => round($product->average_rating, 1),
                 'reviews' => $product->review_count,
-                'image' => $product->main_image_url ?? '/images/placeholder-product.jpg',
+                'image' => $imageUrl,
                 'badge' => $this->getProductBadge($product),
                 'inStock' => $product->stock_quantity > 0,
                 'stockQuantity' => $product->stock_quantity,
@@ -170,5 +179,30 @@ class ProductsController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Check if an image file exists
+     */
+    private function imageExists(?string $imageUrl): bool
+    {
+        if (!$imageUrl) {
+            return false;
+        }
+
+        // If it's a full URL, check if it's accessible
+        if (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+            return true; // Assume external URLs are valid
+        }
+
+        // For storage URLs, check if the file exists
+        if (str_starts_with($imageUrl, '/storage/')) {
+            $filePath = str_replace('/storage/', '', $imageUrl);
+            return \Storage::disk('public')->exists($filePath);
+        }
+
+        // For other paths, check if the public file exists
+        $publicPath = public_path($imageUrl);
+        return file_exists($publicPath);
     }
 }
