@@ -100,7 +100,7 @@ class Setting extends Model
     }
 
     // Get all settings as key-value pairs
-    public static function all(): array
+    public static function getAllSettings(): array
     {
         return static::pluck('value', 'key')->toArray();
     }
