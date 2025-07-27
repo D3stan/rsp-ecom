@@ -1,0 +1,182 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
+
+class Order extends Model
+{
+    protected $fillable = [
+        'order_number',
+        'user_id',
+        'billing_address_id',
+        'shipping_address_id',
+        'status',
+        'subtotal',
+        'tax_amount',
+        'shipping_amount',
+        'total_amount',
+        'currency',
+        'notes',
+    ];
+
+    protected $casts = [
+        'subtotal' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'shipping_amount' => 'decimal:2',
+        'total_amount' => 'decimal:2',
+    ];
+
+    // Boot method to generate order number
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($order) {
+            if (empty($order->order_number)) {
+                $order->order_number = static::generateOrderNumber();
+            }
+        });
+    }
+
+    // Relationships
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function billingAddress(): BelongsTo
+    {
+        return $this->belongsTo(Address::class, 'billing_address_id');
+    }
+
+    public function shippingAddress(): BelongsTo
+    {
+        return $this->belongsTo(Address::class, 'shipping_address_id');
+    }
+
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    // Scopes
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    public function scopeProcessing($query)
+    {
+        return $query->where('status', 'processing');
+    }
+
+    public function scopeShipped($query)
+    {
+        return $query->where('status', 'shipped');
+    }
+
+    public function scopeDelivered($query)
+    {
+        return $query->where('status', 'delivered');
+    }
+
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', 'cancelled');
+    }
+
+    // Accessors
+    public function getTotalItemsAttribute(): int
+    {
+        return $this->orderItems->sum('quantity');
+    }
+
+    public function getIsCompleteAttribute(): bool
+    {
+        return $this->status === 'delivered';
+    }
+
+    public function getIsCancelledAttribute(): bool
+    {
+        return $this->status === 'cancelled';
+    }
+
+    public function getCanBeCancelledAttribute(): bool
+    {
+        return in_array($this->status, ['pending', 'processing']);
+    }
+
+    // Helper methods
+    public function cancel(): bool
+    {
+        if (!$this->can_be_cancelled) {
+            return false;
+        }
+
+        return $this->update(['status' => 'cancelled']);
+    }
+
+    public function markAsProcessing(): bool
+    {
+        return $this->update(['status' => 'processing']);
+    }
+
+    public function markAsShipped(): bool
+    {
+        return $this->update(['status' => 'shipped']);
+    }
+
+    public function markAsDelivered(): bool
+    {
+        return $this->update(['status' => 'delivered']);
+    }
+
+    // Generate unique order number
+    public static function generateOrderNumber(): string
+    {
+        do {
+            $orderNumber = 'ORD-' . date('Y') . '-' . str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
+        } while (static::where('order_number', $orderNumber)->exists());
+
+        return $orderNumber;
+    }
+
+    // Create order from cart
+    public static function createFromCart(Cart $cart, Address $billingAddress, Address $shippingAddress, array $additionalData = []): self
+    {
+        $subtotal = $cart->subtotal;
+        $shippingCost = $cart->shipping_cost;
+        $taxAmount = $additionalData['tax_amount'] ?? 0;
+        $total = $subtotal + $shippingCost + $taxAmount;
+
+        $order = static::create([
+            'user_id' => $cart->user_id,
+            'billing_address_id' => $billingAddress->id,
+            'shipping_address_id' => $shippingAddress->id,
+            'status' => 'pending',
+            'subtotal' => $subtotal,
+            'tax_amount' => $taxAmount,
+            'shipping_amount' => $shippingCost,
+            'total_amount' => $total,
+            'currency' => $additionalData['currency'] ?? 'USD',
+            'notes' => $additionalData['notes'] ?? null,
+        ]);
+
+        // Create order items from cart items
+        foreach ($cart->cartItems as $cartItem) {
+            $order->orderItems()->create([
+                'product_id' => $cartItem->product_id,
+                'product_name' => $cartItem->product->name,
+                'quantity' => $cartItem->quantity,
+                'price' => $cartItem->price,
+                'total' => $cartItem->total,
+            ]);
+        }
+
+        return $order;
+    }
+}
