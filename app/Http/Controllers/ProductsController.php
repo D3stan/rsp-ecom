@@ -75,7 +75,7 @@ class ProductsController extends Controller
         }
 
         // Pagination
-        $perPage = $request->get('per_page', 8); // Reduced from 24 to 8 for better visibility
+        $perPage = $request->get('per_page', 9); // Set to 9 products per page for optimal grid layout
         $products = $query->paginate($perPage)->withQueryString();
 
         // Transform products for frontend

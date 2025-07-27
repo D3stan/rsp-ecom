@@ -55,12 +55,12 @@ export default function Header({ transparent = false }: HeaderProps) {
                                             <SelectValue />
                                         )}
                                     </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="en">EN</SelectItem>
-                                        <SelectItem value="es">ES</SelectItem>
-                                        <SelectItem value="fr">FR</SelectItem>
-                                        <SelectItem value="de">DE</SelectItem>
-                                        <SelectItem value="it">IT</SelectItem>
+                                    <SelectContent className="bg-white border border-gray-200">
+                                        <SelectItem value="en" className="text-gray-900 hover:bg-gray-100">EN</SelectItem>
+                                        <SelectItem value="es" className="text-gray-900 hover:bg-gray-100">ES</SelectItem>
+                                        <SelectItem value="fr" className="text-gray-900 hover:bg-gray-100">FR</SelectItem>
+                                        <SelectItem value="de" className="text-gray-900 hover:bg-gray-100">DE</SelectItem>
+                                        <SelectItem value="it" className="text-gray-900 hover:bg-gray-100">IT</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

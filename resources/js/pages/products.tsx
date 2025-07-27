@@ -86,7 +86,7 @@ interface ProductsPageProps extends SharedData {
 // Predefined price ranges
 const PRICE_RANGES = [
     { label: 'All Prices', min: null, max: null },
-    { label: 'Under $25', min: null, max: 25 },
+    { label: 'Under $25', min: 0, max: 25 },
     { label: '$25 - $50', min: 25, max: 50 },
     { label: '$50 - $100', min: 50, max: 100 },
     { label: '$100 - $200', min: 100, max: 200 },
@@ -140,15 +140,46 @@ export default function Products() {
         });
     }, [searchTerm, selectedCategory, priceMin, priceMax, sortBy, filters.per_page, priceRange.min, priceRange.max]);
 
+    const applyPriceFilter = () => {
+        const params: Record<string, string | number> = {
+            search: searchTerm,
+            category: selectedCategory === 'all' ? '' : selectedCategory,
+            min_price: priceMin !== priceRange.min ? priceMin.toString() : '',
+            max_price: priceMax !== priceRange.max ? priceMax.toString() : '',
+            sort: sortBy,
+            per_page: filters.per_page,
+        };
+
+        // Remove empty parameters
+        Object.keys(params).forEach(key => {
+            const value = params[key];
+            if (value === '' || value === null || value === undefined) {
+                delete params[key];
+            }
+        });
+
+        router.get(route('products'), params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
     // Debounced search
     useEffect(() => {
         const timer = setTimeout(() => {
             if (searchTerm !== filters.search) {
-                applyFilters({ search: searchTerm });
+                applyFilters();
             }
         }, 500);
         return () => clearTimeout(timer);
     }, [searchTerm, filters.search, applyFilters]);
+
+    // Apply filters when category changes
+    useEffect(() => {
+        if (selectedCategory !== (filters.category || 'all')) {
+            applyFilters();
+        }
+    }, [selectedCategory, filters.category, applyFilters]);
 
     const clearFilters = () => {
         setSearchTerm('');
@@ -195,7 +226,7 @@ export default function Products() {
                                     <Input 
                                         type="search"
                                         placeholder="Search products..."
-                                        className="pl-12 pr-4 h-12 text-base"
+                                        className="pl-12 pr-4 h-12 text-base bg-white text-gray-900 placeholder-gray-500 border-gray-300 focus:border-black focus:ring-black"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
@@ -238,25 +269,25 @@ export default function Products() {
                                     setSortBy(value);
                                     applyFilters({ sort: value });
                                 }}>
-                                    <SelectTrigger className="w-48">
-                                        <SelectValue placeholder="Sort by..." />
+                                    <SelectTrigger className="w-48 bg-white border-gray-300 text-gray-900">
+                                        <SelectValue placeholder="Sort by..." className="text-gray-900" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="name">Name (A-Z)</SelectItem>
-                                        <SelectItem value="price">Price (Low-High)</SelectItem>
-                                        <SelectItem value="newest">Newest</SelectItem>
-                                        <SelectItem value="rating">Best Rated</SelectItem>
-                                        <SelectItem value="popular">Most Popular</SelectItem>
-                                        <SelectItem value="most_bought">Most Bought</SelectItem>
+                                    <SelectContent className="bg-white border border-gray-200">
+                                        <SelectItem value="name" className="text-gray-900 hover:bg-gray-100">Name (A-Z)</SelectItem>
+                                        <SelectItem value="price" className="text-gray-900 hover:bg-gray-100">Price (Low-High)</SelectItem>
+                                        <SelectItem value="newest" className="text-gray-900 hover:bg-gray-100">Newest</SelectItem>
+                                        <SelectItem value="rating" className="text-gray-900 hover:bg-gray-100">Best Rated</SelectItem>
+                                        <SelectItem value="popular" className="text-gray-900 hover:bg-gray-100">Most Popular</SelectItem>
+                                        <SelectItem value="most_bought" className="text-gray-900 hover:bg-gray-100">Most Bought</SelectItem>
                                     </SelectContent>
                                 </Select>
 
                                 {/* View Mode Toggle */}
-                                <div className="hidden md:flex border rounded-md">
+                                <div className="hidden md:flex border border-gray-300 rounded-md">
                                     <Button 
                                         variant={viewMode === 'grid' ? 'default' : 'ghost'} 
                                         size="sm" 
-                                        className="rounded-r-none"
+                                        className={`rounded-r-none ${viewMode === 'grid' ? 'bg-black text-white hover:bg-gray-900' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}`}
                                         onClick={() => setViewMode('grid')}
                                     >
                                         <Grid3X3 className="w-4 h-4" />
@@ -264,7 +295,7 @@ export default function Products() {
                                     <Button 
                                         variant={viewMode === 'list' ? 'default' : 'ghost'} 
                                         size="sm" 
-                                        className="rounded-l-none"
+                                        className={`rounded-l-none ${viewMode === 'list' ? 'bg-black text-white hover:bg-gray-900' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'}`}
                                         onClick={() => setViewMode('list')}
                                     >
                                         <List className="w-4 h-4" />
@@ -491,14 +522,17 @@ function FilterSection({
             {/* Categories */}
             <div>
                 <Label className="text-base font-semibold mb-4 block text-gray-900">Category</Label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="All Categories" />
+                <Select value={selectedCategory} onValueChange={(value) => {
+                    setSelectedCategory(value);
+                    // Category filter will be applied by the useEffect that watches selectedCategory
+                }}>
+                    <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+                        <SelectValue placeholder="All Categories" className="text-gray-900" />
                     </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
+                    <SelectContent className="bg-white border border-gray-200">
+                        <SelectItem value="all" className="text-gray-900 hover:bg-gray-100">All Categories</SelectItem>
                         {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.slug}>
+                            <SelectItem key={category.id} value={category.slug} className="text-gray-900 hover:bg-gray-100">
                                 {category.name} ({category.count})
                             </SelectItem>
                         ))}
@@ -521,8 +555,10 @@ function FilterSection({
                                     (range.max === null ? priceRange.max : range.max) === priceMax
                                 }
                                 onChange={() => {
-                                    setPriceMin(range.min ?? priceRange.min);
-                                    setPriceMax(range.max ?? priceRange.max);
+                                    const newMin = range.min === null ? priceRange.min : range.min;
+                                    const newMax = range.max === null ? priceRange.max : range.max;
+                                    setPriceMin(newMin);
+                                    setPriceMax(newMax);
                                 }}
                                 className="w-4 h-4 text-black border-gray-300 focus:ring-black focus:ring-2"
                             />
@@ -566,7 +602,7 @@ function FilterSection({
                 </div>
             </div>
 
-            <Button onClick={applyFilters} className="w-full h-12 font-semibold text-base bg-black hover:bg-gray-900">
+            <Button onClick={applyFilters} className="w-full h-12 font-semibold text-base text-white bg-black hover:bg-gray-900">
                 Apply Filters
             </Button>
         </div>
@@ -584,6 +620,7 @@ interface QuickViewModalProps {
 
 function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToProduct }: QuickViewModalProps) {
     const [quantity, setQuantity] = useState(1);
+    const [imageSrc, setImageSrc] = useState(product.image);
 
     const decreaseQuantity = () => {
         if (quantity > 1) setQuantity(quantity - 1);
@@ -593,19 +630,27 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
         if (quantity < product.stockQuantity) setQuantity(quantity + 1);
     };
 
+    const handleImageError = () => {
+        setImageSrc('/images/product.png');
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white" aria-describedby="quick-view-description">
                 <DialogHeader>
-                    <DialogTitle>Quick View</DialogTitle>
+                    <DialogTitle className="text-gray-900">Quick View</DialogTitle>
                 </DialogHeader>
+                <div id="quick-view-description" className="sr-only">
+                    Quick view modal for {product.name}. View product details, select quantity, and add to cart.
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Product Image */}
                     <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
                         <img 
-                            src={product.image} 
+                            src={imageSrc} 
                             alt={product.name}
+                            onError={handleImageError}
                             className="w-full h-full object-cover"
                         />
                     </div>
@@ -724,6 +769,7 @@ interface ProductCardProps {
 function ProductCard({ product, viewMode }: ProductCardProps) {
     const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
     const [quantity] = useState(1); // Removed setQuantity since it's not used
+    const [imageSrc, setImageSrc] = useState(product.image);
 
     const handleAddToCart = () => {
         // TODO: Implement add to cart functionality
@@ -734,14 +780,19 @@ function ProductCard({ product, viewMode }: ProductCardProps) {
         // TODO: Navigate to single product page when implemented
         router.visit(`/products/${product.slug}`);
     };
+
+    const handleImageError = () => {
+        setImageSrc('/images/product.png');
+    };
     if (viewMode === 'list') {
         return (
             <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200">
                 <div className="flex">
                     <div className="w-48 h-48 flex-shrink-0 bg-gray-50">
                         <img 
-                            src={product.image} 
+                            src={imageSrc} 
                             alt={product.name}
+                            onError={handleImageError}
                             className="w-full h-full object-cover"
                         />
                     </div>
@@ -788,10 +839,10 @@ function ProductCard({ product, viewMode }: ProductCardProps) {
                                 <Button 
                                     size="lg" 
                                     disabled={!product.inStock}
-                                    className="w-full font-semibold"
+                                    className="w-full font-semibold bg-black text-white hover:bg-gray-900 hover:shadow-lg transition-all duration-200"
                                     onClick={handleAddToCart}
                                 >
-                                    <ShoppingCart className="w-5 h-5 mr-2" />
+                                    <ShoppingCart className="w-5 h-5 mr-2 text-white" />
                                     {product.inStock ? 'Add to Cart' : 'Out of Stock'}
                                 </Button>
                                 <Button variant="outline" size="lg" className="w-full">
@@ -816,7 +867,7 @@ function ProductCard({ product, viewMode }: ProductCardProps) {
     }
 
     return (
-        <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200">
+        <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 flex flex-col h-full">
             <div className="relative">
                 {product.badge && (
                     <Badge 
@@ -826,17 +877,11 @@ function ProductCard({ product, viewMode }: ProductCardProps) {
                         {product.badge}
                     </Badge>
                 )}
-                <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-white hover:bg-gray-50"
-                >
-                    <Heart className="w-4 h-4" />
-                </Button>
                 <div className="aspect-square overflow-hidden bg-gray-50">
                     <img 
-                        src={product.image} 
+                        src={imageSrc} 
                         alt={product.name}
+                        onError={handleImageError}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                 </div>
@@ -851,33 +896,35 @@ function ProductCard({ product, viewMode }: ProductCardProps) {
                     </Button>
                 </div>
             </div>
-            <CardContent className="p-6 bg-white">
-                {product.category && (
-                    <p className="text-sm text-gray-600 mb-2 font-medium">{product.category.name}</p>
-                )}
-                <h3 className="font-bold text-lg mb-3 line-clamp-2 text-gray-900 leading-tight">{product.name}</h3>
-                <div className="flex items-center space-x-2 mb-4">
-                    <div className="flex">
-                        {renderStars(product.rating)}
+            <CardContent className="p-6 bg-white flex flex-col h-full">
+                <div className="flex-1">
+                    {product.category && (
+                        <p className="text-sm text-gray-600 mb-2 font-medium">{product.category.name}</p>
+                    )}
+                    <h3 className="font-bold text-lg mb-3 line-clamp-2 text-gray-900 leading-tight">{product.name}</h3>
+                    <div className="flex items-center space-x-2 mb-4">
+                        <div className="flex">
+                            {renderStars(product.rating)}
+                        </div>
+                        <span className="text-sm text-gray-500 font-medium">({product.reviews})</span>
                     </div>
-                    <span className="text-sm text-gray-500 font-medium">({product.reviews})</span>
-                </div>
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                        <span className="text-xl font-bold text-gray-900">${product.price}</span>
-                        {product.originalPrice && (
-                            <span className="text-base text-gray-500 line-through">
-                                ${product.originalPrice}
-                            </span>
-                        )}
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                            <span className="text-xl font-bold text-gray-900">${product.price}</span>
+                            {product.originalPrice && (
+                                <span className="text-base text-gray-500 line-through">
+                                    ${product.originalPrice}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
                 <Button 
-                    className="w-full h-11 font-semibold" 
+                    className="w-full h-11 font-semibold bg-black text-white hover:bg-gray-900 hover:shadow-lg transition-all duration-200 mt-auto" 
                     disabled={!product.inStock}
                     onClick={handleAddToCart}
                 >
-                    <ShoppingCart className="w-5 h-5 mr-2" />
+                    <ShoppingCart className="w-5 h-5 mr-2 text-white" />
                     {product.inStock ? 'Add to Cart' : 'Out of Stock'}
                 </Button>
             </CardContent>
