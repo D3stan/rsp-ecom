@@ -16,7 +16,7 @@ interface HeaderProps {
     transparent?: boolean;
 }
 
-export default function Header({ currentPage = 'home', transparent = false }: HeaderProps) {
+export default function Header({ transparent = false }: HeaderProps) {
     const { auth } = usePage<SharedData>().props;
     const { t, locale, changeLocale, isLoading } = useTranslation();
 

@@ -31,7 +31,13 @@
         "audio": "Audio",
         "wearables": "Dispositivos Vestibles",
         "cameras": "Cámaras",
-        "gaming": "Gaming"
+        "gaming": "Gaming",
+        "electronics": "Electrónicos",
+        "clothing": "Ropa",
+        "home___garden": "Hogar y Jardín",
+        "sports___outdoors": "Deportes y Aire Libre",
+        "books___media": "Libros y Medios",
+        "health___beauty": "Salud y Belleza"
     },
     "products_count": "{{count}} productos"
 }

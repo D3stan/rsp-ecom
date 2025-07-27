@@ -1,22 +1,177 @@
 import { type SharedData } from '@/types';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import Header from '@/components/header';
+import { useState, useEffect, useCallback } from 'react';
 import { 
     Search, 
     ShoppingCart, 
-    User, 
     Star, 
     Heart,
     Filter,
     Grid3X3,
-    List
+    List,
+    Eye,
+    ChevronLeft,
+    ChevronRight,
+    X,
+    Plus,
+    Minus
 } from 'lucide-react';
 
+interface Product {
+    id: number;
+    name: string;
+    slug: string;
+    price: number;
+    originalPrice?: number;
+    rating: number;
+    reviews: number;
+    image: string;
+    badge?: string;
+    inStock: boolean;
+    stockQuantity: number;
+    category?: {
+        id: number;
+        name: string;
+        slug: string;
+    };
+}
+
+interface Category {
+    id: number;
+    name: string;
+    slug: string;
+    count: number;
+}
+
+interface PaginationData {
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+}
+
+interface ProductsPageProps extends SharedData {
+    products: {
+        data: Product[];
+    };
+    categories: Category[];
+    priceRange: {
+        min: number;
+        max: number;
+    };
+    filters: {
+        search: string;
+        category: string;
+        min_price: string;
+        max_price: string;
+        sort: string;
+        direction: string;
+        per_page: number;
+    };
+    pagination: PaginationData;
+}
+
+// Predefined price ranges
+const PRICE_RANGES = [
+    { label: 'All Prices', min: null, max: null },
+    { label: 'Under $25', min: null, max: 25 },
+    { label: '$25 - $50', min: 25, max: 50 },
+    { label: '$50 - $100', min: 50, max: 100 },
+    { label: '$100 - $200', min: 100, max: 200 },
+    { label: '$200 - $500', min: 200, max: 500 },
+    { label: 'Over $500', min: 500, max: null },
+];
+
+const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+        <Star 
+            key={i} 
+            className={`w-4 h-4 ${i < Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+        />
+    ));
+};
+
 export default function Products() {
-    const { auth } = usePage<SharedData>().props;
+    const { products, categories, priceRange, filters, pagination } = usePage<ProductsPageProps>().props;
+    
+    // Local state for filters
+    const [searchTerm, setSearchTerm] = useState(filters.search);
+    const [selectedCategory, setSelectedCategory] = useState(filters.category);
+    const [priceMin, setPriceMin] = useState(filters.min_price ? parseInt(filters.min_price) : priceRange.min);
+    const [priceMax, setPriceMax] = useState(filters.max_price ? parseInt(filters.max_price) : priceRange.max);
+    const [sortBy, setSortBy] = useState(filters.sort);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+    const applyFilters = useCallback((newFilters: Record<string, string | number> = {}) => {
+        const params: Record<string, string | number> = {
+            search: searchTerm,
+            category: selectedCategory,
+            min_price: priceMin !== priceRange.min ? priceMin.toString() : '',
+            max_price: priceMax !== priceRange.max ? priceMax.toString() : '',
+            sort: sortBy,
+            per_page: filters.per_page,
+            ...newFilters
+        };
+
+        // Remove empty parameters
+        Object.keys(params).forEach(key => {
+            const value = params[key];
+            if (value === '' || value === null || value === undefined) {
+                delete params[key];
+            }
+        });
+
+        router.get(route('products'), params, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }, [searchTerm, selectedCategory, priceMin, priceMax, sortBy, filters.per_page, priceRange.min, priceRange.max]);
+
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchTerm !== filters.search) {
+                applyFilters({ search: searchTerm });
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm, filters.search, applyFilters]);
+
+    const clearFilters = () => {
+        setSearchTerm('');
+        setSelectedCategory('');
+        setPriceMin(priceRange.min);
+        setPriceMax(priceRange.max);
+        setSortBy('name');
+        
+        router.get(route('products'), {}, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const handlePageChange = (page: number) => {
+        router.get(route('products'), {
+            ...Object.fromEntries(new URLSearchParams(window.location.search)),
+            page: page.toString()
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
 
     return (
         <>
@@ -24,102 +179,94 @@ export default function Products() {
             
             <div className="min-h-screen bg-white">
                 {/* Header */}
-                <header className="border-b border-gray-200">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between h-16">
-                            {/* Logo */}
-                            <div className="flex-shrink-0">
-                                <Link href="/" className="text-2xl font-bold text-black">
-                                    Store
-                                </Link>
-                            </div>
-
-                            {/* Search Bar */}
-                            <div className="flex-1 max-w-2xl mx-8">
+                <Header currentPage="products" />
+                
+                {/* Main Content */}
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    {/* Page Header */}
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-bold text-black mb-4">All Products</h1>
+                        
+                        {/* Search Bar */}
+                        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                            <div className="flex-1 max-w-2xl">
                                 <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                                     <Input 
                                         type="search"
                                         placeholder="Search products..."
-                                        className="pl-10 pr-4"
+                                        className="pl-12 pr-4 h-12 text-base"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
                                     />
                                 </div>
                             </div>
-
-                            {/* Navigation & Actions */}
+                            
+                            {/* Controls */}
                             <div className="flex items-center space-x-4">
-                                <nav className="hidden md:flex space-x-6">
-                                    <Link href="/products" className="text-black font-medium">
-                                        Categories
-                                    </Link>
-                                    <Link href="/about" className="text-gray-600 hover:text-black">
-                                        About
-                                    </Link>
-                                    <Link href="/contact" className="text-gray-600 hover:text-black">
-                                        Contact
-                                    </Link>
-                                </nav>
+                                {/* Mobile Filter Button */}
+                                <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                                    <SheetTrigger asChild>
+                                        <Button variant="outline" size="lg" className="lg:hidden">
+                                            <Filter className="w-4 h-4 mr-2" />
+                                            Filters
+                                        </Button>
+                                    </SheetTrigger>
+                                    <SheetContent side="left" className="w-80">
+                                        <SheetHeader>
+                                            <SheetTitle>Filters</SheetTitle>
+                                        </SheetHeader>
+                                        <div className="py-6">
+                                            <FilterSection 
+                                                categories={categories}
+                                                priceRange={priceRange}
+                                                selectedCategory={selectedCategory}
+                                                setSelectedCategory={setSelectedCategory}
+                                                priceMin={priceMin}
+                                                setPriceMin={setPriceMin}
+                                                priceMax={priceMax}
+                                                setPriceMax={setPriceMax}
+                                                applyFilters={applyFilters}
+                                                clearFilters={clearFilters}
+                                            />
+                                        </div>
+                                    </SheetContent>
+                                </Sheet>
 
-                                <div className="flex items-center space-x-3">
-                                    {auth.user ? (
-                                        <>
-                                            <Button variant="ghost" size="icon">
-                                                <Heart className="w-5 h-5" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="relative">
-                                                <ShoppingCart className="w-5 h-5" />
-                                                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                                                    3
-                                                </Badge>
-                                            </Button>
-                                            <Link href={route('dashboard')}>
-                                                <Button variant="ghost" size="icon">
-                                                    <User className="w-5 h-5" />
-                                                </Button>
-                                            </Link>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Button variant="ghost" size="icon" className="relative">
-                                                <ShoppingCart className="w-5 h-5" />
-                                                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                                                    0
-                                                </Badge>
-                                            </Button>
-                                            <Link href={route('login')}>
-                                                <Button variant="outline" size="sm">
-                                                    Login
-                                                </Button>
-                                            </Link>
-                                            <Link href={route('register')}>
-                                                <Button size="sm">
-                                                    Register
-                                                </Button>
-                                            </Link>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </header>
+                                {/* Sort Dropdown */}
+                                <Select value={sortBy} onValueChange={(value) => {
+                                    setSortBy(value);
+                                    applyFilters({ sort: value });
+                                }}>
+                                    <SelectTrigger className="w-48">
+                                        <SelectValue placeholder="Sort by..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="name">Name (A-Z)</SelectItem>
+                                        <SelectItem value="price">Price (Low-High)</SelectItem>
+                                        <SelectItem value="newest">Newest</SelectItem>
+                                        <SelectItem value="rating">Best Rated</SelectItem>
+                                        <SelectItem value="popular">Most Popular</SelectItem>
+                                        <SelectItem value="most_bought">Most Bought</SelectItem>
+                                    </SelectContent>
+                                </Select>
 
-                {/* Main Content */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-black mb-4">All Products</h1>
-                        <div className="flex items-center justify-between">
-                            <p className="text-gray-600">Showing 1-12 of 48 products</p>
-                            <div className="flex items-center space-x-4">
-                                <Button variant="outline" size="sm">
-                                    <Filter className="w-4 h-4 mr-2" />
-                                    Filters
-                                </Button>
-                                <div className="flex border rounded-md">
-                                    <Button variant="ghost" size="sm" className="rounded-r-none">
+                                {/* View Mode Toggle */}
+                                <div className="hidden md:flex border rounded-md">
+                                    <Button 
+                                        variant={viewMode === 'grid' ? 'default' : 'ghost'} 
+                                        size="sm" 
+                                        className="rounded-r-none"
+                                        onClick={() => setViewMode('grid')}
+                                    >
                                         <Grid3X3 className="w-4 h-4" />
                                     </Button>
-                                    <Button variant="ghost" size="sm" className="rounded-l-none">
+                                    <Button 
+                                        variant={viewMode === 'list' ? 'default' : 'ghost'} 
+                                        size="sm" 
+                                        className="rounded-l-none"
+                                        onClick={() => setViewMode('list')}
+                                    >
                                         <List className="w-4 h-4" />
                                     </Button>
                                 </div>
@@ -127,15 +274,614 @@ export default function Products() {
                         </div>
                     </div>
 
-                    <div className="text-center py-20">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Coming Soon</h2>
-                        <p className="text-gray-600 mb-4">Product listings will be implemented here</p>
-                        <Link href="/">
-                            <Button>Back to Home</Button>
-                        </Link>
+                    <div className="flex gap-8">
+                        {/* Desktop Filters Sidebar */}
+                        <div className="hidden lg:block w-64 flex-shrink-0">
+                            <FilterSection 
+                                categories={categories}
+                                priceRange={priceRange}
+                                selectedCategory={selectedCategory}
+                                setSelectedCategory={setSelectedCategory}
+                                priceMin={priceMin}
+                                setPriceMin={setPriceMin}
+                                priceMax={priceMax}
+                                setPriceMax={setPriceMax}
+                                applyFilters={applyFilters}
+                                clearFilters={clearFilters}
+                            />
+                        </div>
+
+                        {/* Products Grid */}
+                        <div className="flex-1">
+                            {/* Results Summary */}
+                            <div className="flex items-center justify-between mb-6">
+                                <p className="text-gray-600">
+                                    Showing {pagination.from || 0}-{pagination.to || 0} of {pagination.total} products
+                                </p>
+                            </div>
+
+                            {/* Products Grid/List */}
+                            {products.data.length > 0 ? (
+                                <>
+                                    <div className={`grid gap-6 ${
+                                        viewMode === 'grid' 
+                                            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                                            : 'grid-cols-1'
+                                    }`}>
+                                        {products.data.map((product: Product) => (
+                                            <ProductCard 
+                                                key={product.id} 
+                                                product={product} 
+                                                viewMode={viewMode}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    {/* Pagination */}
+                                    {pagination.last_page > 1 && (
+                                        <div className="mt-12">
+                                            {/* Mobile Pagination */}
+                                            <div className="flex justify-between items-center sm:hidden">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handlePageChange(pagination.current_page - 1)}
+                                                    disabled={pagination.current_page <= 1}
+                                                >
+                                                    <ChevronLeft className="w-4 h-4 mr-1" />
+                                                    Prev
+                                                </Button>
+                                                
+                                                <span className="text-sm text-gray-600">
+                                                    Page {pagination.current_page} of {pagination.last_page}
+                                                </span>
+                                                
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handlePageChange(pagination.current_page + 1)}
+                                                    disabled={pagination.current_page >= pagination.last_page}
+                                                >
+                                                    Next
+                                                    <ChevronRight className="w-4 h-4 ml-1" />
+                                                </Button>
+                                            </div>
+
+                                            {/* Desktop Pagination */}
+                                            <div className="hidden sm:flex justify-center">
+                                                <div className="flex items-center space-x-1">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handlePageChange(pagination.current_page - 1)}
+                                                        disabled={pagination.current_page <= 1}
+                                                    >
+                                                        <ChevronLeft className="w-4 h-4 mr-1" />
+                                                        Previous
+                                                    </Button>
+                                                    
+                                                    {/* Dynamic Page Numbers with ellipsis */}
+                                                    {(() => {
+                                                        const current = pagination.current_page;
+                                                        const total = pagination.last_page;
+                                                        const pages = [];
+                                                        
+                                                        // Always show first page
+                                                        if (current > 3) {
+                                                            pages.push(
+                                                                <Button
+                                                                    key={1}
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handlePageChange(1)}
+                                                                >
+                                                                    1
+                                                                </Button>
+                                                            );
+                                                            if (current > 4) {
+                                                                pages.push(<span key="ellipsis1" className="px-2 text-gray-500">...</span>);
+                                                            }
+                                                        }
+                                                        
+                                                        // Show pages around current
+                                                        for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
+                                                            pages.push(
+                                                                <Button
+                                                                    key={i}
+                                                                    variant={i === current ? 'default' : 'outline'}
+                                                                    size="sm"
+                                                                    onClick={() => handlePageChange(i)}
+                                                                >
+                                                                    {i}
+                                                                </Button>
+                                                            );
+                                                        }
+                                                        
+                                                        // Always show last page
+                                                        if (current < total - 2) {
+                                                            if (current < total - 3) {
+                                                                pages.push(<span key="ellipsis2" className="px-2 text-gray-500">...</span>);
+                                                            }
+                                                            pages.push(
+                                                                <Button
+                                                                    key={total}
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handlePageChange(total)}
+                                                                >
+                                                                    {total}
+                                                                </Button>
+                                                            );
+                                                        }
+                                                        
+                                                        return pages;
+                                                    })()}
+                                                    
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handlePageChange(pagination.current_page + 1)}
+                                                        disabled={pagination.current_page >= pagination.last_page}
+                                                    >
+                                                        Next
+                                                        <ChevronRight className="w-4 h-4 ml-1" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="text-center py-20">
+                                    <h2 className="text-xl font-semibold text-gray-900 mb-2">No products found</h2>
+                                    <p className="text-gray-600 mb-4">Try adjusting your search or filters</p>
+                                    <Button onClick={clearFilters}>Clear all filters</Button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
         </>
+    );
+}
+
+// Filter Section Component
+interface FilterSectionProps {
+    categories: Category[];
+    priceRange: { min: number; max: number };
+    selectedCategory: string;
+    setSelectedCategory: (category: string) => void;
+    priceMin: number;
+    setPriceMin: (price: number) => void;
+    priceMax: number;
+    setPriceMax: (price: number) => void;
+    applyFilters: () => void;
+    clearFilters: () => void;
+}
+
+function FilterSection({
+    categories,
+    priceRange,
+    selectedCategory,
+    setSelectedCategory,
+    priceMin,
+    setPriceMin,
+    priceMax,
+    setPriceMax,
+    applyFilters,
+    clearFilters
+}: FilterSectionProps) {
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Filters</h3>
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    <X className="w-4 h-4 mr-1" />
+                    Clear
+                </Button>
+            </div>
+
+            {/* Categories */}
+            <div>
+                <Label className="text-base font-medium mb-3 block">Category</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">All Categories</SelectItem>
+                        {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.slug}>
+                                {category.name} ({category.count})
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+
+            {/* Price Range */}
+            <div>
+                <Label className="text-base font-medium mb-3 block">Price Range</Label>
+                <div className="space-y-2">
+                    {PRICE_RANGES.map((range, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                            <input
+                                type="radio"
+                                id={`price-range-${index}`}
+                                name="price-range"
+                                checked={
+                                    (range.min === null ? priceRange.min : range.min) === priceMin &&
+                                    (range.max === null ? priceRange.max : range.max) === priceMax
+                                }
+                                onChange={() => {
+                                    setPriceMin(range.min ?? priceRange.min);
+                                    setPriceMax(range.max ?? priceRange.max);
+                                }}
+                                className="w-4 h-4 text-black border-gray-300 focus:ring-black"
+                            />
+                            <Label htmlFor={`price-range-${index}`} className="text-sm cursor-pointer">
+                                {range.label}
+                            </Label>
+                        </div>
+                    ))}
+                </div>
+                
+                {/* Custom Range Inputs */}
+                <div className="mt-4 space-y-3">
+                    <Label className="text-sm font-medium">Custom Range</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <Label className="text-xs text-gray-600">Min</Label>
+                            <Input 
+                                type="number" 
+                                value={priceMin}
+                                onChange={(e) => setPriceMin(parseInt(e.target.value) || priceRange.min)}
+                                min={priceRange.min}
+                                max={priceRange.max}
+                                className="h-8"
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-xs text-gray-600">Max</Label>
+                            <Input 
+                                type="number" 
+                                value={priceMax}
+                                onChange={(e) => setPriceMax(parseInt(e.target.value) || priceRange.max)}
+                                min={priceRange.min}
+                                max={priceRange.max}
+                                className="h-8"
+                            />
+                        </div>
+                    </div>
+                    <div className="text-xs text-gray-600 text-center">
+                        ${priceMin} - ${priceMax}
+                    </div>
+                </div>
+            </div>
+
+            <Button onClick={applyFilters} className="w-full">
+                Apply Filters
+            </Button>
+        </div>
+    );
+}
+
+// Quick View Modal Component
+interface QuickViewModalProps {
+    product: Product;
+    isOpen: boolean;
+    onClose: () => void;
+    onAddToCart: (quantity: number) => void;
+    onNavigateToProduct: () => void;
+}
+
+function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToProduct }: QuickViewModalProps) {
+    const [quantity, setQuantity] = useState(1);
+
+    const decreaseQuantity = () => {
+        if (quantity > 1) setQuantity(quantity - 1);
+    };
+
+    const increaseQuantity = () => {
+        if (quantity < product.stockQuantity) setQuantity(quantity + 1);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Quick View</DialogTitle>
+                </DialogHeader>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Product Image */}
+                    <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
+                        <img 
+                            src={product.image} 
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                    
+                    {/* Product Details */}
+                    <div className="space-y-4">
+                        {product.badge && (
+                            <Badge 
+                                variant={product.badge === 'Sale' ? 'destructive' : 'secondary'}
+                                className="w-fit"
+                            >
+                                {product.badge}
+                            </Badge>
+                        )}
+                        
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900">{product.name}</h2>
+                            {product.category && (
+                                <p className="text-sm text-gray-600 mt-1">{product.category.name}</p>
+                            )}
+                        </div>
+                        
+                        {/* Rating */}
+                        <div className="flex items-center space-x-2">
+                            <div className="flex">
+                                {renderStars(product.rating)}
+                            </div>
+                            <span className="text-sm text-gray-600">
+                                {product.rating} ({product.reviews} reviews)
+                            </span>
+                        </div>
+                        
+                        {/* Price */}
+                        <div className="flex items-center space-x-3">
+                            <span className="text-3xl font-bold text-black">${product.price}</span>
+                            {product.originalPrice && (
+                                <span className="text-xl text-gray-500 line-through">
+                                    ${product.originalPrice}
+                                </span>
+                            )}
+                        </div>
+                        
+                        {/* Stock Status */}
+                        <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${product.inStock ? 'bg-green-500' : 'bg-red-500'}`} />
+                            <span className="text-sm text-gray-600">
+                                {product.inStock ? `${product.stockQuantity} in stock` : 'Out of stock'}
+                            </span>
+                        </div>
+                        
+                        {/* Quantity Selector */}
+                        {product.inStock && (
+                            <div className="space-y-3">
+                                <Label className="text-sm font-medium">Quantity</Label>
+                                <div className="flex items-center space-x-3">
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={decreaseQuantity}
+                                        disabled={quantity <= 1}
+                                        className="h-8 w-8"
+                                    >
+                                        <Minus className="w-4 h-4" />
+                                    </Button>
+                                    <span className="w-12 text-center font-medium">{quantity}</span>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={increaseQuantity}
+                                        disabled={quantity >= product.stockQuantity}
+                                        className="h-8 w-8"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Action Buttons */}
+                        <div className="space-y-3 pt-4">
+                            <Button 
+                                className="w-full" 
+                                disabled={!product.inStock}
+                                onClick={() => onAddToCart(quantity)}
+                            >
+                                <ShoppingCart className="w-4 h-4 mr-2" />
+                                {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                            </Button>
+                            
+                            <Button 
+                                variant="outline" 
+                                className="w-full"
+                                onClick={onNavigateToProduct}
+                            >
+                                View Full Details
+                            </Button>
+                            
+                            <Button variant="outline" size="sm" className="w-full">
+                                <Heart className="w-4 h-4 mr-2" />
+                                Add to Wishlist
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// Product Card Component
+interface ProductCardProps {
+    product: Product;
+    viewMode: 'grid' | 'list';
+}
+
+function ProductCard({ product, viewMode }: ProductCardProps) {
+    const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+    const [quantity] = useState(1); // Removed setQuantity since it's not used
+
+    const handleAddToCart = () => {
+        // TODO: Implement add to cart functionality
+        console.log('Adding to cart:', product.id, quantity);
+    };
+
+    const handleNavigateToProduct = () => {
+        // TODO: Navigate to single product page when implemented
+        router.visit(`/products/${product.slug}`);
+    };
+    if (viewMode === 'list') {
+        return (
+            <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="flex">
+                    <div className="w-48 h-48 flex-shrink-0">
+                        <img 
+                            src={product.image} 
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                    <CardContent className="flex-1 p-6">
+                        <div className="flex justify-between h-full">
+                            <div className="flex-1">
+                                {product.badge && (
+                                    <Badge 
+                                        variant={product.badge === 'Sale' ? 'destructive' : 'secondary'}
+                                        className="mb-2"
+                                    >
+                                        {product.badge}
+                                    </Badge>
+                                )}
+                                <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
+                                {product.category && (
+                                    <p className="text-sm text-gray-600 mb-2">{product.category.name}</p>
+                                )}
+                                <div className="flex items-center space-x-2 mb-3">
+                                    <div className="flex">
+                                        {renderStars(product.rating)}
+                                    </div>
+                                    <span className="text-sm text-gray-600">({product.reviews})</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <span className="text-2xl font-bold text-black">${product.price}</span>
+                                    {product.originalPrice && (
+                                        <span className="text-lg text-gray-500 line-through">
+                                            ${product.originalPrice}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex flex-col space-y-2 ml-6">
+                                <Button 
+                                    size="sm" 
+                                    className="w-full"
+                                    onClick={() => setIsQuickViewOpen(true)}
+                                >
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Quick View
+                                </Button>
+                                <Button 
+                                    size="sm" 
+                                    disabled={!product.inStock}
+                                    className="w-full"
+                                    onClick={handleAddToCart}
+                                >
+                                    <ShoppingCart className="w-4 h-4 mr-2" />
+                                    {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                                </Button>
+                                <Button variant="outline" size="sm">
+                                    <Heart className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </div>
+
+                {/* Quick View Modal */}
+                <QuickViewModal
+                    product={product}
+                    isOpen={isQuickViewOpen}
+                    onClose={() => setIsQuickViewOpen(false)}
+                    onAddToCart={handleAddToCart}
+                    onNavigateToProduct={handleNavigateToProduct}
+                />
+            </Card>
+        );
+    }
+
+    return (
+        <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
+            <div className="relative">
+                {product.badge && (
+                    <Badge 
+                        variant={product.badge === 'Sale' ? 'destructive' : 'secondary'}
+                        className="absolute top-3 left-3 z-10"
+                    >
+                        {product.badge}
+                    </Badge>
+                )}
+                <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                    <Heart className="w-4 h-4" />
+                </Button>
+                <div className="aspect-square overflow-hidden">
+                    <img 
+                        src={product.image} 
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                </div>
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                    <Button 
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        size="sm"
+                        onClick={() => setIsQuickViewOpen(true)}
+                    >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Quick View
+                    </Button>
+                </div>
+            </div>
+            <CardContent className="p-4">
+                {product.category && (
+                    <p className="text-sm text-gray-600 mb-1">{product.category.name}</p>
+                )}
+                <h3 className="font-semibold mb-2 line-clamp-2">{product.name}</h3>
+                <div className="flex items-center space-x-2 mb-3">
+                    <div className="flex">
+                        {renderStars(product.rating)}
+                    </div>
+                    <span className="text-sm text-gray-600">({product.reviews})</span>
+                </div>
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                        <span className="text-lg font-bold text-black">${product.price}</span>
+                        {product.originalPrice && (
+                            <span className="text-sm text-gray-500 line-through">
+                                ${product.originalPrice}
+                            </span>
+                        )}
+                    </div>
+                </div>
+                <Button 
+                    className="w-full" 
+                    disabled={!product.inStock}
+                    onClick={handleAddToCart}
+                >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                </Button>
+            </CardContent>
+
+            {/* Quick View Modal */}
+            <QuickViewModal
+                product={product}
+                isOpen={isQuickViewOpen}
+                onClose={() => setIsQuickViewOpen(false)}
+                onAddToCart={handleAddToCart}
+                onNavigateToProduct={handleNavigateToProduct}
+            />
+        </Card>
     );
 }

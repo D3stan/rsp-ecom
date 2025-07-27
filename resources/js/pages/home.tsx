@@ -16,94 +16,60 @@ import {
     Camera,
     Gamepad2,
     Facebook,
-    Instagram
+    Instagram,
+    Shirt,
+    Home as HomeIcon,
+    Activity,
+    Book,
+    Heart,
+    Package
 } from 'lucide-react';
 
 interface Product {
     id: number;
     name: string;
+    slug: string;
     price: number;
     originalPrice?: number;
     rating: number;
     reviews: number;
     image: string;
     badge?: string;
+    category?: {
+        id: number;
+        name: string;
+        slug: string;
+    };
 }
 
 interface Category {
     id: number;
     name: string;
     slug: string;
-    icon: React.ComponentType<{ className?: string }>;
+    icon: string;
     count: number;
 }
 
-// Mock data - in real app this would come from props
-const FEATURED_PRODUCTS: Product[] = [
-    {
-        id: 1,
-        name: "Wireless Bluetooth Headphones",
-        price: 79.99,
-        originalPrice: 99.99,
-        rating: 4.5,
-        reviews: 124,
-        image: "/api/placeholder/300/300",
-        badge: "Best Seller"
-    },
-    {
-        id: 2,
-        name: "Smart Fitness Watch",
-        price: 199.99,
-        rating: 4.8,
-        reviews: 89,
-        image: "/api/placeholder/300/300",
-        badge: "New"
-    },
-    {
-        id: 3,
-        name: "Portable Laptop Stand",
-        price: 29.99,
-        originalPrice: 39.99,
-        rating: 4.3,
-        reviews: 67,
-        image: "/api/placeholder/300/300"
-    },
-    {
-        id: 4,
-        name: "Wireless Phone Charger",
-        price: 24.99,
-        rating: 4.6,
-        reviews: 203,
-        image: "/api/placeholder/300/300"
-    },
-    {
-        id: 5,
-        name: "USB-C Hub",
-        price: 49.99,
-        rating: 4.4,
-        reviews: 156,
-        image: "/api/placeholder/300/300"
-    },
-    {
-        id: 6,
-        name: "Mechanical Keyboard",
-        price: 129.99,
-        originalPrice: 149.99,
-        rating: 4.7,
-        reviews: 91,
-        image: "/api/placeholder/300/300",
-        badge: "Sale"
-    }
-];
+interface HomePageProps extends SharedData {
+    featuredProducts: Product[];
+    categories: Category[];
+}
 
-const CATEGORIES: Category[] = [
-    { id: 1, name: "categories.smartphones", slug: "smartphones", icon: Smartphone, count: 45 },
-    { id: 2, name: "categories.laptops", slug: "laptops", icon: Laptop, count: 32 },
-    { id: 3, name: "categories.audio", slug: "audio", icon: Headphones, count: 78 },
-    { id: 4, name: "categories.wearables", slug: "wearables", icon: Watch, count: 23 },
-    { id: 5, name: "categories.cameras", slug: "cameras", icon: Camera, count: 19 },
-    { id: 6, name: "categories.gaming", slug: "gaming", icon: Gamepad2, count: 56 }
-];
+// Map icon names to actual icon components
+const iconMap = {
+    Smartphone,
+    Laptop,
+    Headphones,
+    Watch,
+    Camera,
+    Gamepad2,
+    Shirt,
+    Home: HomeIcon,
+    Activity,
+    Book,
+    Heart,
+    Package,
+};
 
 const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -118,6 +84,7 @@ export default function Home() {
     const parallaxRef = useRef<HTMLDivElement>(null);
     const [videoLoaded, setVideoLoaded] = useState(false);
     const { t, isLoading } = useTranslation();
+    const { featuredProducts, categories } = usePage<HomePageProps>().props;
 
     useEffect(() => {
         const handleScroll = () => {
@@ -206,10 +173,12 @@ export default function Home() {
                             {t('find_perfect_tech')}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Button size="lg" className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg bg-white text-black hover:bg-gray-100 font-semibold">
-                                {t('shop_now')}
-                                <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
-                            </Button>
+                            <Link href={route('products')}>
+                                <Button size="lg" className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg bg-white text-black hover:bg-gray-100 font-semibold">
+                                    {t('shop_now')}
+                                    <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
+                                </Button>
+                            </Link>
                             <Button variant="outline" size="lg" className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg border-2 border-white text-white hover:bg-white hover:text-black font-semibold">
                                 {t('view_deals')}
                             </Button>
@@ -237,7 +206,7 @@ export default function Home() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {FEATURED_PRODUCTS.map((product: Product) => (
+                            {featuredProducts.map((product: Product) => (
                                 <Card key={product.id} className="group cursor-pointer hover:shadow-lg transition-shadow">
                                     <div className="relative overflow-hidden rounded-t-xl">
                                         <img 
@@ -302,8 +271,8 @@ export default function Home() {
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                            {CATEGORIES.map((category: Category) => {
-                                const IconComponent = category.icon;
+                            {categories.map((category: Category) => {
+                                const IconComponent = iconMap[category.icon as keyof typeof iconMap] || iconMap.Package;
                                 return (
                                     <Link 
                                         key={category.id} 

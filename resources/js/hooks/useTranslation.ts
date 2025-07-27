@@ -4,7 +4,7 @@ type Translations = {
   [key: string]: string | { [key: string]: string };
 };
 
-let cachedTranslations: { [locale: string]: Translations } = {};
+const cachedTranslations: { [locale: string]: Translations } = {};
 
 export const useTranslation = () => {
   const [locale, setLocale] = useState(() => {
@@ -52,11 +52,11 @@ export const useTranslation = () => {
 
   const t = (key: string, replacements?: { [key: string]: string | number }) => {
     const keys = key.split('.');
-    let value: any = translations;
+    let value: unknown = translations;
     
     for (const k of keys) {
       if (value && typeof value === 'object' && k in value) {
-        value = value[k];
+        value = (value as Record<string, unknown>)[k];
       } else {
         return key; // Return key if translation not found
       }
