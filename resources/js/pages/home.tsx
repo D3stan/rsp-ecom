@@ -172,14 +172,14 @@ export default function Home() {
                         <p className="text-lg sm:text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90 leading-relaxed drop-shadow-md">
                             {t('find_perfect_tech')}
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                             <Link href={route('products')}>
-                                <Button size="lg" className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg bg-white text-black hover:bg-gray-100 font-semibold">
+                                <Button size="lg" className="px-4 sm:px-6 py-3 text-base sm:text-lg bg-white text-black hover:bg-gray-100 font-semibold w-auto">
                                     {t('shop_now')}
                                     <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
                                 </Button>
                             </Link>
-                            <Button variant="outline" size="lg" className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg border-2 border-white text-white hover:bg-white hover:text-black font-semibold">
+                            <Button variant="outline" size="lg" className="px-4 sm:px-6 py-3 text-base sm:text-lg border-2 border-white text-white hover:bg-white hover:text-black font-semibold w-auto">
                                 {t('view_deals')}
                             </Button>
                         </div>

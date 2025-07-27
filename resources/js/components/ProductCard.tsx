@@ -39,7 +39,7 @@ interface QuickViewModalProps {
 
 function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToProduct }: QuickViewModalProps) {
     const [quantity, setQuantity] = useState(1);
-    const defaultImage = 'https://via.placeholder.com/400x400?text=Product+Image';
+    const defaultImage = '/images/product.png';
     const [imageSrc, setImageSrc] = useState(() => {
         if (!product.image || product.image === '' || product.image === '/images/product.png') {
             return defaultImage;
@@ -119,18 +119,18 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                         </div>
                         
                         <div className="flex items-center space-x-4">
-                            <Label className="text-sm font-medium">Quantity:</Label>
+                            <Label className="text-sm font-medium text-gray-900">Quantity:</Label>
                             <div className="flex items-center border border-gray-300 rounded-md">
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={decreaseQuantity}
                                     disabled={quantity <= 1}
-                                    className="h-8 w-8 p-0"
+                                    className="h-8 w-8 p-0 hover:bg-gray-200"
                                 >
-                                    <Minus className="w-4 h-4" />
+                                    <Minus className="w-4 h-4 text-black" />
                                 </Button>
-                                <span className="px-3 py-1 text-sm font-medium min-w-[2rem] text-center">
+                                <span className="px-3 py-1 text-sm font-medium min-w-[2rem] text-center text-gray-900">
                                     {quantity}
                                 </span>
                                 <Button
@@ -138,9 +138,9 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                                     size="sm"
                                     onClick={increaseQuantity}
                                     disabled={quantity >= product.stockQuantity}
-                                    className="h-8 w-8 p-0"
+                                    className="h-8 w-8 p-0 hover:bg-gray-200"
                                 >
-                                    <Plus className="w-4 h-4" />
+                                    <Plus className="w-4 h-4 text-black " />
                                 </Button>
                             </div>
                             <span className="text-sm text-gray-600">
@@ -217,7 +217,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
     if (viewMode === 'list') {
         return (
             <Card 
-                className="overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 cursor-pointer"
+                className="overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 cursor-pointer "
                 onClick={handleNavigateToProduct}
             >
                 <div className="flex">
@@ -315,7 +315,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
 
     return (
         <Card 
-            className="group overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 flex flex-col h-full cursor-pointer py-0"
+            className="group overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 flex flex-col h-full cursor-pointer py-0 gap-0"
             
         >
             <div className="relative">
@@ -349,7 +349,10 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                     </Button>
                 </div>
             </div>
-            <CardContent className="p-6 bg-white flex flex-col h-full " onClick={handleNavigateToProduct}>
+            
+                {/* Separator line above the button */}
+                <div className="border-t border-black my-4" />
+            <CardContent className="p-6 bg-white flex flex-col h-full" onClick={handleNavigateToProduct}>
                 <div className="flex-1">
                     {product.category && (
                         <p className="text-sm text-gray-600 mb-2 font-medium">{product.category.name}</p>

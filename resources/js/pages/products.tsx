@@ -273,28 +273,7 @@ export default function Products() {
                                 {/* Sort Dropdown */}
                                 <Select value={sortBy} onValueChange={(value) => {
                                     setSortBy(value);
-                                    // Apply sort immediately
-                                    const params: Record<string, string | number> = {
-                                        search: searchTerm,
-                                        category: selectedCategory === 'all' ? '' : selectedCategory,
-                                        min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
-                                        max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
-                                        sort: value,
-                                        per_page: filters.per_page,
-                                    };
-
-                                    // Remove empty parameters
-                                    Object.keys(params).forEach(key => {
-                                        const paramValue = params[key];
-                                        if (paramValue === '' || paramValue === null || paramValue === undefined) {
-                                            delete params[key];
-                                        }
-                                    });
-
-                                    router.get(route('products'), params, {
-                                        preserveState: true,
-                                        preserveScroll: true,
-                                    });
+                                    applyFilters({ sort: value });
                                 }}>
                                     <SelectTrigger className="w-48 bg-white border-gray-300 text-gray-900">
                                         <SelectValue placeholder="Sort by..." className="text-gray-900" />
@@ -551,7 +530,7 @@ function FilterSection({
                 <Label className="text-base font-semibold mb-4 block text-gray-900">Category</Label>
                 <Select value={selectedCategory} onValueChange={(value) => {
                     setSelectedCategory(value);
-                    // Will apply when "Apply Filters" button is clicked
+                    applyFilters();
                 }}>
                     <SelectTrigger className="bg-white border-gray-300 text-gray-900">
                         <SelectValue placeholder="All Categories" className="text-gray-900" />
