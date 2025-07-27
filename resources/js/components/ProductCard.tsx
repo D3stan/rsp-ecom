@@ -39,7 +39,13 @@ interface QuickViewModalProps {
 
 function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToProduct }: QuickViewModalProps) {
     const [quantity, setQuantity] = useState(1);
-    const [imageSrc, setImageSrc] = useState(product.image);
+    const defaultImage = 'https://via.placeholder.com/400x400?text=Product+Image';
+    const [imageSrc, setImageSrc] = useState(() => {
+        if (!product.image || product.image === '' || product.image === '/images/product.png') {
+            return defaultImage;
+        }
+        return product.image;
+    });
 
     const decreaseQuantity = () => {
         if (quantity > 1) setQuantity(quantity - 1);
@@ -50,7 +56,11 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
     };
 
     const handleImageError = () => {
-        setImageSrc('/images/product.png');
+        console.log('QuickView Image failed to load:', imageSrc);
+        // Set to reliable placeholder if not already using it
+        if (!imageSrc.includes('placeholder')) {
+            setImageSrc(defaultImage);
+        }
     };
 
     return (
@@ -178,7 +188,14 @@ interface ProductCardProps {
 export default function ProductCard({ product, viewMode }: ProductCardProps) {
     const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
     const [quantity] = useState(1);
-    const [imageSrc, setImageSrc] = useState(product.image);
+    // Use a more reliable fallback strategy
+    const defaultImage = '/images/product.png';
+    const [imageSrc, setImageSrc] = useState(() => {
+        if (!product.image || product.image === '' || product.image === '/images/product.png') {
+            return defaultImage;
+        }
+        return product.image;
+    });
 
     const handleAddToCart = () => {
         // TODO: Implement add to cart functionality
@@ -190,7 +207,11 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
     };
 
     const handleImageError = () => {
-        setImageSrc('/images/product.png');
+        console.log('ProductCard Image failed to load:', imageSrc, 'Product:', product.name);
+        // Set to reliable placeholder if not already using it
+        if (!imageSrc.includes('placeholder')) {
+            setImageSrc(defaultImage);
+        }
     };
 
     if (viewMode === 'list') {
@@ -200,15 +221,15 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                 onClick={handleNavigateToProduct}
             >
                 <div className="flex">
-                    <div className="w-48 h-48 flex-shrink-0 bg-gray-50">
+                    <div className="w-48 h-48 flex-shrink-0 bg-gray-50 relative">
                         <img 
                             src={imageSrc} 
                             alt={product.name}
                             onError={handleImageError}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover relative z-10"
                         />
                     </div>
-                    <CardContent className="flex-1 p-8 bg-white">
+                    <CardContent className="flex-1 p-8 bg-white" >
                         <div className="flex justify-between h-full">
                             <div className="flex-1">
                                 {product.badge && (
@@ -283,7 +304,10 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                     isOpen={isQuickViewOpen}
                     onClose={() => setIsQuickViewOpen(false)}
                     onAddToCart={handleAddToCart}
-                    onNavigateToProduct={handleNavigateToProduct}
+                    onNavigateToProduct={() => {
+                        setIsQuickViewOpen(false);
+                        handleNavigateToProduct();
+                    }}
                 />
             </Card>
         );
@@ -291,8 +315,8 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
 
     return (
         <Card 
-            className="group overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 flex flex-col h-full cursor-pointer"
-            onClick={handleNavigateToProduct}
+            className="group overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 flex flex-col h-full cursor-pointer py-0"
+            
         >
             <div className="relative">
                 {product.badge && (
@@ -303,15 +327,15 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                         {product.badge}
                     </Badge>
                 )}
-                <div className="aspect-square overflow-hidden bg-gray-50">
+                <div className="aspect-square overflow-hidden bg-gray-50 relative">
                     <img 
                         src={imageSrc} 
                         alt={product.name}
                         onError={handleImageError}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 relative z-10"
                     />
                 </div>
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center z-20">
                     <Button 
                         className="opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                         size="sm"
@@ -325,7 +349,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                     </Button>
                 </div>
             </div>
-            <CardContent className="p-6 bg-white flex flex-col h-full">
+            <CardContent className="p-6 bg-white flex flex-col h-full " onClick={handleNavigateToProduct}>
                 <div className="flex-1">
                     {product.category && (
                         <p className="text-sm text-gray-600 mb-2 font-medium">{product.category.name}</p>
@@ -367,7 +391,10 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                 isOpen={isQuickViewOpen}
                 onClose={() => setIsQuickViewOpen(false)}
                 onAddToCart={handleAddToCart}
-                onNavigateToProduct={handleNavigateToProduct}
+                onNavigateToProduct={() => {
+                    setIsQuickViewOpen(false);
+                    handleNavigateToProduct();
+                }}
             />
         </Card>
     );

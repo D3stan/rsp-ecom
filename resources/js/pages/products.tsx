@@ -107,15 +107,15 @@ export default function Products() {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-    const applyFilters = useCallback((newFilters: Record<string, string | number> = {}) => {
+    const applyFilters = useCallback((overrides: Record<string, string | number> = {}) => {
         const params: Record<string, string | number> = {
             search: searchTerm,
             category: selectedCategory === 'all' ? '' : selectedCategory,
-            min_price: priceMin !== priceRange.min ? priceMin.toString() : '',
-            max_price: priceMax !== priceRange.max ? priceMax.toString() : '',
+            min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
+            max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
             sort: sortBy,
             per_page: filters.per_page,
-            ...newFilters
+            ...overrides
         };
 
         // Remove empty parameters
@@ -130,14 +130,45 @@ export default function Products() {
             preserveState: true,
             preserveScroll: true,
         });
-    }, [searchTerm, selectedCategory, priceMin, priceMax, sortBy, filters.per_page, priceRange.min, priceRange.max]);
+    }, [searchTerm, selectedCategory, priceMin, priceMax, sortBy, filters.per_page]);
 
-    const applyPriceFilter = () => {
+    // Only debounce search, don't auto-apply other filters
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchTerm !== filters.search) {
+                // Inline the filter logic to avoid circular dependency
+                const params: Record<string, string | number> = {
+                    search: searchTerm,
+                    category: selectedCategory === 'all' ? '' : selectedCategory,
+                    min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
+                    max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
+                    sort: sortBy,
+                    per_page: filters.per_page,
+                };
+
+                // Remove empty parameters
+                Object.keys(params).forEach(key => {
+                    const value = params[key];
+                    if (value === '' || value === null || value === undefined) {
+                        delete params[key];
+                    }
+                });
+
+                router.get(route('products'), params, {
+                    preserveState: true,
+                    preserveScroll: true,
+                });
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm, filters.search]);
+
+    const handleApplyFilters = () => {
         const params: Record<string, string | number> = {
             search: searchTerm,
             category: selectedCategory === 'all' ? '' : selectedCategory,
-            min_price: priceMin !== priceRange.min ? priceMin.toString() : '',
-            max_price: priceMax !== priceRange.max ? priceMax.toString() : '',
+            min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
+            max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
             sort: sortBy,
             per_page: filters.per_page,
         };
@@ -156,28 +187,11 @@ export default function Products() {
         });
     };
 
-    // Debounced search
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (searchTerm !== filters.search) {
-                applyFilters();
-            }
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchTerm, filters.search, applyFilters]);
-
-    // Apply filters when category changes
-    useEffect(() => {
-        if (selectedCategory !== (filters.category || 'all')) {
-            applyFilters();
-        }
-    }, [selectedCategory, filters.category, applyFilters]);
-
     const clearFilters = () => {
         setSearchTerm('');
         setSelectedCategory('all');
-        setPriceMin(priceRange.min);
-        setPriceMax(priceRange.max);
+        setPriceMin(priceRange?.min || 0);
+        setPriceMax(priceRange?.max || 1000);
         setSortBy('name');
         
         router.get(route('products'), {}, {
@@ -249,7 +263,7 @@ export default function Products() {
                                                 setPriceMin={setPriceMin}
                                                 priceMax={priceMax}
                                                 setPriceMax={setPriceMax}
-                                                applyFilters={applyFilters}
+                                                applyFilters={handleApplyFilters}
                                                 clearFilters={clearFilters}
                                             />
                                         </div>
@@ -259,7 +273,28 @@ export default function Products() {
                                 {/* Sort Dropdown */}
                                 <Select value={sortBy} onValueChange={(value) => {
                                     setSortBy(value);
-                                    applyFilters({ sort: value });
+                                    // Apply sort immediately
+                                    const params: Record<string, string | number> = {
+                                        search: searchTerm,
+                                        category: selectedCategory === 'all' ? '' : selectedCategory,
+                                        min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
+                                        max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
+                                        sort: value,
+                                        per_page: filters.per_page,
+                                    };
+
+                                    // Remove empty parameters
+                                    Object.keys(params).forEach(key => {
+                                        const paramValue = params[key];
+                                        if (paramValue === '' || paramValue === null || paramValue === undefined) {
+                                            delete params[key];
+                                        }
+                                    });
+
+                                    router.get(route('products'), params, {
+                                        preserveState: true,
+                                        preserveScroll: true,
+                                    });
                                 }}>
                                     <SelectTrigger className="w-48 bg-white border-gray-300 text-gray-900">
                                         <SelectValue placeholder="Sort by..." className="text-gray-900" />
@@ -310,7 +345,7 @@ export default function Products() {
                                     setPriceMin={setPriceMin}
                                     priceMax={priceMax}
                                     setPriceMax={setPriceMax}
-                                    applyFilters={applyFilters}
+                                    applyFilters={handleApplyFilters}
                                     clearFilters={clearFilters}
                                 />
                             </div>
@@ -516,7 +551,7 @@ function FilterSection({
                 <Label className="text-base font-semibold mb-4 block text-gray-900">Category</Label>
                 <Select value={selectedCategory} onValueChange={(value) => {
                     setSelectedCategory(value);
-                    // Category filter will be applied by the useEffect that watches selectedCategory
+                    // Will apply when "Apply Filters" button is clicked
                 }}>
                     <SelectTrigger className="bg-white border-gray-300 text-gray-900">
                         <SelectValue placeholder="All Categories" className="text-gray-900" />
@@ -543,12 +578,12 @@ function FilterSection({
                                 id={`price-range-${index}`}
                                 name="price-range"
                                 checked={
-                                    (range.min === null ? priceRange.min : range.min) === priceMin &&
-                                    (range.max === null ? priceRange.max : range.max) === priceMax
+                                    (range.min === null ? priceRange?.min : range.min) === priceMin &&
+                                    (range.max === null ? priceRange?.max : range.max) === priceMax
                                 }
                                 onChange={() => {
-                                    const newMin = range.min === null ? priceRange.min : range.min;
-                                    const newMax = range.max === null ? priceRange.max : range.max;
+                                    const newMin = range.min === null ? priceRange?.min || 0 : range.min;
+                                    const newMax = range.max === null ? priceRange?.max || 1000 : range.max;
                                     setPriceMin(newMin);
                                     setPriceMax(newMax);
                                 }}
@@ -570,10 +605,10 @@ function FilterSection({
                             <Input 
                                 type="number" 
                                 value={priceMin}
-                                onChange={(e) => setPriceMin(parseInt(e.target.value) || priceRange.min)}
-                                min={priceRange.min}
-                                max={priceRange.max}
-                                className="h-10 border-gray-300 focus:border-black focus:ring-black"
+                                onChange={(e) => setPriceMin(parseInt(e.target.value) || priceRange?.min || 0)}
+                                min={priceRange?.min || 0}
+                                max={priceRange?.max || 1000}
+                                className="h-10 border-gray-300 focus:border-black focus:ring-black text-black"
                             />
                         </div>
                         <div>
@@ -581,14 +616,14 @@ function FilterSection({
                             <Input 
                                 type="number" 
                                 value={priceMax}
-                                onChange={(e) => setPriceMax(parseInt(e.target.value) || priceRange.max)}
-                                min={priceRange.min}
-                                max={priceRange.max}
-                                className="h-10 border-gray-300 focus:border-black focus:ring-black"
+                                onChange={(e) => setPriceMax(parseInt(e.target.value) || priceRange?.max || 1000)}
+                                min={priceRange?.min || 0}
+                                max={priceRange?.max || 1000}
+                                className="h-10 border-gray-300 focus:border-black focus:ring-black text-black"
                             />
                         </div>
                     </div>
-                    <div className="text-sm text-gray-700 text-center font-medium bg-gray-50 py-2 px-3 rounded-md">
+                    <div className="text-sm text-gray-700 text-center font-medium bg-gray-200 py-2 px-3 rounded-md">
                         ${priceMin} - ${priceMax}
                     </div>
                 </div>
@@ -599,161 +634,4 @@ function FilterSection({
             </Button>
         </div>
     );
-}
-
-// Quick View Modal Component
-interface QuickViewModalProps {
-    product: Product;
-    isOpen: boolean;
-    onClose: () => void;
-    onAddToCart: (quantity: number) => void;
-    onNavigateToProduct: () => void;
-}
-
-function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToProduct }: QuickViewModalProps) {
-    const [quantity, setQuantity] = useState(1);
-    const [imageSrc, setImageSrc] = useState(product.image);
-
-    const decreaseQuantity = () => {
-        if (quantity > 1) setQuantity(quantity - 1);
-    };
-
-    const increaseQuantity = () => {
-        if (quantity < product.stockQuantity) setQuantity(quantity + 1);
-    };
-
-    const handleImageError = () => {
-        setImageSrc('/images/product.png');
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white" aria-describedby="quick-view-description">
-                <DialogHeader>
-                    <DialogTitle className="text-gray-900">Quick View</DialogTitle>
-                </DialogHeader>
-                <div id="quick-view-description" className="sr-only">
-                    Quick view modal for {product.name}. View product details, select quantity, and add to cart.
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Product Image */}
-                    <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
-                        <img 
-                            src={imageSrc} 
-                            alt={product.name}
-                            onError={handleImageError}
-                            className="w-full h-full object-cover"
-                        />
-                    </div>
-                    
-                    {/* Product Details */}
-                    <div className="space-y-4">
-                        {product.badge && (
-                            <Badge 
-                                variant={product.badge === 'Sale' ? 'destructive' : 'secondary'}
-                                className="w-fit"
-                            >
-                                {product.badge}
-                            </Badge>
-                        )}
-                        
-                        <div>
-                            <h2 className="text-2xl font-bold text-gray-900">{product.name}</h2>
-                            {product.category && (
-                                <p className="text-sm text-gray-600 mt-1">{product.category.name}</p>
-                            )}
-                        </div>
-                        
-                        {/* Rating */}
-                        <div className="flex items-center space-x-2">
-                            <div className="flex">
-                                {renderStars(product.rating)}
-                            </div>
-                            <span className="text-sm text-gray-600">
-                                {product.rating} ({product.reviews} reviews)
-                            </span>
-                        </div>
-                        
-                        {/* Price */}
-                        <div className="flex items-center space-x-3">
-                            <span className="text-3xl font-bold text-black">${product.price}</span>
-                            {product.originalPrice && (
-                                <span className="text-xl text-gray-500 line-through">
-                                    ${product.originalPrice}
-                                </span>
-                            )}
-                        </div>
-                        
-                        {/* Stock Status */}
-                        <div className="flex items-center space-x-2">
-                            <div className={`w-2 h-2 rounded-full ${product.inStock ? 'bg-green-500' : 'bg-red-500'}`} />
-                            <span className="text-sm text-gray-600">
-                                {product.inStock ? `${product.stockQuantity} in stock` : 'Out of stock'}
-                            </span>
-                        </div>
-                        
-                        {/* Quantity Selector */}
-                        {product.inStock && (
-                            <div className="space-y-3">
-                                <Label className="text-sm font-medium">Quantity</Label>
-                                <div className="flex items-center space-x-3">
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={decreaseQuantity}
-                                        disabled={quantity <= 1}
-                                        className="h-8 w-8"
-                                    >
-                                        <Minus className="w-4 h-4" />
-                                    </Button>
-                                    <span className="w-12 text-center font-medium">{quantity}</span>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={increaseQuantity}
-                                        disabled={quantity >= product.stockQuantity}
-                                        className="h-8 w-8"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {/* Action Buttons */}
-                        <div className="space-y-3 pt-4">
-                            <Button 
-                                className="w-full" 
-                                disabled={!product.inStock}
-                                onClick={() => onAddToCart(quantity)}
-                            >
-                                <ShoppingCart className="w-4 h-4 mr-2" />
-                                {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-                            </Button>
-                            
-                            <Button 
-                                variant="outline" 
-                                className="w-full"
-                                onClick={onNavigateToProduct}
-                            >
-                                View Full Details
-                            </Button>
-                            
-                            <Button variant="outline" size="sm" className="w-full">
-                                <Heart className="w-4 h-4 mr-2" />
-                                Add to Wishlist
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-// Product Card Component
-interface ProductCardProps {
-    product: Product;
-    viewMode: 'grid' | 'list';
 }

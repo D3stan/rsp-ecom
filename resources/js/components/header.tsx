@@ -17,7 +17,7 @@ interface HeaderProps {
 }
 
 export default function Header({ transparent = false }: HeaderProps) {
-    const { auth } = usePage<SharedData>().props;
+    const { auth, name } = usePage<SharedData>().props;
     const { t, locale, changeLocale, isLoading } = useTranslation();
 
     return (
@@ -31,7 +31,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                     {/* Logo */}
                     <div className="flex-shrink-0">
                         <Link href="/" className={`text-2xl font-bold ${transparent ? 'text-white' : 'text-black'}`}>
-                            Store
+                            {name || 'Store'}
                         </Link>
                     </div>
 
@@ -68,16 +68,17 @@ export default function Header({ transparent = false }: HeaderProps) {
 
                         {/* User Actions */}
                         <div className="flex items-center space-x-3">
+
+                            <Button variant="ghost" size="icon" className={`relative ${transparent ? 'text-white hover:bg-white/10' : 'text-black border-gray-200'}`}>
+                                <ShoppingCart className="w-5 h-5" />
+                                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                                    0
+                                </Badge>
+                            </Button>
                             {auth.user ? (
                                 <>
-                                    <Button variant="ghost" size="icon" className={transparent ? 'text-white hover:bg-white/10' : ''}>
+                                    <Button variant="ghost" size="icon" className={transparent ? 'text-white hover:bg-white/10' : 'text-black'}>
                                         <Heart className="w-5 h-5" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className={`relative ${transparent ? 'text-white hover:bg-white/10' : ''}`}>
-                                        <ShoppingCart className="w-5 h-5" />
-                                        <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                                            3
-                                        </Badge>
                                     </Button>
                                     <Link href={route('dashboard')}>
                                         <Button variant="ghost" size="icon" className={transparent ? 'text-white hover:bg-white/10' : ''}>
@@ -87,19 +88,13 @@ export default function Header({ transparent = false }: HeaderProps) {
                                 </>
                             ) : (
                                 <>
-                                    <Button variant="ghost" size="icon" className={`relative ${transparent ? 'text-white hover:bg-white/10' : ''}`}>
-                                        <ShoppingCart className="w-5 h-5" />
-                                        <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                                            0
-                                        </Badge>
-                                    </Button>
                                     <Link href={route('login')}>
                                         <Button variant={transparent ? "ghost" : "outline"} size="sm" className={transparent ? 'text-white border-white/20 hover:bg-white/10' : ''}>
                                             {t('login')}
                                         </Button>
                                     </Link>
                                     <Link href={route('register')}>
-                                        <Button size="sm" className={transparent ? 'bg-white text-black hover:bg-white/90' : ''}>
+                                        <Button size="sm" className={transparent ? 'bg-white text-black hover:bg-white/90' : 'hover:bg-gray-300'}>
                                             {t('register')}
                                         </Button>
                                     </Link>
