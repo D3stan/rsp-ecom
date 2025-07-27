@@ -2,8 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Database\Seeders\SeederConfig;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -13,29 +12,64 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create an admin user
-        User::factory()->create([
-            'name' => 'Admin User',
-            'email' => 'admin@rspecommerce.com',
-            'role' => 'admin',
-            'is_active' => true,
-            'phone' => '+1234567890',
-        ]);
-
-        // Create a test customer
-        User::factory()->create([
-            'name' => 'Test Customer',
-            'email' => 'customer@example.com',
-            'role' => 'customer',
-            'is_active' => true,
-            'phone' => '+1987654321',
-        ]);
-
-        // Seed master data
+        $this->command->info('Starting database seeding...');
+        $this->command->info('Volume multiplier: ' . SeederConfig::VOLUME_MULTIPLIER);
+        
+        // Seed in the correct order to maintain foreign key constraints
         $this->call([
+            // Master data first (no dependencies)
             CategorySeeder::class,
             SizeSeeder::class,
             SettingSeeder::class,
+            PageSeeder::class,
+            
+            // Users (no dependencies)
+            UserSeeder::class,
+            
+            // Products (depends on categories)
+            ProductSeeder::class,
+            
+            // Addresses (depends on users)
+            AddressSeeder::class,
+            
+            // Orders (depends on users, addresses, products)
+            OrderSeeder::class,
+            
+            // Reviews (depends on users, products)
+            ReviewSeeder::class,
+            
+            // Wishlists (depends on users, products)
+            WishlistSeeder::class,
         ]);
+        
+        $this->command->info('Database seeding completed successfully!');
+        $this->showSeedingSummary();
+    }
+    
+    /**
+     * Show a summary of what was seeded
+     */
+    private function showSeedingSummary(): void
+    {
+        $this->command->info('');
+        $this->command->info('=== SEEDING SUMMARY ===');
+        $this->command->table(['Model', 'Count'], [
+            ['Categories', \App\Models\Category::count()],
+            ['Sizes', \App\Models\Size::count()],
+            ['Settings', \App\Models\Setting::count()],
+            ['Pages', \App\Models\Page::count()],
+            ['Users', \App\Models\User::count()],
+            ['Products', \App\Models\Product::count()],
+            ['Addresses', \App\Models\Address::count()],
+            ['Orders', \App\Models\Order::count()],
+            ['Order Items', \App\Models\OrderItem::count()],
+            ['Reviews', \App\Models\Review::count()],
+            ['Wishlists', \App\Models\Wishlist::count()],
+        ]);
+        
+        $this->command->info('');
+        $this->command->info('Test accounts created:');
+        $this->command->info('Admin: admin@example.com / password');
+        $this->command->info('Test User: test@example.com / password');
     }
 }
