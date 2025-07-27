@@ -1,33 +1,25 @@
 import { type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Header from '@/components/header';
+import ProductCard from '@/components/ProductCard';
 import { useState, useEffect, useCallback } from 'react';
 import { 
     Search, 
-    ShoppingCart, 
-    Star, 
-    Heart,
     Filter,
     Grid3X3,
     List,
-    Eye,
     ChevronLeft,
     ChevronRight,
     X,
-    Plus,
-    Minus
+    Star
 } from 'lucide-react';
 
-interface Product {
+export interface Product {
     id: number;
     name: string;
     slug: string;
@@ -206,7 +198,7 @@ export default function Products() {
 
     return (
         <>
-            <Head title="Products - Your Store" />
+            <Head title="Products" />
             
             <div className="min-h-screen bg-gray-50">
                 {/* Header */}
@@ -764,179 +756,4 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
 interface ProductCardProps {
     product: Product;
     viewMode: 'grid' | 'list';
-}
-
-function ProductCard({ product, viewMode }: ProductCardProps) {
-    const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-    const [quantity] = useState(1); // Removed setQuantity since it's not used
-    const [imageSrc, setImageSrc] = useState(product.image);
-
-    const handleAddToCart = () => {
-        // TODO: Implement add to cart functionality
-        console.log('Adding to cart:', product.id, quantity);
-    };
-
-    const handleNavigateToProduct = () => {
-        // TODO: Navigate to single product page when implemented
-        router.visit(`/products/${product.slug}`);
-    };
-
-    const handleImageError = () => {
-        setImageSrc('/images/product.png');
-    };
-    if (viewMode === 'list') {
-        return (
-            <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200">
-                <div className="flex">
-                    <div className="w-48 h-48 flex-shrink-0 bg-gray-50">
-                        <img 
-                            src={imageSrc} 
-                            alt={product.name}
-                            onError={handleImageError}
-                            className="w-full h-full object-cover"
-                        />
-                    </div>
-                    <CardContent className="flex-1 p-8 bg-white">
-                        <div className="flex justify-between h-full">
-                            <div className="flex-1">
-                                {product.badge && (
-                                    <Badge 
-                                        variant={product.badge === 'Sale' ? 'destructive' : 'secondary'}
-                                        className="mb-3 font-medium"
-                                    >
-                                        {product.badge}
-                                    </Badge>
-                                )}
-                                <h3 className="text-2xl font-bold mb-2 text-gray-900">{product.name}</h3>
-                                {product.category && (
-                                    <p className="text-base text-gray-600 mb-3 font-medium">{product.category.name}</p>
-                                )}
-                                <div className="flex items-center space-x-2 mb-4">
-                                    <div className="flex">
-                                        {renderStars(product.rating)}
-                                    </div>
-                                    <span className="text-base text-gray-500 font-medium">({product.reviews})</span>
-                                </div>
-                                <div className="flex items-center space-x-3">
-                                    <span className="text-3xl font-bold text-gray-900">${product.price}</span>
-                                    {product.originalPrice && (
-                                        <span className="text-xl text-gray-500 line-through">
-                                            ${product.originalPrice}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex flex-col space-y-3 ml-8">
-                                <Button 
-                                    size="lg" 
-                                    variant="outline"
-                                    className="w-full font-semibold"
-                                    onClick={() => setIsQuickViewOpen(true)}
-                                >
-                                    <Eye className="w-5 h-5 mr-2" />
-                                    Quick View
-                                </Button>
-                                <Button 
-                                    size="lg" 
-                                    disabled={!product.inStock}
-                                    className="w-full font-semibold bg-black text-white hover:bg-gray-900 hover:shadow-lg transition-all duration-200"
-                                    onClick={handleAddToCart}
-                                >
-                                    <ShoppingCart className="w-5 h-5 mr-2 text-white" />
-                                    {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-                                </Button>
-                                <Button variant="outline" size="lg" className="w-full">
-                                    <Heart className="w-5 h-5 mr-2" />
-                                    Wishlist
-                                </Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </div>
-
-                {/* Quick View Modal */}
-                <QuickViewModal
-                    product={product}
-                    isOpen={isQuickViewOpen}
-                    onClose={() => setIsQuickViewOpen(false)}
-                    onAddToCart={handleAddToCart}
-                    onNavigateToProduct={handleNavigateToProduct}
-                />
-            </Card>
-        );
-    }
-
-    return (
-        <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border border-gray-200 flex flex-col h-full">
-            <div className="relative">
-                {product.badge && (
-                    <Badge 
-                        variant={product.badge === 'Sale' ? 'destructive' : 'secondary'}
-                        className="absolute top-4 left-4 z-10 font-medium"
-                    >
-                        {product.badge}
-                    </Badge>
-                )}
-                <div className="aspect-square overflow-hidden bg-gray-50">
-                    <img 
-                        src={imageSrc} 
-                        alt={product.name}
-                        onError={handleImageError}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                </div>
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                    <Button 
-                        className="opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                        size="sm"
-                        onClick={() => setIsQuickViewOpen(true)}
-                    >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Quick View
-                    </Button>
-                </div>
-            </div>
-            <CardContent className="p-6 bg-white flex flex-col h-full">
-                <div className="flex-1">
-                    {product.category && (
-                        <p className="text-sm text-gray-600 mb-2 font-medium">{product.category.name}</p>
-                    )}
-                    <h3 className="font-bold text-lg mb-3 line-clamp-2 text-gray-900 leading-tight">{product.name}</h3>
-                    <div className="flex items-center space-x-2 mb-4">
-                        <div className="flex">
-                            {renderStars(product.rating)}
-                        </div>
-                        <span className="text-sm text-gray-500 font-medium">({product.reviews})</span>
-                    </div>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-2">
-                            <span className="text-xl font-bold text-gray-900">${product.price}</span>
-                            {product.originalPrice && (
-                                <span className="text-base text-gray-500 line-through">
-                                    ${product.originalPrice}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-                <Button 
-                    className="w-full h-11 font-semibold bg-black text-white hover:bg-gray-900 hover:shadow-lg transition-all duration-200 mt-auto" 
-                    disabled={!product.inStock}
-                    onClick={handleAddToCart}
-                >
-                    <ShoppingCart className="w-5 h-5 mr-2 text-white" />
-                    {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-                </Button>
-            </CardContent>
-
-            {/* Quick View Modal */}
-            <QuickViewModal
-                product={product}
-                isOpen={isQuickViewOpen}
-                onClose={() => setIsQuickViewOpen(false)}
-                onAddToCart={handleAddToCart}
-                onNavigateToProduct={handleNavigateToProduct}
-            />
-        </Card>
-    );
 }
