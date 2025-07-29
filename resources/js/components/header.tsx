@@ -75,31 +75,16 @@ export default function Header({ transparent = false }: HeaderProps) {
                                     0
                                 </Badge>
                             </Button>
-                            {auth.user ? (
-                                <>
-                                    <Button variant="ghost" size="icon" className={transparent ? 'text-white hover:bg-white/10' : 'text-black'}>
-                                        <Heart className="w-5 h-5" />
-                                    </Button>
-                                    <Link href={route('dashboard')}>
-                                        <Button variant="ghost" size="icon" className={transparent ? 'text-white hover:bg-white/10' : ''}>
-                                            <User className="w-5 h-5" />
-                                        </Button>
-                                    </Link>
-                                </>
-                            ) : (
-                                <>
-                                    <Link href={route('login')}>
-                                        <Button variant={transparent ? "ghost" : "outline"} size="sm" className={transparent ? 'text-white border-white/20 hover:bg-white/10' : ''}>
-                                            {t('login')}
-                                        </Button>
-                                    </Link>
-                                    <Link href={route('register')}>
-                                        <Button size="sm" className={transparent ? 'bg-white text-black hover:bg-white/90' : 'hover:bg-gray-300'}>
-                                            {t('register')}
-                                        </Button>
-                                    </Link>
-                                </>
+                            {auth.user && (
+                                <Button variant="ghost" size="icon" className={transparent ? 'text-white hover:bg-white/10' : 'text-black'}>
+                                    <Heart className="w-5 h-5" />
+                                </Button>
                             )}
+                            <Link href={auth.user ? route('dashboard') : route('login')}>
+                                <Button variant="ghost" size="icon" className={transparent ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100'}>
+                                    <User className="w-5 h-5" />
+                                </Button>
+                            </Link>
                         </div>
                     </div>
                 </div>
