@@ -205,7 +205,7 @@ export default function Home() {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {featuredProducts.map((product: Product) => (
                                 <Card key={product.id} className="group cursor-pointer hover:shadow-lg transition-shadow py-0">
                                     <div className="relative overflow-hidden rounded-t-xl">
@@ -226,7 +226,7 @@ export default function Home() {
                                             {t('add_to_cart')}
                                         </Button>
                                     </div>
-                                    <CardContent className="p-4">
+                                    <CardContent className="p-4 bg-white">
                                         <h3 className="font-semibold text-black mb-2 line-clamp-2">
                                             {product.name}
                                         </h3>
