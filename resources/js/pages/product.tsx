@@ -8,6 +8,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import Header from '@/components/header';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cartService, type AddToCartData } from '@/services/cartService';
+import { useToast } from '@/contexts/ToastContext';
 import { 
     Star, 
     ChevronLeft,
@@ -89,6 +91,7 @@ const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
 export default function Product() {
     const { product, reviews, relatedProducts, breadcrumb } = usePage<ProductPageProps>().props;
     const isMobile = useIsMobile();
+    const { addToast } = useToast();
     
     // State for image carousel
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -99,6 +102,7 @@ export default function Product() {
     const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
     const [isSpecsOpen, setIsSpecsOpen] = useState(false);
     const [isReviewsOpen, setIsReviewsOpen] = useState(false);
+    const [isAddingToCart, setIsAddingToCart] = useState(false);
 
     const handleImageChange = (index: number) => {
         setCurrentImageIndex(index);
@@ -123,13 +127,46 @@ export default function Product() {
         });
     };
 
-    const handleAddToCart = () => {
-        // TODO: Implement add to cart functionality
-        console.log('Adding to cart:', {
-            productId: product.id,
-            quantity,
-            selectedSize
-        });
+    const handleAddToCart = async () => {
+        if (isAddingToCart) return;
+        
+        setIsAddingToCart(true);
+        
+        try {
+            const cartData: AddToCartData = {
+                product_id: product.id,
+                quantity: quantity,
+            };
+            
+            if (selectedSize) {
+                cartData.size_id = parseInt(selectedSize);
+            }
+            
+            const response = await cartService.addToCart(cartData);
+            
+            if (response.success) {
+                addToast({
+                    type: 'success',
+                    title: 'Added to cart!',
+                    description: `${product.name} has been added to your cart.`,
+                });
+            } else {
+                addToast({
+                    type: 'error',
+                    title: 'Failed to add to cart',
+                    description: response.message,
+                });
+            }
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            addToast({
+                type: 'error',
+                title: 'Error',
+                description: 'An unexpected error occurred. Please try again.',
+            });
+        } finally {
+            setIsAddingToCart(false);
+        }
     };
 
     const handleAddToWishlist = () => {
@@ -335,12 +372,12 @@ export default function Product() {
                             <div className="space-y-3">
                                 <Button 
                                     onClick={handleAddToCart}
-                                    disabled={!product.inStock || (product.sizes.length > 0 && !selectedSize)}
+                                    disabled={!product.inStock || (product.sizes.length > 0 && !selectedSize) || isAddingToCart}
                                     className="w-full h-12 text-lg font-semibold"
                                     size="lg"
                                 >
                                     <ShoppingCart className="w-5 h-5 mr-2" />
-                                    {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                                    {isAddingToCart ? 'Adding...' : (product.inStock ? 'Add to Cart' : 'Out of Stock')}
                                 </Button>
                                 
                                 <div className="grid grid-cols-2 gap-3">
@@ -515,11 +552,11 @@ export default function Product() {
                             </div>
                             <Button 
                                 onClick={handleAddToCart}
-                                disabled={!product.inStock || (product.sizes.length > 0 && !selectedSize)}
+                                disabled={!product.inStock || (product.sizes.length > 0 && !selectedSize) || isAddingToCart}
                                 className="flex-1 h-12 font-semibold"
                             >
                                 <ShoppingCart className="w-5 h-5 mr-2" />
-                                {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                                {isAddingToCart ? 'Adding...' : (product.inStock ? 'Add to Cart' : 'Out of Stock')}
                             </Button>
                         </div>
                     </div>

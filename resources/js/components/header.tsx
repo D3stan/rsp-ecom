@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import useTranslation from '@/hooks/useTranslation';
 import { useState, useRef, useEffect } from 'react';
+import { cartService } from '@/services/cartService';
 
 interface HeaderProps {
     currentPage?: 'home' | 'products' | 'about' | 'contact';
@@ -25,7 +26,22 @@ export default function Header({ transparent = false }: HeaderProps) {
     const { auth, name } = usePage<SharedData>().props;
     const { t, locale, changeLocale, isLoading } = useTranslation();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [cartCount, setCartCount] = useState(0);
     const menuRef = useRef<HTMLDivElement>(null);
+
+    // Load cart count on mount
+    useEffect(() => {
+        const loadCartCount = async () => {
+            try {
+                const count = await cartService.getCartCount();
+                setCartCount(count);
+            } catch (error) {
+                console.error('Failed to load cart count:', error);
+            }
+        };
+        
+        loadCartCount();
+    }, []);
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -107,12 +123,16 @@ export default function Header({ transparent = false }: HeaderProps) {
                         {/* User Actions */}
                         <div className="flex items-center space-x-3">
 
-                            <Button variant="ghost" size="icon" className={`relative ${transparent ? 'text-white hover:bg-white/10' : 'text-black border-gray-200'}`}>
-                                <ShoppingCart className="w-5 h-5" />
-                                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                                    0
-                                </Badge>
-                            </Button>
+                            <Link href="/cart">
+                                <Button variant="ghost" size="icon" className={`relative ${transparent ? 'text-white hover:bg-white/10' : 'text-black border-gray-200'}`}>
+                                    <ShoppingCart className="w-5 h-5" />
+                                    {cartCount > 0 && (
+                                        <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                                            {cartCount > 99 ? '99+' : cartCount}
+                                        </Badge>
+                                    )}
+                                </Button>
+                            </Link>
                             {auth.user && (
                                 <Button variant="ghost" size="icon" className={transparent ? 'text-white hover:bg-white/10' : 'text-black'}>
                                     <Heart className="w-5 h-5" />

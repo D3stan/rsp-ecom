@@ -6,6 +6,8 @@ import Header from '@/components/header';
 import { useEffect, useRef, useState } from 'react';
 import useTranslation from '@/hooks/useTranslation';
 import { useMobileInteractions } from '@/hooks/use-mobile-interactions';
+import { cartService, type AddToCartData } from '@/services/cartService';
+import { useToast } from '@/contexts/ToastContext';
 import { 
     Star, 
     ArrowRight,
@@ -83,12 +85,53 @@ const renderStars = (rating: number) => {
 export default function Home() {
     const parallaxRef = useRef<HTMLDivElement>(null);
     const [videoLoaded, setVideoLoaded] = useState(false);
+    const [addingToCartId, setAddingToCartId] = useState<number | null>(null);
     const { t, isLoading } = useTranslation();
     const { featuredProducts, categories } = usePage<HomePageProps>().props;
+    const { addToast } = useToast();
     
     // Mobile interactions for products and categories
     const productInteractions = useMobileInteractions<number>();
     const categoryInteractions = useMobileInteractions<number>();
+
+    const handleAddToCart = async (productId: number) => {
+        if (addingToCartId === productId) return;
+        
+        setAddingToCartId(productId);
+        
+        try {
+            const cartData: AddToCartData = {
+                product_id: productId,
+                quantity: 1,
+            };
+            
+            const response = await cartService.addToCart(cartData);
+            
+            if (response.success) {
+                const product = featuredProducts.find(p => p.id === productId);
+                addToast({
+                    type: 'success',
+                    title: 'Added to cart!',
+                    description: `${product?.name || 'Product'} has been added to your cart.`,
+                });
+            } else {
+                addToast({
+                    type: 'error',
+                    title: 'Failed to add to cart',
+                    description: response.message,
+                });
+            }
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            addToast({
+                type: 'error',
+                title: 'Error',
+                description: 'An unexpected error occurred. Please try again.',
+            });
+        } finally {
+            setAddingToCartId(null);
+        }
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -248,14 +291,14 @@ export default function Home() {
                                                             ? (isActive ? 'opacity-100' : 'opacity-0') 
                                                             : 'opacity-0 group-hover:opacity-100'
                                                     }`}
+                                                    disabled={addingToCartId === product.id}
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
-                                                        // TODO: Add to cart functionality
-                                                        console.log('Add to cart:', product.id);
+                                                        handleAddToCart(product.id);
                                                     }}
                                                 >
-                                                    {t('add_to_cart')}
+                                                    {addingToCartId === product.id ? 'Adding...' : t('add_to_cart')}
                                                 </Button>
                                             </div>
                                             <div className="p-4">

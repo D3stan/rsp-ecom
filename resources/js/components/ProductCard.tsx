@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import type { Product } from '@/pages/products';
+import { cartService, type AddToCartData } from '@/services/cartService';
+import { useToast } from '@/contexts/ToastContext';
 import { 
     ShoppingCart, 
     Star, 
@@ -188,6 +190,8 @@ interface ProductCardProps {
 export default function ProductCard({ product, viewMode }: ProductCardProps) {
     const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
     const [quantity] = useState(1);
+    const [isAddingToCart, setIsAddingToCart] = useState(false);
+    const { addToast } = useToast();
     // Use a more reliable fallback strategy
     const defaultImage = '/images/product.png';
     const [imageSrc, setImageSrc] = useState(() => {
@@ -197,9 +201,42 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
         return product.image;
     });
 
-    const handleAddToCart = () => {
-        // TODO: Implement add to cart functionality
-        console.log('Adding to cart:', product.id, quantity);
+    const handleAddToCart = async (addQuantity: number = quantity) => {
+        if (isAddingToCart) return;
+        
+        setIsAddingToCart(true);
+        
+        try {
+            const cartData: AddToCartData = {
+                product_id: product.id,
+                quantity: addQuantity,
+            };
+            
+            const response = await cartService.addToCart(cartData);
+            
+            if (response.success) {
+                addToast({
+                    type: 'success',
+                    title: 'Added to cart!',
+                    description: `${product.name} has been added to your cart.`,
+                });
+            } else {
+                addToast({
+                    type: 'error',
+                    title: 'Failed to add to cart',
+                    description: response.message,
+                });
+            }
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            addToast({
+                type: 'error',
+                title: 'Error',
+                description: 'An unexpected error occurred. Please try again.',
+            });
+        } finally {
+            setIsAddingToCart(false);
+        }
     };
 
     const handleNavigateToProduct = () => {

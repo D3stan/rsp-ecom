@@ -44,6 +44,12 @@ class Product extends Model
         return $this->belongsTo(Size::class);
     }
 
+    // For compatibility with frontend, return single size as array
+    public function sizes()
+    {
+        return $this->size ? [$this->size] : [];
+    }
+
     public function cartItems(): HasMany
     {
         return $this->hasMany(CartItem::class);
