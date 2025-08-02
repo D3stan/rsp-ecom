@@ -56,6 +56,23 @@ export default function Cart() {
     const [isUpdating, setIsUpdating] = useState<number | null>(null);
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
+    // Image handling helper
+    const getImageSrc = (item: CartItem) => {
+        const defaultImage = '/images/product.png';
+        if (!item.product.image || item.product.image === '' || item.product.image === 'product.png') {
+            return defaultImage;
+        }
+        console.log('Image source:', item.product.image);
+        return item.product.image;
+    };
+
+    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+        const target = e.target as HTMLImageElement;
+        if (!target.src.includes('product.png')) {
+            target.src = '/images/product.png';
+        }
+    };
+
     const updateQuantity = async (itemId: number, newQuantity: number) => {
         if (newQuantity < 1) return;
         
@@ -172,7 +189,7 @@ export default function Cart() {
         <>
             <Head title={`Your Cart (${totalItems})`} />
             
-            <div className="min-h-screen bg-white">
+            <div className={`min-h-screen bg-white ${isMobile ? 'pb-24' : ''}`}>
                 <Header />
                 
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -192,19 +209,22 @@ export default function Cart() {
                             {cartItems.map((item) => (
                                 <div
                                     key={item.id}
-                                    className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                                    className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow"
                                 >
-                                    <div className="flex items-start space-x-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-4">
                                         {/* Product Image */}
                                         <Link
                                             href={`/products/${item.product.slug}`}
-                                            className="flex-shrink-0"
+                                            className="flex-shrink-0 mx-auto sm:mx-0"
                                         >
-                                            <img
-                                                src={item.product.image}
-                                                alt={item.product.name}
-                                                className="w-20 h-20 object-cover rounded-lg hover:opacity-80 transition-opacity"
-                                            />
+                                            <div className="w-20 h-20 sm:w-24 sm:h-24 overflow-hidden rounded-lg bg-gray-100">
+                                                <img
+                                                    src={getImageSrc(item)}
+                                                    alt={item.product.name}
+                                                    onError={handleImageError}
+                                                    className="w-full h-full object-cover hover:opacity-80 transition-opacity"
+                                                />
+                                            </div>
                                         </Link>
 
                                         {/* Product Details */}
@@ -213,30 +233,33 @@ export default function Cart() {
                                                 href={`/products/${item.product.slug}`}
                                                 className="block hover:text-blue-600 transition-colors"
                                             >
-                                                <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                                                <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 text-center sm:text-left">
                                                     {item.product.name}
                                                 </h3>
                                             </Link>
                                             
-                                            {item.product.category && (
-                                                <p className="text-sm text-gray-500 mt-1">
-                                                    {item.product.category}
-                                                </p>
-                                            )}
-                                            
-                                            {item.size && (
-                                                <p className="text-sm text-gray-600 mt-1">
-                                                    Size: {item.size}
-                                                </p>
-                                            )}
+                                            <div className="mt-2 text-center sm:text-left">
+                                                {item.product.category && (
+                                                    <p className="text-sm text-gray-500">
+                                                        {item.product.category}
+                                                    </p>
+                                                )}
+                                                
+                                                {item.size && (
+                                                    <p className="text-sm text-gray-600">
+                                                        Size: {item.size}
+                                                    </p>
+                                                )}
+                                            </div>
 
-                                            <div className="flex items-center justify-between mt-4">
+                                            {/* Quantity and Price Section */}
+                                            <div className="mt-4 space-y-3">
                                                 {/* Quantity Controls */}
-                                                <div className="flex items-center space-x-2">
+                                                <div className="flex items-center justify-center sm:justify-start space-x-2">
                                                     <Label className="text-sm font-medium text-gray-700">
                                                         Quantity:
                                                     </Label>
-                                                    <div className="flex items-center border border-gray-300 rounded-lg">
+                                                    <div className="flex items-center border border-gray-300 rounded-lg text-black">
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
@@ -261,9 +284,9 @@ export default function Cart() {
                                                     </div>
                                                 </div>
 
-                                                {/* Price and Remove */}
-                                                <div className="flex items-center space-x-4">
-                                                    <div className="text-right">
+                                                {/* Price and Remove - Now under quantity */}
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-center sm:text-left">
                                                         <p className="text-lg font-semibold text-gray-900">
                                                             ${item.total.toFixed(2)}
                                                         </p>
@@ -324,7 +347,7 @@ export default function Cart() {
                                         value={orderNotes}
                                         onChange={(e) => setOrderNotes(e.target.value)}
                                         maxLength={200}
-                                        className="resize-none"
+                                        className="resize-none bg-white text-gray-900 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                                         rows={3}
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
