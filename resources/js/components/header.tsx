@@ -173,7 +173,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                         <div className="flex items-center space-x-2">
                             <Globe className="w-4 h-4 text-gray-600" />
                             <Select value={locale} onValueChange={(value) => { changeLocale(value); closeMenu(); }} disabled={isLoading}>
-                                <SelectTrigger className="w-full h-8 border border-gray-300">
+                                <SelectTrigger className="w-full h-8 border border-gray-300 text-black">
                                     {isLoading ? (
                                         <div className="animate-spin rounded-full h-3 w-3 border border-current border-t-transparent" />
                                     ) : (

@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import Header from '@/components/header';
 import { useEffect, useRef, useState } from 'react';
 import useTranslation from '@/hooks/useTranslation';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useMobileInteractions } from '@/hooks/use-mobile-interactions';
 import { 
     Star, 
     ArrowRight,
@@ -85,6 +87,10 @@ export default function Home() {
     const [videoLoaded, setVideoLoaded] = useState(false);
     const { t, isLoading } = useTranslation();
     const { featuredProducts, categories } = usePage<HomePageProps>().props;
+    
+    // Mobile interactions for products and categories
+    const productInteractions = useMobileInteractions<number>();
+    const categoryInteractions = useMobileInteractions<number>();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -206,26 +212,44 @@ export default function Home() {
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {featuredProducts.map((product: Product) => (
-                                <Card key={product.id} className="group cursor-pointer hover:shadow-lg transition-shadow py-0">
-                                    <div className="relative overflow-hidden rounded-t-xl">
-                                        <img 
-                                            src={product.image} 
-                                            alt={product.name}
-                                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-200"
-                                        />
-                                        {product.badge && (
-                                            <Badge className="absolute top-2 left-2">
-                                                {product.badge}
-                                            </Badge>
-                                        )}
-                                        <Button 
-                                            size="sm" 
-                                            className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            {t('add_to_cart')}
-                                        </Button>
-                                    </div>
+                            {featuredProducts.map((product: Product) => {
+                                const isActive = productInteractions.isActive(product.id);
+                                return (
+                                    <Card 
+                                        key={product.id} 
+                                        className={`group cursor-pointer transition-shadow py-0 ${
+                                            productInteractions.isMobile 
+                                                ? (isActive ? 'shadow-lg touch-feedback' : 'shadow-sm hover:shadow-sm touch-feedback') 
+                                                : 'hover:shadow-lg'
+                                        }`}
+                                        {...productInteractions.getInteractionProps(product.id)}
+                                    >
+                                        <div className="relative overflow-hidden rounded-t-xl">
+                                            <img 
+                                                src={product.image} 
+                                                alt={product.name}
+                                                className={`w-full h-48 object-cover transition-transform duration-200 ${
+                                                    productInteractions.isMobile 
+                                                        ? (isActive ? 'scale-105' : 'scale-100') 
+                                                        : 'group-hover:scale-105'
+                                                }`}
+                                            />
+                                            {product.badge && (
+                                                <Badge className="absolute top-2 left-2">
+                                                    {product.badge}
+                                                </Badge>
+                                            )}
+                                            <Button 
+                                                size="sm" 
+                                                className={`absolute bottom-2 right-2 transition-opacity ${
+                                                    productInteractions.isMobile 
+                                                        ? (isActive ? 'opacity-100' : 'opacity-0') 
+                                                        : 'opacity-0 group-hover:opacity-100'
+                                                }`}
+                                            >
+                                                {t('add_to_cart')}
+                                            </Button>
+                                        </div>
                                     <CardContent className="p-4 bg-white">
                                         <h3 className="font-semibold text-black mb-2 line-clamp-2">
                                             {product.name}
@@ -248,7 +272,8 @@ export default function Home() {
                                         </div>
                                     </CardContent>
                                 </Card>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         <div className="text-center mt-12">
@@ -273,15 +298,27 @@ export default function Home() {
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                             {categories.map((category: Category) => {
                                 const IconComponent = iconMap[category.icon as keyof typeof iconMap] || iconMap.Package;
+                                const isActive = categoryInteractions.isActive(category.id);
                                 return (
                                     <Link 
                                         key={category.id} 
                                         href={`/products/category/${category.slug}`}
                                         className="group"
+                                        {...categoryInteractions.getInteractionProps(category.id, () => {
+                                            window.location.href = `/products/category/${category.slug}`;
+                                        })}
                                     >
-                                        <Card className="h-full text-center hover:shadow-md transition-shadow">
+                                        <Card className={`h-full text-center transition-shadow ${
+                                            categoryInteractions.isMobile 
+                                                ? (isActive ? 'shadow-md touch-feedback' : 'shadow-sm touch-feedback') 
+                                                : 'hover:shadow-md'
+                                        }`}>
                                             <CardContent className="p-6">
-                                                <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
+                                                <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center transition-colors ${
+                                                    categoryInteractions.isMobile 
+                                                        ? (isActive ? 'bg-black text-white' : 'bg-gray-100') 
+                                                        : 'bg-gray-100 group-hover:bg-black group-hover:text-white'
+                                                }`}>
                                                     <IconComponent className="w-6 h-6" />
                                                 </div>
                                                 <h3 className="font-semibold text-black mb-1">
@@ -313,19 +350,19 @@ export default function Home() {
                             <div>
                                 <h4 className="font-semibold mb-4">{t('quick_links')}</h4>
                                 <ul className="space-y-2 text-gray-400">
-                                    <li><Link href="/about" className="hover:text-white">{t('about_us')}</Link></li>
-                                    <li><Link href="/contact" className="hover:text-white">{t('contact')}</Link></li>
-                                    <li><Link href="/faq" className="hover:text-white">{t('faq')}</Link></li>
-                                    <li><Link href="/shipping" className="hover:text-white">{t('shipping_info')}</Link></li>
+                                    <li><Link href="/about" className="hover:text-white footer-link md:footer-link-none">{t('about_us')}</Link></li>
+                                    <li><Link href="/contact" className="hover:text-white footer-link md:footer-link-none">{t('contact')}</Link></li>
+                                    <li><Link href="/faq" className="hover:text-white footer-link md:footer-link-none">{t('faq')}</Link></li>
+                                    <li><Link href="/shipping" className="hover:text-white footer-link md:footer-link-none">{t('shipping_info')}</Link></li>
                                 </ul>
                             </div>
                             
                             <div>
                                 <h4 className="font-semibold mb-4">{t('legal')}</h4>
                                 <ul className="space-y-2 text-gray-400">
-                                    <li><Link href="/privacy" className="hover:text-white">{t('privacy_policy')}</Link></li>
-                                    <li><Link href="/terms" className="hover:text-white">{t('terms_of_service')}</Link></li>
-                                    <li><Link href="/returns" className="hover:text-white">{t('returns')}</Link></li>
+                                    <li><Link href="/privacy" className="hover:text-white footer-link md:footer-link-none">{t('privacy_policy')}</Link></li>
+                                    <li><Link href="/terms" className="hover:text-white footer-link md:footer-link-none">{t('terms_of_service')}</Link></li>
+                                    <li><Link href="/returns" className="hover:text-white footer-link md:footer-link-none">{t('returns')}</Link></li>
                                 </ul>
                             </div>
                             
