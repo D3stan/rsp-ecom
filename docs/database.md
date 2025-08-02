@@ -1,14 +1,18 @@
 # Database Entities Documentation
 
 ## USERS
-Stores information about all system users including customers and administrators.
+Stores information about all system users including customers and administrators. Enhanced with Laravel Cashier (Stripe) billing capabilities.
 
-**Purpose**: Manages user authentication, authorization, and basic profile information.
+**Purpose**: Manages user authentication, authorization, basic profile information, and Stripe customer integration.
 
 **Key Fields**:
 - `role`: Differentiates between customers and admins
 - `email_verified_at`: Ensures email validation before full access
 - `is_active`: Allows soft deactivation of accounts
+- `stripe_id`: Stripe customer ID for payment processing
+- `pm_type`: Default payment method type
+- `pm_last_four`: Last four digits of default payment method
+- `trial_ends_at`: Trial period end date for subscriptions
 
 **Examples**:
 1. **Customer User**:
@@ -19,6 +23,10 @@ Stores information about all system users including customers and administrators
    role: "customer"
    is_active: true
    phone: "+1234567890"
+   stripe_id: "cus_1234567890"
+   pm_type: "card"
+   pm_last_four: "4242"
+   trial_ends_at: null
    ```
 
 2. **Admin User**:
@@ -29,6 +37,10 @@ Stores information about all system users including customers and administrators
    role: "admin"
    is_active: true
    phone: "+1987654321"
+   stripe_id: null
+   pm_type: null
+   pm_last_four: null
+   trial_ends_at: null
    ```
 
 ---
@@ -261,15 +273,20 @@ Individual products added to shopping carts with quantities and pricing.
 ---
 
 ## ORDERS
-Completed purchase transactions with customer and payment information.
+Completed purchase transactions with customer, payment information, and Stripe integration.
 
-**Purpose**: Records finalized purchases with all transaction details.
+**Purpose**: Records finalized purchases with all transaction details and payment processing status.
 
 **Key Fields**:
 - `order_number`: Unique identifier for customer reference
 - `status`: Tracks order fulfillment progress
 - `billing_address_id`/`shipping_address_id`: Foreign keys to specific address records
 - `shipping_amount`: Calculated based on product sizes and destination
+- `stripe_payment_intent_id`: Stripe Payment Intent ID for tracking payments
+- `stripe_checkout_session_id`: Stripe Checkout Session ID for session-based payments
+- `payment_status`: Payment processing status (pending, processing, succeeded, failed, cancelled)
+- `payment_method`: Payment method used (card, bank_transfer, etc.)
+- `stripe_customer_id`: Stripe customer ID for the transaction
 
 **Relationship**: Each order belongs to one user and references specific billing and shipping addresses.
 
@@ -288,6 +305,11 @@ Completed purchase transactions with customer and payment information.
    total_amount: 1121.98
    currency: "USD"
    notes: "Leave at front door"
+   stripe_payment_intent_id: "pi_1234567890"
+   stripe_checkout_session_id: "cs_1234567890"
+   payment_status: "succeeded"
+   payment_method: "card"
+   stripe_customer_id: "cus_1234567890"
    ```
 
 2. **Processing Order**:
@@ -304,6 +326,11 @@ Completed purchase transactions with customer and payment information.
    total_amount: 93.47
    currency: "USD"
    notes: null
+   stripe_payment_intent_id: "pi_0987654321"
+   stripe_checkout_session_id: null
+   payment_status: "processing"
+   payment_method: "card"
+   stripe_customer_id: "cus_1234567890"
    ```
 
 ---
@@ -461,6 +488,64 @@ Dynamic configuration values that can be modified through admin panel.
    type: "json"
    ```
 
+---
+
+## SUBSCRIPTIONS (Laravel Cashier)
+Manages recurring subscription billing through Stripe.
+
+**Purpose**: Handles subscription-based billing, trials, and recurring payments.
+
+**Key Fields**:
+- `user_id`: Links subscription to customer
+- `name`: Subscription identifier (e.g., 'default', 'premium')
+- `stripe_id`: Stripe subscription ID
+- `stripe_status`: Current subscription status
+- `stripe_price`: Stripe price ID
+- `quantity`: Subscription quantity
+- `trial_ends_at`: Trial period end date
+- `ends_at`: Subscription cancellation date
+
+**Examples**:
+1. **Active Subscription**:
+   ```
+   id: 1
+   user_id: 1
+   name: "default"
+   stripe_id: "sub_1234567890"
+   stripe_status: "active"
+   stripe_price: "price_premium_monthly"
+   quantity: 1
+   trial_ends_at: null
+   ends_at: null
+   ```
+
+---
+
+## SUBSCRIPTION_ITEMS (Laravel Cashier)
+Individual items within subscriptions for multi-product subscriptions.
+
+**Purpose**: Manages individual products/services within a subscription.
+
+**Key Fields**:
+- `subscription_id`: Links to parent subscription
+- `stripe_id`: Stripe subscription item ID
+- `stripe_product`: Stripe product ID
+- `stripe_price`: Stripe price ID
+- `quantity`: Item quantity
+
+**Examples**:
+1. **Subscription Item**:
+   ```
+   id: 1
+   subscription_id: 1
+   stripe_id: "si_1234567890"
+   stripe_product: "prod_premium_features"
+   stripe_price: "price_premium_monthly"
+   quantity: 1
+   ```
+
+---
+
 ## ER Scheme
 
 ```mermaid
@@ -474,6 +559,10 @@ erDiagram
         string phone
         enum role "customer, admin"
         boolean is_active
+        string stripe_id
+        string pm_type
+        string pm_last_four
+        timestamp trial_ends_at
         timestamps created_at
         timestamps updated_at
     }
@@ -569,6 +658,11 @@ erDiagram
         decimal total_amount
         string currency
         text notes
+        string stripe_payment_intent_id
+        string stripe_checkout_session_id
+        enum payment_status "pending, processing, succeeded, failed, cancelled"
+        string payment_method
+        string stripe_customer_id
         timestamps created_at
         timestamps updated_at
     }
@@ -623,12 +717,63 @@ erDiagram
         timestamps updated_at
     }
 
+    SUBSCRIPTIONS {
+        int id PK
+        int user_id FK
+        string name
+        string stripe_id UK
+        string stripe_status
+        string stripe_price
+        int quantity
+        timestamp trial_ends_at
+        timestamp ends_at
+        timestamps created_at
+        timestamps updated_at
+    }
+
+    SUBSCRIPTION_ITEMS {
+        int id PK
+        int subscription_id FK
+        string stripe_id UK
+        string stripe_product
+        string stripe_price
+        int quantity
+        timestamps created_at
+        timestamps updated_at
+    }
+
+    SUBSCRIPTIONS {
+        int id PK
+        int user_id FK
+        string name
+        string stripe_id UK
+        string stripe_status
+        string stripe_price
+        int quantity
+        timestamp trial_ends_at
+        timestamp ends_at
+        timestamps created_at
+        timestamps updated_at
+    }
+
+    SUBSCRIPTION_ITEMS {
+        int id PK
+        int subscription_id FK
+        string stripe_id UK
+        string stripe_product
+        string stripe_price
+        int quantity
+        timestamps created_at
+        timestamps updated_at
+    }
+
     %% Relationships
     USERS ||--o{ ADDRESSES : has
     USERS ||--o{ CARTS : has
     USERS ||--o{ ORDERS : places
     USERS ||--o{ WISHLISTS : has
     USERS ||--o{ REVIEWS : writes
+    USERS ||--o{ SUBSCRIPTIONS : has
 
     ADDRESSES ||--o{ ORDERS : "billing address"
     ADDRESSES ||--o{ ORDERS : "shipping address"
@@ -643,4 +788,5 @@ erDiagram
 
     CARTS ||--o{ CART_ITEMS : contains
     ORDERS ||--o{ ORDER_ITEMS : contains
+    SUBSCRIPTIONS ||--o{ SUBSCRIPTION_ITEMS : contains
 ```

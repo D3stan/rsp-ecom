@@ -24,6 +24,11 @@ class Order extends Model
         'total_amount',
         'currency',
         'notes',
+        'stripe_payment_intent_id',
+        'stripe_checkout_session_id',
+        'payment_status',
+        'payment_method',
+        'stripe_customer_id',
     ];
 
     protected $casts = [
@@ -92,6 +97,27 @@ class Order extends Model
         return $query->where('status', 'cancelled');
     }
 
+    // Payment status scopes
+    public function scopePaymentPending($query)
+    {
+        return $query->where('payment_status', 'pending');
+    }
+
+    public function scopePaymentProcessing($query)
+    {
+        return $query->where('payment_status', 'processing');
+    }
+
+    public function scopePaymentSucceeded($query)
+    {
+        return $query->where('payment_status', 'succeeded');
+    }
+
+    public function scopePaymentFailed($query)
+    {
+        return $query->where('payment_status', 'failed');
+    }
+
     // Accessors
     public function getTotalItemsAttribute(): int
     {
@@ -146,6 +172,41 @@ class Order extends Model
         } while (static::where('order_number', $orderNumber)->exists());
 
         return $orderNumber;
+    }
+
+    // Payment helper methods
+    public function hasStripePaymentIntent(): bool
+    {
+        return !empty($this->stripe_payment_intent_id);
+    }
+
+    public function hasStripeCheckoutSession(): bool
+    {
+        return !empty($this->stripe_checkout_session_id);
+    }
+
+    public function isPaymentCompleted(): bool
+    {
+        return $this->payment_status === 'succeeded';
+    }
+
+    public function isPaymentPending(): bool
+    {
+        return in_array($this->payment_status, ['pending', 'processing']);
+    }
+
+    public function isPaymentFailed(): bool
+    {
+        return $this->payment_status === 'failed';
+    }
+
+    public function updatePaymentStatus(string $status, ?string $paymentMethod = null): bool
+    {
+        $this->payment_status = $status;
+        if ($paymentMethod) {
+            $this->payment_method = $paymentMethod;
+        }
+        return $this->save();
     }
 
     // Create order from cart

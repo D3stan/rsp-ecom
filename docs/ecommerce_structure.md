@@ -8,6 +8,8 @@ In particular it has:
 - Intertiajs 2.0
 - MySQL 8.0
 - Shadcn react library
+- Laravel Cashier (Stripe Integration)
+- Stripe Payment Processing
 
 ### Fronted Structure
 ```
@@ -56,6 +58,10 @@ resources/js/
 │   └── Search results (/products/search)
 ├── Cart (/cart)
 ├── Checkout (/checkout) - requires login
+│   ├── Checkout Success (/checkout/success)
+│   ├── Checkout Cancel (/checkout/cancel)
+│   └── Guest Checkout (/checkout/guest)
+├── Payment Methods (/payment-methods) - logged in users
 ├── About (/about)
 ├── Contact (/contact)
 ├── Auth
@@ -111,9 +117,10 @@ resources/js/
 
 ### 7. Settings
 - **General Settings**: Site name, logo, contact info
-- **Payment Settings**: Configure payment gateways
+- **Payment Settings**: Configure Stripe payment gateway, webhook settings
 - **Shipping Settings**: Zones, rates, methods
 - **Email Templates**: Order confirmations, notifications
+- **Tax Settings**: Tax calculation configuration
 
 ## Logged-in User Dashboard
 
@@ -129,6 +136,7 @@ resources/js/
 ### 3. Profile Management
 - **Personal Information**: Name, email, phone
 - **Addresses**: Shipping and billing addresses
+- **Payment Methods**: Saved credit cards and payment methods (via Stripe)
 - **Password**: Change password form
 
 ### 4. Wishlist/Favorites
@@ -158,7 +166,9 @@ resources/js/
 
 ## Performance & Security
 - Implement caching for product catalogs
-- Secure payment processing (PCI compliance)
+- Secure payment processing with Stripe (PCI compliance handled by Stripe)
 - SSL certificates for all pages
 - Rate limiting for API endpoints
 - Image optimization and CDN usage
+- Webhook signature verification for Stripe events
+- Strong Customer Authentication (SCA) support for European customers
