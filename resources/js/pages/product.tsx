@@ -277,7 +277,7 @@ export default function Product() {
                                         Size
                                     </Label>
                                     <Select value={selectedSize} onValueChange={setSelectedSize}>
-                                        <SelectTrigger className="w-full">
+                                        <SelectTrigger className="w-full text-black">
                                             <SelectValue placeholder="Select size" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -310,9 +310,9 @@ export default function Product() {
                                             disabled={quantity <= 1}
                                             className="h-10 w-10 p-0 hover:bg-gray-100"
                                         >
-                                            <Minus className="w-4 h-4" />
+                                            <Minus className="w-4 h-4 text-black" />
                                         </Button>
-                                        <span className="px-4 py-2 text-sm font-medium min-w-[3rem] text-center">
+                                        <span className="px-4 py-2 text-sm font-medium min-w-[3rem] text-center text-black">
                                             {quantity}
                                         </span>
                                         <Button
@@ -322,7 +322,7 @@ export default function Product() {
                                             disabled={quantity >= product.stockQuantity}
                                             className="h-10 w-10 p-0 hover:bg-gray-100"
                                         >
-                                            <Plus className="w-4 h-4" />
+                                            <Plus className="w-4 h-4 text-black" />
                                         </Button>
                                     </div>
                                     <span className="text-sm text-gray-600">
@@ -392,7 +392,7 @@ export default function Product() {
                                         <ChevronDown className="w-5 h-5" />
                                     )}
                                 </CollapsibleTrigger>
-                                <CollapsibleContent className="p-4 border border-gray-200 rounded-lg mt-2">
+                                <CollapsibleContent className="p-4 border border-gray-200 rounded-lg mt-2 text-black">
                                     <div 
                                         className="prose prose-gray max-w-none"
                                         dangerouslySetInnerHTML={{ __html: product.description }}
