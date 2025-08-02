@@ -37,10 +37,9 @@ interface Props {
     stripeKey: string;
 }
 
-export default function GuestCheckout({ cartItems, totals, guestSessionId, stripeKey }: Props) {
+export default function GuestCheckout({ cartItems, totals, guestSessionId }: Props) {
     const [shippingSameAsBilling, setShippingSameAsBilling] = useState(true);
     const [collectTaxId, setCollectTaxId] = useState(false);
-    const [savePaymentInfo, setSavePaymentInfo] = useState(false);
     const [marketingConsent, setMarketingConsent] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm<{
@@ -126,7 +125,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId, strip
         e.preventDefault();
         
         post(route('checkout.guest.session'), {
-            onSuccess: (response: any) => {
+            onSuccess: (response: { props?: { checkout_url?: string } }) => {
                 if (response.props?.checkout_url) {
                     window.location.href = response.props.checkout_url;
                 }
@@ -144,12 +143,13 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId, strip
         });
     };
 
-    const updateShippingAddress = (field: string, value: string) => {
-        setData('shipping_address', {
-            ...data.shipping_address,
-            [field]: value,
-        });
-    };
+    // Function to update shipping address fields
+    // const updateShippingAddress = (field: string, value: string) => {
+    //     setData('shipping_address', {
+    //         ...data.shipping_address,
+    //         [field]: value,
+    //     });
+    // };
 
     const getImageSrc = (item: CartItem) => {
         const defaultImage = '/images/product.png';

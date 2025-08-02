@@ -12,7 +12,6 @@ import {
     ShoppingCart,
     Plus,
     Minus,
-    X,
     Package,
     ArrowRight,
     Trash2,

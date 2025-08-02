@@ -1,5 +1,4 @@
-import { router } from '@inertiajs/react';
-import { usePage } from '@inertiajs/react';
+// Cart service for managing cart operations
 
 export interface AddToCartData {
     product_id: number;
@@ -27,7 +26,7 @@ class CartService {
         
         // Fallback to Inertia shared props (if available)
         try {
-            const inertiaProps = (window as any)?.inertiaProps || {};
+            const inertiaProps = (window as Record<string, unknown>)?.inertiaProps || {};
             return inertiaProps.csrf_token || null;
         } catch {
             return null;

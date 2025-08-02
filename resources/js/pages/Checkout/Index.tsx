@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
+// Badge component not used in this file
 import { useToast } from '@/contexts/ToastContext';
 import { CreditCard, Truck, ShoppingBag, AlertCircle } from 'lucide-react';
 
@@ -43,7 +43,7 @@ interface Address {
     country: string;
 }
 
-interface CheckoutFormData extends Record<string, any> {
+interface CheckoutFormData extends Record<string, unknown> {
     billing_address: Address;
     shipping_address: Address;
     shipping_same_as_billing: boolean;
@@ -75,13 +75,13 @@ interface Props {
         total: number;
         total_quantity: number;
     };
-    addresses: any[];
-    paymentMethods: any[];
+    addresses: Address[];
+    paymentMethods: Record<string, unknown>[];
     stripeKey: string;
     errors?: Record<string, string>;
 }
 
-export default function CheckoutIndex({ auth, cartItems, totals, addresses, paymentMethods, stripeKey, errors }: Props) {
+export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props) {
     const { addToast } = useToast();
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -129,7 +129,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, addresses, paym
         setIsProcessing(true);
 
         post(route('checkout.session'), {
-            onSuccess: (response: any) => {
+            onSuccess: (response: { props?: { sessionId?: string; url?: string } }) => {
                 if (response.props?.sessionId && response.props?.url) {
                     // Redirect to Stripe Checkout
                     window.location.href = response.props.url;
