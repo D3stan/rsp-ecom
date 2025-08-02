@@ -21,6 +21,8 @@ interface CartItem {
     total: number;
 }
 
+
+
 interface Totals {
     subtotal: number;
     tax_amount: number;
@@ -147,6 +149,14 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId, strip
             ...data.shipping_address,
             [field]: value,
         });
+    };
+
+    const getImageSrc = (item: CartItem) => {
+        const defaultImage = '/images/product.png';
+        if (!item.product.images || item.product.images[0] === '' || item.product.images[0] === 'product.png') {
+            return defaultImage;
+        }
+        return `/storage/${item.product.images[0]}`;
     };
 
     return (
@@ -404,7 +414,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId, strip
                                     <div key={item.id} className="flex items-start space-x-4">
                                         {item.product.images && item.product.images[0] && (
                                             <img
-                                                src={`/storage/${item.product.images[0]}`}
+                                                src={getImageSrc(item)}
                                                 alt={item.product.name}
                                                 className="w-16 h-16 object-cover rounded-md"
                                             />
