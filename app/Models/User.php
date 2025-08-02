@@ -126,6 +126,11 @@ class User extends Authenticatable
         return $this->carts()->latest()->first();
     }
 
+    public function cart()
+    {
+        return $this->hasOne(Cart::class)->latest();
+    }
+
     public function getOrCreateCart(): Cart
     {
         return $this->getCurrentCart() ?? $this->carts()->create();

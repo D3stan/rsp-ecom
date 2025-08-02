@@ -145,11 +145,11 @@ export default function Cart() {
 
     const proceedToCheckout = () => {
         if (auth?.user) {
-            // User is authenticated, proceed to regular checkout
-            router.visit('/checkout');
+            // User is authenticated, proceed to cart checkout using Cashier
+            window.location.href = '/checkout/cart';
         } else {
-            // User is not authenticated, redirect to guest checkout
-            router.visit('/checkout/guest');
+            // User is not authenticated, redirect to guest cart checkout
+            window.location.href = '/guest/checkout/cart';
         }
     };
 

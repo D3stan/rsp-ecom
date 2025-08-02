@@ -4,6 +4,8 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -41,7 +43,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
 });
 
-// Guest checkout routes using Cashier
+// Cart-based checkout routes (bridges cart workflow with Cashier)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/checkout/cart', [CheckoutController::class, 'cartCheckout'])->name('checkout.cart');
+});
+
+// Guest cart checkout
+Route::get('/guest/checkout/cart', [CheckoutController::class, 'guestCartCheckout'])->name('guest.cart.checkout');
+
+// Remove test route since it was causing Inertia issues
+
+// Individual product checkout routes using Cashier
 Route::get('/guest/checkout/{priceId}', [CheckoutController::class, 'guestCheckout'])->name('guest.checkout');
 Route::get('/guest/checkout/{priceId}/promo/{promoCode}', [CheckoutController::class, 'guestCheckoutWithPromo'])->name('guest.checkout.promo');
 

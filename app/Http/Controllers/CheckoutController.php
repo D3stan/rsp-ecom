@@ -182,4 +182,123 @@ class CheckoutController extends Controller
     {
         return Inertia::render('Checkout/Cancel');
     }
+
+    /**
+     * Cart checkout - converts cart items to Stripe checkout
+     * This bridges the gap between cart-based workflow and Cashier's product-based checkout
+     */
+    public function cartCheckout(Request $request): RedirectResponse
+    {
+        try {
+            $user = $request->user();
+            
+            if (!$user) {
+                return redirect()->route('guest.cart.checkout');
+            }
+
+            // Get user's cart (using the correct relationship method)
+            $cart = $user->carts()->with(['cartItems.product', 'cartItems.size'])->latest()->first();
+            
+            if (!$cart || $cart->cartItems->isEmpty()) {
+                return redirect()->route('cart')->with('error', 'Your cart is empty.');
+            }
+
+            // Calculate total amount for the entire cart
+            $totalAmount = $cart->cartItems->sum(function ($item) {
+                return $item->price * $item->quantity;
+            });
+
+            // Convert to cents for Stripe
+            $totalAmountCents = (int)($totalAmount * 100);
+
+            // Create description of cart contents
+            $description = $cart->cartItems->map(function($item) {
+                $sizeName = $item->size ? " ({$item->size->name})" : '';
+                return $item->quantity . 'x ' . $item->product->name . $sizeName;
+            })->join(', ');
+
+            // Use Cashier's checkoutCharge for the entire cart
+            $checkoutSession = $user->checkoutCharge($totalAmountCents, 'Cart Purchase', 1, [
+                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.cancel'),
+                'metadata' => [
+                    'cart_id' => $cart->id,
+                    'user_id' => $user->id,
+                    'type' => 'cart_checkout',
+                    'description' => $description,
+                ]
+            ]);
+            
+            return redirect($checkoutSession->url);
+            
+        } catch (\Exception $e) {
+            Log::error('Cart checkout failed: ' . $e->getMessage(), [
+                'user_id' => $request->user()?->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Unable to create checkout session. Please try again.');
+        }
+    }
+
+    /**
+     * Guest cart checkout - for non-authenticated users
+     */
+    public function guestCartCheckout(Request $request): RedirectResponse
+    {
+        try {
+            // Get guest cart from database using session ID
+            $guestSessionId = session()->getId();
+            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.size'])->first();
+            
+            if (!$cart || $cart->cartItems->isEmpty()) {
+                return redirect()->route('cart')->with('error', 'Your cart is empty.');
+            }
+
+            // Calculate total amount from cart items
+            $totalAmount = $cart->cartItems->sum(function ($item) {
+                return $item->price * $item->quantity;
+            });
+
+            // Convert to cents for Stripe
+            $totalAmountCents = (int)($totalAmount * 100);
+
+            // Create description from cart items
+            $description = $cart->cartItems->map(function($item) {
+                $sizeName = $item->size ? " ({$item->size->name})" : '';
+                return $item->quantity . 'x ' . $item->product->name . $sizeName;
+            })->join(', ');
+
+            // For guest checkout, we need to create a temporary price in Stripe
+            // or use Stripe's direct API since Cashier's guest checkout expects a price ID
+            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+            
+            $checkoutSession = $stripe->checkout->sessions->create([
+                'line_items' => [[
+                    'price_data' => [
+                        'currency' => config('cashier.currency', 'usd'),
+                        'product_data' => [
+                            'name' => 'Cart Purchase',
+                            'description' => $description,
+                        ],
+                        'unit_amount' => $totalAmountCents,
+                    ],
+                    'quantity' => 1,
+                ]],
+                'mode' => 'payment',
+                'success_url' => route('checkout.success'),
+                'cancel_url' => route('checkout.cancel'),
+                'metadata' => [
+                    'guest_session_id' => $guestSessionId,
+                    'type' => 'guest_cart_checkout',
+                    'description' => $description,
+                ]
+            ]);
+            
+            return redirect($checkoutSession->url);
+            
+        } catch (\Exception $e) {
+            Log::error('Guest cart checkout failed: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Unable to process guest checkout. Please try again.');
+        }
+    }
 }
