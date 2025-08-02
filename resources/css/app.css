@@ -227,4 +227,9 @@
         min-height: 100vh;
         min-height: 100dvh; /* Use dynamic viewport height on mobile */
     }
+    
+    /* Enhanced header transitions for theme switching */
+    header * {
+        transition: color 300ms ease, background-color 300ms ease, border-color 300ms ease;
+    }
 }

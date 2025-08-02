@@ -27,6 +27,7 @@ export default function Header({ transparent = false }: HeaderProps) {
     const { t, locale, changeLocale, isLoading } = useTranslation();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [cartCount, setCartCount] = useState(0);
+    const [isScrolled, setIsScrolled] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     // Load cart count on mount
@@ -42,6 +43,23 @@ export default function Header({ transparent = false }: HeaderProps) {
         
         loadCartCount();
     }, []);
+
+    // Handle scroll to change header appearance on transparent pages
+    useEffect(() => {
+        if (!transparent) return;
+
+        const handleScroll = () => {
+            const scrollPosition = window.scrollY;
+            // Change to solid background after scrolling past the hero section (roughly 100vh - header height)
+            const heroHeight = window.innerHeight - 64;
+            setIsScrolled(scrollPosition > heroHeight); 
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll(); // Check initial position
+        
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [transparent]);
 
     // Listen for cart updates
     useEffect(() => {
@@ -92,17 +110,19 @@ export default function Header({ transparent = false }: HeaderProps) {
 
     const closeMenu = () => setIsMenuOpen(false);
 
+    // Determine if header should use dark theme (transparent + not scrolled) or light theme
+    const isDarkTheme = transparent && !isScrolled;
+    const headerBg = transparent 
+        ? (isScrolled ? 'bg-white/95 backdrop-blur-md border-gray-200' : 'bg-transparent backdrop-blur-md border-white/20')
+        : 'bg-white/95 backdrop-blur-md border-gray-200';
+
     return (
-        <header className={`sticky top-0 z-50 border-b transition-all duration-300 relative ${
-            transparent 
-                ? 'border-white/20 bg-transparent backdrop-blur-md' 
-                : 'border-gray-200 bg-white/95 backdrop-blur-md'
-        }`}>
+        <header className={`sticky top-0 z-50 border-b transition-all duration-300 relative ${headerBg}`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <div className="flex-shrink-0">
-                        <Link href="/" className={`text-2xl font-bold ${transparent ? 'text-white' : 'text-black'}`}>
+                        <Link href="/" className={`text-2xl font-bold transition-colors duration-300 ${isDarkTheme ? 'text-white' : 'text-black'}`}>
                             {name || 'Store'}
                         </Link>
                     </div>
@@ -116,10 +136,10 @@ export default function Header({ transparent = false }: HeaderProps) {
                         <div className="hidden md:flex items-center space-x-3">
                             {/* Language Selector */}
                             <div className="flex items-center space-x-1">
-                                <Globe className={`w-4 h-4 ${transparent ? 'text-white/80' : 'text-gray-600'}`} />
+                                <Globe className={`w-4 h-4 transition-colors duration-300 ${isDarkTheme ? 'text-white/80' : 'text-gray-600'}`} />
                                 <Select value={locale} onValueChange={changeLocale} disabled={isLoading}>
-                                    <SelectTrigger className={`w-16 h-8 border-none bg-transparent ${
-                                        transparent ? 'text-white hover:bg-white/10' : 'text-gray-700 hover:bg-gray-100'
+                                    <SelectTrigger className={`w-16 h-8 border-none bg-transparent transition-colors duration-300 ${
+                                        isDarkTheme ? 'text-white hover:bg-white/10' : 'text-gray-700 hover:bg-gray-100'
                                     } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                         {isLoading ? (
                                             <div className="animate-spin rounded-full h-3 w-3 border border-current border-t-transparent" />
@@ -142,7 +162,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                         <div className="flex items-center space-x-3">
 
                             <Link href="/cart">
-                                <Button variant="ghost" size="icon" className={`relative ${transparent ? 'text-white hover:bg-white/10' : 'text-black border-gray-200'}`}>
+                                <Button variant="ghost" size="icon" className={`relative transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100 border-gray-200'}`}>
                                     <ShoppingCart className="w-5 h-5" />
                                     {cartCount > 0 && (
                                         <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
@@ -152,12 +172,12 @@ export default function Header({ transparent = false }: HeaderProps) {
                                 </Button>
                             </Link>
                             {auth.user && (
-                                <Button variant="ghost" size="icon" className={transparent ? 'text-white hover:bg-white/10' : 'text-black'}>
+                                <Button variant="ghost" size="icon" className={`transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100'}`}>
                                     <Heart className="w-5 h-5" />
                                 </Button>
                             )}
                             <Link href={auth.user ? route('dashboard') : route('login')}>
-                                <Button variant="ghost" size="icon" className={transparent ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100'}>
+                                <Button variant="ghost" size="icon" className={`transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100'}`}>
                                     <User className="w-5 h-5" />
                                 </Button>
                             </Link>
@@ -166,7 +186,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className={transparent ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100'}
+                                className={`transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100'}`}
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                                 data-menu-button
                             >
