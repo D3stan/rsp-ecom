@@ -48,7 +48,9 @@ interface CartPageProps extends SharedData {
 }
 
 export default function Cart() {
-    const { cartItems, subtotal, shippingCost, total, totalItems } = usePage<CartPageProps>().props;
+    const pageProps = usePage<CartPageProps>().props;
+    const { cartItems, subtotal, shippingCost, total, totalItems } = pageProps;
+    const { auth } = pageProps;
     const isMobile = useIsMobile();
     
     const [couponCode, setCouponCode] = useState('');
@@ -143,8 +145,13 @@ export default function Cart() {
     };
 
     const proceedToCheckout = () => {
-        // TODO: Implement checkout functionality
-        router.visit('/checkout');
+        if (auth?.user) {
+            // User is authenticated, proceed to regular checkout
+            router.visit('/checkout');
+        } else {
+            // User is not authenticated, redirect to guest checkout
+            router.visit('/checkout/guest');
+        }
     };
 
     if (!cartItems || cartItems.length === 0) {
@@ -372,15 +379,36 @@ export default function Cart() {
                                     </div>
                                 </div>
 
-                                {/* Checkout Button */}
-                                <Button
-                                    onClick={proceedToCheckout}
-                                    className="w-full h-12 text-lg font-semibold border border-black"
-                                    size="lg"
-                                >
-                                    <Package className="w-5 h-5 mr-2" />
-                                    Proceed to Checkout
-                                </Button>
+                                {/* Checkout Buttons */}
+                                <div className="space-y-3">
+                                    {/* Main Checkout Button */}
+                                    <Button
+                                        onClick={proceedToCheckout}
+                                        className="w-full h-12 text-lg font-semibold border border-black"
+                                        size="lg"
+                                    >
+                                        <Package className="w-5 h-5 mr-2" />
+                                        Proceed to Checkout
+                                    </Button>
+
+                                    {/* Alternative options for non-authenticated users */}
+                                    {!auth?.user && (
+                                        <div className="text-center">
+                                            <p className="text-sm text-gray-600 mb-2">
+                                                Already have an account?
+                                            </p>
+                                            <Button
+                                                variant="outline"
+                                                asChild
+                                                className="w-full"
+                                            >
+                                                <Link href="/login">
+                                                    Sign In to Continue
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Continue Shopping */}
                                 <Button

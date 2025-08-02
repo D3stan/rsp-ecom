@@ -119,6 +119,12 @@ class CheckoutService
                 ];
             }
 
+            // Apply promotion code if provided
+            if (!empty($checkoutData['promotion_code'])) {
+                $promotionService = app(PromotionService::class);
+                $promotionService->applyPromotionCodeToSession($sessionParams, $checkoutData['promotion_code']);
+            }
+
             // Create the checkout session
             $session = Session::create($sessionParams);
 
@@ -285,10 +291,28 @@ class CheckoutService
         $order = Order::where('stripe_checkout_session_id', $session->id)->first();
 
         if (!$order) {
-            Log::warning('Order not found for completed checkout session', [
-                'session_id' => $session->id,
-            ]);
-            return;
+            // Check if this is a guest checkout
+            if (isset($session->metadata->guest_checkout) && $session->metadata->guest_checkout === 'true') {
+                try {
+                    // Create order from guest checkout session
+                    $order = $this->createGuestOrderFromCartSession($session);
+                    Log::info('Created guest order from webhook', [
+                        'order_id' => $order->id,
+                        'session_id' => $session->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to create guest order from webhook', [
+                        'session_id' => $session->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    return;
+                }
+            } else {
+                Log::warning('Order not found for completed checkout session', [
+                    'session_id' => $session->id,
+                ]);
+                return;
+            }
         }
 
         // Update order with payment intent ID
@@ -367,5 +391,268 @@ class CheckoutService
             'order_id' => $order->id,
             'session_id' => $session->id,
         ]);
+    }
+
+    /**
+     * Create guest checkout session from cart items
+     */
+    public function createGuestCheckoutSessionFromCart(Collection $cartItems, array $guestData, string $guestSessionId): Session
+    {
+        try {
+            $lineItems = $this->createStripeLineItems($cartItems);
+            $totals = $this->calculateTotals($cartItems);
+
+            $sessionParams = [
+                'payment_method_types' => ['card'],
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.cancel'),
+                'client_reference_id' => $guestSessionId,
+                'customer_email' => $guestData['guest_email'],
+                'metadata' => [
+                    'guest_checkout' => 'true',
+                    'guest_session_id' => $guestSessionId,
+                    'guest_phone' => $guestData['guest_phone'] ?? '',
+                ],
+            ];
+
+            // Add billing address collection
+            $sessionParams['billing_address_collection'] = 'required';
+
+            // Add shipping address collection if different
+            if (!$guestData['shipping_same_as_billing']) {
+                $sessionParams['shipping_address_collection'] = [
+                    'allowed_countries' => ['US', 'CA', 'GB', 'DE', 'FR', 'IT', 'ES'],
+                ];
+            }
+
+            // Apply promotion code if provided
+            if (!empty($guestData['promotion_code'])) {
+                $promotionService = app(PromotionService::class);
+                $promotionService->applyPromotionCodeToSession($sessionParams, $guestData['promotion_code']);
+            }
+
+            // Add tax ID collection if requested
+            if ($guestData['collect_tax_id'] ?? false) {
+                $sessionParams['tax_id_collection'] = ['enabled' => true];
+            }
+
+            $session = Session::create($sessionParams);
+
+            Log::info('Guest checkout session created from cart', [
+                'session_id' => $session->id,
+                'guest_session_id' => $guestSessionId,
+                'amount' => $totals['total'] * 100,
+                'customer_email' => $guestData['guest_email'],
+            ]);
+
+            return $session;
+
+        } catch (ApiErrorException $e) {
+            Log::error('Failed to create guest checkout session from cart', [
+                'error' => $e->getMessage(),
+                'guest_session_id' => $guestSessionId,
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Create guest checkout session
+     */
+    public function createGuestCheckoutSession(array $cartItems, array $guestData, string $guestSessionId): Session
+    {
+        try {
+            $lineItems = $this->createGuestLineItems($cartItems);
+            $totals = $this->calculateGuestTotals($cartItems);
+
+            $sessionParams = [
+                'payment_method_types' => ['card'],
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.cancel'),
+                'client_reference_id' => $guestSessionId,
+                'customer_email' => $guestData['guest_email'],
+                'metadata' => [
+                    'guest_checkout' => 'true',
+                    'guest_session_id' => $guestSessionId,
+                    'guest_phone' => $guestData['guest_phone'] ?? '',
+                ],
+            ];
+
+            // Add billing address collection
+            $sessionParams['billing_address_collection'] = 'required';
+
+            // Add shipping address collection if different
+            if (!$guestData['shipping_same_as_billing']) {
+                $sessionParams['shipping_address_collection'] = [
+                    'allowed_countries' => ['US', 'CA', 'GB', 'DE', 'FR', 'IT', 'ES'],
+                ];
+            }
+
+            // Add promotion code support if provided
+            if (!empty($guestData['promotion_code'])) {
+                $promotionService = app(PromotionService::class);
+                $promotionService->applyPromotionCodeToSession($sessionParams, $guestData['promotion_code']);
+            }
+
+            // Add tax ID collection if requested
+            if ($guestData['collect_tax_id'] ?? false) {
+                $sessionParams['tax_id_collection'] = ['enabled' => true];
+            }
+
+            $session = Session::create($sessionParams);
+
+            Log::info('Guest checkout session created', [
+                'session_id' => $session->id,
+                'guest_session_id' => $guestSessionId,
+                'amount' => $totals['total'] * 100,
+                'customer_email' => $guestData['guest_email'],
+            ]);
+
+            return $session;
+
+        } catch (ApiErrorException $e) {
+            Log::error('Failed to create guest checkout session', [
+                'error' => $e->getMessage(),
+                'guest_session_id' => $guestSessionId,
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Create Stripe line items from guest cart items
+     */
+    protected function createGuestLineItems(array $cartItems): array
+    {
+        $lineItems = [];
+
+        foreach ($cartItems as $item) {
+            $product = $item['product'];
+            $size = $item['size'];
+            $quantity = $item['quantity'];
+            $price = $item['price'];
+
+            $productName = $product->name;
+            if ($size) {
+                $productName .= ' - ' . $size->name;
+            }
+
+            $lineItems[] = [
+                'price_data' => [
+                    'currency' => 'usd',
+                    'product_data' => [
+                        'name' => $productName,
+                        'description' => $product->description,
+                        'images' => $product->images ? [asset('storage/' . $product->images[0])] : [],
+                        'metadata' => [
+                            'product_id' => $product->id,
+                            'size_id' => $size ? $size->id : null,
+                        ],
+                    ],
+                    'unit_amount' => round($price * 100), // Convert to cents
+                ],
+                'quantity' => $quantity,
+            ];
+        }
+
+        return $lineItems;
+    }
+
+    /**
+     * Calculate totals for guest cart items
+     */
+    protected function calculateGuestTotals(array $cartItems): array
+    {
+        $subtotal = 0;
+        $totalQuantity = 0;
+
+        foreach ($cartItems as $item) {
+            $subtotal += $item['total'];
+            $totalQuantity += $item['quantity'];
+        }
+
+        $taxRate = 0.0875; // 8.75% - Should be configurable
+        $taxAmount = round($subtotal * $taxRate, 2);
+        $shippingCost = $this->calculateShipping($subtotal, $totalQuantity);
+        $total = $subtotal + $taxAmount + $shippingCost;
+
+        return [
+            'subtotal' => round($subtotal, 2),
+            'tax_amount' => $taxAmount,
+            'tax_rate' => $taxRate,
+            'shipping_cost' => $shippingCost,
+            'total' => round($total, 2),
+            'total_quantity' => $totalQuantity,
+        ];
+    }
+
+    /**
+     * Create order from guest checkout session using cart
+     */
+    public function createGuestOrderFromCartSession(Session $session): Order
+    {
+        return DB::transaction(function () use ($session) {
+            $guestSessionId = $session->metadata->guest_session_id ?? null;
+            
+            if (!$guestSessionId) {
+                throw new \Exception('Guest session ID not found in session metadata');
+            }
+
+            // Get cart from session
+            $cart = Cart::where('session_id', $guestSessionId)->first();
+
+            if (!$cart || $cart->cartItems->isEmpty()) {
+                throw new \Exception('Guest cart is empty or not found');
+            }
+
+            // Get cart items with relationships
+            $cartItems = $cart->cartItems()->with(['product', 'size'])->get();
+
+            // Create order record
+            $order = Order::create([
+                'user_id' => null, // Guest order
+                'guest_email' => $session->customer_email,
+                'guest_phone' => $session->metadata->guest_phone ?? null,
+                'guest_session_id' => $guestSessionId,
+                'total_amount' => $session->amount_total / 100,
+                'tax_amount' => ($session->total_details->amount_tax ?? 0) / 100,
+                'shipping_amount' => ($session->total_details->amount_shipping ?? 0) / 100,
+                'currency' => strtoupper($session->currency),
+                'status' => 'pending',
+                'payment_status' => 'processing',
+                'stripe_checkout_session_id' => $session->id,
+                'stripe_payment_intent_id' => $session->payment_intent,
+                'payment_method' => 'stripe',
+            ]);
+
+            // Create order items from cart items
+            foreach ($cartItems as $cartItem) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $cartItem->product->id,
+                    'size_id' => $cartItem->size->id ?? null,
+                    'quantity' => $cartItem->quantity,
+                    'price' => $cartItem->price,
+                    'total' => $cartItem->total,
+                ]);
+            }
+
+            // Clear cart after successful order creation
+            $cart->cartItems()->delete();
+            $cart->delete();
+
+            Log::info('Guest order created successfully from cart session', [
+                'order_id' => $order->id,
+                'session_id' => $session->id,
+                'guest_session_id' => $guestSessionId,
+                'total_amount' => $order->total_amount,
+            ]);
+
+            return $order;
+        });
     }
 }

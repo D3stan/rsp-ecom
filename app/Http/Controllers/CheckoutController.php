@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CheckoutRequest;
+use App\Http\Requests\GuestCheckoutRequest;
 use App\Services\CheckoutService;
+use App\Services\GuestCartService;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Laravel\Cashier\Exceptions\IncompletePayment;
 use Stripe\Exception\SignatureVerificationException;
@@ -47,8 +50,10 @@ class CheckoutController extends Controller
         // Calculate totals
         $totals = $this->checkoutService->calculateTotals($cartItems);
 
-        // Get user's saved addresses (if Address model exists)
-        $addresses = $user->addresses ?? collect();
+        // Get user's saved addresses
+        $addresses = $user->addresses()->orderBy('is_default', 'desc')->get();
+        $defaultBillingAddress = $user->addresses()->billing()->default()->first();
+        $defaultShippingAddress = $user->addresses()->shipping()->default()->first();
 
         // Get user's saved payment methods
         $paymentMethods = [];
@@ -75,7 +80,10 @@ class CheckoutController extends Controller
             'cartItems' => $cartItems,
             'totals' => $totals,
             'addresses' => $addresses,
+            'defaultBillingAddress' => $defaultBillingAddress,
+            'defaultShippingAddress' => $defaultShippingAddress,
             'paymentMethods' => $paymentMethods,
+            'user' => $user,
             'stripeKey' => config('cashier.key'),
         ]);
     }
@@ -219,11 +227,92 @@ class CheckoutController extends Controller
     /**
      * Handle guest checkout
      */
-    public function guestCheckout(Request $request)
+    public function guestCheckout(GuestCheckoutRequest $request)
     {
-        // For now, redirect to login
-        // In Phase 3, we'll implement proper guest checkout
-        return redirect()->route('login')->with('message', 'Please log in to proceed with checkout');
+        // Get cart from session
+        $sessionId = Session::getId();
+        $cart = Cart::where('session_id', $sessionId)->first();
+        
+        // Verify cart session and get cart items
+        if ($request->cart_session_id !== $sessionId) {
+            return response()->json(['error' => 'Invalid cart session'], 400);
+        }
+
+        if (!$cart || $cart->cartItems->isEmpty()) {
+            return response()->json(['error' => 'Cart is empty'], 400);
+        }
+
+        try {
+            // Get cart items with relationships
+            $cartItems = $cart->cartItems()->with(['product', 'size'])->get();
+            
+            // Create guest checkout session using existing cart items
+            $session = $this->checkoutService->createGuestCheckoutSessionFromCart(
+                $cartItems,
+                $request->validated(),
+                $sessionId
+            );
+
+            return response()->json([
+                'checkout_url' => $session->url,
+                'session_id' => $session->id,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Guest checkout failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Checkout failed. Please try again.'], 500);
+        }
+    }
+
+    /**
+     * Display guest checkout page
+     */
+    public function guestIndex(Request $request)
+    {
+        // Get cart items from session (for guest users)
+        $sessionId = Session::getId();
+        $cart = Cart::where('session_id', $sessionId)->first();
+        
+        if (!$cart || $cart->cartItems->isEmpty()) {
+            return redirect()->route('cart')->with('error', 'Your cart is empty');
+        }
+
+        // Get cart items with products and sizes
+        $cartItems = $cart->cartItems()->with(['product', 'size'])->get();
+        
+        // Calculate totals using the existing CheckoutService
+        $totals = $this->checkoutService->calculateTotals($cartItems);
+
+        return Inertia::render('Checkout/GuestIndex', [
+            'cartItems' => $cartItems->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'product' => [
+                        'id' => $item->product->id,
+                        'name' => $item->product->name,
+                        'slug' => $item->product->slug,
+                        'price' => $item->product->price,
+                        'images' => $item->product->images ?? [],
+                    ],
+                    'size' => $item->size ? [
+                        'id' => $item->size->id,
+                        'name' => $item->size->name,
+                        'price' => $item->size->price,
+                    ] : null,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                    'total' => $item->total,
+                ];
+            }),
+            'totals' => [
+                'subtotal' => $totals['subtotal'],
+                'tax_amount' => $totals['tax_amount'],
+                'shipping_cost' => $totals['shipping_cost'],
+                'total' => $totals['total'],
+            ],
+            'guestSessionId' => $sessionId,
+            'stripeKey' => config('cashier.key'),
+        ]);
     }
 
     /**

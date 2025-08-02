@@ -28,14 +28,28 @@ Route::middleware(['auth', App\Http\Middleware\EnsureCheckoutAccess::class])->gr
     Route::get('/checkout/show', [CheckoutController::class, 'show'])->name('checkout.show');
 });
 
+// Subscription routes (authenticated users)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/subscriptions', [App\Http\Controllers\SubscriptionController::class, 'index'])->name('subscriptions');
+    Route::get('/products/{product}/subscription-plans', [App\Http\Controllers\SubscriptionController::class, 'plans'])->name('subscription.plans');
+    Route::post('/subscription/checkout', [App\Http\Controllers\SubscriptionController::class, 'createCheckoutSession'])->name('subscription.checkout');
+    Route::post('/subscription/create', [App\Http\Controllers\SubscriptionController::class, 'create'])->name('subscription.create');
+    Route::post('/subscription/cancel', [App\Http\Controllers\SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+    Route::post('/subscription/resume', [App\Http\Controllers\SubscriptionController::class, 'resume'])->name('subscription.resume');
+    Route::post('/subscription/change-plan', [App\Http\Controllers\SubscriptionController::class, 'changePlan'])->name('subscription.change-plan');
+});
+
 // Checkout result pages (authenticated but no cart validation needed)
 Route::middleware(['auth'])->group(function () {
     Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
     Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
+    Route::get('/subscription/success', [App\Http\Controllers\SubscriptionController::class, 'success'])->name('subscription.success');
+    Route::get('/subscription/cancel', [App\Http\Controllers\SubscriptionController::class, 'cancelCheckout'])->name('subscription.cancel');
 });
 
 // Guest checkout (outside auth middleware)
-Route::post('/checkout/guest', [CheckoutController::class, 'guestCheckout'])->name('checkout.guest');
+Route::get('/checkout/guest', [CheckoutController::class, 'guestIndex'])->name('checkout.guest');
+Route::post('/checkout/guest/session', [CheckoutController::class, 'guestCheckout'])->name('checkout.guest.session');
 
 // Stripe webhooks (outside auth middleware - no CSRF protection needed)
 Route::post('/stripe/webhook', [CheckoutController::class, 'webhook'])
@@ -49,6 +63,11 @@ Route::get('/about', function () {
 Route::get('/contact', function () {
     return Inertia::render('contact');
 })->name('contact');
+
+// API routes for AJAX calls
+Route::prefix('api')->group(function () {
+    Route::post('/promotion/validate', [App\Http\Controllers\Api\PromotionController::class, 'validate'])->name('api.promotion.validate');
+});
 
 Route::get('/api/translations/{locale}', function ($locale) {
     $supportedLocales = ['en', 'es', 'fr', 'de', 'it'];

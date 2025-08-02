@@ -29,6 +29,10 @@ class Order extends Model
         'payment_status',
         'payment_method',
         'stripe_customer_id',
+        // Guest order fields
+        'guest_email',
+        'guest_phone',
+        'guest_session_id',
     ];
 
     protected $casts = [
@@ -242,5 +246,46 @@ class Order extends Model
         }
 
         return $order;
+    }
+
+    // Guest order methods
+    public function isGuestOrder(): bool
+    {
+        return $this->user_id === null && $this->guest_email !== null;
+    }
+
+    public function getCustomerEmail(): ?string
+    {
+        return $this->user_id ? $this->user->email : $this->guest_email;
+    }
+
+    public function getCustomerName(): ?string
+    {
+        if ($this->user_id) {
+            return $this->user->name;
+        }
+        
+        // For guest orders, try to get name from billing address
+        if ($this->billingAddress) {
+            return trim($this->billingAddress->first_name . ' ' . $this->billingAddress->last_name);
+        }
+        
+        return null;
+    }
+
+    // Scopes for guest orders
+    public function scopeGuestOrders($query)
+    {
+        return $query->whereNull('user_id')->whereNotNull('guest_email');
+    }
+
+    public function scopeUserOrders($query)
+    {
+        return $query->whereNotNull('user_id');
+    }
+
+    public function scopeByGuestSession($query, string $sessionId)
+    {
+        return $query->where('guest_session_id', $sessionId);
     }
 }
