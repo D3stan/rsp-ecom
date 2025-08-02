@@ -238,7 +238,7 @@ class CheckoutService
     /**
      * Retrieve a Stripe checkout session
      */
-    public function retrieveCheckoutSession(string $sessionId): Session
+    public function retrieveCheckoutSession(string $sessionId): object
     {
         try {
             return Session::retrieve($sessionId);

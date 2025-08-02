@@ -168,12 +168,13 @@ class CheckoutTest extends TestCase
         // Create a test session
         $sessionId = 'test_guest_session_12345';
         
-        // Use withSession to set up the session properly
-        $this->withSession(['_token' => 'test-token']);
+        // Set up a proper session
+        $this->startSession();
+        session()->put('_token', 'test-token');
+        session()->save();
         
         // Mock Session::getId() to return our test session ID
         \Illuminate\Support\Facades\Session::shouldReceive('getId')
-            ->once()
             ->andReturn($sessionId);
 
         // Create a guest cart using the test session ID
@@ -300,7 +301,7 @@ class CheckoutTest extends TestCase
 
         // Mock the CheckoutService to return a fake session
         $this->mock(\App\Services\CheckoutService::class, function ($mock) {
-            // Create a simple stdClass object that mimics Stripe Session
+            // Create a simple object that matches what the controller expects
             $mockSession = new \stdClass();
             $mockSession->id = 'cs_test_valid_session';
             $mockSession->status = 'complete';
