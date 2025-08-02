@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import Header from '@/components/header';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cartService } from '@/services/cartService';
 import { 
     ShoppingCart,
     Plus,
@@ -67,6 +68,7 @@ export default function Cart() {
                 preserveScroll: true,
                 onSuccess: () => {
                     // Cart will be refreshed automatically by Inertia
+                    cartService.triggerCartUpdate(); // Update header cart count
                 },
                 onError: (errors) => {
                     console.error('Failed to update cart:', errors);
@@ -87,6 +89,7 @@ export default function Cart() {
                 preserveScroll: true,
                 onSuccess: () => {
                     // Cart will be refreshed automatically by Inertia
+                    cartService.triggerCartUpdate(); // Update header cart count
                 },
                 onError: (errors) => {
                     console.error('Failed to remove item:', errors);

@@ -43,6 +43,24 @@ export default function Header({ transparent = false }: HeaderProps) {
         loadCartCount();
     }, []);
 
+    // Listen for cart updates
+    useEffect(() => {
+        const handleCartUpdate = async () => {
+            try {
+                const count = await cartService.getCartCount();
+                setCartCount(count);
+            } catch (error) {
+                console.error('Failed to refresh cart count:', error);
+            }
+        };
+
+        window.addEventListener('cartUpdated', handleCartUpdate);
+        
+        return () => {
+            window.removeEventListener('cartUpdated', handleCartUpdate);
+        };
+    }, []);
+
     // Close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {

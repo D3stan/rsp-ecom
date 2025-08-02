@@ -46,14 +46,14 @@ class CartController extends Controller
                         'category' => $item->product->category?->name,
                     ],
                     'quantity' => $item->quantity,
-                    'price' => $item->price,
-                    'total' => $item->total,
+                    'price' => (float) $item->price,
+                    'total' => (float) $item->total,
                     'size' => $item->product->size?->name,
                 ];
             }),
-            'subtotal' => $cart->subtotal,
-            'shippingCost' => $cart->shipping_cost,
-            'total' => $cart->total,
+            'subtotal' => (float) $cart->subtotal,
+            'shippingCost' => (float) $cart->shipping_cost,
+            'total' => (float) $cart->total,
             'totalItems' => $cart->total_items,
         ]);
     }
@@ -72,7 +72,7 @@ class CartController extends Controller
         $product = Product::findOrFail($request->product_id);
         
         // Check stock availability
-        if (!$product->inStock || $product->stockQuantity < $request->quantity) {
+        if (!$product->isInStock() || $product->stock_quantity < $request->quantity) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -106,7 +106,7 @@ class CartController extends Controller
             $newQuantity = $existingItem->quantity + $request->quantity;
             
             // Check if new quantity exceeds stock
-            if ($newQuantity > $product->stockQuantity) {
+            if ($newQuantity > $product->stock_quantity) {
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,
@@ -166,18 +166,18 @@ class CartController extends Controller
         }
 
         // Check stock availability
-        if ($request->quantity > $cartItem->product->stockQuantity) {
+        if ($request->quantity > $cartItem->product->stock_quantity) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Insufficient stock available.',
-                    'maxQuantity' => $cartItem->product->stockQuantity,
+                    'maxQuantity' => $cartItem->product->stock_quantity,
                 ], 400);
             }
             
             return back()->withErrors([
                 'message' => 'Insufficient stock available.',
-                'maxQuantity' => $cartItem->product->stockQuantity,
+                'maxQuantity' => $cartItem->product->stock_quantity,
             ]);
         }
 

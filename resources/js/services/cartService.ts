@@ -189,6 +189,13 @@ class CartService {
             };
         }
     }
+
+    /**
+     * Trigger cart count refresh event
+     */
+    triggerCartUpdate(): void {
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
+    }
 }
 
 export const cartService = new CartService();

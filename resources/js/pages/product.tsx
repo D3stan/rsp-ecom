@@ -145,6 +145,7 @@ export default function Product() {
             const response = await cartService.addToCart(cartData);
             
             if (response.success) {
+                cartService.triggerCartUpdate(); // Trigger cart count refresh
                 addToast({
                     type: 'success',
                     title: 'Added to cart!',
