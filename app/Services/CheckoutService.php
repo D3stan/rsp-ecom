@@ -655,4 +655,108 @@ class CheckoutService
             return $order;
         });
     }
+
+    /**
+     * Create order from Cashier checkout session
+     */
+    public function createOrderFromCheckout(User $user, Collection $cartItems, $checkout, array $checkoutData): Order
+    {
+        return DB::transaction(function () use ($user, $cartItems, $checkout, $checkoutData) {
+            // Calculate totals
+            $totals = $this->calculateTotals($cartItems);
+
+            // Create order
+            $order = Order::create([
+                'user_id' => $user->id,
+                'order_number' => 'ORD-' . time() . '-' . $user->id,
+                'status' => 'pending',
+                'subtotal' => $totals['subtotal'],
+                'tax_amount' => $totals['tax_amount'],
+                'shipping_amount' => $totals['shipping_cost'],
+                'total_amount' => $totals['total'],
+                'currency' => 'usd',
+                'stripe_checkout_session_id' => $checkout->id,
+                'payment_status' => 'pending',
+                'payment_method' => 'stripe_checkout',
+                'stripe_customer_id' => $user->stripe_id,
+            ]);
+
+            // Create order items
+            foreach ($cartItems as $cartItem) {
+                $order->orderItems()->create([
+                    'product_id' => $cartItem->product_id,
+                    'size_id' => $cartItem->size_id,
+                    'quantity' => $cartItem->quantity,
+                    'price' => $cartItem->price,
+                    'total' => $cartItem->price * $cartItem->quantity,
+                ]);
+            }
+
+            Log::info('Order created from Cashier checkout', [
+                'order_id' => $order->id,
+                'session_id' => $checkout->id,
+                'user_id' => $user->id,
+                'total_amount' => $order->total_amount,
+            ]);
+
+            return $order;
+        });
+    }
+
+    /**
+     * Create guest order from Cashier checkout session
+     */
+    public function createGuestOrderFromCheckout(array $cartItems, $checkout, array $checkoutData, string $guestSessionId): Order
+    {
+        return DB::transaction(function () use ($cartItems, $checkout, $checkoutData, $guestSessionId) {
+            // Calculate totals from cart items
+            $subtotal = 0;
+            foreach ($cartItems as $item) {
+                $subtotal += $item['product']['price'] * $item['quantity'];
+            }
+
+            $taxRate = 0.0875; // 8.75%
+            $taxAmount = round($subtotal * $taxRate, 2);
+            $shippingCost = $subtotal >= 100 ? 0.0 : 10.0;
+            $total = $subtotal + $taxAmount + $shippingCost;
+
+            // Create guest order
+            $order = Order::create([
+                'user_id' => null, // Guest order
+                'order_number' => 'GUEST-' . time() . '-' . substr($guestSessionId, 0, 8),
+                'status' => 'pending',
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'shipping_amount' => $shippingCost,
+                'total_amount' => $total,
+                'currency' => 'usd',
+                'stripe_checkout_session_id' => $checkout->id,
+                'payment_status' => 'pending',
+                'payment_method' => 'stripe_checkout',
+                'guest_email' => $checkoutData['guest_email'],
+                'guest_phone' => $checkoutData['guest_phone'] ?? null,
+                'guest_session_id' => $guestSessionId,
+            ]);
+
+            // Create order items
+            foreach ($cartItems as $item) {
+                $order->orderItems()->create([
+                    'product_id' => $item['product']['id'],
+                    'size_id' => $item['size']['id'],
+                    'quantity' => $item['quantity'],
+                    'price' => $item['product']['price'],
+                    'total' => $item['product']['price'] * $item['quantity'],
+                ]);
+            }
+
+            Log::info('Guest order created from Cashier checkout', [
+                'order_id' => $order->id,
+                'session_id' => $checkout->id,
+                'guest_session_id' => $guestSessionId,
+                'total_amount' => $order->total_amount,
+            ]);
+
+            return $order;
+        });
+    }
 }

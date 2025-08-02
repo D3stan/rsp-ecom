@@ -11,6 +11,7 @@ use App\Models\Size;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Stripe\Checkout\Session;
 use Tests\TestCase;
 
 class CheckoutTest extends TestCase
@@ -69,7 +70,7 @@ class CheckoutTest extends TestCase
         $response = $this->actingAs($this->user)->get('/checkout');
 
         $response->assertRedirect('/cart');
-        $response->assertSessionHas('error', 'Your cart is empty');
+        $response->assertSessionHas('error', 'Your cart is empty.');
     }
 
     public function test_checkout_requires_authentication(): void
@@ -162,22 +163,54 @@ class CheckoutTest extends TestCase
         $this->assertEquals('cancelled', $order->payment_status);
     }
 
-    public function test_guest_checkout_redirects_to_login(): void
+    public function test_guest_checkout_index_renders(): void
     {
-        $response = $this->postJson('/checkout/guest', []);
+        // Create a test session
+        $sessionId = 'test_guest_session_12345';
+        
+        // Use withSession to set up the session properly
+        $this->withSession(['_token' => 'test-token']);
+        
+        // Mock Session::getId() to return our test session ID
+        \Illuminate\Support\Facades\Session::shouldReceive('getId')
+            ->once()
+            ->andReturn($sessionId);
 
-        $response->assertRedirect(route('login'));
-        $response->assertSessionHas('message', 'Please log in to proceed with checkout');
+        // Create a guest cart using the test session ID
+        $cart = Cart::create([
+            'session_id' => $sessionId,
+        ]);
+
+        $cart->cartItems()->create([
+            'product_id' => $this->product->id,
+            'size_id' => $this->size->id,
+            'quantity' => 1,
+            'price' => $this->product->price,
+        ]);
+
+        $response = $this->get('/checkout/guest');
+
+        $response->assertOk();
+        $response->assertInertia(
+            fn (Assert $page) => $page
+                ->component('Checkout/GuestIndex')
+                ->has('cartItems', 1)
+        );
     }
 
     public function test_checkout_totals_calculation(): void
     {
-        // Create multiple cart items
-        Cart::create([
+        // Create cart for user
+        $cart = Cart::create([
             'user_id' => $this->user->id,
+        ]);
+
+        // Create multiple cart items
+        $cart->cartItems()->create([
             'product_id' => $this->product->id,
             'size_id' => $this->size->id,
             'quantity' => 2,
+            'price' => $this->product->price,
         ]);
 
         $product2 = Product::factory()->create([
@@ -185,20 +218,20 @@ class CheckoutTest extends TestCase
             'price' => 15.00,
         ]);
 
-        Cart::create([
-            'user_id' => $this->user->id,
+        $cart->cartItems()->create([
             'product_id' => $product2->id,
             'size_id' => $this->size->id,
             'quantity' => 1,
+            'price' => $product2->price,
         ]);
 
         $response = $this->actingAs($this->user)->get('/checkout');
 
         $response->assertInertia(
             fn (Assert $page) => $page
-                ->where('totals.subtotal', 65.00) // (25 * 2) + (15 * 1)
+                ->where('totals.subtotal', 65) // (25 * 2) + (15 * 1)
                 ->where('totals.total_quantity', 3)
-                ->where('totals.shipping_cost', 10.00) // Under $100 threshold
+                ->where('totals.shipping_cost', 10) // Under $100 threshold
                 ->where('totals.tax_amount', 5.69) // 8.75% of subtotal
                 ->where('totals.total', 80.69) // subtotal + tax + shipping
         );
@@ -206,36 +239,87 @@ class CheckoutTest extends TestCase
 
     public function test_free_shipping_over_threshold(): void
     {
+        // Create cart for user
+        $cart = Cart::create([
+            'user_id' => $this->user->id,
+        ]);
+
         // Create a high-value product to trigger free shipping
         $expensiveProduct = Product::factory()->create([
             'category_id' => $this->category->id,
             'price' => 150.00,
         ]);
 
-        Cart::create([
-            'user_id' => $this->user->id,
+        $cart->cartItems()->create([
             'product_id' => $expensiveProduct->id,
             'size_id' => $this->size->id,
             'quantity' => 1,
+            'price' => $expensiveProduct->price,
         ]);
 
         $response = $this->actingAs($this->user)->get('/checkout');
 
         $response->assertInertia(
             fn (Assert $page) => $page
-                ->where('totals.subtotal', 150.00)
-                ->where('totals.shipping_cost', 0.00) // Free shipping over $100
+                ->where('totals.subtotal', 150)
+                ->where('totals.shipping_cost', 0) // Free shipping over $100
         );
     }
 
     public function test_checkout_show_page_renders(): void
     {
-        $response = $this->actingAs($this->user)->get('/checkout/show?session_id=cs_test_123');
+        // Create addresses for the user
+        $billingAddress = \App\Models\Address::factory()->create([
+            'user_id' => $this->user->id,
+            'type' => 'billing',
+            'is_default' => true,
+        ]);
+        
+        $shippingAddress = \App\Models\Address::factory()->create([
+            'user_id' => $this->user->id,
+            'type' => 'shipping',
+            'is_default' => true,
+        ]);
+
+        // Create an order with a fake session ID (simulating completed checkout)
+        $order = Order::create([
+            'user_id' => $this->user->id,
+            'billing_address_id' => $billingAddress->id,
+            'shipping_address_id' => $shippingAddress->id,
+            'order_number' => 'TEST-12345',
+            'status' => 'processing',
+            'subtotal' => 25.00,
+            'tax_amount' => 2.19,
+            'shipping_amount' => 10.00,
+            'total_amount' => 37.19,
+            'currency' => 'usd',
+            'stripe_checkout_session_id' => 'cs_test_valid_session',
+            'payment_status' => 'paid',
+            'payment_method' => 'stripe_checkout',
+        ]);
+
+        // Mock the CheckoutService to return a fake session
+        $this->mock(\App\Services\CheckoutService::class, function ($mock) {
+            // Create a simple stdClass object that mimics Stripe Session
+            $mockSession = new \stdClass();
+            $mockSession->id = 'cs_test_valid_session';
+            $mockSession->status = 'complete';
+            $mockSession->payment_status = 'paid';
+            $mockSession->customer_details = (object) ['email' => 'test@example.com'];
+
+            $mock->shouldReceive('retrieveCheckoutSession')
+                ->with('cs_test_valid_session')
+                ->andReturn($mockSession);
+        });
+
+        $response = $this->actingAs($this->user)->get('/checkout/show?session_id=cs_test_valid_session');
 
         $response->assertOk();
         $response->assertInertia(
             fn (Assert $page) => $page
                 ->component('Checkout/Show')
+                ->has('session')
+                ->has('order')
         );
     }
 

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
+use Laravel\Cashier\Checkout;
 use Laravel\Cashier\Exceptions\IncompletePayment;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
@@ -42,14 +43,14 @@ class CheckoutController extends Controller
         $cart = Cart::where('user_id', $user->id)->first();
         
         if (!$cart) {
-            return redirect()->route('cart')->with('error', 'Your cart is empty');
+            return redirect()->route('cart')->with('error', 'Your cart is empty.');
         }
 
         // Get cart items with their relationships
         $cartItems = $cart->cartItems()->with(['product', 'size'])->get();
 
         if ($cartItems->isEmpty()) {
-            return redirect()->route('cart')->with('error', 'Your cart is empty');
+            return redirect()->route('cart')->with('error', 'Your cart is empty.');
         }
 
         // Calculate totals
@@ -94,7 +95,7 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Create a Stripe checkout session
+     * Create a Stripe checkout session using Laravel Cashier
      */
     public function createSession(CheckoutRequest $request)
     {
@@ -103,34 +104,74 @@ class CheckoutController extends Controller
             $cart = Cart::where('user_id', $user->id)->first();
 
             if (!$cart) {
-                return back()->withErrors(['cart' => 'Your cart is empty.']);
+                return response()->json(['error' => 'Cart is empty'], 400);
             }
 
             $cartItems = $cart->cartItems()->with(['product', 'size'])->get();
 
             if ($cartItems->isEmpty()) {
-                return redirect()->route('cart')->withErrors(['cart' => 'Your cart is empty.']);
+                return response()->json(['error' => 'Cart is empty'], 400);
             }
 
-            // Create checkout session
-            $session = $this->checkoutService->createCheckoutSession(
-                $user,
-                $cartItems,
-                $request->validated()
-            );
+            // Calculate totals
+            $totals = $this->checkoutService->calculateTotals($cartItems);
+
+            // For cart checkout, we'll use checkoutCharge for the total amount
+            // This creates an ad-hoc product in Stripe for the entire cart
+            $totalAmount = (int)($totals['total'] * 100); // Convert to cents
+
+            // Create a description of cart contents
+            $description = $cartItems->map(function($item) {
+                return $item->quantity . 'x ' . $item->product->name . ' (' . $item->size->name . ')';
+            })->join(', ');
+
+            // Use Cashier's checkoutCharge method with enhanced features
+            $checkout = $user->checkoutCharge($totalAmount, 'Cart Purchase - ' . $description, 1, [
+                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.cancel') . '?session_id={CHECKOUT_SESSION_ID}',
+                'allow_promotion_codes' => true, // Enable Stripe promotion codes
+                'billing_address_collection' => 'required',
+                'shipping_address_collection' => [
+                    'allowed_countries' => ['US', 'CA'], // Limit to US and Canada for now
+                ],
+                'phone_number_collection' => [
+                    'enabled' => true,
+                ],
+                'tax_id_collection' => [
+                    'enabled' => true,
+                ],
+                'metadata' => [
+                    'cart_id' => $cart->id,
+                    'user_id' => $user->id,
+                    'cart_items' => $cartItems->count(),
+                    'description' => $description,
+                ]
+            ]);
+
+            // Create order record before redirecting
+            $order = $this->checkoutService->createOrderFromCheckout($user, $cartItems, $checkout, $request->validated());
 
             // Redirect to Stripe checkout
-            return redirect()->away($session->url);
+            return response()->json(['checkout_url' => $checkout->url]);
 
+        } catch (IncompletePayment $e) {
+            // Handle incomplete payments
+            return redirect()->route('cashier.payment', [
+                $e->payment->id, 
+                'redirect' => route('home')
+            ]);
         } catch (\Exception $e) {
-            Log::error('Checkout session creation failed: ' . $e->getMessage());
+            Log::error('Checkout session creation failed: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'exception' => $e
+            ]);
             
-            return back()->withErrors(['checkout' => 'Unable to create checkout session. Please try again.']);
+            return response()->json(['error' => 'Unable to create checkout session. Please try again.'], 500);
         }
     }
 
     /**
-     * Handle successful payment
+     * Handle successful payment using Laravel Cashier
      */
     public function success(Request $request)
     {
@@ -141,24 +182,41 @@ class CheckoutController extends Controller
         }
 
         try {
-            // Retrieve the checkout session
-            $session = $this->checkoutService->retrieveCheckoutSession($sessionId);
-            
-            // Find the order
+            // Find the order by session ID
             $order = Order::where('stripe_checkout_session_id', $sessionId)->first();
             
             if (!$order) {
                 return redirect()->route('cart')->with('error', 'Order not found');
             }
 
-            // Update order status if payment succeeded
-            if ($session->payment_status === 'paid') {
-                $order->updatePaymentStatus('succeeded');
+            // Retrieve session from Stripe using Cashier (through the user if available)
+            $session = null;
+            if ($order->user_id) {
+                // Authenticated user checkout
+                $user = $order->user;
+                $session = $user->stripe()->checkout->sessions->retrieve($sessionId);
                 
-                // Clear user's cart
-                if (Auth::check()) {
-                    Cart::where('user_id', Auth::id())->delete();
+                // Clear user's cart on successful payment
+                if ($session->payment_status === 'paid') {
+                    Cart::where('user_id', $user->id)->delete();
                 }
+            } else {
+                // Guest checkout - use direct Stripe API
+                $session = \Stripe\Checkout\Session::retrieve($sessionId);
+
+                // Clear guest cart on successful payment
+                if ($session->payment_status === 'paid') {
+                    $guestCartService = app(GuestCartService::class);
+                    $guestCartService->clearCart();
+                }
+            }
+
+            // Update order status based on payment status
+            if ($session->payment_status === 'paid') {
+                $order->update([
+                    'payment_status' => 'succeeded',
+                    'status' => 'processing',
+                ]);
             }
 
             return Inertia::render('Checkout/Success', [
@@ -166,12 +224,16 @@ class CheckoutController extends Controller
                 'session' => [
                     'id' => $session->id,
                     'payment_status' => $session->payment_status,
-                    'customer_email' => $session->customer_details->email,
+                    'customer_email' => $session->customer_details?->email ?? $order->guest_email,
+                    'amount_total' => $session->amount_total,
                 ]
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Checkout success handling failed: ' . $e->getMessage());
+            Log::error('Checkout success handling failed: ' . $e->getMessage(), [
+                'session_id' => $sessionId,
+                'exception' => $e
+            ]);
             
             return redirect()->route('cart')->with('error', 'Unable to process your order. Please contact support.');
         }
@@ -230,46 +292,71 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Handle guest checkout
+     * Handle guest checkout using Laravel Cashier
      */
     public function guestCheckout(GuestCheckoutRequest $request)
     {
-        // Get cart from session
-        $sessionId = Session::getId();
-        $cart = Cart::where('session_id', $sessionId)->first();
-        
-        // Verify cart session and get cart items
-        if ($request->cart_session_id !== $sessionId) {
-            return back()->withErrors(['cart_session_id' => 'Invalid cart session. Please refresh and try again.']);
-        }
-
-        if (!$cart || $cart->cartItems->isEmpty()) {
-            return redirect()->route('cart')->withErrors(['cart' => 'Your cart is empty.']);
-        }
-
         try {
-            // Get cart items with relationships
-            $cartItems = $cart->cartItems()->with(['product', 'size'])->get();
-            
-            // Create guest checkout session using existing cart items
-            $session = $this->checkoutService->createGuestCheckoutSessionFromCart(
-                $cartItems,
-                $request->validated(),
-                $sessionId
-            );
+            // Get guest cart service
+            $guestCartService = app(GuestCartService::class);
+            $cartItems = $guestCartService->getCartItems();
 
-            // Return Inertia response - but we need to redirect to external URL
-            // Since this is an external redirect, we'll redirect directly
-            return redirect()->away($session->url);
+            if (empty($cartItems)) {
+                return response()->json(['error' => 'Cart is empty'], 400);
+            }
+
+            // Calculate totals
+            $totals = $guestCartService->calculateTotals();
+            $totalAmount = (int)($totals['total'] * 100); // Convert to cents
+
+            // Create a description of cart contents
+            $description = collect($cartItems)->map(function($item) {
+                return $item['quantity'] . 'x ' . $item['product']['name'] . ' (' . $item['size']['name'] . ')';
+            })->join(', ');
+
+            // Get guest session ID
+            $guestSessionId = $guestCartService->getGuestSessionId();
+
+            // Use Cashier's guest checkout with enhanced features
+            $checkout = \Laravel\Cashier\Checkout::guest()->create($totalAmount, [
+                'product_data' => [
+                    'name' => 'Cart Purchase',
+                    'description' => $description,
+                ],
+                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.cancel') . '?session_id={CHECKOUT_SESSION_ID}',
+                'customer_email' => $request->guest_email,
+                'allow_promotion_codes' => true, // Enable Stripe promotion codes
+                'billing_address_collection' => 'required',
+                'shipping_address_collection' => [
+                    'allowed_countries' => ['US', 'CA'], // Limit to US and Canada for now
+                ],
+                'phone_number_collection' => [
+                    'enabled' => true,
+                ],
+                'tax_id_collection' => [
+                    'enabled' => true,
+                ],
+                'metadata' => [
+                    'guest_session_id' => $guestSessionId,
+                    'cart_items' => count($cartItems),
+                    'is_guest' => 'true',
+                    'guest_checkout' => 'true',
+                ]
+            ]);
+
+            // Create guest order record
+            $order = $this->checkoutService->createGuestOrderFromCheckout($cartItems, $checkout, $request->validated(), $guestSessionId);
+
+            return response()->json(['checkout_url' => $checkout->url]);
 
         } catch (\Exception $e) {
             Log::error('Guest checkout failed: ' . $e->getMessage(), [
                 'exception' => $e,
                 'trace' => $e->getTraceAsString(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
             ]);
-            return back()->withErrors(['checkout' => 'Checkout failed. Please try again. Error: ' . $e->getMessage()]);
+
+            return response()->json(['error' => 'Unable to create checkout session. Please try again.'], 500);
         }
     }
 
@@ -351,6 +438,85 @@ class CheckoutController extends Controller
         } catch (\Exception $e) {
             Log::error('Webhook handling failed: ' . $e->getMessage());
             return response('Webhook handling failed', 500);
+        }
+    }
+
+    /**
+     * Individual product checkout using Stripe Price IDs (proper Cashier way)
+     */
+    public function productCheckout(Request $request, $productId)
+    {
+        $request->validate([
+            'quantity' => 'required|integer|min:1|max:10',
+            'size_id' => 'required|exists:sizes,id'
+        ]);
+
+        try {
+            $user = Auth::user();
+            $product = \App\Models\Product::findOrFail($productId);
+            
+            // For individual products, we would ideally have Stripe Price IDs stored
+            // But since this is an e-commerce catalog, we'll use checkoutCharge for individual items too
+            $quantity = $request->quantity;
+            $amount = (int)($product->price * $quantity * 100); // Convert to cents
+            
+            $checkout = $user->checkoutCharge($amount, $product->name, $quantity, [
+                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.cancel') . '?session_id={CHECKOUT_SESSION_ID}',
+                'allow_promotion_codes' => true, // Enable Stripe promotion codes
+                'billing_address_collection' => 'required',
+                'shipping_address_collection' => [
+                    'allowed_countries' => ['US', 'CA'], // Limit to US and Canada for now
+                ],
+                'phone_number_collection' => [
+                    'enabled' => true,
+                ],
+                'tax_id_collection' => [
+                    'enabled' => true,
+                ],
+                'metadata' => [
+                    'product_id' => $product->id,
+                    'size_id' => $request->size_id,
+                    'quantity' => $quantity,
+                    'single_product' => 'true',
+                ]
+            ]);
+
+            // Create order record for single product
+            $order = Order::create([
+                'user_id' => $user->id,
+                'order_number' => 'PROD-' . time() . '-' . $user->id,
+                'status' => 'pending',
+                'subtotal' => $product->price * $quantity,
+                'tax_amount' => round($product->price * $quantity * 0.0875, 2),
+                'shipping_amount' => ($product->price * $quantity) >= 100 ? 0 : 10,
+                'total_amount' => $amount / 100,
+                'currency' => 'usd',
+                'stripe_checkout_session_id' => $checkout->id,
+                'payment_status' => 'pending',
+                'payment_method' => 'stripe_checkout',
+                'stripe_customer_id' => $user->stripe_id,
+            ]);
+
+            // Create single order item
+            $order->orderItems()->create([
+                'product_id' => $product->id,
+                'size_id' => $request->size_id,
+                'quantity' => $quantity,
+                'price' => $product->price,
+                'total' => $product->price * $quantity,
+            ]);
+
+            return response()->json(['checkout_url' => $checkout->url]);
+
+        } catch (\Exception $e) {
+            Log::error('Product checkout failed: ' . $e->getMessage(), [
+                'product_id' => $productId,
+                'user_id' => Auth::id(),
+                'exception' => $e
+            ]);
+            
+            return response()->json(['error' => 'Unable to create checkout session. Please try again.'], 500);
         }
     }
 }

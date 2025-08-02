@@ -31,6 +31,7 @@ Route::middleware(['auth', App\Http\Middleware\EnsureCheckoutAccess::class])->gr
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
     Route::post('/checkout/session', [CheckoutController::class, 'createSession'])->name('checkout.session');
     Route::get('/checkout/show', [CheckoutController::class, 'show'])->name('checkout.show');
+    Route::post('/products/{product}/checkout', [CheckoutController::class, 'productCheckout'])->name('product.checkout');
 });
 
 // Subscription routes (authenticated users)
