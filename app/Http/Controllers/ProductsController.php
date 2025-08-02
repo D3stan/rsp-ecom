@@ -156,6 +156,111 @@ class ProductsController extends Controller
     }
 
     /**
+     * Display the specified product.
+     */
+    public function show(string $slug): Response
+    {
+        $product = Product::with(['category', 'approvedReviews.user', 'size'])
+            ->where('slug', $slug)
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        // Get the main image URL or use default
+        $imageUrl = $product->main_image_url;
+        
+        // If no image is set or the file doesn't exist, use default
+        if (!$imageUrl || !$this->imageExists($imageUrl)) {
+            $imageUrl = '/images/product.png';
+        }
+
+        // Get additional images if available
+        $images = [$imageUrl]; // Start with main image
+        if ($product->images && is_array($product->images)) {
+            foreach ($product->images as $imagePath) {
+                if ($imagePath !== $imageUrl && $this->imageExists($imagePath)) {
+                    $images[] = $imagePath;
+                }
+            }
+        }
+
+        // Transform product for frontend
+        $productData = [
+            'id' => $product->id,
+            'name' => $product->name,
+            'slug' => $product->slug,
+            'description' => $product->description,
+            'shortDescription' => null, // Field doesn't exist in current schema
+            'price' => $product->price,
+            'originalPrice' => $product->compare_price,
+            'rating' => round($product->average_rating, 1),
+            'reviews' => $product->review_count,
+            'images' => $images,
+            'badge' => $this->getProductBadge($product),
+            'inStock' => $product->stock_quantity > 0,
+            'stockQuantity' => $product->stock_quantity,
+            'specifications' => null, // Field doesn't exist in current schema
+            'category' => $product->category ? [
+                'id' => $product->category->id,
+                'name' => $product->category->name,
+                'slug' => $product->category->slug,
+            ] : null,
+            'sizes' => $product->size ? [[
+                'id' => $product->size->id,
+                'name' => $product->size->name,
+                'price_adjustment' => 0, // No price adjustment for single size
+            ]] : [],
+        ];
+
+        // Get reviews with user information
+        $reviews = $product->approvedReviews->map(function ($review) {
+            return [
+                'id' => $review->id,
+                'user' => $review->user ? $review->user->name : 'Anonymous',
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'date' => $review->created_at->toISOString(),
+            ];
+        });
+
+        // Get related products (same category, different product)
+        $relatedProducts = Product::with(['category', 'approvedReviews'])
+            ->where('category_id', $product->category_id)
+            ->where('id', '!=', $product->id)
+            ->active()
+            ->inStock()
+            ->limit(4)
+            ->get()
+            ->map(function (Product $relatedProduct) {
+                $relatedImageUrl = $relatedProduct->main_image_url;
+                if (!$relatedImageUrl || !$this->imageExists($relatedImageUrl)) {
+                    $relatedImageUrl = '/images/product.png';
+                }
+
+                return [
+                    'id' => $relatedProduct->id,
+                    'name' => $relatedProduct->name,
+                    'slug' => $relatedProduct->slug,
+                    'price' => $relatedProduct->price,
+                    'image' => $relatedImageUrl,
+                ];
+            });
+
+        // Generate breadcrumb
+        $breadcrumb = ['Home', 'Products'];
+        if ($product->category) {
+            $breadcrumb[] = $product->category->name;
+        }
+        $breadcrumb[] = $product->name;
+
+        return Inertia::render('product', [
+            'product' => $productData,
+            'reviews' => $reviews,
+            'relatedProducts' => $relatedProducts,
+            'breadcrumb' => $breadcrumb,
+        ]);
+    }
+
+    /**
      * Get badge text for a product based on its properties.
      */
     private function getProductBadge(Product $product): ?string

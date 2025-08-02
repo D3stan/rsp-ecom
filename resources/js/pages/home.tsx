@@ -213,63 +213,74 @@ export default function Home() {
                             {featuredProducts.map((product: Product) => {
                                 const isActive = productInteractions.isActive(product.id);
                                 return (
-                                    <div 
-                                        key={product.id} 
-                                        className={`group cursor-pointer transition-shadow overflow-hidden bg-white rounded-xl border shadow-sm ${
+                                    <Link
+                                        key={product.id}
+                                        href={`/products/${product.slug}`}
+                                        className="block"
+                                        {...productInteractions.getInteractionProps(product.id, () => {
+                                            window.location.href = `/products/${product.slug}`;
+                                        })}
+                                    >
+                                        <div className={`group cursor-pointer transition-shadow overflow-hidden bg-white rounded-xl border shadow-sm ${
                                             productInteractions.isMobile 
                                                 ? (isActive ? 'shadow-lg touch-feedback' : 'shadow-sm hover:shadow-sm touch-feedback') 
                                                 : 'hover:shadow-lg'
-                                        }`}
-                                        {...productInteractions.getInteractionProps(product.id)}
-                                    >
-                                        <div className="relative overflow-hidden">
-                                            <img 
-                                                src={product.image} 
-                                                alt={product.name}
-                                                className={`w-full h-48 object-cover transition-transform duration-200 ${
-                                                    productInteractions.isMobile 
-                                                        ? (isActive ? 'scale-105' : 'scale-100') 
-                                                        : 'group-hover:scale-105'
-                                                }`}
-                                            />
-                                            {product.badge && (
-                                                <Badge className="absolute top-2 left-2">
-                                                    {product.badge}
-                                                </Badge>
-                                            )}
-                                            <Button 
-                                                size="sm" 
-                                                className={`absolute bottom-2 right-2 transition-opacity ${
-                                                    productInteractions.isMobile 
-                                                        ? (isActive ? 'opacity-100' : 'opacity-0') 
-                                                        : 'opacity-0 group-hover:opacity-100'
-                                                }`}
-                                            >
-                                                {t('add_to_cart')}
-                                            </Button>
+                                        }`}>
+                                            <div className="relative overflow-hidden">
+                                                <img 
+                                                    src={product.image} 
+                                                    alt={product.name}
+                                                    className={`w-full h-48 object-cover transition-transform duration-200 ${
+                                                        productInteractions.isMobile 
+                                                            ? (isActive ? 'scale-105' : 'scale-100') 
+                                                            : 'group-hover:scale-105'
+                                                    }`}
+                                                />
+                                                {product.badge && (
+                                                    <Badge className="absolute top-2 left-2">
+                                                        {product.badge}
+                                                    </Badge>
+                                                )}
+                                                <Button 
+                                                    size="sm" 
+                                                    className={`absolute bottom-2 right-2 transition-opacity ${
+                                                        productInteractions.isMobile 
+                                                            ? (isActive ? 'opacity-100' : 'opacity-0') 
+                                                            : 'opacity-0 group-hover:opacity-100'
+                                                    }`}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        // TODO: Add to cart functionality
+                                                        console.log('Add to cart:', product.id);
+                                                    }}
+                                                >
+                                                    {t('add_to_cart')}
+                                                </Button>
+                                            </div>
+                                            <div className="p-4">
+                                                <h3 className="font-semibold text-black mb-2 line-clamp-2">
+                                                    {product.name}
+                                                </h3>
+                                                <div className="flex items-center gap-1 mb-2">
+                                                    {renderStars(product.rating)}
+                                                    <span className="text-sm text-gray-500 ml-1">
+                                                        ({product.reviews})
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-lg font-bold text-black">
+                                                        ${product.price}
+                                                    </span>
+                                                    {product.originalPrice && (
+                                                        <span className="text-sm text-gray-500 line-through">
+                                                            ${product.originalPrice}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="p-4">
-                                        <h3 className="font-semibold text-black mb-2 line-clamp-2">
-                                            {product.name}
-                                        </h3>
-                                        <div className="flex items-center gap-1 mb-2">
-                                            {renderStars(product.rating)}
-                                            <span className="text-sm text-gray-500 ml-1">
-                                                ({product.reviews})
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-lg font-bold text-black">
-                                                ${product.price}
-                                            </span>
-                                            {product.originalPrice && (
-                                                <span className="text-sm text-gray-500 line-through">
-                                                    ${product.originalPrice}
-                                                </span>
-                                            )}
-                                        </div>
-                                        </div>
-                                    </div>
+                                    </Link>
                                 );
                             })}
                         </div>
