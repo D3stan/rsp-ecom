@@ -31,7 +31,7 @@
     "rights_reserved": "All rights reserved.",
     "categories": {
         "smartphones": "Smartphones",
-        "laptops": "Laptops",
+        "laptops": "Laptops", 
         "audio": "Audio",
         "wearables": "Wearables",
         "cameras": "Cameras",
@@ -39,9 +39,13 @@
         "electronics": "Electronics",
         "clothing": "Clothing",
         "home___garden": "Home & Garden",
-        "sports___outdoors": "Sports & Outdoors",
+        "home_&_garden": "Home & Garden",
+        "sports___outdoors": "Sports & Outdoors", 
+        "sports_&_outdoors": "Sports & Outdoors",
         "books___media": "Books & Media",
-        "health___beauty": "Health & Beauty"
+        "books_&_media": "Books & Media",
+        "health___beauty": "Health & Beauty",
+        "health_&_beauty": "Health & Beauty"
     },
     "products_count": "{{count}} products"
 }

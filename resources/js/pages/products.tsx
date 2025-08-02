@@ -15,8 +15,7 @@ import {
     List,
     ChevronLeft,
     ChevronRight,
-    X,
-    Star
+    X
 } from 'lucide-react';
 
 export interface Product {
@@ -86,15 +85,6 @@ const PRICE_RANGES = [
     { label: 'Over $500', min: 500, max: null },
 ];
 
-const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-        <Star 
-            key={i} 
-            className={`w-4 h-4 ${i < Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
-        />
-    ));
-};
-
 export default function Products() {
     const { products, categories, priceRange, filters, pagination } = usePage<ProductsPageProps>().props;
     
@@ -130,7 +120,7 @@ export default function Products() {
             preserveState: true,
             preserveScroll: true,
         });
-    }, [searchTerm, selectedCategory, priceMin, priceMax, sortBy, filters.per_page]);
+    }, [searchTerm, selectedCategory, priceMin, priceMax, sortBy, filters.per_page, priceRange?.min, priceRange?.max]);
 
     // Only debounce search, don't auto-apply other filters
     useEffect(() => {
@@ -161,7 +151,7 @@ export default function Products() {
             }
         }, 500);
         return () => clearTimeout(timer);
-    }, [searchTerm, filters.search]);
+    }, [searchTerm, filters.search, selectedCategory, priceMin, priceMax, sortBy, filters.per_page, priceRange?.min, priceRange?.max]);
 
     const handleApplyFilters = () => {
         const params: Record<string, string | number> = {

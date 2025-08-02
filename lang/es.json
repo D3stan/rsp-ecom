@@ -39,9 +39,13 @@
         "electronics": "Electrónicos",
         "clothing": "Ropa",
         "home___garden": "Hogar y Jardín",
+        "home_&_garden": "Hogar y Jardín",
         "sports___outdoors": "Deportes y Aire Libre",
+        "sports_&_outdoors": "Deportes y Aire Libre",
         "books___media": "Libros y Medios",
-        "health___beauty": "Salud y Belleza"
+        "books_&_media": "Libros y Medios",
+        "health___beauty": "Salud y Belleza",
+        "health_&_beauty": "Salud y Belleza"
     },
     "products_count": "{{count}} productos"
 }

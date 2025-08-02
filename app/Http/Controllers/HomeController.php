@@ -61,7 +61,7 @@ class HomeController extends Controller
             ->map(function (Category $category) {
                 return [
                     'id' => $category->id,
-                    'name' => 'categories.' . str_replace([' ', '&'], ['_', '_'], strtolower($category->name)),
+                    'name' => str_replace([' ', '&'], ['_', '_'], strtolower($category->name)),
                     'slug' => $category->slug,
                     'count' => $category->products_count,
                     'icon' => $this->getCategoryIcon($category->slug),
@@ -108,11 +108,18 @@ class HomeController extends Controller
     {
         $iconMap = [
             'electronics' => 'Smartphone',
-            'clothing' => 'Shirt',
+            'clothing' => 'Shirt', 
             'home-garden' => 'Home',
             'sports-outdoors' => 'Activity',
             'books-media' => 'Book',
             'health-beauty' => 'Heart',
+            // Additional mappings for consistency
+            'smartphones' => 'Smartphone',
+            'laptops' => 'Laptop',
+            'audio' => 'Headphones',
+            'wearables' => 'Watch',
+            'cameras' => 'Camera',
+            'gaming' => 'Gamepad2',
         ];
 
         return $iconMap[$slug] ?? 'Package';

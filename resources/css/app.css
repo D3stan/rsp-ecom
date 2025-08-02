@@ -166,11 +166,19 @@
         }
         
         .group:hover .group-hover\:bg-black {
-            background-color: rgb(243 244 246); /* Keep original bg-gray-100 */
+            background-color: rgb(249 250 251); /* Keep original bg-gray-50 */
         }
         
         .group:hover .group-hover\:text-white {
             color: inherit; /* Keep original text color */
+        }
+        
+        .group:hover .group-hover\:scale-110 {
+            transform: none;
+        }
+        
+        .group:hover .group-hover\:-translate-y-1 {
+            transform: none;
         }
         
         /* Disable hover on touch devices for cards */
@@ -185,10 +193,9 @@
             transition: transform 0.1s ease;
         }
         
-        /* Better touch targets */
-        .touch-target {
-            min-height: 44px;
-            min-width: 44px;
+        /* Better touch targets for categories */
+        .category-card {
+            min-height: 120px;
         }
         
         /* Optimize performance for mobile devices */

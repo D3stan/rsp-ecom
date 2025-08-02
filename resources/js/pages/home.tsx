@@ -1,12 +1,10 @@
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/header';
 import { useEffect, useRef, useState } from 'react';
 import useTranslation from '@/hooks/useTranslation';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useMobileInteractions } from '@/hooks/use-mobile-interactions';
 import { 
     Star, 
@@ -308,27 +306,27 @@ export default function Home() {
                                             window.location.href = `/products/category/${category.slug}`;
                                         })}
                                     >
-                                        <Card className={`h-full text-center transition-shadow ${
+                                        <div className={`h-full text-center transition-all duration-200 bg-white rounded-xl border shadow-sm overflow-hidden ${
                                             categoryInteractions.isMobile 
-                                                ? (isActive ? 'shadow-md touch-feedback' : 'shadow-sm touch-feedback') 
-                                                : 'hover:shadow-md'
+                                                ? (isActive ? 'shadow-md scale-95 touch-feedback' : 'shadow-sm touch-feedback') 
+                                                : 'hover:shadow-md hover:-translate-y-1'
                                         }`}>
-                                            <CardContent className="p-6">
-                                                <div className={`w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center transition-colors ${
+                                            <div className="p-6">
+                                                <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center transition-all duration-200 ${
                                                     categoryInteractions.isMobile 
-                                                        ? (isActive ? 'bg-black text-white' : 'bg-gray-100') 
-                                                        : 'bg-gray-100 group-hover:bg-black group-hover:text-white'
+                                                        ? (isActive ? 'bg-black text-white scale-110' : 'bg-gray-50 text-gray-700') 
+                                                        : 'bg-gray-50 text-gray-700 group-hover:bg-black group-hover:text-white group-hover:scale-110'
                                                 }`}>
-                                                    <IconComponent className="w-6 h-6" />
+                                                    <IconComponent className="w-8 h-8" />
                                                 </div>
-                                                <h3 className="font-semibold text-black mb-1">
-                                                    {t(category.name)}
+                                                <h3 className="font-semibold text-gray-900 mb-2 text-sm">
+                                                    {t(`categories.${category.name}`)}
                                                 </h3>
-                                                <p className="text-sm text-gray-500">
+                                                <p className="text-xs text-gray-500 font-medium">
                                                     {t('products_count', { count: category.count })}
                                                 </p>
-                                            </CardContent>
-                                        </Card>
+                                            </div>
+                                        </div>
                                     </Link>
                                 );
                             })}
