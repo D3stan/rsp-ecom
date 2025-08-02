@@ -72,90 +72,64 @@ $table->string('stripe_customer_id')->nullable();
 
 ### 3. Controllers Implementation
 
-#### 3.1 CheckoutController
+#### 3.1 CheckoutController (Simplified)
 **File**: `app/Http/Controllers/CheckoutController.php`
 
 **Methods**:
-- `index()` - Display checkout form
-- `show()` - Display checkout session
-- `createSession()` - Create Stripe checkout session
-- `success()` - Handle successful payment
+- `productCheckout()` - Use `$user->checkout()` method
+- `singleChargeCheckout()` - Use `$user->checkoutCharge()` method
+- `guestCheckout()` - Use `Checkout::guest()->create()` method
+- `success()` - Handle successful payment completion
 - `cancel()` - Handle cancelled payment
-- `webhook()` - Handle Stripe webhooks
 
 **Key Features**:
-- Product-based checkout
-- Single charge checkout
-- Guest checkout support
-- Tax ID collection
-- Promotion codes support
-- Address management integration
+- Direct Cashier method usage
+- Built-in promotion codes via `allowPromotionCodes()`
+- Built-in tax ID collection via `collectTaxIds()`
+- Guest checkout via `Checkout::guest()`
+- No custom session management needed
 
-#### 3.2 PaymentController
-**File**: `app/Http/Controllers/PaymentController.php`
+### 4. Laravel Cashier Integration
 
-**Methods**:
-- `processPayment()` - Process payment with Payment Intents
-- `confirmPayment()` - Confirm SCA payments
-- `refund()` - Handle refunds
-- `paymentMethods()` - Manage saved payment methods
+#### 4.1 Billable Trait Usage
+**Implementation**: Use Laravel Cashier's built-in methods
 
-### 4. Services Implementation
+**Key Methods**:
+- `$user->checkout()` - Create product checkout sessions
+- `$user->checkoutCharge()` - Create single charge sessions
+- `$user->allowPromotionCodes()` - Enable promotion codes
+- `$user->collectTaxIds()` - Enable tax ID collection
+- `Checkout::guest()` - Create guest checkout sessions
 
-#### 4.1 CheckoutService
-**File**: `app/Services/CheckoutService.php`
+#### 4.2 Built-in Webhook Handling
+**Implementation**: Cashier automatically handles webhooks
 
-**Responsibilities**:
-- Calculate totals (including tax and shipping)
-- Create Stripe checkout sessions
-- Handle cart to order conversion
-- Manage customer data synchronization
-- Handle different checkout types (product, single charge)
-
-#### 4.2 PaymentService
-**File**: `app/Services/PaymentService.php`
-
-**Responsibilities**:
-- Process different payment methods
-- Handle payment confirmations
-- Manage payment method storage
-- Process refunds and disputes
-- Handle failed payments
-
-#### 4.3 WebhookService
-**File**: `app/Services/WebhookService.php`
-
-**Responsibilities**:
-- Handle Stripe webhook events
-- Update order statuses
-- Process payment events
-- Handle payment failures and disputes
-- Synchronize data with Stripe
+**Configuration**:
+- Set `STRIPE_WEBHOOK_SECRET` in `.env`
+- Configure webhook endpoint in Stripe Dashboard
+- Cashier handles `checkout.session.completed` automatically
+- No custom webhook service needed
 
 ### 5. Routes Implementation
 
-#### 5.1 Checkout Routes
+#### 5.1 Checkout Routes (Cashier Implementation)
 **File**: `routes/web.php`
 
 ```php
-// Checkout routes
+// Product checkout routes
 Route::middleware(['auth'])->group(function () {
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
-    Route::post('/checkout/session', [CheckoutController::class, 'createSession'])->name('checkout.session');
+    Route::get('/checkout/product/{priceId}', [CheckoutController::class, 'productCheckout'])->name('checkout.product');
+    Route::get('/checkout/charge/{amount}/{name}', [CheckoutController::class, 'singleChargeCheckout'])->name('checkout.charge');
     Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
     Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
-    
-    // Payment methods
-    Route::get('/payment-methods', [PaymentController::class, 'index'])->name('payment-methods');
-    Route::post('/payment-methods', [PaymentController::class, 'store'])->name('payment-methods.store');
-    Route::delete('/payment-methods/{paymentMethod}', [PaymentController::class, 'destroy'])->name('payment-methods.destroy');
 });
 
-// Guest checkout
-Route::post('/checkout/guest', [CheckoutController::class, 'guestCheckout'])->name('checkout.guest');
+// Guest checkout routes
+Route::get('/guest/checkout/{priceId}', [CheckoutController::class, 'guestCheckout'])->name('guest.checkout');
 
-// Webhooks (outside middleware)
-Route::post('/stripe/webhook', [CheckoutController::class, 'webhook'])->name('stripe.webhook');
+// Webhooks (handled automatically by Cashier)
+// Configure in Stripe Dashboard to point to: /stripe/webhook
+// Cashier registers this route automatically
 ```
 
 ### 6. Frontend Components (Inertia.js)
@@ -209,23 +183,21 @@ CASHIER_LOGGER=stack
 **Test Files**:
 ```
 tests/Feature/Checkout/
-├── CheckoutTest.php
-├── PaymentTest.php
-├── WebhookTest.php
-├── GuestCheckoutTest.php
+├── CashierCheckoutTest.php
 ├── ProductCheckoutTest.php
-└── RefundTest.php
+├── GuestCheckoutTest.php
+├── PromotionCodeTest.php
+└── TaxCollectionTest.php
 ```
 
 #### 8.2 Unit Tests
-**Directory**: `tests/Unit/Services/`
+**Directory**: `tests/Unit/Models/`
 
 **Test Files**:
 ```
-tests/Unit/Services/
-├── CheckoutServiceTest.php
-├── PaymentServiceTest.php
-└── WebhookServiceTest.php
+tests/Unit/Models/
+├── UserBillableTest.php
+└── OrderStripeTest.php
 ```
 
 #### 8.3 Test Data and Fixtures

@@ -165,19 +165,11 @@ class CheckoutTest extends TestCase
 
     public function test_guest_checkout_index_renders(): void
     {
-        // Create a test session
-        $sessionId = 'test_guest_session_12345';
-        
-        // Set up a proper session
+        // Start session and get the actual session ID
         $this->startSession();
-        session()->put('_token', 'test-token');
-        session()->save();
+        $sessionId = session()->getId();
         
-        // Mock Session::getId() to return our test session ID
-        \Illuminate\Support\Facades\Session::shouldReceive('getId')
-            ->andReturn($sessionId);
-
-        // Create a guest cart using the test session ID
+        // Create a guest cart using the actual session ID
         $cart = Cart::create([
             'session_id' => $sessionId,
         ]);
@@ -190,6 +182,11 @@ class CheckoutTest extends TestCase
         ]);
 
         $response = $this->get('/checkout/guest');
+
+        // Debug: Check where it's redirecting
+        if ($response->status() === 302) {
+            dump('Redirecting to: ' . $response->headers->get('location'));
+        }
 
         $response->assertOk();
         $response->assertInertia(

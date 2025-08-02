@@ -26,41 +26,28 @@ Route::get('/csrf-token', function () {
     return response()->json(['token' => csrf_token()]);
 })->name('csrf.token');
 
-// Checkout routes (authenticated users)
-Route::middleware(['auth', App\Http\Middleware\EnsureCheckoutAccess::class])->group(function () {
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
-    Route::post('/checkout/session', [CheckoutController::class, 'createSession'])->name('checkout.session');
-    Route::get('/checkout/show', [CheckoutController::class, 'show'])->name('checkout.show');
-    Route::post('/products/{product}/checkout', [CheckoutController::class, 'productCheckout'])->name('product.checkout');
-});
-
-// Subscription routes (authenticated users)
+// Cashier-based Checkout routes (authenticated users)
 Route::middleware(['auth'])->group(function () {
-    Route::get('/subscriptions', [App\Http\Controllers\SubscriptionController::class, 'index'])->name('subscriptions');
-    Route::get('/products/{product}/subscription-plans', [App\Http\Controllers\SubscriptionController::class, 'plans'])->name('subscription.plans');
-    Route::post('/subscription/checkout', [App\Http\Controllers\SubscriptionController::class, 'createCheckoutSession'])->name('subscription.checkout');
-    Route::post('/subscription/create', [App\Http\Controllers\SubscriptionController::class, 'create'])->name('subscription.create');
-    Route::post('/subscription/cancel', [App\Http\Controllers\SubscriptionController::class, 'cancel'])->name('subscription.cancel');
-    Route::post('/subscription/resume', [App\Http\Controllers\SubscriptionController::class, 'resume'])->name('subscription.resume');
-    Route::post('/subscription/change-plan', [App\Http\Controllers\SubscriptionController::class, 'changePlan'])->name('subscription.change-plan');
-});
-
-// Checkout result pages (authenticated but no cart validation needed)
-Route::middleware(['auth'])->group(function () {
+    // Product checkout using Cashier methods
+    Route::get('/checkout/product/{priceId}', [CheckoutController::class, 'productCheckout'])->name('checkout.product');
+    Route::get('/checkout/product/{priceId}/promo', [CheckoutController::class, 'productCheckoutWithPromo'])->name('checkout.product.promo');
+    Route::get('/checkout/product/{priceId}/tax', [CheckoutController::class, 'productCheckoutWithTax'])->name('checkout.product.tax');
+    
+    // Single charge checkout
+    Route::get('/checkout/charge/{amount}/{name}', [CheckoutController::class, 'singleChargeCheckout'])->name('checkout.charge');
+    
+    // Success and cancel pages
     Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
     Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
-    Route::get('/subscription/success', [App\Http\Controllers\SubscriptionController::class, 'success'])->name('subscription.success');
-    Route::get('/subscription/cancel', [App\Http\Controllers\SubscriptionController::class, 'cancelCheckout'])->name('subscription.cancel');
 });
 
-// Guest checkout (outside auth middleware)
-Route::get('/checkout/guest', [CheckoutController::class, 'guestIndex'])->name('checkout.guest');
-Route::post('/checkout/guest/session', [CheckoutController::class, 'guestCheckout'])->name('checkout.guest.session');
+// Guest checkout routes using Cashier
+Route::get('/guest/checkout/{priceId}', [CheckoutController::class, 'guestCheckout'])->name('guest.checkout');
+Route::get('/guest/checkout/{priceId}/promo/{promoCode}', [CheckoutController::class, 'guestCheckoutWithPromo'])->name('guest.checkout.promo');
 
-// Stripe webhooks (outside auth middleware - no CSRF protection needed)
-Route::post('/stripe/webhook', [CheckoutController::class, 'webhook'])
-    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])
-    ->name('stripe.webhook');
+// Stripe webhook (Cashier handles this automatically)
+// Configure in Stripe Dashboard to point to: /stripe/webhook
+// Cashier registers this route automatically - no custom route needed
 
 Route::get('/about', function () {
     return Inertia::render('about');
