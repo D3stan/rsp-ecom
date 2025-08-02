@@ -211,11 +211,12 @@ export default function Cart() {
                                     key={item.id}
                                     className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow"
                                 >
-                                    <div className="flex flex-col sm:flex-row sm:items-start space-y-4 sm:space-y-0 sm:space-x-4">
-                                        {/* Product Image */}
+                                    {/* Top Section: Image and Product Details */}
+                                    <div className="flex items-start space-x-4 mb-4">
+                                        {/* Product Image - Left Side */}
                                         <Link
                                             href={`/products/${item.product.slug}`}
-                                            className="flex-shrink-0 mx-auto sm:mx-0"
+                                            className="flex-shrink-0"
                                         >
                                             <div className="w-20 h-20 sm:w-24 sm:h-24 overflow-hidden rounded-lg bg-gray-100">
                                                 <img
@@ -227,21 +228,21 @@ export default function Cart() {
                                             </div>
                                         </Link>
 
-                                        {/* Product Details */}
+                                        {/* Product Details - Right Side */}
                                         <div className="flex-1 min-w-0">
                                             <Link
                                                 href={`/products/${item.product.slug}`}
                                                 className="block hover:text-blue-600 transition-colors"
                                             >
-                                                <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 text-center sm:text-left">
+                                                <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 mb-2">
                                                     {item.product.name}
                                                 </h3>
                                             </Link>
                                             
-                                            <div className="mt-2 text-center sm:text-left">
+                                            <div className="space-y-1">
                                                 {item.product.category && (
                                                     <p className="text-sm text-gray-500">
-                                                        {item.product.category}
+                                                        Category: {item.product.category}
                                                     </p>
                                                 )}
                                                 
@@ -252,59 +253,56 @@ export default function Cart() {
                                                 )}
                                             </div>
 
-                                            {/* Quantity and Price Section */}
-                                            <div className="mt-4 space-y-3">
-                                                {/* Quantity Controls */}
-                                                <div className="flex items-center justify-center sm:justify-start space-x-2">
-                                                    <Label className="text-sm font-medium text-gray-700">
-                                                        Quantity:
-                                                    </Label>
-                                                    <div className="flex items-center border border-gray-300 rounded-lg text-black">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                                            disabled={item.quantity <= 1 || isUpdating === item.id}
-                                                            className="h-8 w-8 p-0"
-                                                        >
-                                                            <Minus className="w-4 h-4" />
-                                                        </Button>
-                                                        <span className="px-3 py-1 text-sm font-medium min-w-[2rem] text-center">
-                                                            {item.quantity}
-                                                        </span>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                            disabled={isUpdating === item.id}
-                                                            className="h-8 w-8 p-0"
-                                                        >
-                                                            <Plus className="w-4 h-4" />
-                                                        </Button>
-                                                    </div>
-                                                </div>
-
-                                                {/* Price and Remove - Now under quantity */}
-                                                <div className="flex items-center justify-between">
-                                                    <div className="text-center sm:text-left">
-                                                        <p className="text-lg font-semibold text-gray-900">
-                                                            ${item.total.toFixed(2)}
-                                                        </p>
-                                                        <p className="text-sm text-gray-500">
-                                                            ${item.price.toFixed(2)} each
-                                                        </p>
-                                                    </div>
+                                            {/* Quantity Controls */}
+                                            <div className="flex items-center space-x-2 mt-3">
+                                                <Label className="text-sm font-medium text-gray-700">
+                                                    Quantity:
+                                                </Label>
+                                                <div className="flex items-center border border-gray-300 rounded-lg">
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={() => removeItem(item.id)}
-                                                        className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                        disabled={item.quantity <= 1 || isUpdating === item.id}
+                                                        className="h-8 w-8 p-0"
                                                     >
-                                                        <Trash2 className="w-4 h-4" />
+                                                        <Minus className="w-4 h-4" />
+                                                    </Button>
+                                                    <span className="px-3 py-1 text-sm font-medium min-w-[2rem] text-center">
+                                                        {item.quantity}
+                                                    </span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                        disabled={isUpdating === item.id}
+                                                        className="h-8 w-8 p-0"
+                                                    >
+                                                        <Plus className="w-4 h-4" />
                                                     </Button>
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {/* Bottom Section: Price and Delete Button */}
+                                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                                        <div>
+                                            <p className="text-lg font-semibold text-gray-900">
+                                                ${item.total.toFixed(2)}
+                                            </p>
+                                            <p className="text-sm text-gray-500">
+                                                ${item.price.toFixed(2)} each
+                                            </p>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => removeItem(item.id)}
+                                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
                                     </div>
                                 </div>
                             ))}
