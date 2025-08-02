@@ -38,10 +38,15 @@ class CheckoutController extends Controller
             return redirect()->route('login');
         }
 
-        // Get user's cart items
-        $cartItems = Cart::where('user_id', $user->id)
-            ->with(['product', 'size'])
-            ->get();
+        // Get user's cart with cart items
+        $cart = Cart::where('user_id', $user->id)->first();
+        
+        if (!$cart) {
+            return redirect()->route('cart')->with('error', 'Your cart is empty');
+        }
+
+        // Get cart items with their relationships
+        $cartItems = $cart->cartItems()->with(['product', 'size'])->get();
 
         if ($cartItems->isEmpty()) {
             return redirect()->route('cart')->with('error', 'Your cart is empty');
@@ -95,9 +100,13 @@ class CheckoutController extends Controller
     {
         try {
             $user = Auth::user();
-            $cartItems = Cart::where('user_id', $user->id)
-                ->with(['product', 'size'])
-                ->get();
+            $cart = Cart::where('user_id', $user->id)->first();
+
+            if (!$cart) {
+                return response()->json(['error' => 'Cart is empty'], 400);
+            }
+
+            $cartItems = $cart->cartItems()->with(['product', 'size'])->get();
 
             if ($cartItems->isEmpty()) {
                 return response()->json(['error' => 'Cart is empty'], 400);

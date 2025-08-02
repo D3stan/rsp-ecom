@@ -24,9 +24,9 @@ class EnsureCheckoutAccess
         // For checkout pages, ensure user has items in cart
         if ($request->is('checkout') && !$request->is('checkout/success') && !$request->is('checkout/cancel')) {
             $user = Auth::user();
-            $cartItemsCount = $user->carts()->count();
+            $cart = $user->getCurrentCart();
             
-            if ($cartItemsCount === 0) {
+            if (!$cart || $cart->cartItems()->count() === 0) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
         }

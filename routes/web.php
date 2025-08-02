@@ -21,6 +21,11 @@ Route::delete('/cart/clear', [CartController::class, 'clear'])->name('cart.clear
 Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
 Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.apply-coupon');
 
+// CSRF token endpoint for AJAX requests
+Route::get('/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+})->name('csrf.token');
+
 // Checkout routes (authenticated users)
 Route::middleware(['auth', App\Http\Middleware\EnsureCheckoutAccess::class])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');

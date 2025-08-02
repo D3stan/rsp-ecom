@@ -1,4 +1,5 @@
 import { router } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 
 export interface AddToCartData {
     product_id: number;
@@ -15,11 +16,50 @@ export interface CartResponse {
 
 class CartService {
     /**
-     * Get CSRF token from meta tag
+     * Get CSRF token from meta tag or Inertia props
      */
     private getCSRFToken(): string | null {
-        const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        return token || null;
+        // First try to get from meta tag
+        const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (metaToken) {
+            return metaToken;
+        }
+        
+        // Fallback to Inertia shared props (if available)
+        try {
+            const inertiaProps = (window as any)?.inertiaProps || {};
+            return inertiaProps.csrf_token || null;
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * Refresh CSRF token from server
+     */
+    private async refreshCSRFToken(): Promise<string | null> {
+        try {
+            const response = await fetch('/csrf-token', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                // Update the meta tag with the new token
+                const metaTag = document.querySelector('meta[name="csrf-token"]');
+                if (metaTag && data.token) {
+                    metaTag.setAttribute('content', data.token);
+                }
+                return data.token;
+            }
+        } catch (error) {
+            console.error('Failed to refresh CSRF token:', error);
+        }
+        return null;
     }
 
     /**
@@ -39,6 +79,34 @@ class CartService {
                 },
                 body: JSON.stringify(data),
             });
+
+            // If we get a CSRF error (419), try to refresh the token and retry
+            if (response.status === 419) {
+                const newToken = await this.refreshCSRFToken();
+                if (newToken) {
+                    const retryResponse = await fetch('/cart/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': newToken,
+                        },
+                        body: JSON.stringify(data),
+                    });
+                    
+                    const retryResult = await retryResponse.json();
+                    
+                    if (!retryResponse.ok) {
+                        return {
+                            success: false,
+                            message: retryResult.message || 'Failed to add product to cart after token refresh.',
+                        };
+                    }
+                    
+                    return retryResult;
+                }
+            }
 
             const result = await response.json();
             
@@ -77,6 +145,34 @@ class CartService {
                 body: JSON.stringify({ quantity }),
             });
 
+            // If we get a CSRF error (419), try to refresh the token and retry
+            if (response.status === 419) {
+                const newToken = await this.refreshCSRFToken();
+                if (newToken) {
+                    const retryResponse = await fetch(`/cart/items/${itemId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': newToken,
+                        },
+                        body: JSON.stringify({ quantity }),
+                    });
+                    
+                    const retryResult = await retryResponse.json();
+                    
+                    if (!retryResponse.ok) {
+                        return {
+                            success: false,
+                            message: retryResult.message || 'Failed to update cart after token refresh.',
+                        };
+                    }
+                    
+                    return retryResult;
+                }
+            }
+
             const result = await response.json();
             
             if (!response.ok) {
@@ -111,6 +207,32 @@ class CartService {
                     ...(token && { 'X-CSRF-TOKEN': token }),
                 },
             });
+
+            // If we get a CSRF error (419), try to refresh the token and retry
+            if (response.status === 419) {
+                const newToken = await this.refreshCSRFToken();
+                if (newToken) {
+                    const retryResponse = await fetch(`/cart/items/${itemId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': newToken,
+                        },
+                    });
+                    
+                    const retryResult = await retryResponse.json();
+                    
+                    if (!retryResponse.ok) {
+                        return {
+                            success: false,
+                            message: retryResult.message || 'Failed to remove item after token refresh.',
+                        };
+                    }
+                    
+                    return retryResult;
+                }
+            }
 
             const result = await response.json();
             
@@ -170,6 +292,32 @@ class CartService {
                     ...(token && { 'X-CSRF-TOKEN': token }),
                 },
             });
+
+            // If we get a CSRF error (419), try to refresh the token and retry
+            if (response.status === 419) {
+                const newToken = await this.refreshCSRFToken();
+                if (newToken) {
+                    const retryResponse = await fetch('/cart/clear', {
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': newToken,
+                        },
+                    });
+                    
+                    const retryResult = await retryResponse.json();
+                    
+                    if (!retryResponse.ok) {
+                        return {
+                            success: false,
+                            message: retryResult.message || 'Failed to clear cart after token refresh.',
+                        };
+                    }
+                    
+                    return retryResult;
+                }
+            }
 
             const result = await response.json();
             

@@ -39,9 +39,10 @@ class Cart extends Model
 
     public function getShippingCostAttribute(): float
     {
-        // Calculate shipping based on products' sizes
+        // Calculate shipping based on cart items' sizes
         return $this->cartItems->sum(function ($item) {
-            return $item->product->size->shipping_cost ?? 0;
+            // Use the size from the cart item, not from the product
+            return $item->size->shipping_cost ?? 0;
         });
     }
 
