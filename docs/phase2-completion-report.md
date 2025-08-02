@@ -213,7 +213,7 @@ Phase 2 provides a solid foundation for Phase 3 advanced features:
 
 ### Phase 3 Goals (Next):
 1. **Guest Checkout** - Allow non-authenticated users to checkout
-2. **Subscription Support** - Recurring payment handling
+2. **Enhanced Payment Features** - Advanced payment processing
 3. **Address Management** - Save and manage shipping addresses
 4. **Promotion Codes** - Coupon and discount system
 5. **Enhanced Tax Calculation** - Location-based tax rates

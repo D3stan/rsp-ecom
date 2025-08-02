@@ -12,7 +12,7 @@ Stores information about all system users including customers and administrators
 - `stripe_id`: Stripe customer ID for payment processing
 - `pm_type`: Default payment method type
 - `pm_last_four`: Last four digits of default payment method
-- `trial_ends_at`: Trial period end date for subscriptions
+- `trial_ends_at`: Trial period end date (reserved for future use)
 
 **Examples**:
 1. **Customer User**:
@@ -490,58 +490,27 @@ Dynamic configuration values that can be modified through admin panel.
 
 ---
 
-## SUBSCRIPTIONS (Laravel Cashier)
-Manages recurring subscription billing through Stripe.
+## PAYMENT_METHODS (Future Enhancement)
+Stores saved payment methods for customers (reserved for future implementation).
 
-**Purpose**: Handles subscription-based billing, trials, and recurring payments.
+**Purpose**: Manages saved payment methods for faster checkout.
 
 **Key Fields**:
-- `user_id`: Links subscription to customer
-- `name`: Subscription identifier (e.g., 'default', 'premium')
-- `stripe_id`: Stripe subscription ID
-- `stripe_status`: Current subscription status
-- `stripe_price`: Stripe price ID
-- `quantity`: Subscription quantity
-- `trial_ends_at`: Trial period end date
-- `ends_at`: Subscription cancellation date
+- `user_id`: Links payment method to customer
+- `stripe_payment_method_id`: Stripe payment method ID
+- `type`: Payment method type (card, bank_account, etc.)
+- `last_four`: Last four digits for display
+- `is_default`: Whether this is the default payment method
 
 **Examples**:
-1. **Active Subscription**:
+1. **Saved Card**:
    ```
    id: 1
    user_id: 1
-   name: "default"
-   stripe_id: "sub_1234567890"
-   stripe_status: "active"
-   stripe_price: "price_premium_monthly"
-   quantity: 1
-   trial_ends_at: null
-   ends_at: null
-   ```
-
----
-
-## SUBSCRIPTION_ITEMS (Laravel Cashier)
-Individual items within subscriptions for multi-product subscriptions.
-
-**Purpose**: Manages individual products/services within a subscription.
-
-**Key Fields**:
-- `subscription_id`: Links to parent subscription
-- `stripe_id`: Stripe subscription item ID
-- `stripe_product`: Stripe product ID
-- `stripe_price`: Stripe price ID
-- `quantity`: Item quantity
-
-**Examples**:
-1. **Subscription Item**:
-   ```
-   id: 1
-   subscription_id: 1
-   stripe_id: "si_1234567890"
-   stripe_product: "prod_premium_features"
-   stripe_price: "price_premium_monthly"
-   quantity: 1
+   stripe_payment_method_id: "pm_1234567890"
+   type: "card"
+   last_four: "4242"
+   is_default: true
    ```
 
 ---
@@ -742,27 +711,13 @@ erDiagram
         timestamps updated_at
     }
 
-    SUBSCRIPTIONS {
+    PAYMENT_METHODS {
         int id PK
         int user_id FK
-        string name
-        string stripe_id UK
-        string stripe_status
-        string stripe_price
-        int quantity
-        timestamp trial_ends_at
-        timestamp ends_at
-        timestamps created_at
-        timestamps updated_at
-    }
-
-    SUBSCRIPTION_ITEMS {
-        int id PK
-        int subscription_id FK
-        string stripe_id UK
-        string stripe_product
-        string stripe_price
-        int quantity
+        string stripe_payment_method_id UK
+        string type
+        string last_four
+        boolean is_default
         timestamps created_at
         timestamps updated_at
     }
@@ -773,7 +728,7 @@ erDiagram
     USERS ||--o{ ORDERS : places
     USERS ||--o{ WISHLISTS : has
     USERS ||--o{ REVIEWS : writes
-    USERS ||--o{ SUBSCRIPTIONS : has
+    USERS ||--o{ PAYMENT_METHODS : has
 
     ADDRESSES ||--o{ ORDERS : "billing address"
     ADDRESSES ||--o{ ORDERS : "shipping address"
@@ -788,5 +743,4 @@ erDiagram
 
     CARTS ||--o{ CART_ITEMS : contains
     ORDERS ||--o{ ORDER_ITEMS : contains
-    SUBSCRIPTIONS ||--o{ SUBSCRIPTION_ITEMS : contains
 ```

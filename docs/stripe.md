@@ -28,7 +28,7 @@
 - [Versioning](https://docs.stripe.com/api/versioning.md)
 
 ## Checkout
-Build a low-code payment form and embed it on your site or host it on Stripe. Checkout creates a customizable form for collecting payments. You can redirect customers to a Stripe-hosted payment page, embed Checkout directly in your website, or create a customized checkout page with Stripe Elements. It supports one-time payments and subscriptions and accepts over 40 local payment methods. For a full list of Checkout features.
+Build a low-code payment form and embed it on your site or host it on Stripe. Checkout creates a customizable form for collecting payments. You can redirect customers to a Stripe-hosted payment page, embed Checkout directly in your website, or create a customized checkout page with Stripe Elements. It supports one-time payments and accepts over 40 local payment methods. For a full list of Checkout features.
 
 - [Stripe Checkout](https://docs.stripe.com/payments/checkout.md): Build a low-code payment form and embed it on your site or host it on Stripe.
 - [Stripe-hosted page](https://docs.stripe.com/checkout/quickstart.md)
@@ -40,10 +40,10 @@ Build a low-code payment form and embed it on your site or host it on Stripe. Ch
 - [Customize redirect behavior](https://docs.stripe.com/payments/checkout/custom-success-page.md): Display a confirmation page with your customer's order information.
 - [Add discounts](https://docs.stripe.com/payments/checkout/discounts.md): Reduce the amount charged to a customer by discounting their subtotal with coupons and promotion codes.
 - [Use your custom domain](https://docs.stripe.com/payments/checkout/custom-domains.md): Learn how to bring your own custom domain to Stripe Checkout, Payment Links, and customer portal.
-- [Limit customers to one subscription](https://docs.stripe.com/payments/checkout/limit-subscriptions.md): Direct customers to manage their subscription when they already have one.
+- [Manage payment methods](https://docs.stripe.com/payments/checkout/payment-methods.md): Use dynamic payment methods or manually define the payment methods to allow per checkout session.
 - [Cross-sells](https://docs.stripe.com/payments/checkout/cross-sells.md): Enable customers to purchase complementary products at checkout by using cross-sells.
 - [Overview](https://docs.stripe.com/products-prices/overview.md): Model your business on Stripe with products and prices.
-- [Subscriptions](https://docs.stripe.com/payments/subscriptions.md): Create subscriptions for your customers.
+- [One-time payments](https://docs.stripe.com/payments/accept-a-payment.md): Accept one-time payments from your customers.
 - [Charge for shipping](https://docs.stripe.com/payments/during-payment/charge-shipping.md): Create different shipping rates for your customers.
 - [Collect taxes](https://docs.stripe.com/payments/checkout/taxes.md): Learn how to collect taxes with Stripe Tax.
 - [Manage payment methods](https://docs.stripe.com/payments/checkout/payment-methods.md): Use dynamic payment methods or manually define the payment methods to allow per checkout session.
@@ -53,9 +53,9 @@ Build a low-code payment form and embed it on your site or host it on Stripe. Ch
 - [Customize checkout behavior](https://docs.stripe.com/payments/checkout/customization/behavior.md): Customize the behavior of the checkout process to increase conversion and revenue.
 - [Save payment details during payment](https://docs.stripe.com/payments/checkout/save-during-payment.md): Learn how to accept a payment and save your customer's payment details for future purchases.
 - [After the payment](https://docs.stripe.com/payments/checkout/after-the-payment.md): Customize the post-payment checkout process.
-- [Set the billing cycle date](https://docs.stripe.com/payments/checkout/billing-cycle.md): Set a subscription's billing cycle anchor to a fixed date.
+- [Collect physical addresses](https://docs.stripe.com/payments/collect-addresses.md): Learn how to collect billing and shipping addresses.
 - [Let customers decide what to pay](https://docs.stripe.com/payments/checkout/pay-what-you-want.md): Accept tips and donations, or sell pay-what-you-want products and services.
-- [Subscription upsells](https://docs.stripe.com/payments/checkout/upsells.md): Enable customers to upgrade their subscription plan at checkout by using upsells.
+- [Cross-sells](https://docs.stripe.com/payments/checkout/cross-sells.md): Enable customers to purchase complementary products at checkout by using cross-sells.
 - [No-cost orders](https://docs.stripe.com/payments/checkout/no-cost-orders.md): Accept orders for no-cost line items or apply 100% off discounts for one-time payments.
 - [Analyze your conversion funnel](https://docs.stripe.com/payments/checkout/analyze-conversion-funnel.md): Analyze your Stripe Checkout conversion funnel with Google Analytics 4.
 - [Add discounts, upsells, and optional items](https://docs.stripe.com/payments/checkout/promotions.md): Boost sales with discounts and offers.
@@ -115,9 +115,9 @@ Build a low-code payment form and embed it on your site or host it on Stripe. Ch
 
 
 ## Billing
-Create and manage subscriptions, track usage, and issue invoices.
+Create and manage invoices for one-time payments.
 
-Stripe Billing is a tool for managing subscriptions and invoicing. It automates recurring payments, creates custom pricing plans, and handles billing cycles such as trials and renewals. Learn more about [Billing](https://docs.stripe.com/billing/billing-apis.md) and its [features](https://docs.stripe.com/billing.md#features).
+Stripe Billing provides invoicing capabilities for one-time payments and custom billing scenarios. Learn more about [Billing](https://docs.stripe.com/billing/billing-apis.md) and its [features](https://docs.stripe.com/billing.md#features).
 
 - [Recurring pricing models](https://docs.stripe.com/products-prices/pricing-models.md): Learn about the pricing models you can use with subscriptions.
 - [Prebuilt subscription page with Stripe Checkout](https://docs.stripe.com/billing/quickstart.md)
@@ -488,7 +488,7 @@ With Sigma, you can:
 ## Payment Links
 Sell online without building a digital storefront.
 
-Accept a payment or sell subscriptions without building additional standalone websites or applications with Payment Links. Share the link as many times as you want on social media, in emails, or on your website.
+Accept one-time payments without building additional standalone websites or applications with Payment Links. Share the link as many times as you want on social media, in emails, or on your website.
 
 Payment Links supports [more than 20 payment methods](https://docs.stripe.com/payments/payment-methods/payment-method-support.md#product-support)—including credit and debit cards, Apple Pay, and Google Pay. The payment link automatically uses your customer’s preferred browser language in [more than 30 languages](https://support.stripe.com/questions/supported-languages-for-stripe-checkout-and-payment-links). Learn more about the [features](#features), and create a payment link in the demo below.
 

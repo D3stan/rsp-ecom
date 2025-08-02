@@ -3,6 +3,7 @@
 namespace Tests\Feature\Checkout;
 
 use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
@@ -27,21 +28,27 @@ class CheckoutTest extends TestCase
 
         $this->user = User::factory()->create();
         $this->category = Category::factory()->create();
+        $this->size = Size::factory()->create();
         $this->product = Product::factory()->create([
             'category_id' => $this->category->id,
+            'size_id' => $this->size->id,
             'price' => 25.00,
         ]);
-        $this->size = Size::factory()->create();
     }
 
     public function test_checkout_page_renders_with_cart_items(): void
     {
-        // Create cart items for user
-        Cart::create([
+        // Create cart for user
+        $cart = Cart::create([
             'user_id' => $this->user->id,
+        ]);
+
+        // Create cart items for user
+        $cart->cartItems()->create([
             'product_id' => $this->product->id,
             'size_id' => $this->size->id,
             'quantity' => 2,
+            'price' => $this->product->price,
         ]);
 
         $response = $this->actingAs($this->user)->get('/checkout');
@@ -52,7 +59,7 @@ class CheckoutTest extends TestCase
                 ->component('Checkout/Index')
                 ->has('cartItems', 1)
                 ->has('totals')
-                ->where('totals.subtotal', 50.00)
+                ->where('totals.subtotal', 50)
                 ->where('totals.total_quantity', 2)
         );
     }

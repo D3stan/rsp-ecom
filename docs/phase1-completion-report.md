@@ -8,7 +8,7 @@
 
 ### 1. Documentation Updates
 - **✅ ecommerce_structure.md** - Updated with Stripe integration, checkout routes, and payment features
-- **✅ database.md** - Enhanced with Cashier tables, Stripe fields, and complete ER diagram including SUBSCRIPTIONS and SUBSCRIPTION_ITEMS tables
+- **✅ database.md** - Enhanced with Cashier tables, Stripe fields, and complete ER diagram including payment method tables
 - **✅ checkout-implementation-map.md** - Created comprehensive implementation roadmap
 - **✅ cashier-phase1-setup.md** - Created detailed setup and installation guide
 
@@ -56,7 +56,7 @@
 
 ### 5. Documentation & Diagrams
 - **✅ ER Diagram Updated** - Added Cashier tables and Stripe fields to database schema
-- **✅ Table Relationships** - Added SUBSCRIPTIONS and SUBSCRIPTION_ITEMS relationships
+- **✅ Table Relationships** - Added PAYMENT_METHODS relationships
 - **✅ Field Documentation** - Comprehensive documentation of all new fields with examples
 
 ## 🧪 Test Results
@@ -110,7 +110,7 @@ php artisan migrate
 2. **Comprehensive Testing** - Full test coverage for all new functionality
 3. **Production Ready** - Proper error handling and validation
 4. **Well Documented** - Complete documentation with examples and setup guides
-5. **Scalable Foundation** - Ready for advanced features (subscriptions, webhooks, etc.)
+5. **Scalable Foundation** - Ready for advanced features (payment methods, webhooks, etc.)
 
 ## 📊 Project Status
 

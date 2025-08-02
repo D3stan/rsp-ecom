@@ -103,13 +103,13 @@ class CheckoutController extends Controller
             $cart = Cart::where('user_id', $user->id)->first();
 
             if (!$cart) {
-                return response()->json(['error' => 'Cart is empty'], 400);
+                return back()->withErrors(['cart' => 'Your cart is empty.']);
             }
 
             $cartItems = $cart->cartItems()->with(['product', 'size'])->get();
 
             if ($cartItems->isEmpty()) {
-                return response()->json(['error' => 'Cart is empty'], 400);
+                return redirect()->route('cart')->withErrors(['cart' => 'Your cart is empty.']);
             }
 
             // Create checkout session
@@ -119,17 +119,13 @@ class CheckoutController extends Controller
                 $request->validated()
             );
 
-            return response()->json([
-                'sessionId' => $session->id,
-                'url' => $session->url
-            ]);
+            // Redirect to Stripe checkout
+            return redirect()->away($session->url);
 
         } catch (\Exception $e) {
             Log::error('Checkout session creation failed: ' . $e->getMessage());
             
-            return response()->json([
-                'error' => 'Unable to create checkout session. Please try again.'
-            ], 500);
+            return back()->withErrors(['checkout' => 'Unable to create checkout session. Please try again.']);
         }
     }
 
@@ -244,11 +240,11 @@ class CheckoutController extends Controller
         
         // Verify cart session and get cart items
         if ($request->cart_session_id !== $sessionId) {
-            return response()->json(['error' => 'Invalid cart session'], 400);
+            return back()->withErrors(['cart_session_id' => 'Invalid cart session. Please refresh and try again.']);
         }
 
         if (!$cart || $cart->cartItems->isEmpty()) {
-            return response()->json(['error' => 'Cart is empty'], 400);
+            return redirect()->route('cart')->withErrors(['cart' => 'Your cart is empty.']);
         }
 
         try {
@@ -262,14 +258,18 @@ class CheckoutController extends Controller
                 $sessionId
             );
 
-            return response()->json([
-                'checkout_url' => $session->url,
-                'session_id' => $session->id,
-            ]);
+            // Return Inertia response - but we need to redirect to external URL
+            // Since this is an external redirect, we'll redirect directly
+            return redirect()->away($session->url);
 
         } catch (\Exception $e) {
-            Log::error('Guest checkout failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Checkout failed. Please try again.'], 500);
+            Log::error('Guest checkout failed: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return back()->withErrors(['checkout' => 'Checkout failed. Please try again. Error: ' . $e->getMessage()]);
         }
     }
 

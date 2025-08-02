@@ -56,7 +56,7 @@ class User extends Authenticatable
 
 #### 2.1 Cashier Migrations
 **Command**: `php artisan vendor:publish --tag="cashier-migrations"`
-**Action**: Creates `subscriptions`, `subscription_items` tables and updates `users` table
+**Action**: Updates `users` table with payment method fields
 
 #### 2.2 Orders Table Enhancement
 **File**: `database/migrations/xxxx_add_stripe_fields_to_orders_table.php`
@@ -110,7 +110,7 @@ $table->string('stripe_customer_id')->nullable();
 - Create Stripe checkout sessions
 - Handle cart to order conversion
 - Manage customer data synchronization
-- Handle different checkout types (product, subscription, single charge)
+- Handle different checkout types (product, single charge)
 
 #### 4.2 PaymentService
 **File**: `app/Services/PaymentService.php`
@@ -128,7 +128,7 @@ $table->string('stripe_customer_id')->nullable();
 **Responsibilities**:
 - Handle Stripe webhook events
 - Update order statuses
-- Process subscription events
+- Process payment events
 - Handle payment failures and disputes
 - Synchronize data with Stripe
 
@@ -213,7 +213,7 @@ tests/Feature/Checkout/
 ├── PaymentTest.php
 ├── WebhookTest.php
 ├── GuestCheckoutTest.php
-├── SubscriptionCheckoutTest.php
+├── ProductCheckoutTest.php
 └── RefundTest.php
 ```
 
@@ -262,9 +262,9 @@ tests/Unit/Services/
 - `payment_intent.payment_failed`
 - `invoice.payment_succeeded`
 - `invoice.payment_failed`
-- `customer.subscription.created`
-- `customer.subscription.updated`
-- `customer.subscription.deleted`
+- `payment_intent.succeeded`
+- `payment_intent.payment_failed`
+- `checkout.session.completed`
 
 ### 10. Security Considerations
 
@@ -327,7 +327,7 @@ tests/Unit/Services/
 
 ### Phase 3: Advanced Features (Week 3)
 1. Implement guest checkout
-2. Add subscription support
+2. Add enhanced payment features
 3. Integrate address management
 4. Add promotion codes support
 

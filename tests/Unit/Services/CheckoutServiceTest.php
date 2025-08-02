@@ -29,11 +29,12 @@ class CheckoutServiceTest extends TestCase
         $this->checkoutService = new CheckoutService();
         $this->user = User::factory()->create();
         $this->category = Category::factory()->create();
+        $this->size = Size::factory()->create();
         $this->product = Product::factory()->create([
             'category_id' => $this->category->id,
+            'size_id' => $this->size->id,
             'price' => 25.00,
         ]);
-        $this->size = Size::factory()->create();
     }
 
     public function test_calculate_totals_with_single_item(): void
