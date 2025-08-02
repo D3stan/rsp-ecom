@@ -3,6 +3,7 @@
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -19,6 +20,27 @@ Route::delete('/cart/items/{cartItem}', [CartController::class, 'remove'])->name
 Route::delete('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
 Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.apply-coupon');
+
+// Checkout routes (authenticated users)
+Route::middleware(['auth', App\Http\Middleware\EnsureCheckoutAccess::class])->group(function () {
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
+    Route::post('/checkout/session', [CheckoutController::class, 'createSession'])->name('checkout.session');
+    Route::get('/checkout/show', [CheckoutController::class, 'show'])->name('checkout.show');
+});
+
+// Checkout result pages (authenticated but no cart validation needed)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
+    Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
+});
+
+// Guest checkout (outside auth middleware)
+Route::post('/checkout/guest', [CheckoutController::class, 'guestCheckout'])->name('checkout.guest');
+
+// Stripe webhooks (outside auth middleware - no CSRF protection needed)
+Route::post('/stripe/webhook', [CheckoutController::class, 'webhook'])
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])
+    ->name('stripe.webhook');
 
 Route::get('/about', function () {
     return Inertia::render('about');
