@@ -37,16 +37,25 @@ Route::middleware(['auth'])->group(function () {
     
     // Single charge checkout
     Route::get('/checkout/charge/{amount}/{name}', [CheckoutController::class, 'singleChargeCheckout'])->name('checkout.charge');
-    
-    // Success and cancel pages
-    Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
-    Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
 });
 
 // Cart-based checkout routes (bridges cart workflow with Cashier)
 Route::middleware(['auth'])->group(function () {
     Route::get('/checkout/cart', [CheckoutController::class, 'cartCheckout'])->name('checkout.cart');
 });
+
+// Generic checkout route - redirects to appropriate cart checkout
+Route::get('/checkout', function (Request $request) {
+    if ($request->user()) {
+        return redirect()->route('checkout.cart');
+    } else {
+        return redirect()->route('guest.cart.checkout');
+    }
+})->name('checkout');
+
+// Success and cancel pages - accessible to both authenticated and guest users
+Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
+Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
 
 // Guest cart checkout
 Route::get('/guest/checkout/cart', [CheckoutController::class, 'guestCartCheckout'])->name('guest.cart.checkout');

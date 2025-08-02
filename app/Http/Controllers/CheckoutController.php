@@ -8,6 +8,7 @@ use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Checkout;
+use App\Models\Order;
 
 class CheckoutController extends Controller
 {
@@ -111,7 +112,7 @@ class CheckoutController extends Controller
         try {
             // Use Cashier's built-in guest checkout
             $checkoutSession = Checkout::guest()->create($priceId, [
-                'success_url' => route('checkout.success'),
+                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('checkout.cancel'),
             ]);
             
@@ -133,7 +134,7 @@ class CheckoutController extends Controller
             $checkoutSession = Checkout::guest()
                 ->withPromotionCode($promoCode)
                 ->create($priceId, [
-                    'success_url' => route('checkout.success'),
+                    'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
                     'cancel_url' => route('checkout.cancel'),
                 ]);
             
@@ -146,32 +147,128 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Handle successful checkout
+     * Handle successful checkout - works for both authenticated and guest users
      */
-    public function success(Request $request): Response
+    public function success(Request $request): Response|RedirectResponse
     {
         $sessionId = $request->get('session_id');
         
+        Log::info('Checkout success accessed', [
+            'session_id' => $sessionId,
+            'all_params' => $request->all(),
+            'user_id' => $request->user()?->id,
+        ]);
+        
         if (!$sessionId) {
+            Log::warning('No session_id provided to success page', [
+                'url' => $request->fullUrl(),
+                'all_params' => $request->all(),
+            ]);
             return redirect()->route('home')->with('error', 'Invalid checkout session.');
         }
 
         try {
-            $checkoutSession = null;
+            // Initialize Stripe client
+            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
             
-            // Retrieve checkout session if user is authenticated
-            if ($request->user()) {
-                $checkoutSession = $request->user()->stripe()->checkout->sessions->retrieve($sessionId);
+            // Retrieve checkout session from Stripe (works for both user and guest sessions)
+            $checkoutSession = $stripe->checkout->sessions->retrieve($sessionId);
+            
+            // Find the order in our database by session ID
+            $order = Order::where('stripe_checkout_session_id', $sessionId)
+                ->with(['orderItems.product', 'orderItems.product.sizes'])
+                ->first();
+            
+            // If no order found yet, it might still be processing via webhook
+            // Create a basic order structure from the session data
+            if (!$order) {
+                Log::warning('Order not found for session, webhook may still be processing', [
+                    'session_id' => $sessionId,
+                    'payment_status' => $checkoutSession->payment_status
+                ]);
+                
+                // Create a temporary order data structure for display
+                $orderData = $this->createTemporaryOrderData($checkoutSession);
+            } else {
+                $orderData = $order;
             }
             
+            // Determine if this is a guest checkout
+            $isGuest = !$request->user() || ($order && $order->isGuestOrder());
+            
             return Inertia::render('Checkout/Success', [
-                'sessionId' => $sessionId,
-                'checkoutSession' => $checkoutSession,
+                'order' => $orderData,
+                'session' => [
+                    'id' => $checkoutSession->id,
+                    'payment_status' => $checkoutSession->payment_status,
+                    'customer_email' => $checkoutSession->customer_details->email ?? $checkoutSession->metadata->guest_email ?? 'N/A',
+                    'amount_total' => $checkoutSession->amount_total,
+                    'currency' => $checkoutSession->currency,
+                    'created' => $checkoutSession->created,
+                ],
+                'isGuest' => $isGuest,
+                'user' => $request->user(),
             ]);
             
         } catch (\Exception $e) {
-            Log::error('Checkout success handling failed: ' . $e->getMessage());
-            return redirect()->route('home')->with('error', 'There was an issue processing your order.');
+            Log::error('Checkout success handling failed: ' . $e->getMessage(), [
+                'session_id' => $sessionId,
+                'user_id' => $request->user()?->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->route('home')->with('error', 'There was an issue processing your order. Please contact support if you were charged.');
+        }
+    }
+
+    /**
+     * Create temporary order data when order is not yet created via webhook
+     */
+    private function createTemporaryOrderData(object $checkoutSession): array
+    {
+        return [
+            'id' => 'pending',
+            'total_amount' => $checkoutSession->amount_total / 100, // Convert from cents
+            'subtotal' => $checkoutSession->amount_subtotal / 100,
+            'tax_amount' => ($checkoutSession->total_details->amount_tax ?? 0) / 100,
+            'shipping_cost' => ($checkoutSession->total_details->amount_shipping ?? 0) / 100,
+            'currency' => strtoupper($checkoutSession->currency),
+            'status' => 'processing',
+            'payment_status' => $checkoutSession->payment_status,
+            'created_at' => date('Y-m-d H:i:s', $checkoutSession->created),
+            'orderItems' => $this->extractLineItemsFromSession($checkoutSession),
+        ];
+    }
+
+    /**
+     * Extract line items from checkout session for temporary display
+     */
+    private function extractLineItemsFromSession(object $checkoutSession): array
+    {
+        try {
+            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+            $lineItems = $stripe->checkout->sessions->allLineItems($checkoutSession->id);
+            
+            $items = [];
+            foreach ($lineItems->data as $item) {
+                $items[] = [
+                    'id' => 'temp_' . uniqid(),
+                    'quantity' => $item->quantity,
+                    'price' => $item->price->unit_amount / 100,
+                    'total' => ($item->price->unit_amount * $item->quantity) / 100,
+                    'product' => [
+                        'id' => 'temp',
+                        'name' => $item->description,
+                        'price' => $item->price->unit_amount / 100,
+                        'image_url' => null,
+                    ],
+                    'size' => null,
+                ];
+            }
+            
+            return $items;
+        } catch (\Exception $e) {
+            Log::error('Failed to extract line items from session: ' . $e->getMessage());
+            return [];
         }
     }
 
@@ -180,7 +277,11 @@ class CheckoutController extends Controller
      */
     public function cancel(Request $request): Response
     {
-        return Inertia::render('Checkout/Cancel');
+        $message = $request->get('message', 'Your payment was cancelled. You can try again anytime.');
+        
+        return Inertia::render('Checkout/Cancel', [
+            'message' => $message,
+        ]);
     }
 
     /**
@@ -285,7 +386,7 @@ class CheckoutController extends Controller
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                'success_url' => route('checkout.success'),
+                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('checkout.cancel'),
                 'metadata' => [
                     'guest_session_id' => $guestSessionId,

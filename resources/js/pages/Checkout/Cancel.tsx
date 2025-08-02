@@ -1,16 +1,19 @@
 import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { XCircle, ArrowLeft, ShoppingCart, HelpCircle } from 'lucide-react';
+import { XCircle, ArrowLeft, ShoppingCart, HelpCircle, User } from 'lucide-react';
 
 interface Props {
-    message: string;
+    message?: string;
 }
 
 export default function CheckoutCancel({ message }: Props) {
+    const { auth } = usePage().props as any;
+    const isGuest = !auth.user;
+
     return (
         <AppLayout>
             <Head title="Checkout Cancelled" />
@@ -75,8 +78,12 @@ export default function CheckoutCancel({ message }: Props) {
                 {/* Action Buttons */}
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Try again button - uses generic checkout route that handles auth */}
                         <Button asChild size="lg" className="w-full">
-                            <Link href={route('checkout')} className="flex items-center gap-2">
+                            <Link 
+                                href={route('checkout')} 
+                                className="flex items-center gap-2"
+                            >
                                 <ArrowLeft className="h-4 w-4" />
                                 Try Again
                             </Link>
@@ -95,6 +102,26 @@ export default function CheckoutCancel({ message }: Props) {
                             Continue Shopping
                         </Link>
                     </Button>
+
+                    {/* Guest account creation prompt */}
+                    {isGuest && (
+                        <div className="border-t pt-4">
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <User className="h-4 w-4 text-green-600" />
+                                    <h4 className="font-medium text-green-800">Create an Account</h4>
+                                </div>
+                                <p className="text-sm text-green-700 mb-3">
+                                    Save your cart items, track orders, and enjoy faster checkout.
+                                </p>
+                                <Button variant="outline" size="sm" asChild className="border-green-300">
+                                    <Link href={route('register')} className="text-green-700">
+                                        Sign Up Now
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Help Section */}

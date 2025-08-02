@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Package, Truck, CreditCard } from 'lucide-react';
+import { CheckCircle, Package, Truck, CreditCard, User, Mail } from 'lucide-react';
 
 interface OrderItem {
-    id: number;
+    id: number | string;
     product: {
-        id: number;
+        id: number | string;
         name: string;
         price: number;
         image_url?: string;
@@ -18,20 +18,21 @@ interface OrderItem {
     size?: {
         id: number;
         name: string;
-    };
+    } | null;
     quantity: number;
     price: number;
     total: number;
 }
 
 interface Order {
-    id: number;
+    id: number | string;
     total_amount: number;
     status: string;
     payment_status: string;
     subtotal: number;
     tax_amount: number;
     shipping_cost: number;
+    currency?: string;
     created_at: string;
     orderItems: OrderItem[];
 }
@@ -40,14 +41,25 @@ interface Session {
     id: string;
     payment_status: string;
     customer_email: string;
+    amount_total?: number;
+    currency?: string;
+    created?: number;
+}
+
+interface User {
+    id: number;
+    name: string;
+    email: string;
 }
 
 interface Props {
     order: Order;
     session: Session;
+    isGuest: boolean;
+    user?: User;
 }
 
-export default function CheckoutSuccess({ order, session }: Props) {
+export default function CheckoutSuccess({ order, session, isGuest, user }: Props) {
     return (
         <AppLayout>
             <Head title="Order Confirmation" />
@@ -60,7 +72,10 @@ export default function CheckoutSuccess({ order, session }: Props) {
                     </div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
                     <p className="text-gray-600">
-                        Thank you for your purchase. Your order has been successfully placed.
+                        {isGuest 
+                            ? 'Thank you for your purchase. Your order has been successfully placed.'
+                            : `Thank you, ${user?.name}! Your order has been successfully placed.`
+                        }
                     </p>
                 </div>
 
@@ -79,7 +94,12 @@ export default function CheckoutSuccess({ order, session }: Props) {
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-600">Order Number</span>
-                                        <span className="font-mono text-sm">#{order.id.toString().padStart(6, '0')}</span>
+                                        <span className="font-mono text-sm">
+                                            {order.id === 'pending' 
+                                                ? 'Processing...' 
+                                                : `#${order.id.toString().padStart(6, '0')}`
+                                            }
+                                        </span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-600">Order Date</span>
@@ -100,9 +120,33 @@ export default function CheckoutSuccess({ order, session }: Props) {
                                         </Badge>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Email</span>
-                                        <span className="text-sm">{session.customer_email}</span>
+                                        <span className="text-sm text-gray-600">
+                                            {isGuest ? 'Email' : 'Account'}
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {isGuest ? (
+                                                <>
+                                                    <Mail className="h-4 w-4 text-gray-400" />
+                                                    <span className="text-sm">{session.customer_email}</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <User className="h-4 w-4 text-gray-400" />
+                                                    <span className="text-sm">{user?.email}</span>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
+                                    
+                                    {/* Guest Order Notice */}
+                                    {isGuest && (
+                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                            <p className="text-sm text-blue-800">
+                                                <strong>Guest Order:</strong> You can track this order using the order number above. 
+                                                Consider <Link href={route('register')} className="underline">creating an account</Link> for easier order management.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -114,28 +158,35 @@ export default function CheckoutSuccess({ order, session }: Props) {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {order.orderItems.map((item) => (
-                                        <div key={item.id} className="flex items-center space-x-4 py-4 border-b last:border-b-0">
-                                            {item.product.image_url && (
-                                                <img
-                                                    src={item.product.image_url}
-                                                    alt={item.product.name}
-                                                    className="h-16 w-16 rounded-lg object-cover"
-                                                />
-                                            )}
-                                            <div className="flex-1">
-                                                <h4 className="font-medium">{item.product.name}</h4>
-                                                {item.size && (
-                                                    <p className="text-sm text-gray-600">Size: {item.size.name}</p>
+                                    {order.orderItems && order.orderItems.length > 0 ? (
+                                        order.orderItems.map((item, index) => (
+                                            <div key={item.id || index} className="flex items-center space-x-4 py-4 border-b last:border-b-0">
+                                                {item.product.image_url && (
+                                                    <img
+                                                        src={item.product.image_url}
+                                                        alt={item.product.name}
+                                                        className="h-16 w-16 rounded-lg object-cover"
+                                                    />
                                                 )}
-                                                <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                                                <div className="flex-1">
+                                                    <h4 className="font-medium">{item.product.name}</h4>
+                                                    {item.size && (
+                                                        <p className="text-sm text-gray-600">Size: {item.size.name}</p>
+                                                    )}
+                                                    <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-medium">${item.total.toFixed(2)}</p>
+                                                    <p className="text-sm text-gray-600">${item.price.toFixed(2)} each</p>
+                                                </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="font-medium">${item.total.toFixed(2)}</p>
-                                                <p className="text-sm text-gray-600">${item.price.toFixed(2)} each</p>
-                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-8 text-gray-500">
+                                            <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                            <p>Order items are being processed...</p>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -202,22 +253,27 @@ export default function CheckoutSuccess({ order, session }: Props) {
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
                                         <span className="text-sm">Subtotal</span>
-                                        <span className="text-sm">${order.subtotal.toFixed(2)}</span>
+                                        <span className="text-sm">${(order.subtotal || 0).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-sm">Shipping</span>
                                         <span className="text-sm">
-                                            {order.shipping_cost === 0 ? 'Free' : `$${order.shipping_cost.toFixed(2)}`}
+                                            {(order.shipping_cost || 0) === 0 ? 'Free' : `$${(order.shipping_cost || 0).toFixed(2)}`}
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span className="text-sm">Tax</span>
-                                        <span className="text-sm">${order.tax_amount.toFixed(2)}</span>
+                                        <span className="text-sm">${(order.tax_amount || 0).toFixed(2)}</span>
                                     </div>
                                     <Separator />
                                     <div className="flex justify-between font-bold text-lg">
                                         <span>Total</span>
-                                        <span>${order.total_amount.toFixed(2)}</span>
+                                        <span>
+                                            {order.currency && order.currency !== 'USD' 
+                                                ? `${(order.total_amount || 0).toFixed(2)} ${order.currency.toUpperCase()}`
+                                                : `$${(order.total_amount || 0).toFixed(2)}`
+                                            }
+                                        </span>
                                     </div>
                                 </div>
 
@@ -230,11 +286,21 @@ export default function CheckoutSuccess({ order, session }: Props) {
                                             Continue Shopping
                                         </Link>
                                     </Button>
-                                    <Button variant="outline" asChild className="w-full">
-                                        <Link href={route('dashboard')}>
-                                            View Order History
-                                        </Link>
-                                    </Button>
+                                    
+                                    {/* Different action based on user type */}
+                                    {isGuest ? (
+                                        <Button variant="outline" asChild className="w-full">
+                                            <Link href={route('register')}>
+                                                Create Account
+                                            </Link>
+                                        </Button>
+                                    ) : (
+                                        <Button variant="outline" asChild className="w-full">
+                                            <Link href={route('dashboard')}>
+                                                View Order History
+                                            </Link>
+                                        </Button>
+                                    )}
                                 </div>
 
                                 {/* Support */}
@@ -242,6 +308,11 @@ export default function CheckoutSuccess({ order, session }: Props) {
                                     <p className="text-xs text-gray-600 text-center">
                                         Need help? <Link href={route('contact')} className="underline">Contact Support</Link>
                                     </p>
+                                    {isGuest && (
+                                        <p className="text-xs text-gray-500 text-center mt-2">
+                                            Save your order number for future reference
+                                        </p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

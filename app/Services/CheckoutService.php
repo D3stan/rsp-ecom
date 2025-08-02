@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
+use App\Services\EmailService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -347,6 +348,10 @@ class CheckoutService
             'order_id' => $order->id,
             'payment_intent_id' => $paymentIntent->id,
         ]);
+
+        // Send order confirmation email
+        $emailService = app(EmailService::class);
+        $emailService->sendOrderConfirmation($order);
     }
 
     /**
