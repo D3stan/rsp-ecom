@@ -215,16 +215,16 @@ export default function Home() {
                             {featuredProducts.map((product: Product) => {
                                 const isActive = productInteractions.isActive(product.id);
                                 return (
-                                    <Card 
+                                    <div 
                                         key={product.id} 
-                                        className={`group cursor-pointer transition-shadow py-0 ${
+                                        className={`group cursor-pointer transition-shadow overflow-hidden bg-white rounded-xl border shadow-sm ${
                                             productInteractions.isMobile 
                                                 ? (isActive ? 'shadow-lg touch-feedback' : 'shadow-sm hover:shadow-sm touch-feedback') 
                                                 : 'hover:shadow-lg'
                                         }`}
                                         {...productInteractions.getInteractionProps(product.id)}
                                     >
-                                        <div className="relative overflow-hidden rounded-t-xl">
+                                        <div className="relative overflow-hidden">
                                             <img 
                                                 src={product.image} 
                                                 alt={product.name}
@@ -250,7 +250,7 @@ export default function Home() {
                                                 {t('add_to_cart')}
                                             </Button>
                                         </div>
-                                    <CardContent className="p-4 bg-white">
+                                        <div className="p-4">
                                         <h3 className="font-semibold text-black mb-2 line-clamp-2">
                                             {product.name}
                                         </h3>
@@ -270,8 +270,8 @@ export default function Home() {
                                                 </span>
                                             )}
                                         </div>
-                                    </CardContent>
-                                </Card>
+                                        </div>
+                                    </div>
                                 );
                             })}
                         </div>
