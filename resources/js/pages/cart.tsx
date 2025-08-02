@@ -62,7 +62,6 @@ export default function Cart() {
         if (!item.product.image || item.product.image === '' || item.product.image === 'product.png') {
             return defaultImage;
         }
-        console.log('Image source:', item.product.image);
         return item.product.image;
     };
 
@@ -258,7 +257,7 @@ export default function Cart() {
                                                 <Label className="text-sm font-medium text-gray-700">
                                                     Quantity:
                                                 </Label>
-                                                <div className="flex items-center border border-gray-300 rounded-lg">
+                                                <div className="flex items-center border border-gray-300 rounded-lg text-black">
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
@@ -322,7 +321,7 @@ export default function Cart() {
                                             placeholder="Enter discount code"
                                             value={couponCode}
                                             onChange={(e) => setCouponCode(e.target.value)}
-                                            className="flex-1"
+                                            className="flex-1 text-black"
                                         />
                                         <Button
                                             variant="outline"
@@ -376,7 +375,7 @@ export default function Cart() {
                                 {/* Checkout Button */}
                                 <Button
                                     onClick={proceedToCheckout}
-                                    className="w-full h-12 text-lg font-semibold"
+                                    className="w-full h-12 text-lg font-semibold border border-black"
                                     size="lg"
                                 >
                                     <Package className="w-5 h-5 mr-2" />
@@ -412,7 +411,7 @@ export default function Cart() {
                             </div>
                             <Button
                                 onClick={proceedToCheckout}
-                                className="flex-1 h-12 font-semibold"
+                                className="flex-1 h-12 font-semibold border border-black"
                             >
                                 <Package className="w-5 h-5 mr-2" />
                                 Checkout
