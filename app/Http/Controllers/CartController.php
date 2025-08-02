@@ -31,7 +31,7 @@ class CartController extends Controller
             ]);
         }
 
-        $cartItems = $cart->cartItems()->with(['product.category', 'product.size'])->get();
+        $cartItems = $cart->cartItems()->with(['product.category', 'size'])->get();
         
         return Inertia::render('cart', [
             'cart' => $cart,
@@ -48,7 +48,7 @@ class CartController extends Controller
                     'quantity' => $item->quantity,
                     'price' => (float) $item->price,
                     'total' => (float) $item->total,
-                    'size' => $item->product->size?->name,
+                    'size' => $item->size?->name,
                 ];
             }),
             'subtotal' => (float) $cart->subtotal,
@@ -96,9 +96,10 @@ class CartController extends Controller
             }
         }
 
-        // Check if item already exists in cart
+        // Check if item already exists in cart (including size)
         $existingItem = $cart->cartItems()
             ->where('product_id', $request->product_id)
+            ->where('size_id', $request->size_id)
             ->first();
 
         if ($existingItem) {
@@ -127,6 +128,7 @@ class CartController extends Controller
             // Create new cart item
             $cart->cartItems()->create([
                 'product_id' => $request->product_id,
+                'size_id' => $request->size_id,
                 'quantity' => $request->quantity,
                 'price' => $price,
             ]);
