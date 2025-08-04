@@ -197,6 +197,16 @@ export default function Products() {
         }, {
             preserveState: true,
             preserveScroll: true,
+            onSuccess: () => {
+                // Scroll to the products section after page change
+                const productsSection = document.querySelector('[data-products-section]');
+                if (productsSection) {
+                    productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    // Fallback: scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
         });
     };
 
@@ -321,7 +331,7 @@ export default function Products() {
                         </div>
 
                         {/* Products Grid */}
-                        <div className="flex-1">
+                        <div className="flex-1" data-products-section>
                             {/* Results Summary */}
                             <div className="flex items-center justify-between mb-8">
                                 <p className="text-lg font-medium text-gray-700">
