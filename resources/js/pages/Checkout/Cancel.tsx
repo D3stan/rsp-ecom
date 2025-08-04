@@ -1,6 +1,6 @@
 import React from 'react';
 import { Head, Link, usePage } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -15,8 +15,9 @@ export default function CheckoutCancel({ message }: Props) {
     const isGuest = !auth.user;
 
     return (
-        <AppLayout>
+        <>
             <Head title="Checkout Cancelled" />
+            <Header />
             
             <div className="container mx-auto px-4 py-8 max-w-2xl">
                 {/* Cancel Header */}
@@ -151,6 +152,6 @@ export default function CheckoutCancel({ message }: Props) {
                     </div>
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 }

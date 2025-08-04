@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -187,8 +187,9 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
 
     if (cartItems.length === 0) {
         return (
-            <AppLayout>
+            <>
                 <Head title="Checkout" />
+                <Header />
                 <div className="container mx-auto px-4 py-8">
                     <Alert>
                         <AlertCircle className="h-4 w-4" />
@@ -197,13 +198,14 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                         </AlertDescription>
                     </Alert>
                 </div>
-            </AppLayout>
+            </>
         );
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Checkout" />
+            <Header />
             
             <div className="container mx-auto px-4 py-8">
                 <div className="mb-8">
@@ -494,6 +496,6 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                     </div>
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 }
