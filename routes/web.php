@@ -78,6 +78,10 @@ Route::get('/contact', function () {
     return Inertia::render('contact');
 })->name('contact');
 
+Route::get('/privacy', function () {
+    return Inertia::render('privacy');
+})->name('privacy');
+
 // API routes for AJAX calls
 Route::prefix('api')->group(function () {
     Route::post('/promotion/validate', [App\Http\Controllers\Api\PromotionController::class, 'validate'])->name('api.promotion.validate');

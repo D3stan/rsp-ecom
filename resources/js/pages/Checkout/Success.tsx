@@ -65,20 +65,21 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
             <Head title="Order Confirmation" />
             <Header />
             
-            <div className="container mx-auto px-4 py-8 max-w-4xl">
-                {/* Success Header */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                        <CheckCircle className="h-8 w-8 text-green-600" />
+            <div className="min-h-screen bg-white">
+                <div className="container mx-auto px-4 py-8 max-w-4xl">
+                    {/* Success Header */}
+                    <div className="text-center mb-8">
+                        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                            <CheckCircle className="h-8 w-8 text-green-600" />
+                        </div>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
+                        <p className="text-gray-600">
+                            {isGuest 
+                                ? 'Thank you for your purchase. Your order has been successfully placed.'
+                                : `Thank you, ${user?.name}! Your order has been successfully placed.`
+                            }
+                        </p>
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Order Confirmed!</h1>
-                    <p className="text-gray-600">
-                        {isGuest 
-                            ? 'Thank you for your purchase. Your order has been successfully placed.'
-                            : `Thank you, ${user?.name}! Your order has been successfully placed.`
-                        }
-                    </p>
-                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Order Details */}
@@ -319,6 +320,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                         </Card>
                     </div>
                 </div>
+            </div>
             </div>
         </>
     );

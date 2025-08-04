@@ -1,4 +1,5 @@
 import '../css/app.css';
+import React from 'react';
 
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
@@ -16,15 +17,20 @@ createInertiaApp({
         const root = createRoot(el);
 
         root.render(
-            <ToastProvider>
-                <App {...props} />
-                <ToastContainer />
-            </ToastProvider>
+            React.createElement(ToastProvider, null,
+                React.createElement(App, props),
+                React.createElement(ToastContainer)
+            )
         );
     },
     progress: {
         color: '#4B5563',
     },
+}).then(() => {
+    // This will set light / dark mode on load...
+    initializeTheme();
+}).catch(error => {
+    console.error('Failed to initialize Inertia app:', error);
 });
 
 // This will set light / dark mode on load...

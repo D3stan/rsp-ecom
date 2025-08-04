@@ -207,11 +207,12 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
             <Head title="Checkout" />
             <Header />
             
-            <div className="container mx-auto px-4 py-8">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold">Checkout</h1>
-                    <p className="text-muted-foreground">Complete your order</p>
-                </div>
+            <div className="min-h-screen bg-white">
+                <div className="container mx-auto px-4 py-8">
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-bold text-gray-900">Checkout</h1>
+                        <p className="text-gray-600">Complete your order</p>
+                    </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Form */}
@@ -486,7 +487,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                     </div>
                                 </div>
 
-                                <div className="text-xs text-muted-foreground">
+                                <div className="text-xs text-gray-600">
                                     <p>• Secure payment powered by Stripe</p>
                                     <p>• Free shipping on orders over $100</p>
                                     <p>• 30-day return policy</p>
@@ -495,6 +496,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                         </Card>
                     </div>
                 </div>
+            </div>
             </div>
         </>
     );

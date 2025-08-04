@@ -19,7 +19,8 @@ export default function CheckoutCancel({ message }: Props) {
             <Head title="Checkout Cancelled" />
             <Header />
             
-            <div className="container mx-auto px-4 py-8 max-w-2xl">
+            <div className="min-h-screen bg-white">
+                <div className="container mx-auto px-4 py-8 max-w-2xl">
                 {/* Cancel Header */}
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
@@ -150,6 +151,7 @@ export default function CheckoutCancel({ message }: Props) {
                             and never store your payment details on our servers.
                         </p>
                     </div>
+                </div>
                 </div>
             </div>
         </>
