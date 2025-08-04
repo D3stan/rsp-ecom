@@ -1,6 +1,5 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
 
 // Simple currency formatter
 const formatCurrency = (amount: string | number) => {

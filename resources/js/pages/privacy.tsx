@@ -1,10 +1,7 @@
-import { type SharedData } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import Header from '@/components/header';
 
 export default function Privacy() {
-    const { auth } = usePage<SharedData>().props;
-
     return (
         <>
             <Head title="Privacy Policy - Your Store" />

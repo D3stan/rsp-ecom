@@ -1,17 +1,17 @@
-import React from 'react';
 import { Head, Link, usePage } from '@inertiajs/react';
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { XCircle, ArrowLeft, ShoppingCart, HelpCircle, User } from 'lucide-react';
+import { SharedData } from '@/types';
 
 interface Props {
     message?: string;
 }
 
 export default function CheckoutCancel({ message }: Props) {
-    const { auth } = usePage().props as any;
+    const { auth } = usePage().props as SharedData;
     const isGuest = !auth.user;
 
     return (
