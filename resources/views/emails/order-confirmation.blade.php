@@ -219,36 +219,27 @@
         }
         
         .btn {
-            display: inline-block;
+            display: inline-block !important;
             padding: 12px 24px;
-            text-decoration: none;
+            text-decoration: none !important;
             font-weight: 500;
             font-size: 14px;
             border: 1px solid transparent;
             text-align: center;
             transition: all 0.2s ease;
+            mso-hide: all;
         }
         
         .btn-primary {
-            background-color: #000000;
-            color: white;
-            border-color: #000000;
-        }
-        
-        .btn-primary:hover {
-            background-color: #333333;
-            border-color: #333333;
+            background-color: #000000 !important;
+            color: white !important;
+            border-color: #000000 !important;
         }
         
         .btn-secondary {
-            background-color: white;
-            color: #333333;
-            border-color: #333333;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #333333;
-            color: white;
+            background-color: white !important;
+            color: #333333 !important;
+            border-color: #333333 !important;
         }
         
         .status-badge {
@@ -339,9 +330,11 @@
                 align-items: center;
             }
             
-            .btn {
+            .cta-buttons a {
                 width: 100%;
                 max-width: 200px;
+                margin: 5px 0 !important;
+                display: block !important;
             }
             
             .footer {
@@ -444,12 +437,10 @@
                     <span>€{{ number_format($order->tax_amount, 2) }}</span>
                 </div>
                 @endif
-                @if($order->shipping_amount > 0)
                 <div class="price-row">
                     <span>Spedizione:</span>
-                    <span>€{{ number_format($order->shipping_amount, 2) }}</span>
+                    <span>{{ $order->shipping_amount > 0 ? '€' . number_format($order->shipping_amount, 2) : 'Gratuita' }}</span>
                 </div>
-                @endif
                 <div class="price-row total">
                     <span>Totale:</span>
                     <span>€{{ number_format($order->total_amount, 2) }}</span>
@@ -481,8 +472,28 @@
             <h3>Gestisci il tuo ordine</h3>
             <p style="margin-bottom: 0;">Visualizza i dettagli e tieni traccia del tuo ordine</p>
             <div class="cta-buttons">
-                <a href="{{ route('dashboard') }}" class="btn btn-primary">Visualizza Ordine</a>
-                <a href="{{ route('products') }}" class="btn btn-secondary">Continua Shopping</a>
+                <!--[if mso]>
+                <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto;">
+                <tr>
+                <td align="center" style="padding: 0 7px;">
+                <![endif]-->
+                <a href="{{ route('dashboard') }}" 
+                   style="display: inline-block; padding: 12px 24px; text-decoration: none; font-weight: 500; font-size: 14px; text-align: center; background-color: #000000; color: #ffffff; border: 1px solid #000000; margin: 0 7px;">
+                   Visualizza Ordine
+                </a>
+                <!--[if mso]>
+                </td>
+                <td align="center" style="padding: 0 7px;">
+                <![endif]-->
+                <a href="{{ route('products') }}" 
+                   style="display: inline-block; padding: 12px 24px; text-decoration: none; font-weight: 500; font-size: 14px; text-align: center; background-color: #ffffff; color: #333333; border: 1px solid #333333; margin: 0 7px;">
+                   Continua Shopping
+                </a>
+                <!--[if mso]>
+                </td>
+                </tr>
+                </table>
+                <![endif]-->
             </div>
         </div>
 
