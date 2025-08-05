@@ -285,6 +285,118 @@ class CheckoutController extends Controller
     }
 
     /**
+     * Show checkout details page for authenticated users
+     */
+    public function showDetails(Request $request): Response|RedirectResponse
+    {
+        try {
+            $user = $request->user();
+            
+            if (!$user) {
+                return redirect()->route('guest.checkout.details');
+            }
+
+            // Get user's cart
+            $cart = $user->carts()->with(['cartItems.product', 'cartItems.size'])->latest()->first();
+            
+            if (!$cart || $cart->cartItems->isEmpty()) {
+                return redirect()->route('cart')->with('error', 'Your cart is empty.');
+            }
+
+            // Calculate totals
+            $subtotal = $cart->cartItems->sum(function ($item) {
+                return $item->price * $item->quantity;
+            });
+            
+            $shippingCost = $this->calculateShippingCost($subtotal);
+            $taxAmount = $this->calculateTaxAmount($subtotal);
+            $discountAmount = 0; // TODO: Implement discount logic
+            $total = $subtotal + $shippingCost + $taxAmount - $discountAmount;
+            $totalItems = $cart->cartItems->sum('quantity');
+
+            return Inertia::render('Checkout/Details', [
+                'cart' => $cart,
+                'cartItems' => $cart->cartItems,
+                'subtotal' => $subtotal,
+                'shippingCost' => $shippingCost,
+                'taxAmount' => $taxAmount,
+                'discountAmount' => $discountAmount,
+                'total' => $total,
+                'totalItems' => $totalItems,
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to show checkout details: ' . $e->getMessage());
+            return redirect()->route('cart')->with('error', 'Unable to load checkout page.');
+        }
+    }
+
+    /**
+     * Show checkout details page for guest users
+     */
+    public function showGuestDetails(Request $request): Response|RedirectResponse
+    {
+        try {
+            // Get guest cart from database using session ID
+            $guestSessionId = session()->getId();
+            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.size'])->first();
+            
+            if (!$cart || $cart->cartItems->isEmpty()) {
+                return redirect()->route('cart')->with('error', 'Your cart is empty.');
+            }
+
+            // Calculate totals
+            $subtotal = $cart->cartItems->sum(function ($item) {
+                return $item->price * $item->quantity;
+            });
+            
+            $shippingCost = $this->calculateShippingCost($subtotal);
+            $taxAmount = $this->calculateTaxAmount($subtotal);
+            $discountAmount = 0; // TODO: Implement discount logic
+            $total = $subtotal + $shippingCost + $taxAmount - $discountAmount;
+            $totalItems = $cart->cartItems->sum('quantity');
+
+            return Inertia::render('Checkout/Details', [
+                'cart' => $cart,
+                'cartItems' => $cart->cartItems,
+                'subtotal' => $subtotal,
+                'shippingCost' => $shippingCost,
+                'taxAmount' => $taxAmount,
+                'discountAmount' => $discountAmount,
+                'total' => $total,
+                'totalItems' => $totalItems,
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to show guest checkout details: ' . $e->getMessage());
+            return redirect()->route('cart')->with('error', 'Unable to load checkout page.');
+        }
+    }
+
+    /**
+     * Calculate shipping cost based on subtotal
+     */
+    private function calculateShippingCost(float $subtotal): float
+    {
+        // Free shipping for orders over $100
+        if ($subtotal >= 100) {
+            return 0;
+        }
+        
+        // Standard shipping rate
+        return 9.99;
+    }
+
+    /**
+     * Calculate tax amount based on subtotal
+     */
+    private function calculateTaxAmount(float $subtotal): float
+    {
+        // Simple tax calculation - 8.5% tax rate
+        return $subtotal * 0.085;
+    }
+
+    /**
      * Cart checkout - converts cart items to Stripe checkout
      * This bridges the gap between cart-based workflow and Cashier's product-based checkout
      */
@@ -297,6 +409,20 @@ class CheckoutController extends Controller
                 return redirect()->route('guest.cart.checkout');
             }
 
+            // Validate the checkout details
+            $validated = $request->validate([
+                'shipping_address' => 'required|array',
+                'shipping_address.first_name' => 'required|string|max:255',
+                'shipping_address.last_name' => 'required|string|max:255',
+                'shipping_address.address_line_1' => 'required|string|max:255',
+                'shipping_address.city' => 'required|string|max:255',
+                'shipping_address.state' => 'required|string|max:255',
+                'shipping_address.postal_code' => 'required|string|max:20',
+                'shipping_address.country' => 'required|string|max:2',
+                'order_notes' => 'nullable|string|max:500',
+                'coupon_code' => 'nullable|string|max:50',
+            ]);
+
             // Get user's cart (using the correct relationship method)
             $cart = $user->carts()->with(['cartItems.product', 'cartItems.size'])->latest()->first();
             
@@ -305,9 +431,13 @@ class CheckoutController extends Controller
             }
 
             // Calculate total amount for the entire cart
-            $totalAmount = $cart->cartItems->sum(function ($item) {
+            $subtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
+            
+            $shippingCost = $this->calculateShippingCost($subtotal);
+            $taxAmount = $this->calculateTaxAmount($subtotal);
+            $totalAmount = $subtotal + $shippingCost + $taxAmount;
 
             // Convert to cents for Stripe
             $totalAmountCents = (int)($totalAmount * 100);
@@ -318,6 +448,16 @@ class CheckoutController extends Controller
                 return $item->quantity . 'x ' . $item->product->name . $sizeName;
             })->join(', ');
 
+            // Prepare shipping address for metadata
+            $shippingAddress = $validated['shipping_address'];
+            $shippingAddressString = implode(', ', [
+                $shippingAddress['first_name'] . ' ' . $shippingAddress['last_name'],
+                $shippingAddress['address_line_1'],
+                $shippingAddress['city'],
+                $shippingAddress['state'] . ' ' . $shippingAddress['postal_code'],
+                $shippingAddress['country']
+            ]);
+
             // Use Cashier's checkoutCharge for the entire cart
             $checkoutSession = $user->checkoutCharge($totalAmountCents, 'Cart Purchase', 1, [
                 'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
@@ -327,6 +467,9 @@ class CheckoutController extends Controller
                     'user_id' => $user->id,
                     'type' => 'cart_checkout',
                     'description' => $description,
+                    'shipping_address' => $shippingAddressString,
+                    'order_notes' => $validated['order_notes'] ?? '',
+                    'coupon_code' => $validated['coupon_code'] ?? '',
                 ]
             ]);
             
@@ -347,6 +490,20 @@ class CheckoutController extends Controller
     public function guestCartCheckout(Request $request): RedirectResponse
     {
         try {
+            // Validate the checkout details
+            $validated = $request->validate([
+                'shipping_address' => 'required|array',
+                'shipping_address.first_name' => 'required|string|max:255',
+                'shipping_address.last_name' => 'required|string|max:255',
+                'shipping_address.address_line_1' => 'required|string|max:255',
+                'shipping_address.city' => 'required|string|max:255',
+                'shipping_address.state' => 'required|string|max:255',
+                'shipping_address.postal_code' => 'required|string|max:20',
+                'shipping_address.country' => 'required|string|max:2',
+                'order_notes' => 'nullable|string|max:500',
+                'coupon_code' => 'nullable|string|max:50',
+            ]);
+
             // Get guest cart from database using session ID
             $guestSessionId = session()->getId();
             $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.size'])->first();
@@ -356,9 +513,13 @@ class CheckoutController extends Controller
             }
 
             // Calculate total amount from cart items
-            $totalAmount = $cart->cartItems->sum(function ($item) {
+            $subtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
+            
+            $shippingCost = $this->calculateShippingCost($subtotal);
+            $taxAmount = $this->calculateTaxAmount($subtotal);
+            $totalAmount = $subtotal + $shippingCost + $taxAmount;
 
             // Convert to cents for Stripe
             $totalAmountCents = (int)($totalAmount * 100);
@@ -368,6 +529,16 @@ class CheckoutController extends Controller
                 $sizeName = $item->size ? " ({$item->size->name})" : '';
                 return $item->quantity . 'x ' . $item->product->name . $sizeName;
             })->join(', ');
+
+            // Prepare shipping address for metadata
+            $shippingAddress = $validated['shipping_address'];
+            $shippingAddressString = implode(', ', [
+                $shippingAddress['first_name'] . ' ' . $shippingAddress['last_name'],
+                $shippingAddress['address_line_1'],
+                $shippingAddress['city'],
+                $shippingAddress['state'] . ' ' . $shippingAddress['postal_code'],
+                $shippingAddress['country']
+            ]);
 
             // For guest checkout, we need to create a temporary price in Stripe
             // or use Stripe's direct API since Cashier's guest checkout expects a price ID
@@ -392,6 +563,9 @@ class CheckoutController extends Controller
                     'guest_session_id' => $guestSessionId,
                     'type' => 'guest_cart_checkout',
                     'description' => $description,
+                    'shipping_address' => $shippingAddressString,
+                    'order_notes' => $validated['order_notes'] ?? '',
+                    'coupon_code' => $validated['coupon_code'] ?? '',
                 ]
             ]);
             

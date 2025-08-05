@@ -1,8 +1,6 @@
 import { type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Header from '@/components/header';
 import { useState } from 'react';
@@ -14,8 +12,7 @@ import {
     Minus,
     Package,
     ArrowRight,
-    Trash2,
-    Tag
+    Trash2
 } from 'lucide-react';
 
 interface CartItem {
@@ -52,10 +49,7 @@ export default function Cart() {
     const { auth } = pageProps;
     const isMobile = useIsMobile();
     
-    const [couponCode, setCouponCode] = useState('');
-    const [orderNotes, setOrderNotes] = useState('');
     const [isUpdating, setIsUpdating] = useState<number | null>(null);
-    const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
     // Image handling helper
     const getImageSrc = (item: CartItem) => {
@@ -117,39 +111,13 @@ export default function Cart() {
         }
     };
 
-    const applyCoupon = async () => {
-        if (!couponCode.trim()) return;
-        
-        setIsApplyingCoupon(true);
-        
-        try {
-            await router.post('/cart/apply-coupon', {
-                code: couponCode,
-            }, {
-                preserveScroll: true,
-                onSuccess: () => {
-                    setCouponCode('');
-                },
-                onError: (errors) => {
-                    console.error('Failed to apply coupon:', errors);
-                },
-                onFinish: () => {
-                    setIsApplyingCoupon(false);
-                }
-            });
-        } catch (error) {
-            console.error('Error applying coupon:', error);
-            setIsApplyingCoupon(false);
-        }
-    };
-
     const proceedToCheckout = () => {
         if (auth?.user) {
-            // User is authenticated, proceed to cart checkout using Cashier
-            window.location.href = '/checkout/cart';
+            // User is authenticated, proceed to checkout details page
+            router.get('/checkout');
         } else {
-            // User is not authenticated, redirect to guest cart checkout
-            window.location.href = '/guest/checkout/cart';
+            // User is not authenticated, redirect to guest checkout details page
+            router.get('/guest/checkout');
         }
     };
 
@@ -316,50 +284,8 @@ export default function Cart() {
                         {/* Cart Summary */}
                         <div className="lg:col-span-1">
                             <div className="bg-gray-50 rounded-lg p-6 space-y-6">
-                                {/* Coupon Code */}
-                                <div>
-                                    <Label className="text-sm font-medium text-gray-900 mb-3 block">
-                                        Discount Code
-                                    </Label>
-                                    <div className="flex space-x-2">
-                                        <Input
-                                            type="text"
-                                            placeholder="Enter discount code"
-                                            value={couponCode}
-                                            onChange={(e) => setCouponCode(e.target.value)}
-                                            className="flex-1 text-black"
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            onClick={applyCoupon}
-                                            disabled={!couponCode.trim() || isApplyingCoupon}
-                                        >
-                                            <Tag className="w-4 h-4 mr-2" />
-                                            Apply
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                {/* Order Notes */}
-                                <div>
-                                    <Label className="text-sm font-medium text-gray-900 mb-3 block">
-                                        Order Notes (optional)
-                                    </Label>
-                                    <Textarea
-                                        placeholder="Special instructions for your order..."
-                                        value={orderNotes}
-                                        onChange={(e) => setOrderNotes(e.target.value)}
-                                        maxLength={200}
-                                        className="resize-none bg-white text-gray-900 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                        rows={3}
-                                    />
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        {orderNotes.length}/200 characters
-                                    </p>
-                                </div>
-
                                 {/* Order Summary */}
-                                <div className="border-t border-gray-200 pt-6 space-y-3">
+                                <div className="space-y-3">
                                     <div className="flex justify-between text-gray-700">
                                         <span>Subtotal</span>
                                         <span>${subtotal.toFixed(2)}</span>

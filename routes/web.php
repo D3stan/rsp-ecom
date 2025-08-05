@@ -39,26 +39,38 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/checkout/charge/{amount}/{name}', [CheckoutController::class, 'singleChargeCheckout'])->name('checkout.charge');
 });
 
-// Cart-based checkout routes (bridges cart workflow with Cashier)
-Route::middleware(['auth'])->group(function () {
-    Route::get('/checkout/cart', [CheckoutController::class, 'cartCheckout'])->name('checkout.cart');
-});
-
-// Generic checkout route - redirects to appropriate cart checkout
+// Generic checkout route - redirects to checkout details page
 Route::get('/checkout', function (Request $request) {
     if ($request->user()) {
-        return redirect()->route('checkout.cart');
+        return redirect()->route('checkout.details');
     } else {
-        return redirect()->route('guest.cart.checkout');
+        return redirect()->route('guest.checkout.details');
     }
 })->name('checkout');
+
+// Checkout details pages (new intermediate step)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/checkout/details', [CheckoutController::class, 'showDetails'])->name('checkout.details');
+});
+
+Route::get('/guest/checkout/details', [CheckoutController::class, 'showGuestDetails'])->name('guest.checkout.details');
+
+// Add missing guest checkout route that redirects to details
+Route::get('/guest/checkout', function (Request $request) {
+    return redirect()->route('guest.checkout.details');
+})->name('guest.checkout');
+
+// Cart-based checkout routes (bridges cart workflow with Cashier)
+Route::middleware(['auth'])->group(function () {
+    Route::post('/checkout/cart', [CheckoutController::class, 'cartCheckout'])->name('checkout.cart');
+});
+
+// Guest cart checkout
+Route::post('/guest/checkout/cart', [CheckoutController::class, 'guestCartCheckout'])->name('guest.cart.checkout');
 
 // Success and cancel pages - accessible to both authenticated and guest users
 Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
-
-// Guest cart checkout
-Route::get('/guest/checkout/cart', [CheckoutController::class, 'guestCartCheckout'])->name('guest.cart.checkout');
 
 // Remove test route since it was causing Inertia issues
 
