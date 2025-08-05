@@ -80,17 +80,6 @@ export default function CheckoutCancel({ message }: Props) {
                 {/* Action Buttons */}
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Try again button - uses generic checkout route that handles auth */}
-                        <Button asChild size="lg" className="w-full bg-blue-600 text-white hover:bg-blue-700">
-                            <Link 
-                                href={route('checkout')} 
-                                className="flex items-center gap-2"
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                                Try Again
-                            </Link>
-                        </Button>
-                        
                         <Button variant="outline" asChild size="lg" className="w-full">
                             <Link href={route('cart')} className="flex items-center gap-2">
                                 <ShoppingCart className="h-4 w-4" />
