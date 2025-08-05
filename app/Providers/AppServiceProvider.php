@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Console\Commands\SendTestOrderConfirmation;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use Laravel\Cashier\Cashier;
@@ -13,7 +14,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register console commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                SendTestOrderConfirmation::class,
+            ]);
+        }
     }
 
     /**

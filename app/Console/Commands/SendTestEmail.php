@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Mail;
 
 class SendTestEmail extends Command
 {
-    protected $signature = 'mail:send-test {to}';
+    protected $signature = 'email:send-test {to}';
     protected $description = 'Send a test email to a specific address';
 
     public function handle()
