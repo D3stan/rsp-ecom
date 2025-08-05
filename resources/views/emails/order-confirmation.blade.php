@@ -363,14 +363,6 @@
                     <strong>Data</strong>
                     <span>{{ $order->created_at->format('d/m/Y H:i') }}</span>
                 </div>
-                <div class="order-detail-item">
-                    <strong>Stato</strong>
-                    <span class="status-badge">{{ ucfirst($order->status) }}</span>
-                </div>
-                <div class="order-detail-item">
-                    <strong>Pagamento</strong>
-                    <span>{{ $order->payment_status === 'succeeded' ? 'Completato' : 'In elaborazione' }}</span>
-                </div>
             </div>
         </div>
 
