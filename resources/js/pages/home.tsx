@@ -7,7 +7,6 @@ import { useEffect, useRef, useState } from 'react';
 import useTranslation from '@/hooks/useTranslation';
 import { useMobileInteractions } from '@/hooks/use-mobile-interactions';
 import { cartService, type AddToCartData } from '@/services/cartService';
-import { useToast } from '@/contexts/ToastContext';
 import { 
     Star, 
     ArrowRight,
@@ -88,7 +87,6 @@ export default function Home() {
     const [addingToCartId, setAddingToCartId] = useState<number | null>(null);
     const { t, isLoading } = useTranslation();
     const { featuredProducts, categories } = usePage<HomePageProps>().props;
-    const { addToast } = useToast();
     
     // Mobile interactions for products and categories
     const productInteractions = useMobileInteractions<number>();
@@ -108,26 +106,14 @@ export default function Home() {
             const response = await cartService.addToCart(cartData);
             
             if (response.success) {
-                const product = featuredProducts.find(p => p.id === productId);
-                addToast({
-                    type: 'success',
-                    title: 'Added to cart!',
-                    description: `${product?.name || 'Product'} has been added to your cart.`,
-                });
+                cartService.triggerCartUpdate();
+                cartService.triggerCartAnimation('success');
             } else {
-                addToast({
-                    type: 'error',
-                    title: 'Failed to add to cart',
-                    description: response.message,
-                });
+                cartService.triggerCartAnimation('error');
             }
         } catch (error) {
             console.error('Error adding to cart:', error);
-            addToast({
-                type: 'error',
-                title: 'Error',
-                description: 'An unexpected error occurred. Please try again.',
-            });
+            cartService.triggerCartAnimation('error');
         } finally {
             setAddingToCartId(null);
         }

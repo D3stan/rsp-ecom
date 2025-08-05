@@ -28,6 +28,7 @@ export default function Header({ transparent = false }: HeaderProps) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [cartCount, setCartCount] = useState(0);
     const [isScrolled, setIsScrolled] = useState(false);
+    const [cartAnimation, setCartAnimation] = useState<'none' | 'success' | 'error'>('none');
     const menuRef = useRef<HTMLDivElement>(null);
 
     // Load cart count on mount
@@ -72,10 +73,22 @@ export default function Header({ transparent = false }: HeaderProps) {
             }
         };
 
+        const handleCartAnimation = (event: CustomEvent) => {
+            const animationType = event.detail?.type || 'success';
+            setCartAnimation(animationType);
+            
+            // Reset animation after 1 second
+            setTimeout(() => {
+                setCartAnimation('none');
+            }, 1000);
+        };
+
         window.addEventListener('cartUpdated', handleCartUpdate);
+        window.addEventListener('cartAnimation', handleCartAnimation as EventListener);
         
         return () => {
             window.removeEventListener('cartUpdated', handleCartUpdate);
+            window.removeEventListener('cartAnimation', handleCartAnimation as EventListener);
         };
     }, []);
 
@@ -115,6 +128,19 @@ export default function Header({ transparent = false }: HeaderProps) {
     const headerBg = transparent 
         ? (isScrolled ? 'bg-white/95 backdrop-blur-md border-gray-200' : 'bg-transparent backdrop-blur-md border-white/20')
         : 'bg-white/95 backdrop-blur-md border-gray-200';
+
+    // Cart button animation classes
+    const getCartButtonClasses = () => {
+        const baseClasses = `relative transition-all duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100 border-gray-200'}`;
+        
+        if (cartAnimation === 'success') {
+            return `${baseClasses} bg-green-600 text-white scale-110 shadow-lg`;
+        } else if (cartAnimation === 'error') {
+            return `${baseClasses} bg-red-600 text-white scale-110 shadow-lg`;
+        }
+        
+        return baseClasses;
+    };
 
     return (
         <header className={`sticky top-0 z-50 border-b transition-all duration-300 relative ${headerBg}`}>
@@ -162,7 +188,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                         <div className="flex items-center space-x-3">
 
                             <Link href="/cart">
-                                <Button variant="ghost" size="icon" className={`relative transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100 border-gray-200'}`}>
+                                <Button variant="ghost" size="icon" className={getCartButtonClasses()}>
                                     <ShoppingCart className="w-5 h-5" />
                                     {cartCount > 0 && (
                                         <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">

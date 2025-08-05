@@ -9,7 +9,6 @@ import Header from '@/components/header';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cartService, type AddToCartData } from '@/services/cartService';
-import { useToast } from '@/contexts/ToastContext';
 import { 
     Star, 
     ChevronLeft,
@@ -91,7 +90,6 @@ const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
 export default function Product() {
     const { product, reviews, relatedProducts, breadcrumb } = usePage<ProductPageProps>().props;
     const isMobile = useIsMobile();
-    const { addToast } = useToast();
     
     // State for image carousel
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -146,25 +144,13 @@ export default function Product() {
             
             if (response.success) {
                 cartService.triggerCartUpdate(); // Trigger cart count refresh
-                addToast({
-                    type: 'success',
-                    title: 'Added to cart!',
-                    description: `${product.name} has been added to your cart.`,
-                });
+                cartService.triggerCartAnimation('success');
             } else {
-                addToast({
-                    type: 'error',
-                    title: 'Failed to add to cart',
-                    description: response.message,
-                });
+                cartService.triggerCartAnimation('error');
             }
         } catch (error) {
             console.error('Error adding to cart:', error);
-            addToast({
-                type: 'error',
-                title: 'Error',
-                description: 'An unexpected error occurred. Please try again.',
-            });
+            cartService.triggerCartAnimation('error');
         } finally {
             setIsAddingToCart(false);
         }

@@ -343,6 +343,15 @@ class CartService {
     triggerCartUpdate(): void {
         window.dispatchEvent(new CustomEvent('cartUpdated'));
     }
+
+    /**
+     * Trigger cart animation event
+     */
+    triggerCartAnimation(type: 'success' | 'error' = 'success'): void {
+        window.dispatchEvent(new CustomEvent('cartAnimation', { 
+            detail: { type } 
+        }));
+    }
 }
 
 export const cartService = new CartService();

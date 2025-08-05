@@ -33,17 +33,17 @@ export default function CheckoutCancel({ message }: Props) {
                 </div>
 
                 {/* Information Card */}
-                <Card className="mb-8">
+                <Card className="mb-8 bg-white">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-2 text-gray-900">
                             <HelpCircle className="h-5 w-5" />
                             What Happened?
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            <Alert>
-                                <AlertDescription>
+                            <Alert className="bg-yellow-50 border-yellow-200">
+                                <AlertDescription className='text-gray-700'>
                                     Your payment was not processed. This could happen if:
                                 </AlertDescription>
                             </Alert>
@@ -81,7 +81,7 @@ export default function CheckoutCancel({ message }: Props) {
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Try again button - uses generic checkout route that handles auth */}
-                        <Button asChild size="lg" className="w-full">
+                        <Button asChild size="lg" className="w-full bg-blue-600 text-white hover:bg-blue-700">
                             <Link 
                                 href={route('checkout')} 
                                 className="flex items-center gap-2"
@@ -99,7 +99,7 @@ export default function CheckoutCancel({ message }: Props) {
                         </Button>
                     </div>
 
-                    <Button variant="ghost" asChild className="w-full">
+                    <Button variant="ghost" asChild className="w-full border-2 border-gray-300">
                         <Link href={route('products')} className="text-gray-600">
                             Continue Shopping
                         </Link>
@@ -116,7 +116,7 @@ export default function CheckoutCancel({ message }: Props) {
                                 <p className="text-sm text-green-700 mb-3">
                                     Save your cart items, track orders, and enjoy faster checkout.
                                 </p>
-                                <Button variant="outline" size="sm" asChild className="border-green-300">
+                                <Button variant="outline" size="sm" asChild className="border-green-300 bg-white">
                                     <Link href={route('register')} className="text-green-700">
                                         Sign Up Now
                                     </Link>
