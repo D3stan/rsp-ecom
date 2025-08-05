@@ -400,7 +400,7 @@ export default function Home() {
                                 <ul className="space-y-2 text-gray-400">
                                     <li><Link href="/privacy" className="hover:text-white footer-link md:footer-link-none">{t('privacy_policy')}</Link></li>
                                     <li><Link href="/terms" className="hover:text-white footer-link md:footer-link-none">{t('terms_of_service')}</Link></li>
-                                    <li><Link href="/returns" className="hover:text-white footer-link md:footer-link-none">{t('returns')}</Link></li>
+                                    <li><Link href="/shipping-returns" className="hover:text-white footer-link md:footer-link-none">{t('shipping_returns')}</Link></li>
                                 </ul>
                             </div>
                             

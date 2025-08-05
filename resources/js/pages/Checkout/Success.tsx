@@ -85,9 +85,9 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                     {/* Order Details */}
                     <div className="lg:col-span-2 space-y-6">
                         {/* Order Information */}
-                        <Card>
+                        <Card className="bg-white">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
+                                <CardTitle className="flex items-center gap-2 text-gray-800">
                                     <Package className="h-5 w-5" />
                                     Order Details
                                 </CardTitle>
@@ -96,7 +96,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-600">Order Number</span>
-                                        <span className="font-mono text-sm">
+                                        <span className="font-mono text-sm text-black">
                                             {order.id === 'pending' 
                                                 ? 'Processing...' 
                                                 : `#${order.id.toString().padStart(6, '0')}`
@@ -105,7 +105,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-600">Order Date</span>
-                                        <span className="text-sm">
+                                        <span className="text-sm text-black">
                                             {new Date(order.created_at).toLocaleDateString('en-US', {
                                                 year: 'numeric',
                                                 month: 'long',
@@ -129,12 +129,12 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                             {isGuest ? (
                                                 <>
                                                     <Mail className="h-4 w-4 text-gray-400" />
-                                                    <span className="text-sm">{session.customer_email}</span>
+                                                    <span className="text-sm text-black">{session.customer_email}</span>
                                                 </>
                                             ) : (
                                                 <>
                                                     <User className="h-4 w-4 text-gray-400" />
-                                                    <span className="text-sm">{user?.email}</span>
+                                                    <span className="text-sm text-black">{user?.email}</span>
                                                 </>
                                             )}
                                         </div>
@@ -154,12 +154,12 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                         </Card>
 
                         {/* Order Items */}
-                        <Card>
-                            <CardHeader>
+                        <Card className='bg-white shadow-sm'>
+                            <CardHeader className='text-black'>
                                 <CardTitle>Items Ordered</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-4">
+                                <div className="space-y-4 text-black">
                                     {order.orderItems && order.orderItems.length > 0 ? (
                                         order.orderItems.map((item, index) => (
                                             <div key={item.id || index} className="flex items-center space-x-4 py-4 border-b last:border-b-0">
@@ -194,9 +194,9 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                         </Card>
 
                         {/* Next Steps */}
-                        <Card>
+                        <Card className='bg-white shadow-sm'>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
+                                <CardTitle className="flex items-center gap-2 text-black">
                                     <Truck className="h-5 w-5" />
                                     What's Next?
                                 </CardTitle>
@@ -208,7 +208,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                             <span className="text-xs font-medium text-blue-600">1</span>
                                         </div>
                                         <div>
-                                            <p className="font-medium">Order Confirmation</p>
+                                            <p className="font-medium text-gray-700">Order Confirmation</p>
                                             <p className="text-sm text-gray-600">
                                                 You'll receive a confirmation email shortly with your order details.
                                             </p>
@@ -219,7 +219,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                             <span className="text-xs font-medium text-gray-600">2</span>
                                         </div>
                                         <div>
-                                            <p className="font-medium">Processing</p>
+                                            <p className="font-medium text-gray-700">Processing</p>
                                             <p className="text-sm text-gray-600">
                                                 We'll prepare your order for shipment within 1-2 business days.
                                             </p>
@@ -230,7 +230,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                             <span className="text-xs font-medium text-gray-600">3</span>
                                         </div>
                                         <div>
-                                            <p className="font-medium">Shipping</p>
+                                            <p className="font-medium text-gray-700">Shipping</p>
                                             <p className="text-sm text-gray-600">
                                                 You'll receive tracking information once your order ships.
                                             </p>
@@ -307,11 +307,11 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
 
                                 {/* Support */}
                                 <div className="pt-4 border-t">
-                                    <p className="text-xs text-gray-600 text-center">
+                                    <p className="text-xs text-gray-300 text-center">
                                         Need help? <Link href={route('contact')} className="underline">Contact Support</Link>
                                     </p>
                                     {isGuest && (
-                                        <p className="text-xs text-gray-500 text-center mt-2">
+                                        <p className="text-xs text-gray-400 text-center mt-2">
                                             Save your order number for future reference
                                         </p>
                                     )}
