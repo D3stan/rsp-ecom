@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/contexts/ToastContext';
 import { SharedData } from '@/types';
 import { 
     ChevronDown,
@@ -69,6 +70,7 @@ export default function CheckoutDetails() {
     const pageProps = usePage<CheckoutDetailsProps>().props;
     const { cartItems, subtotal, shippingCost, taxAmount, discountAmount = 0, total, totalItems, auth } = pageProps;
     const isMobile = useIsMobile();
+    const { addToast } = useToast();
     
     // Collapsible states
     const [isShippingOpen, setIsShippingOpen] = useState(true);
@@ -114,9 +116,19 @@ export default function CheckoutDetails() {
                 preserveScroll: true,
                 onSuccess: () => {
                     setCouponCode('');
+                    addToast({
+                        type: "success",
+                        title: "Coupon Applied",
+                        description: "Your discount code has been successfully applied.",
+                    });
                 },
                 onError: (errors) => {
                     console.error('Failed to apply coupon:', errors);
+                    addToast({
+                        type: "error",
+                        title: "Invalid Coupon",
+                        description: "The discount code you entered is not valid or has expired.",
+                    });
                 },
                 onFinish: () => {
                     setIsApplyingCoupon(false);
@@ -124,6 +136,11 @@ export default function CheckoutDetails() {
             });
         } catch (error) {
             console.error('Error applying coupon:', error);
+            addToast({
+                type: "error",
+                title: "Error",
+                description: "An unexpected error occurred while applying the coupon.",
+            });
             setIsApplyingCoupon(false);
         }
     };
@@ -141,7 +158,11 @@ export default function CheckoutDetails() {
             !shippingAddress.state.trim() || 
             !shippingAddress.postal_code.trim() || 
             !shippingAddress.country.trim()) {
-            alert('Please fill in all required shipping address fields.');
+            addToast({
+                type: "error",
+                title: "Missing Information",
+                description: "Please fill in all required shipping address fields.",
+            });
             return;
         }
 
@@ -165,6 +186,11 @@ export default function CheckoutDetails() {
                 },
                 onError: (errors) => {
                     console.error('Checkout errors:', errors);
+                    addToast({
+                        type: "error",
+                        title: "Checkout Error",
+                        description: "There was an error processing your checkout. Please try again.",
+                    });
                     setIsProcessing(false);
                 },
                 onFinish: () => {
@@ -182,6 +208,11 @@ export default function CheckoutDetails() {
                 },
                 onError: (errors) => {
                     console.error('Checkout errors:', errors);
+                    addToast({
+                        type: "error",
+                        title: "Checkout Error",
+                        description: "There was an error processing your checkout. Please try again.",
+                    });
                     setIsProcessing(false);
                 },
                 onFinish: () => {
@@ -240,11 +271,11 @@ export default function CheckoutDetails() {
 
                     <div className="space-y-6">
                         {/* Shipping Information */}
-                        <Card>
+                        <Card className="border-2 border-gray-700 bg-white shadow-md">
                             <Collapsible open={isShippingOpen} onOpenChange={setIsShippingOpen}>
                                 <CollapsibleTrigger className="w-full">
-                                    <CardHeader className="hover:bg-gray-50">
-                                        <CardTitle className="flex items-center justify-between">
+                                    <CardHeader className="hover:bg-gray-50 transition-colors">
+                                        <CardTitle className="flex items-center justify-between text-black">
                                             <div className="flex items-center gap-2">
                                                 <Truck className="h-5 w-5" />
                                                 Shipping Information
@@ -261,96 +292,96 @@ export default function CheckoutDetails() {
                                     <CardContent className="space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <Label htmlFor="first_name">First Name *</Label>
+                                                <Label htmlFor="first_name" className="text-black font-medium">First Name *</Label>
                                                 <Input
                                                     id="first_name"
                                                     value={shippingAddress.first_name}
                                                     onChange={(e) => updateShippingAddress('first_name', e.target.value)}
                                                     required
-                                                    className="text-black"
+                                                    className="text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                                 />
                                             </div>
                                             <div>
-                                                <Label htmlFor="last_name">Last Name *</Label>
+                                                <Label htmlFor="last_name" className="text-black font-medium">Last Name *</Label>
                                                 <Input
                                                     id="last_name"
                                                     value={shippingAddress.last_name}
                                                     onChange={(e) => updateShippingAddress('last_name', e.target.value)}
                                                     required
-                                                    className="text-black"
+                                                    className="text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                                 />
                                             </div>
                                         </div>
 
                                         <div>
-                                            <Label htmlFor="company">Company (optional)</Label>
+                                            <Label htmlFor="company" className="text-gray-600">Company (optional)</Label>
                                             <Input
                                                 id="company"
                                                 value={shippingAddress.company}
                                                 onChange={(e) => updateShippingAddress('company', e.target.value)}
-                                                className="text-black"
+                                                className="text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                             />
                                         </div>
 
                                         <div>
-                                            <Label htmlFor="address_line_1">Address Line 1 *</Label>
+                                            <Label htmlFor="address_line_1" className="text-black font-medium">Address Line 1 *</Label>
                                             <Input
                                                 id="address_line_1"
                                                 value={shippingAddress.address_line_1}
                                                 onChange={(e) => updateShippingAddress('address_line_1', e.target.value)}
                                                 required
-                                                className="text-black"
+                                                className="text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                             />
                                         </div>
 
                                         <div>
-                                            <Label htmlFor="address_line_2">Address Line 2 (optional)</Label>
+                                            <Label htmlFor="address_line_2" className="text-gray-600">Address Line 2 (optional)</Label>
                                             <Input
                                                 id="address_line_2"
                                                 value={shippingAddress.address_line_2}
                                                 onChange={(e) => updateShippingAddress('address_line_2', e.target.value)}
-                                                className="text-black"
+                                                className="text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                             />
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             <div>
-                                                <Label htmlFor="city">City *</Label>
+                                                <Label htmlFor="city" className="text-black font-medium">City *</Label>
                                                 <Input
                                                     id="city"
                                                     value={shippingAddress.city}
                                                     onChange={(e) => updateShippingAddress('city', e.target.value)}
                                                     required
-                                                    className="text-black"
+                                                    className="text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                                 />
                                             </div>
                                             <div>
-                                                <Label htmlFor="state">State *</Label>
+                                                <Label htmlFor="state" className="text-black font-medium">State *</Label>
                                                 <Input
                                                     id="state"
                                                     value={shippingAddress.state}
                                                     onChange={(e) => updateShippingAddress('state', e.target.value)}
                                                     required
-                                                    className="text-black"
+                                                    className="text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                                 />
                                             </div>
                                             <div>
-                                                <Label htmlFor="postal_code">Postal Code *</Label>
+                                                <Label htmlFor="postal_code" className="text-black font-medium">Postal Code *</Label>
                                                 <Input
                                                     id="postal_code"
                                                     value={shippingAddress.postal_code}
                                                     onChange={(e) => updateShippingAddress('postal_code', e.target.value)}
                                                     required
-                                                    className="text-black"
+                                                    className="text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <Label htmlFor="country">Country *</Label>
+                                                <Label htmlFor="country" className="text-black font-medium">Country *</Label>
                                                 <Select value={shippingAddress.country} onValueChange={(value) => updateShippingAddress('country', value)}>
-                                                    <SelectTrigger>
+                                                    <SelectTrigger className="bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500">
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -365,12 +396,12 @@ export default function CheckoutDetails() {
                                                 </Select>
                                             </div>
                                             <div>
-                                                <Label htmlFor="phone">Phone</Label>
+                                                <Label htmlFor="phone" className="text-gray-600">Phone</Label>
                                                 <Input
                                                     id="phone"
                                                     value={shippingAddress.phone}
                                                     onChange={(e) => updateShippingAddress('phone', e.target.value)}
-                                                    className="text-black"
+                                                    className="text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                                 />
                                             </div>
                                         </div>
@@ -380,11 +411,11 @@ export default function CheckoutDetails() {
                         </Card>
 
                         {/* Discount Code */}
-                        <Card>
+                        <Card className="border-2 border-gray-700 bg-white shadow-md">
                             <Collapsible open={isDiscountOpen} onOpenChange={setIsDiscountOpen}>
                                 <CollapsibleTrigger className="w-full">
-                                    <CardHeader className="hover:bg-gray-50">
-                                        <CardTitle className="flex items-center justify-between">
+                                    <CardHeader className="hover:bg-gray-50 transition-colors">
+                                        <CardTitle className="flex items-center justify-between text-black">
                                             <div className="flex items-center gap-2">
                                                 <Tag className="h-5 w-5" />
                                                 Discount Code
@@ -405,12 +436,13 @@ export default function CheckoutDetails() {
                                                 placeholder="Enter discount code"
                                                 value={couponCode}
                                                 onChange={(e) => setCouponCode(e.target.value)}
-                                                className="flex-1 text-black"
+                                                className="flex-1 text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                             />
                                             <Button
                                                 variant="outline"
                                                 onClick={applyCoupon}
                                                 disabled={!couponCode.trim() || isApplyingCoupon}
+                                                className="border-gray-300 hover:bg-gray-50"
                                             >
                                                 {isApplyingCoupon ? 'Applying...' : 'Apply'}
                                             </Button>
@@ -428,11 +460,11 @@ export default function CheckoutDetails() {
                         </Card>
 
                         {/* Order Notes */}
-                        <Card>
+                        <Card className="border-2 border-gray-700 bg-white shadow-md">
                             <Collapsible open={isNotesOpen} onOpenChange={setIsNotesOpen}>
                                 <CollapsibleTrigger className="w-full">
-                                    <CardHeader className="hover:bg-gray-50">
-                                        <CardTitle className="flex items-center justify-between">
+                                    <CardHeader className="hover:bg-gray-50 transition-colors">
+                                        <CardTitle className="flex items-center justify-between text-black">
                                             <div className="flex items-center gap-2">
                                                 <FileText className="h-5 w-5" />
                                                 Order Notes (Optional)
@@ -452,7 +484,7 @@ export default function CheckoutDetails() {
                                             value={orderNotes}
                                             onChange={(e) => setOrderNotes(e.target.value)}
                                             maxLength={200}
-                                            className="resize-none bg-white text-gray-900 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                            className="resize-none bg-white text-black border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                             rows={3}
                                         />
                                         <p className="text-xs text-gray-500 mt-1">
@@ -464,11 +496,11 @@ export default function CheckoutDetails() {
                         </Card>
 
                         {/* Order Total */}
-                        <Card>
+                        <Card className="border-2 border-gray-700 bg-white shadow-md">
                             <Collapsible open={isTotalsOpen} onOpenChange={setIsTotalsOpen}>
                                 <CollapsibleTrigger className="w-full">
-                                    <CardHeader className="hover:bg-gray-50">
-                                        <CardTitle className="flex items-center justify-between">
+                                    <CardHeader className="hover:bg-gray-50 transition-colors">
+                                        <CardTitle className="flex items-center justify-between text-black">
                                             <div className="flex items-center gap-2">
                                                 <Calculator className="h-5 w-5" />
                                                 Order Summary
@@ -483,28 +515,28 @@ export default function CheckoutDetails() {
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
                                     <CardContent className="space-y-3">
-                                        <div className="flex justify-between text-gray-700">
+                                        <div className="flex justify-between text-gray-600">
                                             <span>Subtotal ({totalItems} items)</span>
-                                            <span>${subtotal.toFixed(2)}</span>
+                                            <span className="text-black font-medium">${subtotal.toFixed(2)}</span>
                                         </div>
-                                        <div className="flex justify-between text-gray-700">
+                                        <div className="flex justify-between text-gray-600">
                                             <span>Shipping</span>
-                                            <span>
+                                            <span className="text-black font-medium">
                                                 {shippingCost > 0 ? `$${shippingCost.toFixed(2)}` : 'Free'}
                                             </span>
                                         </div>
-                                        <div className="flex justify-between text-gray-700">
+                                        <div className="flex justify-between text-gray-600">
                                             <span>Tax</span>
-                                            <span>${taxAmount.toFixed(2)}</span>
+                                            <span className="text-black font-medium">${taxAmount.toFixed(2)}</span>
                                         </div>
                                         {discountAmount > 0 && (
                                             <div className="flex justify-between text-green-600">
                                                 <span>Discount</span>
-                                                <span>-${discountAmount.toFixed(2)}</span>
+                                                <span className="font-medium">-${discountAmount.toFixed(2)}</span>
                                             </div>
                                         )}
                                         <div className="border-t border-gray-200 pt-3">
-                                            <div className="flex justify-between text-lg font-semibold text-gray-900">
+                                            <div className="flex justify-between text-lg font-semibold text-black">
                                                 <span>Total</span>
                                                 <span>${total.toFixed(2)}</span>
                                             </div>
@@ -514,13 +546,13 @@ export default function CheckoutDetails() {
                             </Collapsible>
                         </Card>
 
-                        {/* Action Buttons */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6">
+                        {/* Action Buttons - Hidden on mobile, only show on desktop */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 hidden md:grid">
                             <Button
                                 variant="outline"
                                 onClick={handleBackToCart}
                                 size="lg"
-                                className="w-full"
+                                className="w-full border-gray-300 hover:bg-gray-50"
                             >
                                 <ArrowLeft className="w-5 h-5 mr-2" />
                                 Back to Cart
@@ -529,7 +561,7 @@ export default function CheckoutDetails() {
                                 onClick={proceedToPayment}
                                 disabled={isProcessing}
                                 size="lg"
-                                className="w-full"
+                                className="w-full bg-black text-white hover:bg-gray-800"
                             >
                                 <CreditCard className="w-5 h-5 mr-2" />
                                 {isProcessing ? 'Processing...' : `Pay $${total.toFixed(2)}`}
@@ -540,12 +572,12 @@ export default function CheckoutDetails() {
 
                 {/* Mobile Sticky Footer */}
                 {isMobile && (
-                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50">
+                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 p-4 z-50 shadow-lg">
                         <div className="grid grid-cols-2 gap-4">
                             <Button
                                 variant="outline"
                                 onClick={handleBackToCart}
-                                className="h-12"
+                                className="h-12 border-gray-300 hover:bg-gray-50"
                             >
                                 <ArrowLeft className="w-5 h-5 mr-2" />
                                 Back
@@ -553,7 +585,7 @@ export default function CheckoutDetails() {
                             <Button
                                 onClick={proceedToPayment}
                                 disabled={isProcessing}
-                                className="h-12 font-semibold"
+                                className="h-12 bg-black text-white hover:bg-gray-800 font-semibold"
                             >
                                 <CreditCard className="w-5 h-5 mr-2" />
                                 {isProcessing ? 'Processing...' : `Pay $${total.toFixed(2)}`}

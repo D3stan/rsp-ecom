@@ -306,19 +306,19 @@ export default function Cart() {
 
                                 {/* Checkout Buttons */}
                                 <div className="space-y-3">
-                                    {/* Main Checkout Button */}
+                                    {/* Main Checkout Button - Hidden on mobile, shown on desktop */}
                                     <Button
                                         onClick={proceedToCheckout}
-                                        className="w-full h-12 text-lg font-semibold border border-black"
+                                        className="w-full h-12 text-lg font-semibold border border-black hidden md:flex items-center justify-center"
                                         size="lg"
                                     >
                                         <Package className="w-5 h-5 mr-2" />
                                         Proceed to Checkout
                                     </Button>
 
-                                    {/* Alternative options for non-authenticated users */}
+                                    {/* Alternative options for non-authenticated users - Hidden on mobile */}
                                     {!auth?.user && (
-                                        <div className="text-center">
+                                        <div className="text-center hidden md:block">
                                             <p className="text-sm text-gray-600 mb-2">
                                                 Already have an account?
                                             </p>
@@ -335,11 +335,11 @@ export default function Cart() {
                                     )}
                                 </div>
 
-                                {/* Continue Shopping */}
+                                {/* Continue Shopping - Hidden on mobile */}
                                 <Button
                                     variant="outline"
                                     asChild
-                                    className="w-full"
+                                    className="w-full hidden md:flex"
                                 >
                                     <Link href="/products">
                                         Continue Shopping
