@@ -50,6 +50,20 @@ class OrdersController extends Controller
 
         $orders = $query->paginate(15);
 
+        // Transform the pagination response to ensure proper structure
+        $ordersData = [
+            'data' => $orders->items(),
+            'meta' => [
+                'total' => $orders->total(),
+                'per_page' => $orders->perPage(),
+                'current_page' => $orders->currentPage(),
+                'last_page' => $orders->lastPage(),
+                'from' => $orders->firstItem(),
+                'to' => $orders->lastItem(),
+            ],
+            'links' => [],
+        ];
+
         // Calculate KPI data
         $today = now()->startOfDay();
         $thisMonth = now()->startOfMonth();
@@ -74,7 +88,7 @@ class OrdersController extends Controller
         ];
 
         return Inertia::render('Admin/Orders/Index', [
-            'orders' => $orders,
+            'orders' => $ordersData,
             'kpis' => $kpis,
             'filters' => $request->only(['status', 'payment_status', 'search', 'date_from', 'date_to']),
         ]);

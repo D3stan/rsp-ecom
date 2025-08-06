@@ -65,10 +65,17 @@ interface KPIs {
 }
 
 interface Props {
-    orders: {
-        data: Order[];
-        links: any[];
-        meta: any;
+    orders?: {
+        data?: Order[];
+        links?: any[];
+        meta?: {
+            total: number;
+            per_page: number;
+            current_page: number;
+            last_page: number;
+            from: number;
+            to: number;
+        };
     };
     kpis: KPIs;
     filters: {
@@ -99,6 +106,11 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [statusFilter, setStatusFilter] = useState(filters.status || '');
     const [paymentStatusFilter, setPaymentStatusFilter] = useState(filters.payment_status || '');
+
+    // Add safety checks for orders data
+    const ordersData = orders?.data || [];
+    const ordersMeta = orders?.meta || { total: 0, per_page: 15, current_page: 1, last_page: 1, from: 0, to: 0 };
+    const ordersLinks = orders?.links || [];
 
     const handleFilter = () => {
         router.get('/admin/orders', {
@@ -218,7 +230,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                             <h3 className="text-sm font-medium">Total Orders</h3>
                         </div>
                         <div className="mt-2">
-                            <p className="text-2xl font-bold">{orders.meta.total}</p>
+                            <p className="text-2xl font-bold">{ordersMeta.total}</p>
                             <p className="text-xs text-muted-foreground">
                                 All time
                             </p>
@@ -293,7 +305,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {orders.data.map((order) => {
+                                {ordersData.length > 0 ? ordersData.map((order) => {
                                     const customer = getCustomerInfo(order);
                                     return (
                                         <tr key={order.id} className="border-b hover:bg-muted/50">
@@ -369,20 +381,26 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                             </td>
                                         </tr>
                                     );
-                                })}
+                                }) : (
+                                    <tr>
+                                        <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                                            No orders found
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
 
                     {/* Pagination */}
-                    {orders.meta.last_page > 1 && (
+                    {ordersMeta.last_page > 1 && (
                         <div className="px-6 py-4 border-t">
                             <div className="flex items-center justify-between">
                                 <p className="text-sm text-muted-foreground">
-                                    Showing {orders.meta.from} to {orders.meta.to} of {orders.meta.total} results
+                                    Showing {ordersMeta.from} to {ordersMeta.to} of {ordersMeta.total} results
                                 </p>
                                 <div className="flex items-center space-x-2">
-                                    {orders.links.map((link, index) => (
+                                    {ordersLinks.map((link, index) => (
                                         <Button
                                             key={index}
                                             variant={link.active ? "default" : "outline"}

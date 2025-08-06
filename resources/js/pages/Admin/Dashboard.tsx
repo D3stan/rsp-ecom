@@ -75,13 +75,13 @@ interface Product {
 }
 
 interface Props {
-    stats: Stats;
-    growth: Growth;
-    recentOrders: RecentOrder[];
-    orderStatusDistribution: OrderStatusDistribution;
-    revenueChartData: RevenueChartData[];
-    topProducts: Product[];
-    lowStockProducts: Product[];
+    stats?: Stats;
+    growth?: Growth;
+    recentOrders?: RecentOrder[];
+    orderStatusDistribution?: OrderStatusDistribution;
+    revenueChartData?: RevenueChartData[];
+    topProducts?: Product[];
+    lowStockProducts?: Product[];
 }
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
@@ -103,6 +103,22 @@ export default function AdminDashboard({
     topProducts,
     lowStockProducts
 }: Props) {
+    // Add safety checks and defaults
+    const safeStats = stats || {
+        today: { orders: 0, revenue: 0, customers: 0 },
+        month: { orders: 0, revenue: 0, customers: 0 },
+        year: { orders: 0, revenue: 0 }
+    };
+    
+    const safeGrowth = growth || { orders: 0, revenue: 0 };
+    const safeRecentOrders = recentOrders || [];
+    const safeOrderStatusDistribution = orderStatusDistribution || {
+        pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0
+    };
+    const safeRevenueChartData = revenueChartData || [];
+    const safeTopProducts = topProducts || [];
+    const safeLowStockProducts = lowStockProducts || [];
+
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
@@ -111,10 +127,10 @@ export default function AdminDashboard({
     };
 
     // Prepare pie chart data
-    const pieChartData = Object.entries(orderStatusDistribution).map(([key, value]) => ({
+    const pieChartData = Object.entries(safeOrderStatusDistribution).map(([key, value]) => ({
         name: key.charAt(0).toUpperCase() + key.slice(1),
         value,
-        color: COLORS[Object.keys(orderStatusDistribution).indexOf(key)]
+        color: COLORS[Object.keys(safeOrderStatusDistribution).indexOf(key)]
     }));
 
     return (
@@ -157,14 +173,14 @@ export default function AdminDashboard({
                             <h3 className="text-sm font-medium">Today's Orders</h3>
                         </div>
                         <div className="mt-2">
-                            <p className="text-2xl font-bold">{stats.today.orders}</p>
-                            <div className={`flex items-center text-xs ${growth.orders >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {growth.orders >= 0 ? (
+                            <p className="text-2xl font-bold">{safeStats.today.orders}</p>
+                            <div className={`flex items-center text-xs ${safeGrowth.orders >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {safeGrowth.orders >= 0 ? (
                                     <ArrowUpRight className="h-3 w-3 mr-1" />
                                 ) : (
                                     <ArrowDownRight className="h-3 w-3 mr-1" />
                                 )}
-                                {Math.abs(growth.orders)}% from yesterday
+                                {Math.abs(safeGrowth.orders)}% from yesterday
                             </div>
                         </div>
                     </Card>
@@ -175,14 +191,14 @@ export default function AdminDashboard({
                             <h3 className="text-sm font-medium">Today's Revenue</h3>
                         </div>
                         <div className="mt-2">
-                            <p className="text-2xl font-bold">{formatCurrency(stats.today.revenue)}</p>
-                            <div className={`flex items-center text-xs ${growth.revenue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {growth.revenue >= 0 ? (
+                            <p className="text-2xl font-bold">{formatCurrency(safeStats.today.revenue)}</p>
+                            <div className={`flex items-center text-xs ${safeGrowth.revenue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {safeGrowth.revenue >= 0 ? (
                                     <ArrowUpRight className="h-3 w-3 mr-1" />
                                 ) : (
                                     <ArrowDownRight className="h-3 w-3 mr-1" />
                                 )}
-                                {Math.abs(growth.revenue)}% from yesterday
+                                {Math.abs(safeGrowth.revenue)}% from yesterday
                             </div>
                         </div>
                     </Card>
@@ -193,10 +209,10 @@ export default function AdminDashboard({
                             <h3 className="text-sm font-medium">Monthly Orders</h3>
                         </div>
                         <div className="mt-2">
-                            <p className="text-2xl font-bold">{stats.month.orders}</p>
+                            <p className="text-2xl font-bold">{safeStats.month.orders}</p>
                             <div className="flex items-center text-xs text-blue-600">
                                 <BarChart3 className="h-3 w-3 mr-1" />
-                                {formatCurrency(stats.month.revenue)} revenue
+                                {formatCurrency(safeStats.month.revenue)} revenue
                             </div>
                         </div>
                     </Card>
@@ -207,10 +223,10 @@ export default function AdminDashboard({
                             <h3 className="text-sm font-medium">New Customers</h3>
                         </div>
                         <div className="mt-2">
-                            <p className="text-2xl font-bold">{stats.today.customers}</p>
+                            <p className="text-2xl font-bold">{safeStats.today.customers}</p>
                             <div className="flex items-center text-xs text-green-600">
                                 <TrendingUp className="h-3 w-3 mr-1" />
-                                {stats.month.customers} this month
+                                {safeStats.month.customers} this month
                             </div>
                         </div>
                     </Card>
@@ -231,7 +247,7 @@ export default function AdminDashboard({
                         </div>
                         <div className="h-80">
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={revenueChartData}>
+                                <LineChart data={safeRevenueChartData}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="date" />
                                     <YAxis />
@@ -300,7 +316,7 @@ export default function AdminDashboard({
                             </Button>
                         </div>
                         <div className="space-y-3">
-                            {recentOrders.map((order) => (
+                            {safeRecentOrders.map((order) => (
                                 <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
                                     <div className="flex-1">
                                         <div className="flex items-center space-x-2">
@@ -339,7 +355,7 @@ export default function AdminDashboard({
                             </Button>
                         </div>
                         <div className="space-y-3">
-                            {topProducts.length > 0 ? topProducts.map((product) => (
+                            {safeTopProducts.length > 0 ? safeTopProducts.map((product) => (
                                 <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg">
                                     <div className="flex-1">
                                         <p className="font-medium text-sm">{product.name}</p>
@@ -374,7 +390,7 @@ export default function AdminDashboard({
                             </Button>
                         </div>
                         <div className="space-y-3">
-                            {lowStockProducts.length > 0 ? lowStockProducts.map((product) => (
+                            {safeLowStockProducts.length > 0 ? safeLowStockProducts.map((product) => (
                                 <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg bg-orange-50">
                                     <div className="flex-1">
                                         <p className="font-medium text-sm">{product.name}</p>
