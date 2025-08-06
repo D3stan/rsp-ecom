@@ -123,7 +123,7 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'compare_price' => 'nullable|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
-            'sku' => 'required|string|unique:products',
+            'sku' => 'nullable|string|unique:products',
             'status' => 'required|in:active,inactive,draft',
             'featured' => 'boolean',
             'category_id' => 'required|exists:categories,id',
@@ -133,6 +133,15 @@ class ProductController extends Controller
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
+        
+        // Auto-generate SKU if not provided
+        if (empty($validated['sku'])) {
+            $validated['sku'] = $this->generateSKU($validated['name']);
+        }
+
+        // Remove images from validated data to avoid array to string conversion
+        $imageFiles = $validated['images'] ?? null;
+        unset($validated['images']);
 
         // Create the product first
         $product = Product::create($validated);
@@ -144,6 +153,33 @@ class ProductController extends Controller
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Product created successfully.');
+    }
+
+    /**
+     * Generate a unique SKU based on product name
+     */
+    private function generateSKU(string $productName): string
+    {
+        // Create base SKU from product name
+        $baseSku = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $productName), 0, 6));
+        
+        // If base SKU is too short, pad with random characters
+        if (strlen($baseSku) < 3) {
+            $baseSku = 'PROD' . $baseSku;
+        }
+        
+        // Add timestamp suffix to ensure uniqueness
+        $sku = $baseSku . '-' . time();
+        
+        // Check if SKU already exists and add suffix if needed
+        $counter = 1;
+        $originalSku = $sku;
+        while (Product::where('sku', $sku)->exists()) {
+            $sku = $originalSku . '-' . $counter;
+            $counter++;
+        }
+        
+        return $sku;
     }
 
     /**

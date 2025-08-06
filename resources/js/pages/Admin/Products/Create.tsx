@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { useForm, Head } from '@inertiajs/react';
+import { useState } from 'react';
+import { Head, useForm } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import AdminLayout from '@/layouts/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
-import { X, Upload } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ChevronDown, Upload, X, Star, Package, DollarSign, Image as ImageIcon } from 'lucide-react';
 
 interface Category {
     id: number;
@@ -26,9 +28,11 @@ interface Props {
     sizes: Size[];
 }
 
-export default function ProductForm({ categories, sizes }: Props) {
+export default function CreateProduct({ categories, sizes }: Props) {
+    const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const [previewImages, setPreviewImages] = useState<string[]>([]);
-    const { data, setData, post, processing, errors, reset } = useForm({
+
+    const { data, setData, post, processing, errors } = useForm({
         name: '',
         description: '',
         price: '',
@@ -44,304 +48,339 @@ export default function ProductForm({ categories, sizes }: Props) {
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        const maxImages = 10;
-        const currentImageCount = data.images.length;
+        const newImages = [...data.images, ...files].slice(0, 10);
         
-        if (currentImageCount + files.length > maxImages) {
-            alert(`You can only upload up to ${maxImages} images total.`);
-            return;
-        }
-
-        // Add new images to existing ones
-        const newImages = [...data.images, ...files];
         setData('images', newImages);
-
-        // Create preview URLs for new images
+        
+        // Create preview URLs
         const newPreviews = files.map(file => URL.createObjectURL(file));
-        setPreviewImages(prev => [...prev, ...newPreviews]);
+        setPreviewImages(prev => [...prev, ...newPreviews].slice(0, 10));
     };
 
     const removeImage = (index: number) => {
         const newImages = data.images.filter((_, i) => i !== index);
-        setData('images', newImages);
+        const newPreviews = previewImages.filter((_, i) => i !== index);
         
-        // Clean up preview URL
-        URL.revokeObjectURL(previewImages[index]);
-        setPreviewImages(prev => prev.filter((_, i) => i !== index));
+        setData('images', newImages);
+        setPreviewImages(newPreviews);
     };
 
-    const submit = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
-        const formData = new FormData();
-        
-        // Append all form fields
-        Object.entries(data).forEach(([key, value]) => {
-            if (key === 'images') {
-                // Append each image file
-                (value as File[]).forEach(file => {
-                    formData.append('images[]', file);
-                });
-            } else {
-                formData.append(key, value as string);
-            }
-        });
-
-        post(route('admin.products.store'), {
-            forceFormData: true,
-            onSuccess: () => {
-                reset();
-                setPreviewImages([]);
-            },
-        });
+        post(route('admin.products.store'));
     };
 
     return (
-        <AdminLayout
-            breadcrumbs={[
-                { title: 'Dashboard', href: '/admin/dashboard' },
-                { title: 'Products', href: '/admin/products' },
-                { title: 'Create Product', href: '/admin/products/create' },
-            ]}
-        >
+        <AdminLayout>
             <Head title="Create Product" />
-
-            <div className="space-y-6">
-                {/* Page Header */}
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Create Product</h1>
-                    <p className="text-muted-foreground">
-                        Add a new product to your catalog
-                    </p>
+            
+            <div className="p-4 sm:p-6 space-y-6">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-white">Create Product</h1>
+                        <p className="text-gray-500">Add a new product to your inventory</p>
+                    </div>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Product Information</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={submit} className="space-y-6">
-                        {/* Basic Information */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="name">Product Name *</Label>
-                                <Input
-                                    id="name"
-                                    type="text"
-                                    value={data.name}
-                                    onChange={(e) => setData('name', e.target.value)}
-                                    placeholder="Enter product name"
-                                    className={errors.name ? 'border-red-500' : ''}
-                                />
-                                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Basic Information */}
+                    <Card>
+                        <CardHeader className="pb-4">
+                            <div className="flex items-center gap-2">
+                                <Package className="h-5 w-5 text-blue-600" />
+                                <CardTitle className="text-lg">Basic Information</CardTitle>
                             </div>
+                            <CardDescription>
+                                Essential product details and inventory management
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="md:col-span-2">
+                                    <Label htmlFor="name">Product Name *</Label>
+                                    <Input
+                                        id="name"
+                                        value={data.name}
+                                        onChange={(e) => setData('name', e.target.value)}
+                                        placeholder="Enter product name"
+                                        className={errors.name ? 'border-red-500' : ''}
+                                    />
+                                    {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+                                </div>
 
-                            <div>
-                                <Label htmlFor="sku">SKU *</Label>
-                                <Input
-                                    id="sku"
-                                    type="text"
-                                    value={data.sku}
-                                    onChange={(e) => setData('sku', e.target.value)}
-                                    placeholder="Enter product SKU"
-                                    className={errors.sku ? 'border-red-500' : ''}
-                                />
-                                {errors.sku && <p className="text-red-500 text-sm mt-1">{errors.sku}</p>}
-                            </div>
-                        </div>
+                                <div>
+                                    <Label htmlFor="category_id">Category *</Label>
+                                    <Select value={data.category_id} onValueChange={(value) => setData('category_id', value)}>
+                                        <SelectTrigger className={errors.category_id ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="Select category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {categories.map((category) => (
+                                                <SelectItem key={category.id} value={category.id.toString()}>
+                                                    {category.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.category_id && <p className="text-sm text-red-500 mt-1">{errors.category_id}</p>}
+                                </div>
 
-                        <div>
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                                id="description"
-                                value={data.description}
-                                onChange={(e) => setData('description', e.target.value)}
-                                placeholder="Enter product description"
-                                rows={4}
-                                className={errors.description ? 'border-red-500' : ''}
-                            />
-                            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-                        </div>
+                                <div>
+                                    <Label htmlFor="size_id">Size *</Label>
+                                    <Select value={data.size_id} onValueChange={(value) => setData('size_id', value)}>
+                                        <SelectTrigger className={errors.size_id ? 'border-red-500' : ''}>
+                                            <SelectValue placeholder="Select size" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {sizes.map((size) => (
+                                                <SelectItem key={size.id} value={size.id.toString()}>
+                                                    {size.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.size_id && <p className="text-sm text-red-500 mt-1">{errors.size_id}</p>}
+                                </div>
 
-                        {/* Pricing */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <Label htmlFor="price">Price *</Label>
-                                <Input
-                                    id="price"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={data.price}
-                                    onChange={(e) => setData('price', e.target.value)}
-                                    placeholder="0.00"
-                                    className={errors.price ? 'border-red-500' : ''}
-                                />
-                                {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
-                            </div>
-
-                            <div>
-                                <Label htmlFor="compare_price">Compare Price</Label>
-                                <Input
-                                    id="compare_price"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={data.compare_price}
-                                    onChange={(e) => setData('compare_price', e.target.value)}
-                                    placeholder="0.00"
-                                    className={errors.compare_price ? 'border-red-500' : ''}
-                                />
-                                {errors.compare_price && <p className="text-red-500 text-sm mt-1">{errors.compare_price}</p>}
-                            </div>
-
-                            <div>
-                                <Label htmlFor="stock_quantity">Stock Quantity *</Label>
-                                <Input
-                                    id="stock_quantity"
-                                    type="number"
-                                    min="0"
-                                    value={data.stock_quantity}
-                                    onChange={(e) => setData('stock_quantity', e.target.value)}
-                                    placeholder="0"
-                                    className={errors.stock_quantity ? 'border-red-500' : ''}
-                                />
-                                {errors.stock_quantity && <p className="text-red-500 text-sm mt-1">{errors.stock_quantity}</p>}
-                            </div>
-                        </div>
-
-                        {/* Category and Size */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="category_id">Category *</Label>
-                                <Select value={data.category_id} onValueChange={(value) => setData('category_id', value)}>
-                                    <SelectTrigger className={errors.category_id ? 'border-red-500' : ''}>
-                                        <SelectValue placeholder="Select a category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map((category) => (
-                                            <SelectItem key={category.id} value={category.id.toString()}>
-                                                {category.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {errors.category_id && <p className="text-red-500 text-sm mt-1">{errors.category_id}</p>}
-                            </div>
-
-                            <div>
-                                <Label htmlFor="size_id">Size *</Label>
-                                <Select value={data.size_id} onValueChange={(value) => setData('size_id', value)}>
-                                    <SelectTrigger className={errors.size_id ? 'border-red-500' : ''}>
-                                        <SelectValue placeholder="Select a size" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {sizes.map((size) => (
-                                            <SelectItem key={size.id} value={size.id.toString()}>
-                                                {size.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {errors.size_id && <p className="text-red-500 text-sm mt-1">{errors.size_id}</p>}
-                            </div>
-                        </div>
-
-                        {/* Status and Featured */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="status">Status</Label>
-                                <Select value={data.status} onValueChange={(value) => setData('status', value)}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
-                                        <SelectItem value="draft">Draft</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="flex items-center space-x-2 pt-6">
-                                <input
-                                    id="featured"
-                                    type="checkbox"
-                                    checked={data.featured}
-                                    onChange={(e) => setData('featured', e.target.checked)}
-                                    className="rounded border-gray-300"
-                                />
-                                <Label htmlFor="featured">Featured Product</Label>
-                            </div>
-                        </div>
-
-                        {/* Image Upload */}
-                        <div>
-                            <Label htmlFor="images">Product Images (Max: 10)</Label>
-                            <div className="mt-2">
-                                <div className="flex items-center justify-center w-full">
-                                    <label htmlFor="images" className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                            <Upload className="w-8 h-8 mb-4 text-gray-500" />
-                                            <p className="mb-2 text-sm text-gray-500">
-                                                <span className="font-semibold">Click to upload</span> product images
-                                            </p>
-                                            <p className="text-xs text-gray-500">PNG, JPG, GIF, WEBP up to 2MB each</p>
-                                        </div>
-                                        <input
-                                            id="images"
-                                            type="file"
-                                            multiple
-                                            accept="image/*"
-                                            onChange={handleImageChange}
-                                            className="hidden"
+                                <div>
+                                    <Label htmlFor="price">Price *</Label>
+                                    <div className="relative">
+                                        <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            id="price"
+                                            type="number"
+                                            step="0.01"
+                                            value={data.price}
+                                            onChange={(e) => setData('price', e.target.value)}
+                                            placeholder="0.00"
+                                            className={`pl-10 ${errors.price ? 'border-red-500' : ''}`}
                                         />
+                                    </div>
+                                    {errors.price && <p className="text-sm text-red-500 mt-1">{errors.price}</p>}
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="stock_quantity">Stock Quantity *</Label>
+                                    <Input
+                                        id="stock_quantity"
+                                        type="number"
+                                        value={data.stock_quantity}
+                                        onChange={(e) => setData('stock_quantity', e.target.value)}
+                                        placeholder="0"
+                                        className={errors.stock_quantity ? 'border-red-500' : ''}
+                                    />
+                                    {errors.stock_quantity && <p className="text-sm text-red-500 mt-1">{errors.stock_quantity}</p>}
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <Label htmlFor="description">Description</Label>
+                                    <Textarea
+                                        id="description"
+                                        value={data.description}
+                                        onChange={(e) => setData('description', e.target.value)}
+                                        placeholder="Enter product description"
+                                        rows={3}
+                                        className={errors.description ? 'border-red-500' : ''}
+                                    />
+                                    {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="status">Status</Label>
+                                    <Select value={data.status} onValueChange={(value) => setData('status', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="active">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                    Active
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="inactive">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                                                    Inactive
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="draft">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                                    Draft
+                                                </div>
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="featured"
+                                        checked={data.featured}
+                                        onCheckedChange={(checked) => setData('featured', Boolean(checked))}
+                                    />
+                                    <Label htmlFor="featured" className="flex items-center gap-2 cursor-pointer">
+                                        <Star className="h-4 w-4 text-yellow-500" />
+                                        Featured Product
+                                    </Label>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Product Images */}
+                    <Card>
+                        <CardHeader className="pb-4">
+                            <div className="flex items-center gap-2">
+                                <ImageIcon className="h-5 w-5 text-purple-600" />
+                                <CardTitle className="text-lg">Product Images</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Upload up to 10 images (JPEG, PNG, GIF, WebP - max 2MB each)
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {/* Upload Area */}
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                    <input
+                                        type="file"
+                                        id="images"
+                                        multiple
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="hidden"
+                                        disabled={data.images.length >= 10}
+                                    />
+                                    <label
+                                        htmlFor="images"
+                                        className={`cursor-pointer ${data.images.length >= 10 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                                        <p className="mt-2 text-sm text-gray-600">
+                                            {data.images.length >= 10 ? 'Maximum 10 images reached' : 'Click to upload images'}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            {data.images.length}/10 images uploaded
+                                        </p>
                                     </label>
                                 </div>
-                                {errors.images && <p className="text-red-500 text-sm mt-1">{errors.images}</p>}
-                            </div>
 
-                            {/* Image Previews */}
-                            {previewImages.length > 0 && (
-                                <div className="mt-4">
-                                    <Label>Image Previews ({previewImages.length}/10)</Label>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-2">
+                                {/* Image Previews */}
+                                {previewImages.length > 0 && (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                         {previewImages.map((preview, index) => (
                                             <div key={index} className="relative group">
-                                                <img
-                                                    src={preview}
-                                                    alt={`Preview ${index + 1}`}
-                                                    className="w-full h-24 object-cover rounded-lg"
-                                                />
+                                                <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                                                    <img
+                                                        src={preview}
+                                                        alt={`Preview ${index + 1}`}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
                                                 <button
                                                     type="button"
                                                     onClick={() => removeImage(index)}
                                                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
-                                                    <X className="w-4 h-4" />
+                                                    <X className="h-4 w-4" />
                                                 </button>
                                                 {index === 0 && (
-                                                    <Badge className="absolute bottom-1 left-1 text-xs">Main</Badge>
+                                                    <Badge className="absolute bottom-2 left-2 bg-blue-500">
+                                                        Main
+                                                    </Badge>
                                                 )}
                                             </div>
                                         ))}
                                     </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
 
-                        {/* Submit */}
-                        <div className="flex justify-end space-x-4">
-                            <Button type="button" variant="outline" onClick={() => window.history.back()}>
-                                Cancel
-                            </Button>
-                            <Button type="submit" disabled={processing}>
-                                {processing ? 'Creating...' : 'Create Product'}
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
+                                {errors.images && <p className="text-sm text-red-500">{errors.images}</p>}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Advanced Options */}
+                    <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+                        <Card>
+                            <CollapsibleTrigger asChild>
+                                <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <DollarSign className="h-5 w-5 text-green-600" />
+                                            <CardTitle className="text-lg">Advanced Options</CardTitle>
+                                        </div>
+                                        <ChevronDown className={`h-4 w-4 transition-transform ${isAdvancedOpen ? 'rotate-180' : ''}`} />
+                                    </div>
+                                    <CardDescription>
+                                        Optional settings for pricing and inventory management
+                                    </CardDescription>
+                                </CardHeader>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                                <CardContent className="pt-0">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <Label htmlFor="sku">SKU (Auto-generated if empty)</Label>
+                                            <Input
+                                                id="sku"
+                                                value={data.sku}
+                                                onChange={(e) => setData('sku', e.target.value)}
+                                                placeholder="Will be auto-generated"
+                                                className={errors.sku ? 'border-red-500' : ''}
+                                            />
+                                            {errors.sku && <p className="text-sm text-red-500 mt-1">{errors.sku}</p>}
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Leave empty to auto-generate from product name
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <Label htmlFor="compare_price">Compare Price</Label>
+                                            <div className="relative">
+                                                <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                                <Input
+                                                    id="compare_price"
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={data.compare_price}
+                                                    onChange={(e) => setData('compare_price', e.target.value)}
+                                                    placeholder="0.00"
+                                                    className={`pl-10 ${errors.compare_price ? 'border-red-500' : ''}`}
+                                                />
+                                            </div>
+                                            {errors.compare_price && <p className="text-sm text-red-500 mt-1">{errors.compare_price}</p>}
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Original price for discount display
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </CollapsibleContent>
+                        </Card>
+                    </Collapsible>
+
+                    {/* Submit Button */}
+                    <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                        <Button
+                            type="submit"
+                            disabled={processing}
+                            className="w-full sm:w-auto order-2 sm:order-1"
+                        >
+                            {processing ? 'Creating...' : 'Create Product'}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => window.history.back()}
+                            className="w-full sm:w-auto order-1 sm:order-2"
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </form>
             </div>
         </AdminLayout>
     );

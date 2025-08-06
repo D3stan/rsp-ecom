@@ -7,7 +7,7 @@ interface AppLogoIconProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 'sr
 export default function AppLogoIcon({ className = "w-8 h-8", ...props }: AppLogoIconProps) {
     return (
         <img
-            src="/favicon.svg"
+            src="/favicon.ico"
             alt="Logo"
             className={className}
             onError={(e) => {
