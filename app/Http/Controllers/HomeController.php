@@ -24,12 +24,13 @@ class HomeController extends Controller
             ->limit(6)
             ->get()
             ->map(function (Product $product) {
-                // Get the main image URL or use default
-                $imageUrl = $product->main_image_url;
-                
-                // If no image is set or the file doesn't exist, use default
-                if (!$imageUrl || !$this->imageExists($imageUrl)) {
-                    $imageUrl = '/images/product.png';
+                // Handle empty image arrays - use default image
+                $imageUrl = '/images/product.png';
+                if (!empty($product->images)) {
+                    $mainImage = $product->main_image_url;
+                    if ($mainImage && $this->imageExists($mainImage)) {
+                        $imageUrl = $mainImage;
+                    }
                 }
                 
                 return [

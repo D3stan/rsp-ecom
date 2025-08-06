@@ -394,14 +394,10 @@
                     <tr>
                         <td>
                             <div class="product-info">
-                                @if($item->product && $item->product->main_image_url )
+                                @if($item->product && !empty($item->product->images))
                                     <img src="{{ $item->product->main_image_url }}" alt="{{ $item->product->name }}" class="product-image">
                                 @else
                                     <img src="{{ asset('images/product.png') }}" alt="Product" class="product-image">
-
-                                    <!-- <div style="width: 60px; height: 60px; background-color: #e9ecef; border-radius: 8px; margin-right: 12px; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 12px;">
-                                        IMG
-                                    </div> -->
                                 @endif
                                 <div class="product-details">
                                     <h4>{{ $item->product->name ?? $item->product_name }}</h4>

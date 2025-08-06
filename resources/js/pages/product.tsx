@@ -96,6 +96,9 @@ export default function Product() {
     const [quantity, setQuantity] = useState(1);
     const [selectedSize, setSelectedSize] = useState<string>('');
     
+    // Handle empty images array
+    const displayImages = product.images.length > 0 ? product.images : ['/images/product.png'];
+    
     // State for collapsibles
     const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
     const [isSpecsOpen, setIsSpecsOpen] = useState(false);
@@ -108,13 +111,13 @@ export default function Product() {
 
     const handlePrevImage = () => {
         setCurrentImageIndex((prev) => 
-            prev === 0 ? product.images.length - 1 : prev - 1
+            prev === 0 ? displayImages.length - 1 : prev - 1
         );
     };
 
     const handleNextImage = () => {
         setCurrentImageIndex((prev) => 
-            prev === product.images.length - 1 ? 0 : prev + 1
+            prev === displayImages.length - 1 ? 0 : prev + 1
         );
     };
 
@@ -205,13 +208,13 @@ export default function Product() {
                         <div className="space-y-4">
                             <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden">
                                 <img
-                                    src={product.images[currentImageIndex]}
+                                    src={displayImages[currentImageIndex]}
                                     alt={product.name}
                                     className="w-full h-full object-cover"
                                 />
                                 
                                 {/* Navigation buttons */}
-                                {product.images.length > 1 && (
+                                {displayImages.length > 1 && (
                                     <>
                                         <button
                                             onClick={handlePrevImage}
@@ -237,9 +240,9 @@ export default function Product() {
                             </div>
                             
                             {/* Thumbnail images */}
-                            {product.images.length > 1 && (
+                            {displayImages.length > 1 && (
                                 <div className="flex space-x-2 overflow-x-auto pb-2">
-                                    {product.images.map((image, index) => (
+                                    {displayImages.map((image, index) => (
                                         <button
                                             key={index}
                                             onClick={() => handleImageChange(index)}

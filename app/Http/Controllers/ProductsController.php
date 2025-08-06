@@ -80,12 +80,13 @@ class ProductsController extends Controller
 
         // Transform products for frontend
         $productsData = $products->through(function (Product $product) {
-            // Get the main image URL or use default
-            $imageUrl = $product->main_image_url;
-            
-            // If no image is set or the file doesn't exist, use default
-            if (!$imageUrl || !$this->imageExists($imageUrl)) {
-                $imageUrl = '/images/product.png';
+            // Handle empty image arrays - use default image
+            $imageUrl = '/images/product.png';
+            if (!empty($product->images)) {
+                $mainImage = $product->main_image_url;
+                if ($mainImage && $this->imageExists($mainImage)) {
+                    $imageUrl = $mainImage;
+                }
             }
             
             return [
@@ -165,20 +166,22 @@ class ProductsController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
-        // Get the main image URL or use default
-        $imageUrl = $product->main_image_url;
+        // Handle empty image arrays - use default image
+        $imageUrl = '/images/product.png';
+        $images = [$imageUrl]; // Start with default image
         
-        // If no image is set or the file doesn't exist, use default
-        if (!$imageUrl || !$this->imageExists($imageUrl)) {
-            $imageUrl = '/images/product.png';
-        }
-
-        // Get additional images if available
-        $images = [$imageUrl]; // Start with main image
-        if ($product->images && is_array($product->images)) {
-            foreach ($product->images as $imagePath) {
-                if ($imagePath !== $imageUrl && $this->imageExists($imagePath)) {
-                    $images[] = $imagePath;
+        if (!empty($product->images)) {
+            $mainImage = $product->main_image_url;
+            if ($mainImage && $this->imageExists($mainImage)) {
+                $imageUrl = $mainImage;
+                $images = [$imageUrl]; // Replace default with actual image
+                
+                // Get additional images if available
+                foreach ($product->images as $imagePath) {
+                    $fullImagePath = $this->getFullImagePath($imagePath, $product->id);
+                    if ($fullImagePath !== $imageUrl && $this->imageExists($fullImagePath)) {
+                        $images[] = $fullImagePath;
+                    }
                 }
             }
         }
@@ -231,9 +234,13 @@ class ProductsController extends Controller
             ->limit(4)
             ->get()
             ->map(function (Product $relatedProduct) {
-                $relatedImageUrl = $relatedProduct->main_image_url;
-                if (!$relatedImageUrl || !$this->imageExists($relatedImageUrl)) {
-                    $relatedImageUrl = '/images/product.png';
+                // Handle empty image arrays for related products
+                $relatedImageUrl = '/images/product.png';
+                if (!empty($relatedProduct->images)) {
+                    $mainImage = $relatedProduct->main_image_url;
+                    if ($mainImage && $this->imageExists($mainImage)) {
+                        $relatedImageUrl = $mainImage;
+                    }
                 }
 
                 return [
@@ -284,6 +291,19 @@ class ProductsController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Get full image path for a product image
+     */
+    private function getFullImagePath(string $imagePath, int $productId): string
+    {
+        // If it's already a full URL, return as is
+        if (filter_var($imagePath, FILTER_VALIDATE_URL)) {
+            return $imagePath;
+        }
+        
+        return Storage::url("products/{$productId}/{$imagePath}");
     }
 
     /**

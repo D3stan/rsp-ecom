@@ -564,7 +564,7 @@ class CheckoutService
                     'product_data' => [
                         'name' => $productName,
                         'description' => $product->description,
-                        'images' => $product->images ? [asset('storage/' . $product->images[0])] : [],
+                        'images' => !empty($product->images) ? [asset('storage/' . $product->images[0])] : [asset('images/product.png')],
                         'metadata' => [
                             'product_id' => $product->id,
                             'size_id' => $size ? $size->id : null,

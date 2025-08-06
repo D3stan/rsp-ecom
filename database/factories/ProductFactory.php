@@ -239,16 +239,8 @@ class ProductFactory extends Factory
      */
     private function generateProductImages(): array
     {
-        // Always include the default product image
-        $images = ['product.png'];
-        
-        // Sometimes add additional placeholder images
-        $additionalImages = $this->faker->numberBetween(0, 3);
-        for ($i = 0; $i < $additionalImages; $i++) {
-            $images[] = 'product.png'; // Using same image as placeholder
-        }
-        
-        return $images;
+        // Return empty array for all products - default image will be handled by frontend/backend logic
+        return [];
     }
 
     /**

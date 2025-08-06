@@ -42,7 +42,7 @@ class CartController extends Controller
                         'id' => $item->product->id,
                         'name' => $item->product->name,
                         'slug' => $item->product->slug,
-                        'image' => $item->product->images[0] ?? '/images/placeholder.jpg',
+                        'image' => !empty($item->product->images) ? $item->product->images[0] : '/images/product.png',
                         'category' => $item->product->category?->name,
                     ],
                     'quantity' => $item->quantity,

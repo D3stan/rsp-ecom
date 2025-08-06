@@ -79,7 +79,7 @@ class Product extends Model
     public function getImageUrlsAttribute(): array
     {
         if (empty($this->images)) {
-            return [];
+            return ['/images/product.png'];
         }
 
         return collect($this->images)->map(function ($image) {
@@ -95,8 +95,18 @@ class Product extends Model
 
     public function getMainImageUrlAttribute(): ?string
     {
-        $imageUrls = $this->image_urls;
-        return $imageUrls[0] ?? null;
+        if (empty($this->images)) {
+            return '/images/product.png';
+        }
+        
+        $firstImage = $this->images[0];
+        
+        // If it's already a full URL, return as is
+        if (filter_var($firstImage, FILTER_VALIDATE_URL)) {
+            return $firstImage;
+        }
+        
+        return Storage::url("products/{$this->id}/{$firstImage}");
     }
 
     public function getImageUrl(string $filename): string

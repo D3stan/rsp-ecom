@@ -60,6 +60,11 @@ interface Props {
 }
 
 export default function CheckoutSuccess({ order, session, isGuest, user }: Props) {
+    // Image handling helper
+    const getImageSrc = (item: OrderItem) => {
+        return item.product.image_url || '/images/product.png';
+    };
+
     return (
         <>
             <Head title="Order Confirmation" />
@@ -163,13 +168,11 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                     {order.orderItems && order.orderItems.length > 0 ? (
                                         order.orderItems.map((item, index) => (
                                             <div key={item.id || index} className="flex items-center space-x-4 py-4 border-b last:border-b-0">
-                                                {item.product.image_url && (
-                                                    <img
-                                                        src={item.product.image_url}
-                                                        alt={item.product.name}
-                                                        className="h-16 w-16 rounded-lg object-cover"
-                                                    />
-                                                )}
+                                                <img
+                                                    src={getImageSrc(item)}
+                                                    alt={item.product.name}
+                                                    className="h-16 w-16 rounded-lg object-cover"
+                                                />
                                                 <div className="flex-1">
                                                     <h4 className="font-medium">{item.product.name}</h4>
                                                     {item.size && (

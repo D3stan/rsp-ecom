@@ -49,6 +49,11 @@ interface Props {
 }
 
 export default function CheckoutShow({ session, order }: Props) {
+    // Image handling helper
+    const getImageSrc = (item: OrderItem) => {
+        return item.product.image_url || '/images/product.png';
+    };
+
     const getStatusIcon = (status: string) => {
         switch (status) {
             case 'complete':
@@ -173,13 +178,11 @@ export default function CheckoutShow({ session, order }: Props) {
                                             <h4 className="font-medium">Items</h4>
                                             {order.orderItems.map((item) => (
                                                 <div key={item.id} className="flex items-center space-x-3 py-2">
-                                                    {item.product.image_url && (
-                                                        <img
-                                                            src={item.product.image_url}
-                                                            alt={item.product.name}
-                                                            className="h-12 w-12 rounded object-cover"
-                                                        />
-                                                    )}
+                                                    <img
+                                                        src={getImageSrc(item)}
+                                                        alt={item.product.name}
+                                                        className="h-12 w-12 rounded object-cover"
+                                                    />
                                                     <div className="flex-1">
                                                         <h5 className="font-medium text-sm">{item.product.name}</h5>
                                                         {item.size && (

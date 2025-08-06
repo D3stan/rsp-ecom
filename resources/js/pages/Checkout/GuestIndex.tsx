@@ -153,7 +153,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
 
     const getImageSrc = (item: CartItem) => {
         const defaultImage = '/images/product.png';
-        if (!item.product.images || item.product.images[0] === '' || item.product.images[0] === 'product.png') {
+        if (!item.product.images || item.product.images.length === 0) {
             return defaultImage;
         }
         return `/storage/${item.product.images[0]}`;
@@ -412,13 +412,11 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                             <div className="space-y-4 mb-6">
                                 {cartItems.map((item) => (
                                     <div key={item.id} className="flex items-start space-x-4">
-                                        {item.product.images && item.product.images[0] && (
-                                            <img
-                                                src={getImageSrc(item)}
-                                                alt={item.product.name}
-                                                className="w-16 h-16 object-cover rounded-md"
-                                            />
-                                        )}
+                                        <img
+                                            src={getImageSrc(item)}
+                                            alt={item.product.name}
+                                            className="w-16 h-16 object-cover rounded-md"
+                                        />
                                         <div className="flex-1 min-w-0">
                                             <h3 className="text-sm font-medium text-gray-900">
                                                 {item.product.name}

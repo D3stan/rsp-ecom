@@ -124,7 +124,14 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
         locale: 'en',
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const { showToast } = useToast();
+    
+    // Image handling helper
+    const getImageSrc = (item: CartItem) => {
+        return item.product.image_url || '/images/product.png';
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsProcessing(true);
 
@@ -445,13 +452,11 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                 <div className="space-y-3">
                                     {cartItems.map((item) => (
                                         <div key={item.id} className="flex items-center space-x-3">
-                                            {item.product.image_url && (
-                                                <img
-                                                    src={item.product.image_url}
-                                                    alt={item.product.name}
-                                                    className="h-12 w-12 rounded object-cover"
-                                                />
-                                            )}
+                                            <img
+                                                src={getImageSrc(item)}
+                                                alt={item.product.name}
+                                                className="h-12 w-12 rounded object-cover"
+                                            />
                                             <div className="flex-1">
                                                 <h4 className="font-medium text-sm">{item.product.name}</h4>
                                                 {item.size && (
