@@ -37,7 +37,7 @@ STRIPE_WEBHOOK_SECRET=whsec_your_actual_webhook_secret_here
 
 # Cashier Configuration
 CASHIER_CURRENCY=usd
-CASHIER_CURRENCY_LOCALE=en_US
+CASHIER_CURRENCY_LOCALE=it_IT
 CASHIER_LOGGER=stack
 ```
 

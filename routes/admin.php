@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\OrdersController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\CategoriesAndSizesController;
+use App\Http\Controllers\Admin\ReviewsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -38,8 +39,13 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('/sizes/{size}', [CategoriesAndSizesController::class, 'updateSize'])->name('sizes.update');
     Route::delete('/sizes/{size}', [CategoriesAndSizesController::class, 'destroySize'])->name('sizes.destroy');
 
+    // Reviews Management
+    Route::resource('reviews', ReviewsController::class)->only(['index', 'show', 'update', 'destroy']);
+    Route::patch('reviews/{review}/approve', [ReviewsController::class, 'approve'])->name('reviews.approve');
+    Route::patch('reviews/{review}/reject', [ReviewsController::class, 'reject'])->name('reviews.reject');
+    Route::patch('reviews/bulk-update', [ReviewsController::class, 'bulkUpdate'])->name('reviews.bulk-update');
+
     // TODO: Add other admin routes as they are implemented
     // Route::resource('customers', CustomersController::class);
-    // Route::resource('reviews', ReviewsController::class);
     
 });

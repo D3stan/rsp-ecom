@@ -4,6 +4,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -134,6 +135,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
         return Inertia::render('dashboard');
     })->name('dashboard');
+    Route::get('dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
 });
 
 require __DIR__.'/settings.php';

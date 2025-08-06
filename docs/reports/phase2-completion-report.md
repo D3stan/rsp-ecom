@@ -239,7 +239,7 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 
 # Cashier Configuration
 CASHIER_CURRENCY=usd
-CASHIER_CURRENCY_LOCALE=en_US
+CASHIER_CURRENCY_LOCALE=it_IT
 ```
 
 ## 🚀 Production Readiness
