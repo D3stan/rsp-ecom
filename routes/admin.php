@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\OrdersController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\CategoriesAndSizesController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -24,9 +25,21 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::delete('products/{product}/images/{filename}', [ProductController::class, 'removeImage'])->name('products.remove-image');
     Route::post('products/{product}/reviews', [ProductController::class, 'storeReview'])->name('products.reviews.store');
 
+    // Categories & Sizes Management
+    Route::get('/categories-sizes', [CategoriesAndSizesController::class, 'index'])->name('categories-sizes');
+    
+    // Category routes
+    Route::post('/categories', [CategoriesAndSizesController::class, 'storeCategory'])->name('categories.store');
+    Route::patch('/categories/{category}', [CategoriesAndSizesController::class, 'updateCategory'])->name('categories.update');
+    Route::delete('/categories/{category}', [CategoriesAndSizesController::class, 'destroyCategory'])->name('categories.destroy');
+    
+    // Size routes
+    Route::post('/sizes', [CategoriesAndSizesController::class, 'storeSize'])->name('sizes.store');
+    Route::patch('/sizes/{size}', [CategoriesAndSizesController::class, 'updateSize'])->name('sizes.update');
+    Route::delete('/sizes/{size}', [CategoriesAndSizesController::class, 'destroySize'])->name('sizes.destroy');
+
     // TODO: Add other admin routes as they are implemented
     // Route::resource('customers', CustomersController::class);
-    // Route::resource('categories', CategoriesController::class);
     // Route::resource('reviews', ReviewsController::class);
     
 });

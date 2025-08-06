@@ -40,6 +40,11 @@ const mainNavItems: NavItem[] = [
         icon: Package,
     },
     {
+        title: 'Categories & Sizes',
+        href: '/admin/categories-sizes',
+        icon: Tags,
+    },
+    {
         title: 'Customers',
         href: '/admin/customers',
         icon: Users,
