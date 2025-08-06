@@ -21,7 +21,9 @@ import {
     Clock,
     TrendingUp,
     Check,
-    X
+    X,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
@@ -288,6 +290,23 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
         } else {
             setSelectedReviews(reviewsData.map(review => review.id));
         }
+    };
+
+    // Helper functions for navigation
+    const getNextReviewId = (currentId: number) => {
+        const currentIndex = reviewsData.findIndex(review => review.id === currentId);
+        if (currentIndex !== -1 && currentIndex < reviewsData.length - 1) {
+            return reviewsData[currentIndex + 1].id;
+        }
+        return null;
+    };
+
+    const getPreviousReviewId = (currentId: number) => {
+        const currentIndex = reviewsData.findIndex(review => review.id === currentId);
+        if (currentIndex > 0) {
+            return reviewsData[currentIndex - 1].id;
+        }
+        return null;
     };
 
     return (
@@ -596,6 +615,25 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
+                                                    {getPreviousReviewId(review.id) && (
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/admin/reviews/${getPreviousReviewId(review.id)}`}>
+                                                                <ChevronLeft className="h-4 w-4 mr-2" />
+                                                                Previous Review
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {getNextReviewId(review.id) && (
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/admin/reviews/${getNextReviewId(review.id)}`}>
+                                                                <ChevronRight className="h-4 w-4 mr-2" />
+                                                                Next Review
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {(getPreviousReviewId(review.id) || getNextReviewId(review.id)) && (
+                                                        <DropdownMenuSeparator />
+                                                    )}
                                                     <DropdownMenuItem 
                                                         onClick={() => {
                                                             setReviewToDelete(review.id);
@@ -653,6 +691,25 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                     </Link>
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
+                                                {getPreviousReviewId(review.id) && (
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/admin/reviews/${getPreviousReviewId(review.id)}`}>
+                                                            <ChevronLeft className="h-4 w-4 mr-2" />
+                                                            Previous Review
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {getNextReviewId(review.id) && (
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/admin/reviews/${getNextReviewId(review.id)}`}>
+                                                            <ChevronRight className="h-4 w-4 mr-2" />
+                                                            Next Review
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {(getPreviousReviewId(review.id) || getNextReviewId(review.id)) && (
+                                                    <DropdownMenuSeparator />
+                                                )}
                                                 <DropdownMenuItem 
                                                     onClick={() => {
                                                         setReviewToDelete(review.id);
@@ -705,6 +762,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                             <span>{formatDate(review.created_at)}</span>
                                         </div>
                                     </div>
+
 
                                     {/* Action Buttons */}
                                     {!review.is_approved && (
@@ -782,11 +840,21 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                             <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => setIsKPIsOpen(!isKPIsOpen)}
+                                asChild
+                                disabled={reviewsData.length === 0}
                                 className="flex-1 h-12 text-xs"
                             >
-                                <TrendingUp className="h-4 w-4 mr-1" />
-                                Stats
+                                {reviewsData.length > 0 ? (
+                                    <Link href={`/admin/reviews/${reviewsData[0].id}`}>
+                                        <ChevronLeft className="h-4 w-4 mr-1" />
+                                        First
+                                    </Link>
+                                ) : (
+                                    <span>
+                                        <ChevronLeft className="h-4 w-4 mr-1" />
+                                        First
+                                    </span>
+                                )}
                             </Button>
                             <Button 
                                 variant="outline" 
@@ -801,12 +869,20 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                 variant="outline" 
                                 size="sm"
                                 asChild
+                                disabled={reviewsData.length === 0}
                                 className="flex-1 h-12 text-xs"
                             >
-                                <Link href="/admin/dashboard">
-                                    <MessageSquare className="h-4 w-4 mr-1" />
-                                    Dashboard
-                                </Link>
+                                {reviewsData.length > 0 ? (
+                                    <Link href={`/admin/reviews/${reviewsData[reviewsData.length - 1].id}`}>
+                                        Last
+                                        <ChevronRight className="h-4 w-4 ml-1" />
+                                    </Link>
+                                ) : (
+                                    <span>
+                                        Last
+                                        <ChevronRight className="h-4 w-4 ml-1" />
+                                    </span>
+                                )}
                             </Button>
                         </div>
                     </div>

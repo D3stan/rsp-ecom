@@ -83,22 +83,8 @@ interface Props {
 }
 
 export default function AdminSettings({ settings }: Props) {
-    const [activeTab, setActiveTab] = useState('general');
     const { addToast } = useToast();
-
-    // Get active tab from URL hash
-    useEffect(() => {
-        const hash = window.location.hash.replace('#', '');
-        if (hash && ['general', 'payment', 'shipping', 'tax', 'email'].includes(hash)) {
-            setActiveTab(hash);
-        }
-    }, []);
-
-    // Update URL hash when tab changes
-    const handleTabChange = (value: string) => {
-        setActiveTab(value);
-        window.history.replaceState(null, '', `#${value}`);
-    };
+    const [expandedSection, setExpandedSection] = useState<string>('general');
 
     // Form handlers for each section
     const generalForm = useForm({
@@ -208,639 +194,627 @@ export default function AdminSettings({ settings }: Props) {
         });
     };
 
+    const toggleSection = (section: string) => {
+        setExpandedSection(expandedSection === section ? '' : section);
+    };
+
+    const SectionCard = ({ 
+        id, 
+        title, 
+        description, 
+        icon: Icon, 
+        children 
+    }: { 
+        id: string; 
+        title: string; 
+        description: string; 
+        icon: any; 
+        children: React.ReactNode; 
+    }) => {
+        const isExpanded = expandedSection === id;
+        
+        return (
+            <Card className="rounded-2xl shadow-sm">
+                <CardHeader 
+                    className="cursor-pointer p-4 md:p-6" 
+                    onClick={() => toggleSection(id)}
+                >
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Icon className="w-5 h-5 text-primary shrink-0" />
+                            <div className="min-w-0">
+                                <CardTitle className="text-base md:text-lg">{title}</CardTitle>
+                                <CardDescription className="text-sm text-muted-foreground hidden sm:block">
+                                    {description}
+                                </CardDescription>
+                            </div>
+                        </div>
+                        {isExpanded ? (
+                            <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0" />
+                        ) : (
+                            <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
+                        )}
+                    </div>
+                </CardHeader>
+                {isExpanded && (
+                    <CardContent className="px-4 pb-4 md:px-6 md:pb-6">
+                        {children}
+                    </CardContent>
+                )}
+            </Card>
+        );
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Settings" />
 
-            <AdminSettingsLayout activeTab={activeTab}>
-                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                    <TabsList className="grid w-full grid-cols-5 mb-8">
-                        <TabsTrigger value="general" className="flex items-center gap-2">
-                            <Settings className="w-4 h-4" />
-                            <span className="hidden sm:inline">General</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="payment" className="flex items-center gap-2">
-                            <CreditCard className="w-4 h-4" />
-                            <span className="hidden sm:inline">Payment</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="shipping" className="flex items-center gap-2">
-                            <Truck className="w-4 h-4" />
-                            <span className="hidden sm:inline">Shipping</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="tax" className="flex items-center gap-2">
-                            <Receipt className="w-4 h-4" />
-                            <span className="hidden sm:inline">Tax</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="email" className="flex items-center gap-2">
-                            <Mail className="w-4 h-4" />
-                            <span className="hidden sm:inline">Email</span>
-                        </TabsTrigger>
-                    </TabsList>
+            <div className="p-4 md:p-6 space-y-6">
+                <div className="mb-6">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Settings</h1>
+                    <p className="text-muted-foreground text-sm md:text-base">
+                        Manage your store configuration and preferences
+                    </p>
+                </div>
 
+                <div className="space-y-4">
                     {/* General Settings */}
-                    <TabsContent value="general">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Settings className="w-5 h-5" />
-                                    General Settings
-                                </CardTitle>
-                                <CardDescription>
-                                    Configure basic store information and global settings
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <form onSubmit={submitGeneral} className="space-y-6">
+                    <SectionCard
+                        id="general"
+                        title="General Settings"
+                        description="Configure basic store information and global settings"
+                        icon={Settings}
+                    >
+                        <form onSubmit={submitGeneral} className="space-y-4">
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="site_name">Store Name</Label>
+                                    <Input
+                                        id="site_name"
+                                        value={generalForm.data.site_name}
+                                        onChange={(e) => generalForm.setData('site_name', e.target.value)}
+                                        className={cn(generalForm.errors.site_name && 'border-red-500')}
+                                    />
+                                    {generalForm.errors.site_name && (
+                                        <p className="text-sm text-red-500">{generalForm.errors.site_name}</p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="contact_email">Contact Email</Label>
+                                    <Input
+                                        id="contact_email"
+                                        type="email"
+                                        value={generalForm.data.contact_email}
+                                        onChange={(e) => generalForm.setData('contact_email', e.target.value)}
+                                        className={cn(generalForm.errors.contact_email && 'border-red-500')}
+                                    />
+                                    {generalForm.errors.contact_email && (
+                                        <p className="text-sm text-red-500">{generalForm.errors.contact_email}</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="site_description">Store Description</Label>
+                                <Textarea
+                                    id="site_description"
+                                    value={generalForm.data.site_description}
+                                    onChange={(e) => generalForm.setData('site_description', e.target.value)}
+                                    rows={3}
+                                    className={cn(generalForm.errors.site_description && 'border-red-500')}
+                                />
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="contact_phone">Contact Phone</Label>
+                                    <Input
+                                        id="contact_phone"
+                                        value={generalForm.data.contact_phone}
+                                        onChange={(e) => generalForm.setData('contact_phone', e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="default_currency">Default Currency</Label>
+                                    <Select
+                                        value={generalForm.data.default_currency}
+                                        onValueChange={(value) => generalForm.setData('default_currency', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="EUR">EUR (€)</SelectItem>
+                                            <SelectItem value="USD">USD ($)</SelectItem>
+                                            <SelectItem value="GBP">GBP (£)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="company_address">Company Address</Label>
+                                <Textarea
+                                    id="company_address"
+                                    value={generalForm.data.company_address}
+                                    onChange={(e) => generalForm.setData('company_address', e.target.value)}
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div className="flex justify-end pt-4">
+                                <Button type="submit" disabled={generalForm.processing}>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Save General Settings
+                                </Button>
+                            </div>
+                        </form>
+                    </SectionCard>
+
+                    {/* Payment Settings */}
+                    <SectionCard
+                        id="payment"
+                        title="Payment Settings"
+                        description="Configure payment gateways and options"
+                        icon={CreditCard}
+                    >
+                        <form onSubmit={submitPayment} className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="stripe_enabled">Enable Stripe</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Allow customers to pay with credit cards via Stripe
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="stripe_enabled"
+                                    checked={paymentForm.data.stripe_enabled}
+                                    onCheckedChange={(checked) => paymentForm.setData('stripe_enabled', checked)}
+                                />
+                            </div>
+
+                            {paymentForm.data.stripe_enabled && (
+                                <>
+                                    <Separator />
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div className="space-y-2">
-                                            <Label htmlFor="site_name">Store Name</Label>
+                                            <Label htmlFor="stripe_public_key">Stripe Public Key</Label>
                                             <Input
-                                                id="site_name"
-                                                value={generalForm.data.site_name}
-                                                onChange={(e) => generalForm.setData('site_name', e.target.value)}
-                                                className={cn(generalForm.errors.site_name && 'border-red-500')}
+                                                id="stripe_public_key"
+                                                value={paymentForm.data.stripe_public_key}
+                                                onChange={(e) => paymentForm.setData('stripe_public_key', e.target.value)}
+                                                placeholder="pk_..."
                                             />
-                                            {generalForm.errors.site_name && (
-                                                <p className="text-sm text-red-500">{generalForm.errors.site_name}</p>
-                                            )}
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="contact_email">Contact Email</Label>
+                                            <Label htmlFor="stripe_secret_key">Stripe Secret Key</Label>
                                             <Input
-                                                id="contact_email"
-                                                type="email"
-                                                value={generalForm.data.contact_email}
-                                                onChange={(e) => generalForm.setData('contact_email', e.target.value)}
-                                                className={cn(generalForm.errors.contact_email && 'border-red-500')}
+                                                id="stripe_secret_key"
+                                                type="password"
+                                                value={paymentForm.data.stripe_secret_key}
+                                                onChange={(e) => paymentForm.setData('stripe_secret_key', e.target.value)}
+                                                placeholder="sk_..."
                                             />
-                                            {generalForm.errors.contact_email && (
-                                                <p className="text-sm text-red-500">{generalForm.errors.contact_email}</p>
-                                            )}
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="site_description">Store Description</Label>
-                                        <Textarea
-                                            id="site_description"
-                                            value={generalForm.data.site_description}
-                                            onChange={(e) => generalForm.setData('site_description', e.target.value)}
-                                            rows={3}
-                                            className={cn(generalForm.errors.site_description && 'border-red-500')}
+                                        <Label htmlFor="stripe_webhook_secret">Stripe Webhook Secret</Label>
+                                        <Input
+                                            id="stripe_webhook_secret"
+                                            type="password"
+                                            value={paymentForm.data.stripe_webhook_secret}
+                                            onChange={(e) => paymentForm.setData('stripe_webhook_secret', e.target.value)}
+                                            placeholder="whsec_..."
                                         />
-                                        {generalForm.errors.site_description && (
-                                            <p className="text-sm text-red-500">{generalForm.errors.site_description}</p>
-                                        )}
+                                        <p className="text-sm text-muted-foreground">
+                                            Required for webhook signature verification
+                                        </p>
                                     </div>
+                                </>
+                            )}
 
+                            <Separator />
+
+                            <div className="space-y-2">
+                                <Label htmlFor="minimum_order_amount">Minimum Order Amount</Label>
+                                <Input
+                                    id="minimum_order_amount"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={paymentForm.data.minimum_order_amount}
+                                    onChange={(e) => paymentForm.setData('minimum_order_amount', parseFloat(e.target.value) || 0)}
+                                />
+                                <p className="text-sm text-muted-foreground">
+                                    Set to 0 to disable minimum order requirement
+                                </p>
+                            </div>
+
+                            <div className="flex justify-end pt-4">
+                                <Button type="submit" disabled={paymentForm.processing}>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Save Payment Settings
+                                </Button>
+                            </div>
+                        </form>
+                    </SectionCard>
+
+                    {/* Shipping Settings */}
+                    <SectionCard
+                        id="shipping"
+                        title="Shipping Settings"
+                        description="Configure shipping options and costs"
+                        icon={Truck}
+                    >
+                        <form onSubmit={submitShipping} className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="shipping_enabled">Enable Shipping</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Allow customers to have products shipped
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="shipping_enabled"
+                                    checked={shippingForm.data.shipping_enabled}
+                                    onCheckedChange={(checked) => shippingForm.setData('shipping_enabled', checked)}
+                                />
+                            </div>
+
+                            {shippingForm.data.shipping_enabled && (
+                                <>
+                                    <Separator />
+                                    
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div className="space-y-2">
-                                            <Label htmlFor="contact_phone">Contact Phone</Label>
+                                            <Label htmlFor="default_shipping_cost">Default Shipping Cost</Label>
                                             <Input
-                                                id="contact_phone"
-                                                value={generalForm.data.contact_phone}
-                                                onChange={(e) => generalForm.setData('contact_phone', e.target.value)}
-                                                className={cn(generalForm.errors.contact_phone && 'border-red-500')}
+                                                id="default_shipping_cost"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={shippingForm.data.default_shipping_cost}
+                                                onChange={(e) => shippingForm.setData('default_shipping_cost', parseFloat(e.target.value) || 0)}
                                             />
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label htmlFor="default_currency">Default Currency</Label>
+                                            <Label htmlFor="free_shipping_threshold">Free Shipping Threshold</Label>
+                                            <Input
+                                                id="free_shipping_threshold"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={shippingForm.data.free_shipping_threshold}
+                                                onChange={(e) => shippingForm.setData('free_shipping_threshold', parseFloat(e.target.value) || 0)}
+                                            />
+                                            <p className="text-sm text-muted-foreground">
+                                                Set to 0 to disable free shipping
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="shipping_calculation_method">Calculation Method</Label>
                                             <Select
-                                                value={generalForm.data.default_currency}
-                                                onValueChange={(value) => generalForm.setData('default_currency', value)}
+                                                value={shippingForm.data.shipping_calculation_method}
+                                                onValueChange={(value) => shippingForm.setData('shipping_calculation_method', value)}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                                                    <SelectItem value="USD">USD ($)</SelectItem>
-                                                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                                                    <SelectItem value="flat_rate">Flat Rate</SelectItem>
+                                                    <SelectItem value="weight_based">Weight Based</SelectItem>
+                                                    <SelectItem value="zone_based">Zone Based</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="processing_time_days">Processing Time (Days)</Label>
+                                            <Input
+                                                id="processing_time_days"
+                                                type="number"
+                                                min="1"
+                                                max="30"
+                                                value={shippingForm.data.processing_time_days}
+                                                onChange={(e) => shippingForm.setData('processing_time_days', parseInt(e.target.value) || 1)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="allow_international_shipping">International Shipping</Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Allow shipping to international destinations
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            id="allow_international_shipping"
+                                            checked={shippingForm.data.allow_international_shipping}
+                                            onCheckedChange={(checked) => shippingForm.setData('allow_international_shipping', checked)}
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            <div className="flex justify-end pt-4">
+                                <Button type="submit" disabled={shippingForm.processing}>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Save Shipping Settings
+                                </Button>
+                            </div>
+                        </form>
+                    </SectionCard>
+
+                    {/* Tax Settings */}
+                    <SectionCard
+                        id="tax"
+                        title="Tax Settings"
+                        description="Configure tax rates and calculation methods"
+                        icon={Receipt}
+                    >
+                        <form onSubmit={submitTax} className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="tax_enabled">Enable Tax Calculation</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Calculate and collect taxes on orders
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="tax_enabled"
+                                    checked={taxForm.data.tax_enabled}
+                                    onCheckedChange={(checked) => taxForm.setData('tax_enabled', checked)}
+                                />
+                            </div>
+
+                            {taxForm.data.tax_enabled && (
+                                <>
+                                    <Separator />
+                                    
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="default_tax_rate">Default Tax Rate (%)</Label>
+                                            <Input
+                                                id="default_tax_rate"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                max="100"
+                                                value={taxForm.data.default_tax_rate}
+                                                onChange={(e) => taxForm.setData('default_tax_rate', parseFloat(e.target.value) || 0)}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="tax_calculation_method">Calculation Based On</Label>
+                                            <Select
+                                                value={taxForm.data.tax_calculation_method}
+                                                onValueChange={(value) => taxForm.setData('tax_calculation_method', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="destination">Customer Address</SelectItem>
+                                                    <SelectItem value="origin">Store Address</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="company_address">Company Address</Label>
-                                        <Textarea
-                                            id="company_address"
-                                            value={generalForm.data.company_address}
-                                            onChange={(e) => generalForm.setData('company_address', e.target.value)}
-                                            rows={3}
+                                        <Label htmlFor="tax_number">Tax Number / VAT ID</Label>
+                                        <Input
+                                            id="tax_number"
+                                            value={taxForm.data.tax_number}
+                                            onChange={(e) => taxForm.setData('tax_number', e.target.value)}
+                                            placeholder="IT12345678901"
                                         />
                                     </div>
 
-                                    <div className="flex justify-end">
-                                        <Button type="submit" disabled={generalForm.processing}>
-                                            <Save className="w-4 h-4 mr-2" />
-                                            Save General Settings
-                                        </Button>
-                                    </div>
-                                </form>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Payment Settings */}
-                    <TabsContent value="payment">
-                        <div className="space-y-6">
-                            {/* Stripe Settings */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <CreditCard className="w-5 h-5" />
-                                        Stripe Payment Gateway
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Configure Stripe for credit card payments
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <form onSubmit={submitPayment} className="space-y-6">
+                                    <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-0.5">
-                                                <Label htmlFor="stripe_enabled">Enable Stripe</Label>
+                                                <Label htmlFor="prices_include_tax">Prices Include Tax</Label>
                                                 <p className="text-sm text-muted-foreground">
-                                                    Allow customers to pay with credit cards via Stripe
+                                                    Product prices already include tax
                                                 </p>
                                             </div>
                                             <Switch
-                                                id="stripe_enabled"
-                                                checked={paymentForm.data.stripe_enabled}
-                                                onCheckedChange={(checked) => paymentForm.setData('stripe_enabled', checked)}
+                                                id="prices_include_tax"
+                                                checked={taxForm.data.prices_include_tax}
+                                                onCheckedChange={(checked) => taxForm.setData('prices_include_tax', checked)}
                                             />
                                         </div>
 
-                                        {paymentForm.data.stripe_enabled && (
-                                            <>
-                                                <Separator />
-                                                <div className="grid gap-4 md:grid-cols-2">
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="stripe_public_key">Stripe Public Key</Label>
-                                                        <Input
-                                                            id="stripe_public_key"
-                                                            value={paymentForm.data.stripe_public_key}
-                                                            onChange={(e) => paymentForm.setData('stripe_public_key', e.target.value)}
-                                                            placeholder="pk_..."
-                                                        />
-                                                    </div>
-
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="stripe_secret_key">Stripe Secret Key</Label>
-                                                        <Input
-                                                            id="stripe_secret_key"
-                                                            type="password"
-                                                            value={paymentForm.data.stripe_secret_key}
-                                                            onChange={(e) => paymentForm.setData('stripe_secret_key', e.target.value)}
-                                                            placeholder="sk_..."
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="stripe_webhook_secret">Stripe Webhook Secret</Label>
-                                                    <Input
-                                                        id="stripe_webhook_secret"
-                                                        type="password"
-                                                        value={paymentForm.data.stripe_webhook_secret}
-                                                        onChange={(e) => paymentForm.setData('stripe_webhook_secret', e.target.value)}
-                                                        placeholder="whsec_..."
-                                                    />
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Required for webhook signature verification
-                                                    </p>
-                                                </div>
-                                            </>
-                                        )}
-
-                                        <Separator />
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="minimum_order_amount">Minimum Order Amount</Label>
-                                            <Input
-                                                id="minimum_order_amount"
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                value={paymentForm.data.minimum_order_amount}
-                                                onChange={(e) => paymentForm.setData('minimum_order_amount', parseFloat(e.target.value) || 0)}
-                                            />
-                                            <p className="text-sm text-muted-foreground">
-                                                Set to 0 to disable minimum order requirement
-                                            </p>
-                                        </div>
-
-                                        <div className="flex justify-end">
-                                            <Button type="submit" disabled={paymentForm.processing}>
-                                                <Save className="w-4 h-4 mr-2" />
-                                                Save Payment Settings
-                                            </Button>
-                                        </div>
-                                    </form>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </TabsContent>
-
-                    {/* Shipping Settings */}
-                    <TabsContent value="shipping">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Truck className="w-5 h-5" />
-                                    Shipping Configuration
-                                </CardTitle>
-                                <CardDescription>
-                                    Configure shipping options and costs
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <form onSubmit={submitShipping} className="space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-0.5">
-                                            <Label htmlFor="shipping_enabled">Enable Shipping</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Allow customers to have products shipped
-                                            </p>
-                                        </div>
-                                        <Switch
-                                            id="shipping_enabled"
-                                            checked={shippingForm.data.shipping_enabled}
-                                            onCheckedChange={(checked) => shippingForm.setData('shipping_enabled', checked)}
-                                        />
-                                    </div>
-
-                                    {shippingForm.data.shipping_enabled && (
-                                        <>
-                                            <Separator />
-                                            
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="default_shipping_cost">Default Shipping Cost</Label>
-                                                    <Input
-                                                        id="default_shipping_cost"
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0"
-                                                        value={shippingForm.data.default_shipping_cost}
-                                                        onChange={(e) => shippingForm.setData('default_shipping_cost', parseFloat(e.target.value) || 0)}
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="free_shipping_threshold">Free Shipping Threshold</Label>
-                                                    <Input
-                                                        id="free_shipping_threshold"
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0"
-                                                        value={shippingForm.data.free_shipping_threshold}
-                                                        onChange={(e) => shippingForm.setData('free_shipping_threshold', parseFloat(e.target.value) || 0)}
-                                                    />
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Set to 0 to disable free shipping
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="shipping_calculation_method">Calculation Method</Label>
-                                                    <Select
-                                                        value={shippingForm.data.shipping_calculation_method}
-                                                        onValueChange={(value) => shippingForm.setData('shipping_calculation_method', value)}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="flat_rate">Flat Rate</SelectItem>
-                                                            <SelectItem value="weight_based">Weight Based</SelectItem>
-                                                            <SelectItem value="zone_based">Zone Based</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="processing_time_days">Processing Time (Days)</Label>
-                                                    <Input
-                                                        id="processing_time_days"
-                                                        type="number"
-                                                        min="1"
-                                                        max="30"
-                                                        value={shippingForm.data.processing_time_days}
-                                                        onChange={(e) => shippingForm.setData('processing_time_days', parseInt(e.target.value) || 1)}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="allow_international_shipping">International Shipping</Label>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Allow shipping to international destinations
-                                                    </p>
-                                                </div>
-                                                <Switch
-                                                    id="allow_international_shipping"
-                                                    checked={shippingForm.data.allow_international_shipping}
-                                                    onCheckedChange={(checked) => shippingForm.setData('allow_international_shipping', checked)}
-                                                />
-                                            </div>
-                                        </>
-                                    )}
-
-                                    <div className="flex justify-end">
-                                        <Button type="submit" disabled={shippingForm.processing}>
-                                            <Save className="w-4 h-4 mr-2" />
-                                            Save Shipping Settings
-                                        </Button>
-                                    </div>
-                                </form>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Tax Settings */}
-                    <TabsContent value="tax">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Receipt className="w-5 h-5" />
-                                    Tax Configuration
-                                </CardTitle>
-                                <CardDescription>
-                                    Configure tax rates and calculation methods
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <form onSubmit={submitTax} className="space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-0.5">
-                                            <Label htmlFor="tax_enabled">Enable Tax Calculation</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Calculate and collect taxes on orders
-                                            </p>
-                                        </div>
-                                        <Switch
-                                            id="tax_enabled"
-                                            checked={taxForm.data.tax_enabled}
-                                            onCheckedChange={(checked) => taxForm.setData('tax_enabled', checked)}
-                                        />
-                                    </div>
-
-                                    {taxForm.data.tax_enabled && (
-                                        <>
-                                            <Separator />
-                                            
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="default_tax_rate">Default Tax Rate (%)</Label>
-                                                    <Input
-                                                        id="default_tax_rate"
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0"
-                                                        max="100"
-                                                        value={taxForm.data.default_tax_rate}
-                                                        onChange={(e) => taxForm.setData('default_tax_rate', parseFloat(e.target.value) || 0)}
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="tax_calculation_method">Calculation Based On</Label>
-                                                    <Select
-                                                        value={taxForm.data.tax_calculation_method}
-                                                        onValueChange={(value) => taxForm.setData('tax_calculation_method', value)}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="destination">Customer Address</SelectItem>
-                                                            <SelectItem value="origin">Store Address</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label htmlFor="tax_number">Tax Number / VAT ID</Label>
-                                                <Input
-                                                    id="tax_number"
-                                                    value={taxForm.data.tax_number}
-                                                    onChange={(e) => taxForm.setData('tax_number', e.target.value)}
-                                                    placeholder="IT12345678901"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-4">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="space-y-0.5">
-                                                        <Label htmlFor="prices_include_tax">Prices Include Tax</Label>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            Product prices already include tax
-                                                        </p>
-                                                    </div>
-                                                    <Switch
-                                                        id="prices_include_tax"
-                                                        checked={taxForm.data.prices_include_tax}
-                                                        onCheckedChange={(checked) => taxForm.setData('prices_include_tax', checked)}
-                                                    />
-                                                </div>
-
-                                                <div className="flex items-center justify-between">
-                                                    <div className="space-y-0.5">
-                                                        <Label htmlFor="collect_tax_for_digital_products">Tax Digital Products</Label>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            Collect tax on digital products and services
-                                                        </p>
-                                                    </div>
-                                                    <Switch
-                                                        id="collect_tax_for_digital_products"
-                                                        checked={taxForm.data.collect_tax_for_digital_products}
-                                                        onCheckedChange={(checked) => taxForm.setData('collect_tax_for_digital_products', checked)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    <div className="flex justify-end">
-                                        <Button type="submit" disabled={taxForm.processing}>
-                                            <Save className="w-4 h-4 mr-2" />
-                                            Save Tax Settings
-                                        </Button>
-                                    </div>
-                                </form>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Email Settings */}
-                    <TabsContent value="email">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Mail className="w-5 h-5" />
-                                    Email Configuration
-                                </CardTitle>
-                                <CardDescription>
-                                    Configure email notifications and settings
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <form onSubmit={submitEmail} className="space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-0.5">
-                                            <Label htmlFor="email_notifications_enabled">Enable Email Notifications</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Send automated email notifications to customers
-                                            </p>
-                                        </div>
-                                        <Switch
-                                            id="email_notifications_enabled"
-                                            checked={emailForm.data.email_notifications_enabled}
-                                            onCheckedChange={(checked) => emailForm.setData('email_notifications_enabled', checked)}
-                                        />
-                                    </div>
-
-                                    {emailForm.data.email_notifications_enabled && (
-                                        <>
-                                            <Separator />
-                                            
-                                            <div className="grid gap-4 md:grid-cols-2">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="from_email">From Email Address</Label>
-                                                    <Input
-                                                        id="from_email"
-                                                        type="email"
-                                                        value={emailForm.data.from_email}
-                                                        onChange={(e) => emailForm.setData('from_email', e.target.value)}
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="from_name">From Name</Label>
-                                                    <Input
-                                                        id="from_name"
-                                                        value={emailForm.data.from_name}
-                                                        onChange={(e) => emailForm.setData('from_name', e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label htmlFor="admin_notification_email">Admin Notification Email</Label>
-                                                <Input
-                                                    id="admin_notification_email"
-                                                    type="email"
-                                                    value={emailForm.data.admin_notification_email}
-                                                    onChange={(e) => emailForm.setData('admin_notification_email', e.target.value)}
-                                                    placeholder="admin@yourstore.com"
-                                                />
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <Label htmlFor="collect_tax_for_digital_products">Tax Digital Products</Label>
                                                 <p className="text-sm text-muted-foreground">
-                                                    Email address to receive order notifications
+                                                    Collect tax on digital products and services
                                                 </p>
                                             </div>
+                                            <Switch
+                                                id="collect_tax_for_digital_products"
+                                                checked={taxForm.data.collect_tax_for_digital_products}
+                                                onCheckedChange={(checked) => taxForm.setData('collect_tax_for_digital_products', checked)}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
 
-                                            <Separator />
+                            <div className="flex justify-end pt-4">
+                                <Button type="submit" disabled={taxForm.processing}>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Save Tax Settings
+                                </Button>
+                            </div>
+                        </form>
+                    </SectionCard>
 
-                                            <div className="space-y-4">
-                                                <h4 className="text-sm font-medium">Customer Email Notifications</h4>
-                                                
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-0.5">
-                                                            <Label htmlFor="order_confirmation_enabled">Order Confirmation</Label>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Send confirmation when order is placed
-                                                            </p>
-                                                        </div>
-                                                        <Switch
-                                                            id="order_confirmation_enabled"
-                                                            checked={emailForm.data.order_confirmation_enabled}
-                                                            onCheckedChange={(checked) => emailForm.setData('order_confirmation_enabled', checked)}
-                                                        />
-                                                    </div>
+                    {/* Email Settings */}
+                    <SectionCard
+                        id="email"
+                        title="Email Settings"
+                        description="Configure email notifications and settings"
+                        icon={Mail}
+                    >
+                        <form onSubmit={submitEmail} className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label htmlFor="email_notifications_enabled">Enable Email Notifications</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Send automated email notifications to customers
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="email_notifications_enabled"
+                                    checked={emailForm.data.email_notifications_enabled}
+                                    onCheckedChange={(checked) => emailForm.setData('email_notifications_enabled', checked)}
+                                />
+                            </div>
 
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-0.5">
-                                                            <Label htmlFor="order_shipped_enabled">Order Shipped</Label>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Send notification when order is shipped
-                                                            </p>
-                                                        </div>
-                                                        <Switch
-                                                            id="order_shipped_enabled"
-                                                            checked={emailForm.data.order_shipped_enabled}
-                                                            onCheckedChange={(checked) => emailForm.setData('order_shipped_enabled', checked)}
-                                                        />
-                                                    </div>
+                            {emailForm.data.email_notifications_enabled && (
+                                <>
+                                    <Separator />
+                                    
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="from_email">From Email Address</Label>
+                                            <Input
+                                                id="from_email"
+                                                type="email"
+                                                value={emailForm.data.from_email}
+                                                onChange={(e) => emailForm.setData('from_email', e.target.value)}
+                                            />
+                                        </div>
 
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-0.5">
-                                                            <Label htmlFor="order_delivered_enabled">Order Delivered</Label>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Send notification when order is delivered
-                                                            </p>
-                                                        </div>
-                                                        <Switch
-                                                            id="order_delivered_enabled"
-                                                            checked={emailForm.data.order_delivered_enabled}
-                                                            onCheckedChange={(checked) => emailForm.setData('order_delivered_enabled', checked)}
-                                                        />
-                                                    </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="from_name">From Name</Label>
+                                            <Input
+                                                id="from_name"
+                                                value={emailForm.data.from_name}
+                                                onChange={(e) => emailForm.setData('from_name', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
 
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="space-y-0.5">
-                                                            <Label htmlFor="order_cancelled_enabled">Order Cancelled</Label>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Send notification when order is cancelled
-                                                            </p>
-                                                        </div>
-                                                        <Switch
-                                                            id="order_cancelled_enabled"
-                                                            checked={emailForm.data.order_cancelled_enabled}
-                                                            onCheckedChange={(checked) => emailForm.setData('order_cancelled_enabled', checked)}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="admin_notification_email">Admin Notification Email</Label>
+                                        <Input
+                                            id="admin_notification_email"
+                                            type="email"
+                                            value={emailForm.data.admin_notification_email}
+                                            onChange={(e) => emailForm.setData('admin_notification_email', e.target.value)}
+                                            placeholder="admin@yourstore.com"
+                                        />
+                                        <p className="text-sm text-muted-foreground">
+                                            Email address to receive order notifications
+                                        </p>
+                                    </div>
 
-                                            <Separator />
+                                    <Separator />
 
+                                    <div className="space-y-4">
+                                        <h4 className="text-sm font-medium">Customer Email Notifications</h4>
+                                        
+                                        <div className="space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <div className="space-y-0.5">
-                                                    <Label htmlFor="newsletter_enabled">Newsletter Subscriptions</Label>
+                                                    <Label htmlFor="order_confirmation_enabled">Order Confirmation</Label>
                                                     <p className="text-sm text-muted-foreground">
-                                                        Allow customers to subscribe to marketing emails
+                                                        Send confirmation when order is placed
                                                     </p>
                                                 </div>
                                                 <Switch
-                                                    id="newsletter_enabled"
-                                                    checked={emailForm.data.newsletter_enabled}
-                                                    onCheckedChange={(checked) => emailForm.setData('newsletter_enabled', checked)}
+                                                    id="order_confirmation_enabled"
+                                                    checked={emailForm.data.order_confirmation_enabled}
+                                                    onCheckedChange={(checked) => emailForm.setData('order_confirmation_enabled', checked)}
                                                 />
                                             </div>
-                                        </>
-                                    )}
 
-                                    <div className="flex justify-end">
-                                        <Button type="submit" disabled={emailForm.processing}>
-                                            <Save className="w-4 h-4 mr-2" />
-                                            Save Email Settings
-                                        </Button>
+                                            <div className="flex items-center justify-between">
+                                                <div className="space-y-0.5">
+                                                    <Label htmlFor="order_shipped_enabled">Order Shipped</Label>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Send notification when order is shipped
+                                                    </p>
+                                                </div>
+                                                <Switch
+                                                    id="order_shipped_enabled"
+                                                    checked={emailForm.data.order_shipped_enabled}
+                                                    onCheckedChange={(checked) => emailForm.setData('order_shipped_enabled', checked)}
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <div className="space-y-0.5">
+                                                    <Label htmlFor="order_delivered_enabled">Order Delivered</Label>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Send notification when order is delivered
+                                                    </p>
+                                                </div>
+                                                <Switch
+                                                    id="order_delivered_enabled"
+                                                    checked={emailForm.data.order_delivered_enabled}
+                                                    onCheckedChange={(checked) => emailForm.setData('order_delivered_enabled', checked)}
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <div className="space-y-0.5">
+                                                    <Label htmlFor="order_cancelled_enabled">Order Cancelled</Label>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Send notification when order is cancelled
+                                                    </p>
+                                                </div>
+                                                <Switch
+                                                    id="order_cancelled_enabled"
+                                                    checked={emailForm.data.order_cancelled_enabled}
+                                                    onCheckedChange={(checked) => emailForm.setData('order_cancelled_enabled', checked)}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                </form>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
-            </AdminSettingsLayout>
+
+                                    <Separator />
+
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="newsletter_enabled">Newsletter Subscriptions</Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Allow customers to subscribe to marketing emails
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            id="newsletter_enabled"
+                                            checked={emailForm.data.newsletter_enabled}
+                                            onCheckedChange={(checked) => emailForm.setData('newsletter_enabled', checked)}
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            <div className="flex justify-end pt-4">
+                                <Button type="submit" disabled={emailForm.processing}>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Save Email Settings
+                                </Button>
+                            </div>
+                        </form>
+                    </SectionCard>
+                </div>
+            </div>
         </AppLayout>
     );
 }

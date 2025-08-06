@@ -13,7 +13,9 @@ import {
     Check,
     X,
     Edit,
-    Trash2
+    Trash2,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -51,6 +53,10 @@ interface Review {
 
 interface Props {
     review: Review;
+    navigation: {
+        next: { id: number } | null;
+        previous: { id: number } | null;
+    };
 }
 
 const statusColors = {
@@ -58,7 +64,7 @@ const statusColors = {
     pending: 'bg-yellow-100 text-yellow-800',
 };
 
-export default function ReviewShow({ review }: Props) {
+export default function ReviewShow({ review, navigation }: Props) {
     const [isUpdating, setIsUpdating] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const { addToast } = useToast();
@@ -340,6 +346,50 @@ export default function ReviewShow({ review }: Props) {
                 {/* Mobile Bottom Actions */}
                 <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t z-50">
                     <div className="safe-area-inset-bottom">
+                        {/* Navigation Row */}
+                        <div className="flex gap-2 p-2 border-b border-border/50">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                asChild
+                                disabled={!navigation.previous}
+                                className="flex-1"
+                            >
+                                {navigation.previous ? (
+                                    <Link href={`/admin/reviews/${navigation.previous.id}`}>
+                                        <ChevronLeft className="h-4 w-4 mr-1" />
+                                        Prev
+                                    </Link>
+                                ) : (
+                                    <span>
+                                        <ChevronLeft className="h-4 w-4 mr-1" />
+                                        Prev
+                                    </span>
+                                )}
+                            </Button>
+                            
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                asChild
+                                disabled={!navigation.next}
+                                className="flex-1"
+                            >
+                                {navigation.next ? (
+                                    <Link href={`/admin/reviews/${navigation.next.id}`}>
+                                        Next
+                                        <ChevronRight className="h-4 w-4 ml-1" />
+                                    </Link>
+                                ) : (
+                                    <span>
+                                        Next
+                                        <ChevronRight className="h-4 w-4 ml-1" />
+                                    </span>
+                                )}
+                            </Button>
+                        </div>
+                        
+                        {/* Action Buttons Row */}
                         <div className="flex gap-2 p-3">
                             {!review.is_approved ? (
                                 <>
@@ -378,6 +428,10 @@ export default function ReviewShow({ review }: Props) {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Bottom Padding */}
+            <div className="py-10">
             </div>
 
             {/* Delete Confirmation Dialog */}

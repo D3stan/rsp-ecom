@@ -107,8 +107,21 @@ class ReviewsController extends Controller
     {
         $review->load(['user', 'product']);
 
+        // Get navigation data for next/previous reviews
+        $nextReview = Review::where('id', '>', $review->id)
+            ->orderBy('id', 'asc')
+            ->first();
+        
+        $previousReview = Review::where('id', '<', $review->id)
+            ->orderBy('id', 'desc')
+            ->first();
+
         return Inertia::render('Admin/Reviews/Show', [
             'review' => $review,
+            'navigation' => [
+                'next' => $nextReview ? ['id' => $nextReview->id] : null,
+                'previous' => $previousReview ? ['id' => $previousReview->id] : null,
+            ],
         ]);
     }
 
