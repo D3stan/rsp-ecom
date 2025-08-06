@@ -412,7 +412,7 @@
                             </div>
                         </td>
                         <td style="text-align: center; font-weight: 600;">{{ $item->quantity }}</td>
-                        <td style="text-align: right;">€{{ number_format($item->price, 2) }} <span style="font-size: 11px; color: #666;">(incl. IVA)</span></td>
+                        <td style="text-align: right;">€{{ number_format($item->price, 2) }}</td>
                         <td style="text-align: right; font-weight: 600;">€{{ number_format($item->quantity * $item->price, 2) }}</td>
                     </tr>
                     @endforeach
@@ -422,8 +422,8 @@
             <!-- Price Breakdown -->
             <div class="price-breakdown">
                 <div class="price-row">
-                    <span>Subtotale (esclusa IVA): </span>
-                    <span>€{{ number_format($order->subtotal, 2) }}</span>
+                    <span>Subtotale: </span>
+                    <span>€{{ number_format($order->subtotal, 2) - number_format($order->tax_amount, 2) }}</span>
                 </div>
                 @if($order->tax_amount > 0)
                 <div class="price-row">
