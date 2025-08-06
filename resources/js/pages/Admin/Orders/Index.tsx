@@ -560,42 +560,42 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                 </Card>
                 
                 {/* Mobile Bottom Navigation */}
-                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t p-4 safe-area-pb">
-                    <div className="flex justify-center gap-4">
-                        <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setIsKPIsOpen(!isKPIsOpen)}
-                            className="flex-1"
-                        >
-                            <TrendingUp className="h-4 w-4 mr-2" />
-                            Stats
-                        </Button>
-                        <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                            className="flex-1"
-                        >
-                            <Filter className="h-4 w-4 mr-2" />
-                            Filters
-                        </Button>
-                        <Button 
-                            variant="outline" 
-                            size="sm"
-                            asChild
-                            className="flex-1"
-                        >
-                            <Link href="/admin/dashboard">
-                                <Package className="h-4 w-4 mr-2" />
-                                Dashboard
-                            </Link>
-                        </Button>
+                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t z-50">
+                    <div className="safe-area-inset-bottom">
+                        <div className="flex justify-center gap-2 p-3">
+                            <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setIsKPIsOpen(!isKPIsOpen)}
+                                className="flex-1 h-12 text-xs"
+                            >
+                                <TrendingUp className="h-4 w-4 mr-1" />
+                                Stats
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                                className="flex-1 h-12 text-xs"
+                            >
+                                <Filter className="h-4 w-4 mr-1" />
+                                Filters
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                size="sm"
+                                asChild
+                                className="flex-1 h-12 text-xs"
+                            >
+                                <Link href="/admin/dashboard">
+                                    <Package className="h-4 w-4 mr-1" />
+                                    Dashboard
+                                </Link>
+                            </Button>
+                        </div>
                     </div>
                 </div>
                 
-                {/* Add bottom padding to account for fixed navigation */}
-                <div className="md:hidden h-20"></div>
             </div>
         </AppLayout>
     );
