@@ -199,7 +199,7 @@ export default function Product() {
                 </div>
 
                 {/* Main Content */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+                <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${isMobile ? 'pb-24' : 'pb-16'}`}>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
                         {/* Image Carousel */}
                         <div className="space-y-4">
@@ -405,8 +405,9 @@ export default function Product() {
                             <Collapsible
                                 open={isDescriptionOpen}
                                 onOpenChange={setIsDescriptionOpen}
+                                className='border border-gray-300 rounded-lg'
                             >
-                                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                                <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 hover:bg-gray-200 rounded-lg transition-colors">
                                     <span className="text-lg font-semibold text-gray-900">
                                         Product Description
                                     </span>
@@ -416,7 +417,7 @@ export default function Product() {
                                         <ChevronDown className="w-5 h-5" />
                                     )}
                                 </CollapsibleTrigger>
-                                <CollapsibleContent className="p-4 border border-gray-200 rounded-lg mt-2 text-black">
+                                <CollapsibleContent className="p-4 rounded-lg mt-2 text-black">
                                     <div 
                                         className="prose prose-gray max-w-none"
                                         dangerouslySetInnerHTML={{ __html: product.description }}
@@ -430,6 +431,7 @@ export default function Product() {
                             <Collapsible
                                 open={isSpecsOpen}
                                 onOpenChange={setIsSpecsOpen}
+                                className='border border-gray-300 rounded-lg'
                             >
                                 <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
                                     <span className="text-lg font-semibold text-gray-900">
@@ -459,6 +461,7 @@ export default function Product() {
                             <Collapsible
                                 open={isReviewsOpen}
                                 onOpenChange={setIsReviewsOpen}
+                                className='border border-gray-300 rounded-lg'
                             >
                                 <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
                                     <span className="text-lg font-semibold text-gray-900">
@@ -470,7 +473,7 @@ export default function Product() {
                                         <ChevronDown className="w-5 h-5" />
                                     )}
                                 </CollapsibleTrigger>
-                                <CollapsibleContent className="p-4 border border-gray-200 rounded-lg mt-2">
+                                <CollapsibleContent className="p-4 rounded-lg mt-2">
                                     <div className="space-y-6">
                                         {reviews.map((review) => (
                                             <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
@@ -494,7 +497,7 @@ export default function Product() {
 
                     {/* Related Products */}
                     {relatedProducts.length > 0 && (
-                        <div className="mt-16">
+                        <div className={`mt-20 pt-8 border-t border-gray-200 ${isMobile ? 'mb-8' : ''}`}>
                             <h2 className="text-2xl font-bold text-gray-900 mb-8">You may also like</h2>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                                 {relatedProducts.map((relatedProduct) => (
@@ -525,7 +528,7 @@ export default function Product() {
 
                 {/* Sticky Footer on Mobile */}
                 {isMobile && (
-                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50">
+                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-50 shadow-lg">
                         <div className="flex items-center justify-between space-x-4">
                             <div>
                                 <p className="text-lg font-bold text-gray-900">
