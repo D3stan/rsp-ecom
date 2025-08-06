@@ -165,9 +165,8 @@ export default function Home() {
             {/* Loading Overlay for Language Changes */}
             {isLoading && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg p-4 sm:p-6 flex items-center space-x-3 max-w-xs">
-                        <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-black flex-shrink-0"></div>
-                        <span className="text-black font-medium text-sm sm:text-base">Loading...</span>
+                    <div className=" rounded-lg p-4 sm:p-6 flex items-center space-x-3 max-w-xs">
+                        <div className="animate-spin rounded-full h-9 w-9 sm:h-6 sm:w-6 border-b-3 border-white flex-shrink-0"></div>
                     </div>
                 </div>
             )}
