@@ -12,7 +12,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Orders Management
-    Route::resource('orders', OrdersController::class)->only(['index', 'show', 'update']);
+    Route::resource('orders', OrdersController::class)->only(['index', 'show', 'edit', 'update']);
     Route::patch('orders/{order}/status', [OrdersController::class, 'updateStatus'])->name('orders.update-status');
     Route::patch('orders/bulk-status', [OrdersController::class, 'bulkUpdateStatus'])->name('orders.bulk-update-status');
     Route::patch('orders/{order}/cancel', [OrdersController::class, 'cancel'])->name('orders.cancel');

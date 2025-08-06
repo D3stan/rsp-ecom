@@ -29,6 +29,9 @@ class Order extends Model
         'payment_status',
         'payment_method',
         'stripe_customer_id',
+        'tracking_number',
+        'shipping_method',
+        'estimated_delivery_date',
         // Guest order fields
         'guest_email',
         'guest_phone',
@@ -348,6 +351,20 @@ class Order extends Model
             })->toArray();
         } else {
             $data['orderItems'] = [];
+        }
+        
+        // Include address relationships
+        if ($this->relationLoaded('billingAddress')) {
+            $data['billingAddress'] = $this->billingAddress ? $this->billingAddress->toArray() : null;
+        }
+        
+        if ($this->relationLoaded('shippingAddress')) {
+            $data['shippingAddress'] = $this->shippingAddress ? $this->shippingAddress->toArray() : null;
+        }
+        
+        // Include user relationship
+        if ($this->relationLoaded('user')) {
+            $data['user'] = $this->user ? $this->user->toArray() : null;
         }
         
         return $data;

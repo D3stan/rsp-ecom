@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -112,19 +113,106 @@ class OrdersController extends Controller
     }
 
     /**
+     * Show the form for editing the specified order
+     */
+    public function edit(Order $order): Response
+    {
+        $order->load([
+            'user',
+            'orderItems.product',
+            'billingAddress',
+            'shippingAddress'
+        ]);
+
+        return Inertia::render('Admin/Orders/Edit', [
+            'order' => $order->toFrontendArray(),
+        ]);
+    }
+
+    /**
      * Update the specified order
      */
     public function update(Request $request, Order $order)
     {
-        $request->validate([
-            'status' => 'sometimes|string|in:pending,processing,shipped,delivered,cancelled',
-            'payment_status' => 'sometimes|string|in:pending,processing,succeeded,failed',
-            'notes' => 'sometimes|nullable|string|max:1000',
-        ]);
+        try {
+            Log::info('Order update attempt', [
+                'order_id' => $order->id,
+                'request_data' => $request->all()
+            ]);
 
-        $order->update($request->only(['status', 'payment_status', 'notes']));
+            $request->validate([
+                'status' => 'sometimes|string|in:pending,processing,shipped,delivered,cancelled',
+                'payment_status' => 'sometimes|string|in:pending,processing,succeeded,failed',
+                'notes' => 'sometimes|nullable|string|max:1000',
+                'tracking_number' => 'sometimes|nullable|string|max:100',
+                'shipping_amount' => 'sometimes|numeric|min:0',
+                'tax_amount' => 'sometimes|numeric|min:0',
+                'subtotal' => 'sometimes|numeric|min:0',
+                'total_amount' => 'sometimes|numeric|min:0',
+                'order_items' => 'sometimes|string', // JSON string
+                'billing_address' => 'sometimes|nullable|string', // JSON string
+                'shipping_address' => 'sometimes|nullable|string', // JSON string
+            ]);
 
+            \Log::info('Validation passed, updating order', [
+                'order_id' => $order->id
+            ]);
+
+            // Update order basic information
+            $order->update($request->only([
+                'status', 
+                'payment_status', 
+                'notes', 
+            'tracking_number',
+            'shipping_amount', 
+            'tax_amount', 
+            'subtotal', 
+            'total_amount'
+        ]));
+
+        // Update order items if provided
+        if ($request->has('order_items')) {
+            $orderItems = json_decode($request->order_items, true);
+            if (is_array($orderItems)) {
+                foreach ($orderItems as $itemData) {
+                    $orderItem = OrderItem::find($itemData['id']);
+                    if ($orderItem && $orderItem->order_id === $order->id) {
+                        $orderItem->update([
+                            'quantity' => $itemData['quantity'],
+                            'price' => $itemData['price'],
+                            'total' => $itemData['total'],
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Update addresses if provided
+        if ($request->has('billing_address') && $request->billing_address) {
+            $billingAddress = json_decode($request->billing_address, true);
+            if (is_array($billingAddress) && $order->billingAddress) {
+                $order->billingAddress->update($billingAddress);
+            }
+        }
+
+        if ($request->has('shipping_address') && $request->shipping_address) {
+            $shippingAddress = json_decode($request->shipping_address, true);
+            if (is_array($shippingAddress) && $order->shippingAddress) {
+                $order->shippingAddress->update($shippingAddress);
+            }
+        }
+
+        Log::info('Order updated successfully', ['order_id' => $order->id]);
         return back()->with('success', 'Order updated successfully.');
+        
+        } catch (\Exception $e) {
+            Log::error('Failed to update order', [
+                'order_id' => $order->id ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Failed to update order: ' . $e->getMessage());
+        }
     }
 
     /**
