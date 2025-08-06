@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { useForm } from '@inertiajs/react';
+import { useForm, Head } from '@inertiajs/react';
+import { route } from 'ziggy-js';
+import AdminLayout from '@/layouts/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,7 +36,7 @@ export default function ProductForm({ categories, sizes }: Props) {
         stock_quantity: '',
         sku: '',
         status: 'active',
-        featured: false,
+        featured: false as boolean,
         category_id: '',
         size_id: '',
         images: [] as File[],
@@ -86,7 +88,6 @@ export default function ProductForm({ categories, sizes }: Props) {
         });
 
         post(route('admin.products.store'), {
-            data: formData,
             forceFormData: true,
             onSuccess: () => {
                 reset();
@@ -96,13 +97,30 @@ export default function ProductForm({ categories, sizes }: Props) {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Create New Product</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={submit} className="space-y-6">
+        <AdminLayout
+            breadcrumbs={[
+                { title: 'Dashboard', href: '/admin/dashboard' },
+                { title: 'Products', href: '/admin/products' },
+                { title: 'Create Product', href: '/admin/products/create' },
+            ]}
+        >
+            <Head title="Create Product" />
+
+            <div className="space-y-6">
+                {/* Page Header */}
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Create Product</h1>
+                    <p className="text-muted-foreground">
+                        Add a new product to your catalog
+                    </p>
+                </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Product Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={submit} className="space-y-6">
                         {/* Basic Information */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -324,6 +342,7 @@ export default function ProductForm({ categories, sizes }: Props) {
                     </form>
                 </CardContent>
             </Card>
-        </div>
+            </div>
+        </AdminLayout>
     );
 }

@@ -8,22 +8,12 @@ import { BookOpen, Folder, LayoutGrid, Settings } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
-    const { auth } = usePage().props as any;
-    const user = auth?.user;
-    const isAdmin = user?.role === 'admin';
-
     const mainNavItems: NavItem[] = [
         {
             title: 'Dashboard',
             href: '/dashboard',
             icon: LayoutGrid,
         },
-        // Show admin link only for admin users
-        ...(isAdmin ? [{
-            title: 'Admin Panel',
-            href: '/admin/dashboard',
-            icon: Settings,
-        }] : []),
     ];
 
     const footerNavItems: NavItem[] = [

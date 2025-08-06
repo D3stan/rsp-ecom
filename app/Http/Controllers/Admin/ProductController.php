@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Size;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -16,14 +17,87 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with(['category', 'size'])
-            ->latest()
-            ->paginate(20);
+        $query = Product::with(['category', 'size']);
+
+        // Search functionality
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Category filter
+        if ($category = $request->get('category')) {
+            if ($category !== 'all') {
+                $query->whereHas('category', function ($q) use ($category) {
+                    $q->where('slug', $category);
+                });
+            }
+        }
+
+        // Status filter
+        if ($status = $request->get('status')) {
+            if ($status !== 'all') {
+                $query->where('status', $status);
+            }
+        }
+
+        // Stock filter
+        if ($stockFilter = $request->get('stock_filter')) {
+            switch ($stockFilter) {
+                case 'in-stock':
+                    $query->where('stock_quantity', '>', 10);
+                    break;
+                case 'low-stock':
+                    $query->where('stock_quantity', '>', 0)
+                          ->where('stock_quantity', '<=', 10);
+                    break;
+                case 'out-of-stock':
+                    $query->where('stock_quantity', 0);
+                    break;
+            }
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'created_at');
+        $direction = $request->get('direction', 'desc');
+        
+        $allowedSorts = ['name', 'price', 'stock_quantity', 'created_at', 'status'];
+        if (in_array($sort, $allowedSorts)) {
+            $query->orderBy($sort, $direction);
+        }
+
+        $products = $query->paginate(20)->withQueryString();
+
+        // Add computed attributes to each product
+        $products->getCollection()->transform(function ($product) {
+            $product->main_image_url = $product->main_image_url;
+            $product->discount_percentage = $product->discount_percentage;
+            $product->average_rating = $product->average_rating;
+            $product->review_count = $product->review_count;
+            return $product;
+        });
+
+        // Calculate stats
+        $stats = [
+            'total_products' => Product::count(),
+            'active_products' => Product::where('status', 'active')->count(),
+            'low_stock_count' => Product::where('stock_quantity', '>', 0)
+                                       ->where('stock_quantity', '<=', 10)->count(),
+            'total_value' => Product::where('status', 'active')
+                                   ->sum(DB::raw('price * stock_quantity')),
+        ];
 
         return Inertia::render('Admin/Products/Index', [
-            'products' => $products
+            'products' => $products,
+            'categories' => Category::where('is_active', true)->get(['id', 'name', 'slug']),
+            'sizes' => Size::all(['id', 'name', 'slug']),
+            'filters' => $request->only(['search', 'category', 'status', 'stock_filter', 'sort', 'direction']),
+            'stats' => $stats,
         ]);
     }
 
@@ -167,5 +241,44 @@ class ProductController extends Controller
         $product->removeImage($filename);
         
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Quick stock adjustment (+1 or -1)
+     */
+    public function quickStock(Request $request, Product $product)
+    {
+        $request->validate([
+            'increment' => 'required|boolean',
+        ]);
+
+        if ($request->increment) {
+            $product->increment('stock_quantity');
+        } else {
+            if ($product->stock_quantity > 0) {
+                $product->decrement('stock_quantity');
+            }
+        }
+
+        return back()->with('success', 'Stock updated successfully.');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Product $product)
+    {
+        $product->load(['category', 'size', 'reviews.user']);
+        
+        // Add computed attributes
+        $product->main_image_url = $product->main_image_url;
+        $product->image_urls = $product->image_urls;
+        $product->discount_percentage = $product->discount_percentage;
+        $product->average_rating = $product->average_rating;
+        $product->review_count = $product->review_count;
+
+        return Inertia::render('Admin/Products/Show', [
+            'product' => $product,
+        ]);
     }
 }

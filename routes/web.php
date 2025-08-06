@@ -128,6 +128,10 @@ Route::get('/api/translations/{locale}', function ($locale) {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
+        // Redirect admin users to admin dashboard
+        if (auth()->user()->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
         return Inertia::render('dashboard');
     })->name('dashboard');
 });

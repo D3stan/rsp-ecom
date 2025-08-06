@@ -152,10 +152,6 @@ export default function AdminDashboard({
                         </p>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm">
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Refresh
-                        </Button>
                         <Button size="sm" asChild>
                             <Link href="/admin/orders">
                                 <Eye className="h-4 w-4 mr-2" />
