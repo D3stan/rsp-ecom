@@ -133,7 +133,8 @@ class StripeWebhookListener
                 return $item->price * $item->quantity;
             });
             
-            $shippingCost = $this->calculateShippingCost($subtotal);
+            // Use cart's size-based shipping cost, or fall back to Stripe session amount
+            $shippingCost = $cart ? $cart->shipping_cost : (($session['total_details']['amount_shipping'] ?? 0) / 100);
             $taxAmount = ($session['total_details']['amount_tax'] ?? 0) / 100;
             $totalAmount = $session['amount_total'] / 100;
 

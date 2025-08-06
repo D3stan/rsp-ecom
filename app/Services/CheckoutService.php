@@ -20,7 +20,7 @@ class CheckoutService
     /**
      * Calculate order totals from cart items
      */
-    public function calculateTotals(Collection $cartItems): array
+    public function calculateTotals(Collection $cartItems, Cart $cart = null): array
     {
         $subtotal = 0;
         $totalQuantity = 0;
@@ -46,7 +46,9 @@ class CheckoutService
             $subtotalExcludingTax = $subtotal;
         }
         
-        $shippingCost = $this->calculateShipping($subtotal, $totalQuantity);
+        // Use cart's shipping cost if available (considers size-based shipping)
+        // Otherwise fall back to simple calculation
+        $shippingCost = $cart ? $cart->shipping_cost : $this->calculateShipping($subtotal, $totalQuantity);
         $total = $subtotal + $shippingCost;
 
         return [
@@ -77,11 +79,11 @@ class CheckoutService
     /**
      * Create a Stripe checkout session
      */
-    public function createCheckoutSession(User $user, Collection $cartItems, array $checkoutData): Session
+    public function createCheckoutSession(User $user, Collection $cartItems, array $checkoutData, Cart $cart = null): Session
     {
         try {
             // Calculate totals
-            $totals = $this->calculateTotals($cartItems);
+            $totals = $this->calculateTotals($cartItems, $cart);
 
             // Create or update Stripe customer
             if (!$user->hasStripeId()) {
@@ -478,11 +480,11 @@ class CheckoutService
     /**
      * Create guest checkout session
      */
-    public function createGuestCheckoutSession(array $cartItems, array $guestData, string $guestSessionId): Session
+    public function createGuestCheckoutSession(array $cartItems, array $guestData, string $guestSessionId, Cart $cart = null): Session
     {
         try {
             $lineItems = $this->createGuestLineItems($cartItems);
-            $totals = $this->calculateGuestTotals($cartItems);
+            $totals = $this->calculateGuestTotals($cartItems, $cart);
 
             $sessionParams = [
                 'payment_method_types' => ['card'],
@@ -582,7 +584,7 @@ class CheckoutService
     /**
      * Calculate totals for guest cart items
      */
-    protected function calculateGuestTotals(array $cartItems): array
+    protected function calculateGuestTotals(array $cartItems, Cart $cart = null): array
     {
         $subtotal = 0;
         $totalQuantity = 0;
@@ -605,7 +607,9 @@ class CheckoutService
             $subtotalExcludingTax = $subtotal;
         }
         
-        $shippingCost = $this->calculateShipping($subtotal, $totalQuantity);
+        // Use cart's shipping cost if available (considers size-based shipping)
+        // Otherwise fall back to simple calculation
+        $shippingCost = $cart ? $cart->shipping_cost : $this->calculateShipping($subtotal, $totalQuantity);
         $total = $subtotal + $shippingCost;
 
         return [

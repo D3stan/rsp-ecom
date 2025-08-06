@@ -419,7 +419,7 @@
             <div class="price-breakdown">
                 <div class="price-row">
                     <span>Subtotale: </span>
-                    <span>€{{ number_format($order->subtotal, 2) - number_format($order->tax_amount, 2) }}</span>
+                    <span>€{{ number_format($order->subtotal - $order->tax_amount, 2) }}</span>
                 </div>
                 @if($order->tax_amount > 0)
                 <div class="price-row">

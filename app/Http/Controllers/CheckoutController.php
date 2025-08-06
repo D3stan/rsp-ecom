@@ -330,7 +330,10 @@ class CheckoutController extends Controller
             // Calculate totals from session
             $subtotal = (float) (($checkoutSession->amount_subtotal ?? $checkoutSession->amount_total) / 100);
             $taxAmount = (float) (($checkoutSession->total_details->amount_tax ?? 0) / 100);
-            $shippingCost = (float) (($checkoutSession->total_details->amount_shipping ?? 0) / 100);
+            
+            // Use cart's shipping cost if available, otherwise fall back to Stripe session amount
+            $shippingCost = $cart ? $cart->shipping_cost : (float) (($checkoutSession->total_details->amount_shipping ?? 0) / 100);
+            
             $totalAmount = (float) ($checkoutSession->amount_total / 100);
 
             // Create order
@@ -616,7 +619,7 @@ class CheckoutController extends Controller
             // Calculate tax-exclusive subtotal and tax amount
             $subtotal = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
             $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
-            $shippingCost = $this->calculateShippingCost($taxInclusiveSubtotal);
+            $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
             $discountAmount = 0; // TODO: Implement discount logic
             $total = $taxInclusiveSubtotal + $shippingCost - $discountAmount;
             $totalItems = $cart->cartItems->sum('quantity');
@@ -660,7 +663,7 @@ class CheckoutController extends Controller
             // Calculate tax-exclusive subtotal and tax amount
             $subtotal = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
             $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
-            $shippingCost = $this->calculateShippingCost($taxInclusiveSubtotal);
+            $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
             $discountAmount = 0; // TODO: Implement discount logic
             $total = $taxInclusiveSubtotal + $shippingCost - $discountAmount;
             $totalItems = $cart->cartItems->sum('quantity');
@@ -765,7 +768,7 @@ class CheckoutController extends Controller
             ];
 
             // Create the checkout session using proper line items from cart
-            $checkoutSession = $checkoutService->createCheckoutSession($user, $cart->cartItems, $checkoutData);
+            $checkoutSession = $checkoutService->createCheckoutSession($user, $cart->cartItems, $checkoutData, $cart);
 
             // For API requests, return JSON with the URL
             if ($request->expectsJson() || $request->header('X-Inertia')) {
@@ -849,7 +852,7 @@ class CheckoutController extends Controller
 
             // Use the CheckoutService to create a guest checkout session
             $checkoutService = app(\App\Services\CheckoutService::class);
-            $checkoutSession = $checkoutService->createGuestCheckoutSession($cartItems, $guestData, $guestSessionId);
+            $checkoutSession = $checkoutService->createGuestCheckoutSession($cartItems, $guestData, $guestSessionId, $cart);
 
             // For API requests, return JSON with the URL
             if ($request->expectsJson() || $request->header('X-Inertia')) {
@@ -946,7 +949,7 @@ class CheckoutController extends Controller
                 return $item->price * $item->quantity;
             });
             
-            $shippingCost = $this->calculateShippingCost($taxInclusiveSubtotal);
+            $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
             $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
             $subtotalExcludingTax = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
             $totalAmount = $taxInclusiveSubtotal + $shippingCost;
@@ -1036,7 +1039,7 @@ class CheckoutController extends Controller
                 return $item->price * $item->quantity;
             });
             
-            $shippingCost = $this->calculateShippingCost($taxInclusiveSubtotal);
+            $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
             $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
             $subtotalExcludingTax = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
             $totalAmount = $taxInclusiveSubtotal + $shippingCost;
