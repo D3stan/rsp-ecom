@@ -10,6 +10,9 @@ use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Checkout;
 use App\Models\Order;
+use App\Models\Address;
+use App\Models\Cart;
+use App\Models\User;
 
 class CheckoutController extends Controller
 {
@@ -174,18 +177,30 @@ class CheckoutController extends Controller
                 ->with(['orderItems.product', 'orderItems.product.sizes'])
                 ->first();
             
-            // If no order found yet, it might still be processing via webhook
-            // Create a basic order structure from the session data
+            // If no order found, create one from the session data
             if (!$order) {
-                Log::warning('Order not found for session, webhook may still be processing', [
+                Log::info('Creating order from Stripe session', [
                     'session_id' => $sessionId,
                     'payment_status' => $checkoutSession->payment_status
                 ]);
                 
-                // Create a temporary order data structure for display
-                $orderData = $this->createTemporaryOrderData($checkoutSession);
+                // Create order from session data
+                $order = $this->createOrderFromSession($checkoutSession, $request->user());
+                $orderData = $order;
             } else {
                 $orderData = $order;
+            }
+            
+            // Send confirmation email if order exists and email hasn't been sent yet
+            if ($order && $order->payment_status === 'succeeded' && !$order->hasEmailBeenSent()) {
+                $emailService = app(\App\Services\EmailService::class);
+                $emailSent = $emailService->sendOrderConfirmation($order);
+                
+                if ($emailSent) {
+                    Log::info('Order confirmation email sent from success page', ['order_id' => $order->id]);
+                } else {
+                    Log::warning('Failed to send order confirmation email from success page', ['order_id' => $order->id]);
+                }
             }
             
             // Determine if this is a guest checkout
@@ -216,22 +231,187 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Create temporary order data when order is not yet created via webhook
+     * Create order from Stripe checkout session
      */
-    private function createTemporaryOrderData(object $checkoutSession): array
+    private function createOrderFromSession(object $checkoutSession, ?User $user): Order
     {
+        try {
+            // Extract metadata
+            $metadata = $checkoutSession->metadata ?? (object)[];
+            $isGuestOrder = !$user || !isset($metadata->user_id);
+            
+            // Find the cart based on metadata
+            $cart = null;
+            if (isset($metadata->cart_id)) {
+                $cart = Cart::with(['cartItems.product', 'cartItems.size'])->find($metadata->cart_id);
+            } elseif (isset($metadata->guest_session_id)) {
+                $cart = Cart::where('session_id', $metadata->guest_session_id)
+                    ->with(['cartItems.product', 'cartItems.size'])
+                    ->first();
+            }
+
+            // Parse shipping address from metadata if available
+            $shippingAddressString = $metadata->shipping_address ?? '';
+            $addressParts = $this->parseShippingAddress($shippingAddressString);
+
+            // Create addresses (simplified - you might want to create proper Address records)
+            $billingAddress = $this->createAddressFromSession($checkoutSession, $addressParts, 'billing');
+            $shippingAddress = $this->createAddressFromSession($checkoutSession, $addressParts, 'shipping');
+
+            // Calculate totals from session
+            $subtotal = ($checkoutSession->amount_subtotal ?? $checkoutSession->amount_total) / 100;
+            $taxAmount = ($checkoutSession->total_details->amount_tax ?? 0) / 100;
+            $shippingCost = ($checkoutSession->total_details->amount_shipping ?? 0) / 100;
+            $totalAmount = $checkoutSession->amount_total / 100;
+
+            // Create order
+            $orderData = [
+                'order_number' => Order::generateOrderNumber(),
+                'user_id' => $isGuestOrder ? null : $user->id,
+                'billing_address_id' => $billingAddress->id,
+                'shipping_address_id' => $shippingAddress->id,
+                'status' => 'processing',
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'shipping_amount' => $shippingCost,
+                'total_amount' => $totalAmount,
+                'currency' => strtoupper($checkoutSession->currency),
+                'notes' => $metadata->order_notes ?? null,
+                'stripe_checkout_session_id' => $checkoutSession->id,
+                'stripe_payment_intent_id' => $checkoutSession->payment_intent ?? null,
+                'payment_status' => $checkoutSession->payment_status === 'paid' ? 'succeeded' : 'processing',
+                'payment_method' => 'stripe',
+            ];
+
+            // Add guest-specific fields
+            if ($isGuestOrder) {
+                $orderData['guest_email'] = $checkoutSession->customer_details->email ?? $metadata->guest_email ?? null;
+                $orderData['guest_phone'] = $checkoutSession->customer_details->phone ?? null;
+                $orderData['guest_session_id'] = $metadata->guest_session_id ?? null;
+            }
+
+            $order = Order::create($orderData);
+
+            // Create order items from cart or extract from session
+            if ($cart && $cart->cartItems->isNotEmpty()) {
+                foreach ($cart->cartItems as $cartItem) {
+                    $order->orderItems()->create([
+                        'product_id' => $cartItem->product_id,
+                        'product_name' => $cartItem->product->name,
+                        'quantity' => $cartItem->quantity,
+                        'price' => $cartItem->price,
+                        'total' => $cartItem->price * $cartItem->quantity,
+                    ]);
+                }
+                
+                // Clear the cart after order creation
+                $cart->cartItems()->delete();
+                $cart->delete();
+            } else {
+                // Extract line items from session
+                $this->createOrderItemsFromSession($order, $checkoutSession);
+            }
+
+            Log::info('Order created from Stripe session', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'session_id' => $checkoutSession->id,
+                'is_guest' => $isGuestOrder,
+                'total_amount' => $order->total_amount
+            ]);
+
+            return $order;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create order from Stripe session', [
+                'session_id' => $checkoutSession->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Parse shipping address from metadata string
+     */
+    private function parseShippingAddress(string $addressString): array
+    {
+        // Expected format: "John Doe, 123 Main St, City, State ZIP, Country"
+        $parts = array_map('trim', explode(', ', $addressString));
+        
         return [
-            'id' => 'pending',
-            'total_amount' => $checkoutSession->amount_total / 100, // Convert from cents
-            'subtotal' => $checkoutSession->amount_subtotal / 100,
-            'tax_amount' => ($checkoutSession->total_details->amount_tax ?? 0) / 100,
-            'shipping_cost' => ($checkoutSession->total_details->amount_shipping ?? 0) / 100,
-            'currency' => strtoupper($checkoutSession->currency),
-            'status' => 'processing',
-            'payment_status' => $checkoutSession->payment_status,
-            'created_at' => date('Y-m-d H:i:s', $checkoutSession->created),
-            'orderItems' => $this->extractLineItemsFromSession($checkoutSession),
+            'name' => $parts[0] ?? '',
+            'address_line_1' => $parts[1] ?? '',
+            'city' => $parts[2] ?? '',
+            'state_postal' => $parts[3] ?? '',
+            'country' => $parts[4] ?? ''
         ];
+    }
+
+    /**
+     * Create address from session data
+     */
+    private function createAddressFromSession(object $session, array $addressParts, string $type): Address
+    {
+        $customerDetails = $session->customer_details ?? (object)[];
+        $address = $customerDetails->address ?? (object)[];
+        
+        // Parse name
+        $nameParts = explode(' ', $addressParts['name'] ?: ($customerDetails->name ?? ''), 2);
+        $firstName = $nameParts[0] ?? '';
+        $lastName = $nameParts[1] ?? '';
+        
+        // Parse state and postal code
+        $statePostal = $addressParts['state_postal'] ?? '';
+        $statePostalParts = explode(' ', $statePostal);
+        $state = $statePostalParts[0] ?? '';
+        $postalCode = $statePostalParts[1] ?? '';
+
+        return Address::create([
+            'type' => $type,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'company' => null,
+            'address_line_1' => $addressParts['address_line_1'] ?: ($address->line1 ?? ''),
+            'address_line_2' => $address->line2 ?? null,
+            'city' => $addressParts['city'] ?: ($address->city ?? ''),
+            'state' => $state ?: ($address->state ?? ''),
+            'postal_code' => $postalCode ?: ($address->postal_code ?? ''),
+            'country' => $addressParts['country'] ?: ($address->country ?? 'US'),
+            'phone' => $customerDetails->phone ?? null,
+        ]);
+    }
+
+    /**
+     * Create order items from Stripe session line items
+     */
+    private function createOrderItemsFromSession(Order $order, object $checkoutSession): void
+    {
+        try {
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
+            $lineItems = $stripe->checkout->sessions->allLineItems($checkoutSession->id);
+            
+            foreach ($lineItems->data as $item) {
+                $order->orderItems()->create([
+                    'product_id' => null, // We don't have product ID from line items
+                    'product_name' => $item->description,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price->unit_amount / 100,
+                    'total' => ($item->price->unit_amount * $item->quantity) / 100,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to create order items from session: ' . $e->getMessage());
+            // Create a fallback order item
+            $order->orderItems()->create([
+                'product_id' => null,
+                'product_name' => 'Cart Purchase',
+                'quantity' => 1,
+                'price' => $order->total_amount,
+                'total' => $order->total_amount,
+            ]);
+        }
     }
 
     /**
@@ -406,6 +586,7 @@ class CheckoutController extends Controller
 
             // Validate the checkout details
             $validated = $request->validate([
+                'email' => 'required|email|max:255',
                 'shipping_address' => 'required|array',
                 'shipping_address.first_name' => 'required|string|max:255',
                 'shipping_address.last_name' => 'required|string|max:255',
@@ -460,6 +641,7 @@ class CheckoutController extends Controller
                 'metadata' => [
                     'cart_id' => $cart->id,
                     'user_id' => $user->id,
+                    'user_email' => $validated['email'],
                     'type' => 'cart_checkout',
                     'description' => $description,
                     'shipping_address' => $shippingAddressString,
@@ -492,6 +674,7 @@ class CheckoutController extends Controller
         try {
             // Validate the checkout details
             $validated = $request->validate([
+                'email' => 'required|email|max:255',
                 'shipping_address' => 'required|array',
                 'shipping_address.first_name' => 'required|string|max:255',
                 'shipping_address.last_name' => 'required|string|max:255',
@@ -559,8 +742,10 @@ class CheckoutController extends Controller
                 'mode' => 'payment',
                 'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('checkout.cancel'),
+                'customer_email' => $validated['email'],
                 'metadata' => [
                     'guest_session_id' => $guestSessionId,
+                    'guest_email' => $validated['email'],
                     'type' => 'guest_cart_checkout',
                     'description' => $description,
                     'shipping_address' => $shippingAddressString,

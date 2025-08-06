@@ -18,6 +18,12 @@ class EmailService
     public function sendOrderConfirmation(Order $order): bool
     {
         try {
+            // Check if email has already been sent
+            if ($order->hasEmailBeenSent()) {
+                Log::info('Order confirmation email already sent for order: ' . $order->order_number);
+                return true;
+            }
+
             $recipient = $order->user ? $order->user->email : $order->guest_email;
             
             if (!$recipient) {
@@ -26,6 +32,9 @@ class EmailService
             }
 
             Mail::to($recipient)->send(new OrderConfirmation($order));
+            
+            // Mark email as sent
+            $order->markEmailAsSent();
             
             Log::info('Order confirmation email sent for order: ' . $order->order_number);
             return true;

@@ -80,7 +80,7 @@ Route::get('/guest/checkout/{priceId}/promo/{promoCode}', [CheckoutController::c
 
 // Stripe webhook (Cashier handles this automatically)
 // Configure in Stripe Dashboard to point to: /stripe/webhook
-// Cashier registers this route automatically - no custom route needed
+// Cashier registers this route automatically and uses our custom webhook controller
 
 Route::get('/about', function () {
     return Inertia::render('about');

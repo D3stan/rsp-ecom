@@ -33,6 +33,9 @@ class Order extends Model
         'guest_email',
         'guest_phone',
         'guest_session_id',
+        // Email tracking
+        'confirmation_email_sent',
+        'confirmation_email_sent_at',
     ];
 
     protected $casts = [
@@ -40,6 +43,8 @@ class Order extends Model
         'tax_amount' => 'decimal:2',
         'shipping_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'confirmation_email_sent' => 'boolean',
+        'confirmation_email_sent_at' => 'datetime',
     ];
 
     // Boot method to generate order number
@@ -287,5 +292,24 @@ class Order extends Model
     public function scopeByGuestSession($query, string $sessionId)
     {
         return $query->where('guest_session_id', $sessionId);
+    }
+
+    /**
+     * Mark confirmation email as sent
+     */
+    public function markEmailAsSent(): bool
+    {
+        return $this->update([
+            'confirmation_email_sent' => true,
+            'confirmation_email_sent_at' => now(),
+        ]);
+    }
+
+    /**
+     * Check if confirmation email has been sent
+     */
+    public function hasEmailBeenSent(): bool
+    {
+        return $this->confirmation_email_sent;
     }
 }

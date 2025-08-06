@@ -55,6 +55,10 @@ interface ShippingAddress {
     phone?: string;
 }
 
+interface ContactInformation {
+    email: string;
+}
+
 interface CheckoutDetailsProps extends SharedData {
     cart: Cart | null;
     cartItems: CartItem[];
@@ -73,12 +77,17 @@ export default function CheckoutDetails() {
     const { addToast } = useToast();
     
     // Collapsible states
+    const [isContactOpen, setIsContactOpen] = useState(true);
     const [isShippingOpen, setIsShippingOpen] = useState(true);
     const [isDiscountOpen, setIsDiscountOpen] = useState(false);
     const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [isTotalsOpen, setIsTotalsOpen] = useState(true);
 
     // Form states
+    const [contactInfo, setContactInfo] = useState<ContactInformation>({
+        email: auth?.user?.email || ''
+    });
+    
     const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
         first_name: auth?.user?.name?.split(' ')[0] || '',
         last_name: auth?.user?.name?.split(' ').slice(1).join(' ') || '',
@@ -99,6 +108,13 @@ export default function CheckoutDetails() {
 
     const updateShippingAddress = (field: keyof ShippingAddress, value: string) => {
         setShippingAddress(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const updateContactInfo = (field: keyof ContactInformation, value: string) => {
+        setContactInfo(prev => ({
             ...prev,
             [field]: value
         }));
@@ -151,6 +167,15 @@ export default function CheckoutDetails() {
 
     const proceedToPayment = () => {
         // Validate required fields
+        if (!contactInfo.email.trim()) {
+            addToast({
+                type: "error",
+                title: "Missing Information",
+                description: "Please provide a valid email address.",
+            });
+            return;
+        }
+
         if (!shippingAddress.first_name.trim() || 
             !shippingAddress.last_name.trim() || 
             !shippingAddress.address_line_1.trim() || 
@@ -166,10 +191,22 @@ export default function CheckoutDetails() {
             return;
         }
 
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(contactInfo.email)) {
+            addToast({
+                type: "error",
+                title: "Invalid Email",
+                description: "Please provide a valid email address.",
+            });
+            return;
+        }
+
         setIsProcessing(true);
         
         // Prepare checkout data with proper typing
         const checkoutData = {
+            email: contactInfo.email,
             shipping_address: shippingAddress,
             order_notes: orderNotes,
             coupon_code: couponCode
@@ -270,6 +307,46 @@ export default function CheckoutDetails() {
                     </div>
 
                     <div className="space-y-6">
+                        {/* Contact Information */}
+                        <Card className="border-2 border-gray-700 bg-white shadow-md">
+                            <Collapsible open={isContactOpen} onOpenChange={setIsContactOpen}>
+                                <CollapsibleTrigger className="w-full">
+                                    <CardHeader className="hover:bg-gray-50 transition-colors">
+                                        <CardTitle className="flex items-center justify-between text-black">
+                                            <div className="flex items-center gap-2">
+                                                <CreditCard className="h-5 w-5" />
+                                                Contact Information
+                                            </div>
+                                            {isContactOpen ? (
+                                                <ChevronUp className="h-5 w-5" />
+                                            ) : (
+                                                <ChevronDown className="h-5 w-5" />
+                                            )}
+                                        </CardTitle>
+                                    </CardHeader>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                    <CardContent className="space-y-4">
+                                        <div>
+                                            <Label htmlFor="email" className="text-black font-medium">Email Address *</Label>
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                value={contactInfo.email}
+                                                onChange={(e) => updateContactInfo('email', e.target.value)}
+                                                required
+                                                placeholder="your@email.com"
+                                                className="text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+                                            />
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                We'll send your order confirmation and receipt to this email address.
+                                            </p>
+                                        </div>
+                                    </CardContent>
+                                </CollapsibleContent>
+                            </Collapsible>
+                        </Card>
+
                         {/* Shipping Information */}
                         <Card className="border-2 border-gray-700 bg-white shadow-md">
                             <Collapsible open={isShippingOpen} onOpenChange={setIsShippingOpen}>
