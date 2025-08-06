@@ -99,13 +99,6 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                         <h1 className="text-2xl font-bold text-white">Edit Product</h1>
                         <p className="text-gray-500">Update product information</p>
                     </div>
-                    <Button 
-                        variant="outline" 
-                        onClick={() => window.history.back()}
-                        className="w-full sm:w-auto"
-                    >
-                        Cancel
-                    </Button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -398,7 +391,7 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                         </Button>
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="destructive"
                             onClick={() => window.history.back()}
                             className="w-full sm:w-auto order-1 sm:order-2"
                         >
