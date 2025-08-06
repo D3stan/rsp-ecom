@@ -171,6 +171,9 @@ export default function Products() {
             }
         });
 
+        // Close the mobile filter modal
+        setIsFilterOpen(false);
+
         router.get(route('products'), params, {
             preserveState: true,
             preserveScroll: true,
@@ -265,6 +268,7 @@ export default function Products() {
                                                 setPriceMax={setPriceMax}
                                                 applyFilters={handleApplyFilters}
                                                 clearFilters={clearFilters}
+                                                closeModal={() => setIsFilterOpen(false)}
                                             />
                                         </div>
                                     </SheetContent>
@@ -501,6 +505,7 @@ interface FilterSectionProps {
     setPriceMax: (price: number) => void;
     applyFilters: () => void;
     clearFilters: () => void;
+    closeModal?: () => void;
 }
 
 function FilterSection({
@@ -513,8 +518,17 @@ function FilterSection({
     priceMax,
     setPriceMax,
     applyFilters,
-    clearFilters
+    clearFilters,
+    closeModal
 }: FilterSectionProps) {
+    const handleApplyFilters = () => {
+        applyFilters();
+        // Close modal only if we're in mobile mode and closeModal is provided
+        if (closeModal) {
+            closeModal();
+        }
+    };
+
     return (
         <div className="space-y-6 bg-white">
             <div className="flex items-center justify-between">
@@ -625,7 +639,7 @@ function FilterSection({
             </div>
 
             <Button 
-                onClick={applyFilters} 
+                onClick={handleApplyFilters} 
                 className="w-full h-11 font-semibold text-base text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-200"
             >
                 Apply Filters
