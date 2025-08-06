@@ -22,6 +22,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::resource('products', ProductController::class);
     Route::patch('products/{product}/quick-stock', [ProductController::class, 'quickStock'])->name('products.quick-stock');
     Route::delete('products/{product}/images/{filename}', [ProductController::class, 'removeImage'])->name('products.remove-image');
+    Route::post('products/{product}/reviews', [ProductController::class, 'storeReview'])->name('products.reviews.store');
 
     // TODO: Add other admin routes as they are implemented
     // Route::resource('customers', CustomersController::class);

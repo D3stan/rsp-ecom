@@ -187,8 +187,14 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
+        $product->load(['category', 'size']);
+        
+        // Add the computed image URLs
+        $product->image_urls = $product->image_urls;
+        $product->main_image_url = $product->main_image_url;
+
         return Inertia::render('Admin/Products/Edit', [
-            'product' => $product->load(['category', 'size']),
+            'product' => $product,
             'categories' => Category::where('is_active', true)->get(),
             'sizes' => Size::all(),
         ]);
@@ -316,5 +322,28 @@ class ProductController extends Controller
         return Inertia::render('Admin/Products/Show', [
             'product' => $product,
         ]);
+    }
+
+    /**
+     * Store a review for the product
+     */
+    public function storeReview(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'required|string|max:1000',
+            'user_name' => 'required|string|max:255',
+        ]);
+
+        // Create a temporary user or use existing logic
+        // For now, we'll just store the review with user_name
+        $review = $product->reviews()->create([
+            'rating' => $validated['rating'],
+            'comment' => $validated['comment'],
+            'user_id' => auth()->id(), // You might want to handle this differently
+            'user_name' => $validated['user_name'], // Add this field to reviews table if needed
+        ]);
+
+        return redirect()->back()->with('success', 'Review added successfully.');
     }
 }
