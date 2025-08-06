@@ -63,10 +63,12 @@ Route::get('/guest/checkout', function (Request $request) {
 // Cart-based checkout routes (bridges cart workflow with Cashier)
 Route::middleware(['auth'])->group(function () {
     Route::post('/checkout/cart', [CheckoutController::class, 'cartCheckout'])->name('checkout.cart');
+    Route::post('/checkout/session', [CheckoutController::class, 'createSession'])->name('checkout.session');
 });
 
 // Guest cart checkout
 Route::post('/guest/checkout/cart', [CheckoutController::class, 'guestCartCheckout'])->name('guest.cart.checkout');
+Route::post('/guest/checkout/session', [CheckoutController::class, 'createGuestSession'])->name('checkout.guest.session');
 
 // Success and cancel pages - accessible to both authenticated and guest users
 Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');

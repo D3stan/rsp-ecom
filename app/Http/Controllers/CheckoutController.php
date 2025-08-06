@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\User;
+use App\Services\CheckoutService;
 
 class CheckoutController extends Controller
 {
@@ -626,6 +627,182 @@ class CheckoutController extends Controller
     /**
      * Calculate tax amount based on subtotal
      */
+    /**
+     * Create a checkout session from form data
+     * This handles the POST request from the checkout form
+     */
+    public function createSession(Request $request): RedirectResponse|HttpResponse
+    {
+        try {
+            $user = $request->user();
+            
+            if (!$user) {
+                return response()->json(['error' => 'Authentication required'], 401);
+            }
+
+            // Validate the checkout details using the CheckoutRequest
+            $validated = $request->validate([
+                'billing_address' => 'required|array',
+                'billing_address.first_name' => 'required|string|max:255',
+                'billing_address.last_name' => 'required|string|max:255',
+                'billing_address.email' => 'required|email|max:255',
+                'billing_address.phone' => 'nullable|string|max:20',
+                'billing_address.company' => 'nullable|string|max:255',
+                'billing_address.address_line_1' => 'required|string|max:255',
+                'billing_address.address_line_2' => 'nullable|string|max:255',
+                'billing_address.city' => 'required|string|max:255',
+                'billing_address.state' => 'required|string|max:255',
+                'billing_address.postal_code' => 'required|string|max:20',
+                'billing_address.country' => 'required|string|size:2',
+                'shipping_same_as_billing' => 'boolean',
+                'shipping_address' => 'nullable|array',
+                'payment_method_id' => 'nullable|string',
+                'save_payment_method' => 'boolean',
+                'promotion_code' => 'nullable|string|max:50',
+                'allow_promotion_codes' => 'boolean',
+                'collect_tax_id' => 'boolean',
+                'checkout_mode' => 'in:payment,subscription',
+                'locale' => 'nullable|string|max:10',
+            ]);
+
+            // Get user's cart with cart items
+            $cart = $user->carts()->with(['cartItems.product', 'cartItems.size'])->latest()->first();
+            
+            if (!$cart || $cart->cartItems->isEmpty()) {
+                return response()->json(['error' => 'Your cart is empty'], 422);
+            }
+
+            // Use the CheckoutService to create a proper checkout session
+            $checkoutService = app(\App\Services\CheckoutService::class);
+            
+            // Prepare checkout data
+            $checkoutData = [
+                'billing_address' => $validated['billing_address'],
+                'shipping_same_as_billing' => $validated['shipping_same_as_billing'] ?? true,
+                'shipping_address' => $validated['shipping_same_as_billing'] ?? true 
+                    ? $validated['billing_address'] 
+                    : $validated['shipping_address'] ?? $validated['billing_address'],
+                'save_payment_method' => $validated['save_payment_method'] ?? false,
+                'promotion_code' => $validated['promotion_code'] ?? null,
+                'allow_promotion_codes' => $validated['allow_promotion_codes'] ?? true,
+                'collect_tax_id' => $validated['collect_tax_id'] ?? false,
+                'checkout_mode' => $validated['checkout_mode'] ?? 'payment',
+                'locale' => $validated['locale'] ?? 'en',
+                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('checkout.cancel'),
+            ];
+
+            // Create the checkout session using proper line items from cart
+            $checkoutSession = $checkoutService->createCheckoutSession($user, $cart->cartItems, $checkoutData);
+
+            // For API requests, return JSON with the URL
+            if ($request->expectsJson() || $request->header('X-Inertia')) {
+                return response()->json([
+                    'sessionId' => $checkoutSession->id,
+                    'url' => $checkoutSession->url
+                ]);
+            }
+
+            // For standard requests, redirect
+            return redirect($checkoutSession->url);
+            
+        } catch (\Exception $e) {
+            Log::error('Checkout session creation failed: ' . $e->getMessage(), [
+                'user_id' => $request->user()?->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Unable to create checkout session. Please try again.'], 500);
+            }
+            
+            return redirect()->back()->with('error', 'Unable to create checkout session. Please try again.');
+        }
+    }
+
+    /**
+     * Create a guest checkout session from form data
+     */
+    public function createGuestSession(Request $request): RedirectResponse|HttpResponse
+    {
+        try {
+            // Validate the guest checkout details
+            $validated = $request->validate([
+                'guest_email' => 'required|email|max:255',
+                'guest_phone' => 'nullable|string|max:20',
+                'billing_address' => 'required|array',
+                'billing_address.first_name' => 'required|string|max:255',
+                'billing_address.last_name' => 'required|string|max:255',
+                'billing_address.address_line_1' => 'required|string|max:255',
+                'billing_address.address_line_2' => 'nullable|string|max:255',
+                'billing_address.city' => 'required|string|max:255',
+                'billing_address.state' => 'required|string|max:255',
+                'billing_address.postal_code' => 'required|string|max:20',
+                'billing_address.country' => 'required|string|size:2',
+                'shipping_same_as_billing' => 'boolean',
+                'shipping_address' => 'nullable|array',
+                'cart_session_id' => 'required|string',
+                'accept_terms' => 'required|accepted',
+            ]);
+
+            // Get guest cart from session
+            $guestSessionId = $validated['cart_session_id'];
+            $cart = Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.size'])->first();
+            
+            if (!$cart || $cart->cartItems->isEmpty()) {
+                return response()->json(['error' => 'Your cart is empty'], 422);
+            }
+
+            // Convert cart items to array format expected by CheckoutService
+            $cartItems = $cart->cartItems->map(function ($item) {
+                return [
+                    'product' => $item->product,
+                    'size' => $item->size,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                    'total' => $item->total,
+                ];
+            })->toArray();
+
+            // Prepare guest checkout data
+            $guestData = [
+                'guest_email' => $validated['guest_email'],
+                'guest_phone' => $validated['guest_phone'] ?? null,
+                'billing_address' => $validated['billing_address'],
+                'shipping_same_as_billing' => $validated['shipping_same_as_billing'] ?? true,
+                'shipping_address' => $validated['shipping_same_as_billing'] ?? true 
+                    ? $validated['billing_address'] 
+                    : $validated['shipping_address'] ?? $validated['billing_address'],
+            ];
+
+            // Use the CheckoutService to create a guest checkout session
+            $checkoutService = app(\App\Services\CheckoutService::class);
+            $checkoutSession = $checkoutService->createGuestCheckoutSession($cartItems, $guestData, $guestSessionId);
+
+            // For API requests, return JSON with the URL
+            if ($request->expectsJson() || $request->header('X-Inertia')) {
+                return response()->json([
+                    'sessionId' => $checkoutSession->id,
+                    'checkout_url' => $checkoutSession->url
+                ]);
+            }
+
+            // For standard requests, redirect
+            return redirect($checkoutSession->url);
+            
+        } catch (\Exception $e) {
+            Log::error('Guest checkout session creation failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Unable to create checkout session. Please try again.'], 500);
+            }
+            
+            return redirect()->back()->with('error', 'Unable to create checkout session. Please try again.');
+        }
+    }
+
     private function calculateTaxAmount(float $subtotal): float
     {
         // Simple tax calculation - 8.5% tax rate
