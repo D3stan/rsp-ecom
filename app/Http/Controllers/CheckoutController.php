@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Checkout;
 use App\Models\Order;
@@ -152,13 +153,7 @@ class CheckoutController extends Controller
     public function success(Request $request): Response|RedirectResponse
     {
         $sessionId = $request->get('session_id');
-        
-        Log::info('Checkout success accessed', [
-            'session_id' => $sessionId,
-            'all_params' => $request->all(),
-            'user_id' => $request->user()?->id,
-        ]);
-        
+
         if (!$sessionId) {
             Log::warning('No session_id provided to success page', [
                 'url' => $request->fullUrl(),
@@ -169,7 +164,7 @@ class CheckoutController extends Controller
 
         try {
             // Initialize Stripe client
-            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
             
             // Retrieve checkout session from Stripe (works for both user and guest sessions)
             $checkoutSession = $stripe->checkout->sessions->retrieve($sessionId);
@@ -245,7 +240,7 @@ class CheckoutController extends Controller
     private function extractLineItemsFromSession(object $checkoutSession): array
     {
         try {
-            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
             $lineItems = $stripe->checkout->sessions->allLineItems($checkoutSession->id);
             
             $items = [];
@@ -400,7 +395,7 @@ class CheckoutController extends Controller
      * Cart checkout - converts cart items to Stripe checkout
      * This bridges the gap between cart-based workflow and Cashier's product-based checkout
      */
-    public function cartCheckout(Request $request): RedirectResponse
+    public function cartCheckout(Request $request): RedirectResponse|HttpResponse
     {
         try {
             $user = $request->user();
@@ -473,6 +468,11 @@ class CheckoutController extends Controller
                 ]
             ]);
             
+            // For Inertia.js requests, return the URL as props instead of redirecting
+            if ($request->header('X-Inertia')) {
+                return Inertia::location($checkoutSession->url);
+            }
+            
             return redirect($checkoutSession->url);
             
         } catch (\Exception $e) {
@@ -487,7 +487,7 @@ class CheckoutController extends Controller
     /**
      * Guest cart checkout - for non-authenticated users
      */
-    public function guestCartCheckout(Request $request): RedirectResponse
+    public function guestCartCheckout(Request $request): RedirectResponse|HttpResponse
     {
         try {
             // Validate the checkout details
@@ -542,12 +542,12 @@ class CheckoutController extends Controller
 
             // For guest checkout, we need to create a temporary price in Stripe
             // or use Stripe's direct API since Cashier's guest checkout expects a price ID
-            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
             
             $checkoutSession = $stripe->checkout->sessions->create([
                 'line_items' => [[
                     'price_data' => [
-                        'currency' => config('cashier.currency', 'usd'),
+                        'currency' => env('CASHIER_CURRENCY', 'eur'),
                         'product_data' => [
                             'name' => 'Cart Purchase',
                             'description' => $description,
@@ -568,6 +568,11 @@ class CheckoutController extends Controller
                     'coupon_code' => $validated['coupon_code'] ?? '',
                 ]
             ]);
+
+            // For Inertia.js requests, return the URL as props instead of redirecting
+            if ($request->header('X-Inertia')) {
+                return Inertia::location($checkoutSession->url);
+            }
             
             return redirect($checkoutSession->url);
             

@@ -88,7 +88,7 @@ export default function CheckoutDetails() {
         city: '',
         state: '',
         postal_code: '',
-        country: 'US',
+        country: 'IT',
         phone: ''
     });
     
@@ -381,17 +381,15 @@ export default function CheckoutDetails() {
                                             <div>
                                                 <Label htmlFor="country" className="text-black font-medium">Country *</Label>
                                                 <Select value={shippingAddress.country} onValueChange={(value) => updateShippingAddress('country', value)}>
-                                                    <SelectTrigger className="bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500">
+                                                    <SelectTrigger className="bg-white text-black border-gray-300 focus:border-gray-500 focus:ring-gray-500">
                                                         <SelectValue />
                                                     </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="US">United States</SelectItem>
-                                                        <SelectItem value="CA">Canada</SelectItem>
-                                                        <SelectItem value="GB">United Kingdom</SelectItem>
+                                                    <SelectContent className="bg-white text-black">
+                                                        <SelectItem value="IT">Italy</SelectItem>
                                                         <SelectItem value="DE">Germany</SelectItem>
+                                                        <SelectItem value="GB">United Kingdom</SelectItem>
                                                         <SelectItem value="FR">France</SelectItem>
                                                         <SelectItem value="ES">Spain</SelectItem>
-                                                        <SelectItem value="IT">Italy</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>
