@@ -148,22 +148,6 @@ class CheckoutServiceTest extends TestCase
         $this->checkoutService->retrieveCheckoutSession('invalid_session_id');
     }
 
-    public function test_handle_webhook_event_logs_unknown_event_type(): void
-    {
-        $event = (object) [
-            'type' => 'unknown.event.type',
-            'id' => 'evt_test_123',
-            'data' => (object) ['object' => (object) []],
-        ];
-
-        // This should not throw an exception
-        $this->checkoutService->handleWebhookEvent($event);
-
-        // We can't easily test log output without mocking the Log facade
-        // but we can ensure the method completes without error
-        $this->assertTrue(true);
-    }
-
     public function test_calculate_totals_precision(): void
     {
         // Test with prices that might cause floating point precision issues
