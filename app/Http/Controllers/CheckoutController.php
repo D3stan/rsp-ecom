@@ -161,8 +161,9 @@ class CheckoutController extends Controller
             Log::warning('No session_id provided to success page', [
                 'url' => $request->fullUrl(),
                 'all_params' => $request->all(),
+                'referrer' => $request->header('referer'),
             ]);
-            return redirect()->route('home')->with('error', 'Invalid checkout session.');
+            return redirect()->route('home')->with('error', 'Invalid checkout session. If you completed a payment, please check your email for confirmation or contact support.');
         }
 
         try {
@@ -171,6 +172,14 @@ class CheckoutController extends Controller
             
             // Retrieve checkout session from Stripe (works for both user and guest sessions)
             $checkoutSession = $stripe->checkout->sessions->retrieve($sessionId);
+            
+            // Log session details for debugging
+            Log::info('Retrieved checkout session', [
+                'session_id' => $sessionId,
+                'payment_status' => $checkoutSession->payment_status,
+                'customer_email' => $checkoutSession->customer_details->email ?? 'N/A',
+                'amount_total' => $checkoutSession->amount_total
+            ]);
             
             // Find the order in our database by session ID
             $order = Order::where('stripe_checkout_session_id', $sessionId)
@@ -184,11 +193,39 @@ class CheckoutController extends Controller
                     'payment_status' => $checkoutSession->payment_status
                 ]);
                 
-                // Create order from session data
-                $order = $this->createOrderFromSession($checkoutSession, $request->user());
-                $orderData = $order;
+                try {
+                    // Create order from session data
+                    $order = $this->createOrderFromSession($checkoutSession, $request->user());
+                    $orderData = $order;
+                    
+                    // Reload with relationships for display
+                    $order->load(['orderItems.product', 'orderItems.product.sizes']);
+                } catch (\Exception $e) {
+                    Log::error('Failed to create order from session in success page', [
+                        'session_id' => $sessionId,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    // For guest checkouts, we still want to show a success page even if order creation fails
+                    // because the payment went through
+                    if ($checkoutSession->payment_status === 'paid') {
+                        $orderData = $this->createFallbackOrderData($checkoutSession);
+                        Log::warning("Order creation failed but payment succeeded. Created fallback order data.", [
+                            'session_id' => $sessionId
+                        ]);
+                    } else {
+                        throw $e; // Re-throw if payment wasn't successful
+                    }
+                }
             } else {
                 $orderData = $order;
+                
+                // Update payment status if needed
+                if ($checkoutSession->payment_status === 'paid' && $order->payment_status !== 'succeeded') {
+                    $order->update(['payment_status' => 'succeeded']);
+                    Log::info('Updated order payment status to succeeded', ['order_id' => $order->id]);
+                }
             }
             
             // Send confirmation email if order exists and email hasn't been sent yet
@@ -201,6 +238,8 @@ class CheckoutController extends Controller
                 } else {
                     Log::warning('Failed to send order confirmation email from success page', ['order_id' => $order->id]);
                 }
+            } elseif ($order && $order->hasEmailBeenSent()) {
+                Log::info('Order confirmation email already sent', ['order_id' => $order->id]);
             }
             
             // Determine if this is a guest checkout
@@ -226,7 +265,17 @@ class CheckoutController extends Controller
                 'user_id' => $request->user()?->id,
                 'trace' => $e->getTraceAsString()
             ]);
-            return redirect()->route('home')->with('error', 'There was an issue processing your order. Please contact support if you were charged.');
+            
+            // Instead of redirecting to home, provide more helpful error message
+            $errorMessage = 'There was an issue retrieving your order details. ';
+            
+            if (str_contains($e->getMessage(), 'No such checkout session')) {
+                $errorMessage .= 'The checkout session was not found. This may happen if the session has expired.';
+            } else {
+                $errorMessage .= 'If you completed a payment, please check your email for confirmation or contact support with session ID: ' . $sessionId;
+            }
+            
+            return redirect()->route('home')->with('error', $errorMessage);
         }
     }
 
@@ -319,6 +368,18 @@ class CheckoutController extends Controller
                 'is_guest' => $isGuestOrder,
                 'total_amount' => $order->total_amount
             ]);
+
+            // Send order confirmation email immediately if payment was successful
+            if ($order->payment_status === 'succeeded') {
+                $emailService = app(\App\Services\EmailService::class);
+                $emailSent = $emailService->sendOrderConfirmation($order);
+                
+                if ($emailSent) {
+                    Log::info('Order confirmation email sent during order creation', ['order_id' => $order->id]);
+                } else {
+                    Log::warning('Failed to send order confirmation email during order creation', ['order_id' => $order->id]);
+                }
+            }
 
             return $order;
 
@@ -765,5 +826,25 @@ class CheckoutController extends Controller
             Log::error('Guest cart checkout failed: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Unable to process guest checkout. Please try again.');
         }
+    }
+
+    /**
+     * Create fallback order data when order creation fails but payment succeeded
+     */
+    private function createFallbackOrderData(object $checkoutSession): object
+    {
+        return (object) [
+            'id' => 'pending',
+            'order_number' => 'PENDING',
+            'total_amount' => $checkoutSession->amount_total / 100,
+            'status' => 'processing',
+            'payment_status' => 'succeeded',
+            'subtotal' => ($checkoutSession->amount_subtotal ?? $checkoutSession->amount_total) / 100,
+            'tax_amount' => ($checkoutSession->total_details->amount_tax ?? 0) / 100,
+            'shipping_cost' => ($checkoutSession->total_details->amount_shipping ?? 0) / 100,
+            'currency' => strtoupper($checkoutSession->currency),
+            'created_at' => now()->toISOString(),
+            'orderItems' => [] // Empty array since we couldn't create the order
+        ];
     }
 }

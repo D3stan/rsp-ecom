@@ -20,28 +20,50 @@ class EmailService
         try {
             // Check if email has already been sent
             if ($order->hasEmailBeenSent()) {
-                Log::info('Order confirmation email already sent for order: ' . $order->order_number);
+                Log::info('Order confirmation email already sent for order: ' . $order->order_number, [
+                    'order_id' => $order->id,
+                    'email_sent_at' => $order->confirmation_email_sent_at
+                ]);
                 return true;
             }
 
             $recipient = $order->user ? $order->user->email : $order->guest_email;
             
             if (!$recipient) {
-                Log::warning('No email address found for order: ' . $order->order_number);
+                Log::warning('No email address found for order: ' . $order->order_number, [
+                    'order_id' => $order->id,
+                    'has_user' => !is_null($order->user),
+                    'guest_email' => $order->guest_email
+                ]);
                 return false;
             }
+
+            // Load necessary relationships for email template
+            $order->load(['orderItems.product', 'shippingAddress', 'billingAddress']);
+
+            Log::info('Attempting to send order confirmation email', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'recipient' => $recipient,
+                'is_guest' => is_null($order->user)
+            ]);
 
             Mail::to($recipient)->send(new OrderConfirmation($order));
             
             // Mark email as sent
             $order->markEmailAsSent();
             
-            Log::info('Order confirmation email sent for order: ' . $order->order_number);
+            Log::info('Order confirmation email sent successfully for order: ' . $order->order_number, [
+                'order_id' => $order->id,
+                'recipient' => $recipient
+            ]);
             return true;
         } catch (\Exception $e) {
             Log::error('Failed to send order confirmation email: ' . $e->getMessage(), [
                 'order_id' => $order->id,
-                'order_number' => $order->order_number
+                'order_number' => $order->order_number,
+                'error_type' => get_class($e),
+                'trace' => $e->getTraceAsString()
             ]);
             return false;
         }

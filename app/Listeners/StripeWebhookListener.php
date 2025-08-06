@@ -189,9 +189,9 @@ class StripeWebhookListener
             $emailSent = $emailService->sendOrderConfirmation($order);
             
             if ($emailSent) {
-                Log::info('Order confirmation email sent', ['order_id' => $order->id]);
+                Log::info('Order confirmation email sent from webhook', ['order_id' => $order->id]);
             } else {
-                Log::warning('Failed to send order confirmation email', ['order_id' => $order->id]);
+                Log::warning('Failed to send order confirmation email from webhook', ['order_id' => $order->id]);
             }
 
             // Clear the cart after successful order creation
