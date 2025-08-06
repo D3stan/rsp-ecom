@@ -44,7 +44,7 @@ class OrderStripeTest extends TestCase
             'tax_amount' => 8.00,
             'shipping_amount' => 10.00,
             'total_amount' => 118.00,
-            'currency' => 'USD',
+            'currency' => 'EUR',
             'stripe_payment_intent_id' => 'pi_test123',
             'stripe_checkout_session_id' => 'cs_test123',
             'payment_status' => 'pending',
@@ -75,7 +75,7 @@ class OrderStripeTest extends TestCase
             'tax_amount' => 8.00,
             'shipping_amount' => 10.00,
             'total_amount' => 118.00,
-            'currency' => 'USD',
+            'currency' => 'EUR',
             'stripe_payment_intent_id' => 'pi_test123',
             'payment_status' => 'succeeded',
         ]);
@@ -103,7 +103,7 @@ class OrderStripeTest extends TestCase
             'tax_amount' => 8.00,
             'shipping_amount' => 10.00,
             'total_amount' => 118.00,
-            'currency' => 'USD',
+            'currency' => 'EUR',
             'payment_status' => 'succeeded',
         ]);
 
@@ -117,7 +117,7 @@ class OrderStripeTest extends TestCase
             'tax_amount' => 4.00,
             'shipping_amount' => 5.00,
             'total_amount' => 59.00,
-            'currency' => 'USD',
+            'currency' => 'EUR',
             'payment_status' => 'failed',
         ]);
 

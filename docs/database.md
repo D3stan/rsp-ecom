@@ -303,7 +303,7 @@ Completed purchase transactions with customer, payment information, and Stripe i
    tax_amount: 82.00
    shipping_amount: 15.00
    total_amount: 1121.98
-   currency: "USD"
+   currency: "EUR"
    notes: "Leave at front door"
    stripe_payment_intent_id: "pi_1234567890"
    stripe_checkout_session_id: "cs_1234567890"
@@ -324,7 +324,7 @@ Completed purchase transactions with customer, payment information, and Stripe i
    tax_amount: 6.00
    shipping_amount: 12.50
    total_amount: 93.47
-   currency: "USD"
+   currency: "EUR"
    notes: null
    stripe_payment_intent_id: "pi_0987654321"
    stripe_checkout_session_id: null

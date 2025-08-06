@@ -170,7 +170,7 @@ STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
 <a name="currency-configuration"></a>
 ### Currency Configuration
 
-The default Cashier currency is United States Dollars (USD). You can change the default currency by setting the `CASHIER_CURRENCY` environment variable within your application's `.env` file:
+The default Cashier currency is United States Dollars (EUR). You can change the default currency by setting the `CASHIER_CURRENCY` environment variable within your application's `.env` file:
 
 ```ini
 CASHIER_CURRENCY=eur

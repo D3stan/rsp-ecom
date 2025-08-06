@@ -55,7 +55,7 @@ class OrderFactory extends Factory
             'tax_amount' => $taxAmount, // Calculated VAT
             'shipping_amount' => $shippingAmount,
             'total_amount' => $total,
-            'currency' => $this->faker->randomElement(['EUR', 'USD', 'GBP']),
+            'currency' => $this->faker->randomElement(['EUR', 'EUR', 'GBP']),
             'notes' => $this->faker->boolean(15) ? $this->faker->sentence() : null,
         ];
     }

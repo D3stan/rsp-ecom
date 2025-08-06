@@ -145,14 +145,14 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
     };
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('it-IT', {
             style: 'currency',
-            currency: 'USD',
+            currency: 'EUR',
         }).format(amount);
     };
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
+        return new Date(dateString).toLocaleDateString('it-IT', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',

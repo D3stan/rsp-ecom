@@ -4,9 +4,9 @@ import { Head, Link } from '@inertiajs/react';
 // Simple currency formatter
 const formatCurrency = (amount: string | number) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('it-IT', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'EUR',
     }).format(num / 100); // Stripe amounts are in cents
 };
 

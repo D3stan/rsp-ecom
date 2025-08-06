@@ -27,6 +27,20 @@ class CategoriesAndSizesController extends Controller
                 return $size;
             });
 
+        // Define available box types
+        $boxTypes = [
+            'standard' => 'Standard Box',
+            'small' => 'Small Package',
+            'medium' => 'Medium Box',
+            'large' => 'Large Box',
+            'extra_large' => 'Extra Large Box',
+            'fragile' => 'Fragile Item Box',
+            'heavy_duty' => 'Heavy Duty Box',
+            'envelope' => 'Envelope/Mailer',
+            'tube' => 'Tube/Poster Box',
+            'custom' => 'Custom Packaging',
+        ];
+
         $categoryStats = [
             'total_categories' => Category::count(),
             'active_categories' => Category::where('is_active', true)->count(),
@@ -44,6 +58,7 @@ class CategoriesAndSizesController extends Controller
         return Inertia::render('Admin/CategoriesAndSizes/Index', [
             'categories' => $categories,
             'sizes' => $sizes,
+            'boxTypes' => $boxTypes,
             'categoryStats' => $categoryStats,
             'sizeStats' => $sizeStats,
         ]);

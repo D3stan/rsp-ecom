@@ -26,7 +26,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'default_currency',
-                'value' => 'USD',
+                'value' => 'EUR',
                 'type' => 'string',
             ],
             [

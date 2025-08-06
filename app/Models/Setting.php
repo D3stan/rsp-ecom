@@ -118,7 +118,7 @@ class Setting extends Model
 
     public static function getDefaultCurrency(): string
     {
-        return static::get('default_currency', 'USD');
+        return static::get('default_currency', 'EUR');
     }
 
     public static function getTaxRate(): float

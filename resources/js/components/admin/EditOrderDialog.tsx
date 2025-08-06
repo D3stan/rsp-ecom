@@ -156,7 +156,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
     };
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('it-IT', {
             style: 'currency',
             currency: order.currency || 'EUR',
         }).format(amount);

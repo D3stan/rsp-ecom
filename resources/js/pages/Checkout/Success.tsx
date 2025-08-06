@@ -111,7 +111,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-600">Order Date</span>
                                         <span className="text-sm text-black">
-                                            {new Date(order.created_at).toLocaleDateString('en-US', {
+                                            {new Date(order.created_at).toLocaleDateString('it-IT', {
                                                 year: 'numeric',
                                                 month: 'long',
                                                 day: 'numeric',

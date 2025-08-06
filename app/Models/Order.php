@@ -238,7 +238,7 @@ class Order extends Model
             'tax_amount' => $taxAmount,
             'shipping_amount' => $shippingCost,
             'total_amount' => $total,
-            'currency' => $additionalData['currency'] ?? 'USD',
+            'currency' => $additionalData['currency'] ?? 'EUR',
             'notes' => $additionalData['notes'] ?? null,
         ]);
 

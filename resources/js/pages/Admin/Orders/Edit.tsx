@@ -137,9 +137,9 @@ export default function Edit({ order }: Props) {
     });
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('it-IT', {
             style: 'currency',
-            currency: 'USD',
+            currency: 'EUR',
         }).format(amount);
     };
 

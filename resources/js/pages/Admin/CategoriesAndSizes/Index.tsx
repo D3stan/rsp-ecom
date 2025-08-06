@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
     Package, 
     Tag, 
@@ -71,11 +72,12 @@ interface SizeStats {
 interface Props {
     categories: Category[];
     sizes: Size[];
+    boxTypes: Record<string, string>;
     categoryStats: CategoryStats;
     sizeStats: SizeStats;
 }
 
-export default function CategoriesAndSizesIndex({ categories, sizes, categoryStats, sizeStats }: Props) {
+export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, categoryStats, sizeStats }: Props) {
     const [editingCategory, setEditingCategory] = useState<number | null>(null);
     const [editingSize, setEditingSize] = useState<number | null>(null);
     const [isStatsOpen, setIsStatsOpen] = useState(false);
@@ -101,14 +103,19 @@ export default function CategoriesAndSizesIndex({ categories, sizes, categorySta
     });
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('it-IT', {
             style: 'currency',
-            currency: 'USD',
+            currency: 'EUR',
         }).format(amount);
     };
 
     const formatDimensions = (length: number, width: number, height: number) => {
-        return `${length}" × ${width}" × ${height}"`;
+        return `${length} × ${width} × ${height}`;
+    };
+
+    const getBoxTypeName = (boxType: string | undefined) => {
+        if (!boxType) return 'Not specified';
+        return boxTypes[boxType] || boxType;
     };
 
     const handleCategorySubmit = (e: React.FormEvent) => {
@@ -532,12 +539,22 @@ export default function CategoriesAndSizesIndex({ categories, sizes, categorySta
 
                                 <div>
                                     <Label htmlFor="size-box-type">Box Type</Label>
-                                    <Input
-                                        id="size-box-type"
-                                        value={sizeForm.data.box_type}
-                                        onChange={(e) => sizeForm.setData('box_type', e.target.value)}
-                                        placeholder="e.g., Standard, Fragile, Heavy Duty"
-                                    />
+                                    <Select
+                                        value={sizeForm.data.box_type || "none"}
+                                        onValueChange={(value) => sizeForm.setData('box_type', value === "none" ? "" : value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select box type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">No box type</SelectItem>
+                                            {Object.entries(boxTypes).map(([key, label]) => (
+                                                <SelectItem key={key} value={key}>
+                                                    {label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div>
@@ -694,10 +711,10 @@ export default function CategoriesAndSizesIndex({ categories, sizes, categorySta
                                                     <span className="font-medium">{size.name}</span>
                                                 </div>
                                                 <div className="text-sm text-muted-foreground space-y-1">
-                                                    <p>Dimensions: {formatDimensions(size.length, size.width, size.height)}</p>
+                                                    <p>Dimensions: {formatDimensions(size.length, size.width, size.height)} cm</p>
                                                     <p>Products: {size.products_count}</p>
                                                     <p>Shipping: {formatCurrency(size.shipping_cost)}</p>
-                                                    {size.box_type && <p>Type: {size.box_type}</p>}
+                                                    <p>Type: {getBoxTypeName(size.box_type)}</p>
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
@@ -743,7 +760,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, categorySta
 
                                     <div className="grid grid-cols-3 gap-2">
                                         <div>
-                                            <Label htmlFor="mobile-size-length">Length (in)</Label>
+                                            <Label htmlFor="mobile-size-length">Length (cm)</Label>
                                             <Input
                                                 id="mobile-size-length"
                                                 type="number"
@@ -754,7 +771,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, categorySta
                                             />
                                         </div>
                                         <div>
-                                            <Label htmlFor="mobile-size-width">Width (in)</Label>
+                                            <Label htmlFor="mobile-size-width">Width (cm)</Label>
                                             <Input
                                                 id="mobile-size-width"
                                                 type="number"
@@ -765,7 +782,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, categorySta
                                             />
                                         </div>
                                         <div>
-                                            <Label htmlFor="mobile-size-height">Height (in)</Label>
+                                            <Label htmlFor="mobile-size-height">Height (cm)</Label>
                                             <Input
                                                 id="mobile-size-height"
                                                 type="number"
@@ -779,12 +796,22 @@ export default function CategoriesAndSizesIndex({ categories, sizes, categorySta
 
                                     <div>
                                         <Label htmlFor="mobile-size-box-type">Box Type</Label>
-                                        <Input
-                                            id="mobile-size-box-type"
-                                            value={sizeForm.data.box_type}
-                                            onChange={(e) => sizeForm.setData('box_type', e.target.value)}
-                                            placeholder="e.g., Standard, Fragile"
-                                        />
+                                        <Select
+                                            value={sizeForm.data.box_type || "none"}
+                                            onValueChange={(value) => sizeForm.setData('box_type', value === "none" ? "" : value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select box type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">No box type</SelectItem>
+                                                {Object.entries(boxTypes).map(([key, label]) => (
+                                                    <SelectItem key={key} value={key}>
+                                                        {label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     <div>

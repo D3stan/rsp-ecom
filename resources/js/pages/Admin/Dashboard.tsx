@@ -120,9 +120,9 @@ export default function AdminDashboard({
     const safeLowStockProducts = lowStockProducts || [];
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('it-IT', {
             style: 'currency',
-            currency: 'USD',
+            currency: 'EUR',
         }).format(amount);
     };
 
