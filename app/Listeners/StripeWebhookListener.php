@@ -244,6 +244,7 @@ class StripeWebhookListener
         $postalCode = $statePostalParts[1] ?? '';
 
         return Address::create([
+            'user_id' => null, // Guest address
             'type' => $type,
             'first_name' => $firstName,
             'last_name' => $lastName,
