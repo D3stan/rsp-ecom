@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\CategoriesAndSizesController;
 use App\Http\Controllers\Admin\ReviewsController;
+use App\Http\Controllers\Admin\SettingsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -44,6 +45,14 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('reviews/{review}/approve', [ReviewsController::class, 'approve'])->name('reviews.approve');
     Route::patch('reviews/{review}/reject', [ReviewsController::class, 'reject'])->name('reviews.reject');
     Route::resource('reviews', ReviewsController::class)->only(['index', 'show', 'update', 'destroy']);
+
+    // Settings Management
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+    Route::patch('/settings/general', [SettingsController::class, 'updateGeneral'])->name('settings.update-general');
+    Route::patch('/settings/payment', [SettingsController::class, 'updatePayment'])->name('settings.update-payment');
+    Route::patch('/settings/shipping', [SettingsController::class, 'updateShipping'])->name('settings.update-shipping');
+    Route::patch('/settings/tax', [SettingsController::class, 'updateTax'])->name('settings.update-tax');
+    Route::patch('/settings/email', [SettingsController::class, 'updateEmail'])->name('settings.update-email');
 
     // TODO: Add other admin routes as they are implemented
     // Route::resource('customers', CustomersController::class);
