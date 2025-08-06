@@ -3,16 +3,19 @@
 namespace App\Mail;
 
 use App\Models\User;
+use App\Mail\Traits\HasLogo;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
 
 class WelcomeEmail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasLogo;
 
     public $user;
 
@@ -30,7 +33,12 @@ class WelcomeEmail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
             subject: 'Benvenuto nel nostro store!',
+            tags: ['welcome'],
+            metadata: [
+                'user_id' => $this->user->id,
+            ],
         );
     }
 
@@ -43,6 +51,7 @@ class WelcomeEmail extends Mailable implements ShouldQueue
             view: 'emails.welcome',
             with: [
                 'user' => $this->user,
+                'logoUrl' => $this->getLogoUrl(),
             ],
         );
     }
@@ -54,6 +63,6 @@ class WelcomeEmail extends Mailable implements ShouldQueue
      */
     public function attachments(): array
     {
-        return [];
+        return $this->getLogoAttachment();
     }
 }

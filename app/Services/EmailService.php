@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Mail\OrderConfirmation;
 use App\Mail\OrderShipped;
 use App\Mail\WelcomeEmail;
+use App\Mail\TestEmail;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
@@ -143,16 +144,33 @@ class EmailService
     public function testEmailConfiguration(string $testEmail): bool
     {
         try {
-            Mail::raw('Test email from ' . config('app.name'), function ($mail) use ($testEmail) {
-                $mail->to($testEmail)
-                     ->subject('Test Email Configuration')
-                     ->from(config('mail.from.address'), config('mail.from.name'));
-            });
+            // Send the comprehensive test email with logo
+            Mail::to($testEmail)->send(new TestEmail());
             
-            Log::info('Test email sent successfully to: ' . $testEmail);
+            Log::info('Test email with logo sent successfully to: ' . $testEmail);
             return true;
         } catch (\Exception $e) {
             Log::error('Email configuration test failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Send simple test email (without logo styling)
+     */
+    public function sendSimpleTestEmail(string $testEmail): bool
+    {
+        try {
+            Mail::raw('Simple test email from ' . config('app.name'), function ($mail) use ($testEmail) {
+                $mail->to($testEmail)
+                     ->subject('Simple Test Email Configuration')
+                     ->from(config('mail.from.address'), config('mail.from.name'));
+            });
+            
+            Log::info('Simple test email sent successfully to: ' . $testEmail);
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Simple email test failed: ' . $e->getMessage());
             return false;
         }
     }

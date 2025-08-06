@@ -3,15 +3,18 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Mail\Traits\HasLogo;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
 
 class OrderConfirmation extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, HasLogo;
 
     public $order;
 
@@ -29,7 +32,12 @@ class OrderConfirmation extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
             subject: 'Conferma Ordine #' . $this->order->order_number,
+            tags: ['order-confirmation'],
+            metadata: [
+                'order_id' => $this->order->id,
+            ],
         );
     }
 
@@ -44,6 +52,7 @@ class OrderConfirmation extends Mailable
                 'order' => $this->order,
                 'customer' => $this->order->user,
                 'items' => $this->order->orderItems()->with('product')->get(),
+                'logoUrl' => $this->getLogoUrl(),
             ],
         );
     }
@@ -55,6 +64,6 @@ class OrderConfirmation extends Mailable
      */
     public function attachments(): array
     {
-        return [];
+        return $this->getLogoAttachment();
     }
 }

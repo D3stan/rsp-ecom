@@ -347,6 +347,9 @@
     <div class="email-container">
         <!-- Header -->
         <div class="email-header">
+            <div style="margin-bottom: 20px;">
+                <img src="{{ $logoUrl }}" alt="{{ config('app.name') }}" style="height: 40px; width: auto; max-width: 150px;">
+            </div>
             <h1>Conferma Ordine</h1>
             <p>Il tuo ordine è stato ricevuto con successo</p>
         </div>

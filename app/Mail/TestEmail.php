@@ -2,31 +2,24 @@
 
 namespace App\Mail;
 
-use App\Models\Order;
 use App\Mail\Traits\HasLogo;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Address;
-use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
 
-class OrderShipped extends Mailable implements ShouldQueue
+class TestEmail extends Mailable
 {
     use Queueable, SerializesModels, HasLogo;
-
-    public $order;
-    public $trackingNumber;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(Order $order, $trackingNumber = null)
+    public function __construct()
     {
-        $this->order = $order;
-        $this->trackingNumber = $trackingNumber;
+        //
     }
 
     /**
@@ -36,11 +29,8 @@ class OrderShipped extends Mailable implements ShouldQueue
     {
         return new Envelope(
             from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Il tuo ordine #' . $this->order->order_number . ' è stato spedito',
-            tags: ['order-shipped'],
-            metadata: [
-                'order_id' => $this->order->id,
-            ],
+            subject: 'Test Email with Logo - ' . config('app.name'),
+            tags: ['test-email'],
         );
     }
 
@@ -50,12 +40,10 @@ class OrderShipped extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'emails.order-shipped',
+            view: 'emails.test-logo',
             with: [
-                'order' => $this->order,
-                'customer' => $this->order->user,
-                'trackingNumber' => $this->trackingNumber,
                 'logoUrl' => $this->getLogoUrl(),
+                'appName' => config('app.name'),
             ],
         );
     }
