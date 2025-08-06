@@ -19,13 +19,17 @@ class ReviewsController extends Controller
         $query = Review::with(['user', 'product'])
             ->orderBy('created_at', 'desc');
 
-        // Apply filters
+        // Apply filters - default to pending reviews
         if ($request->filled('status')) {
             if ($request->status === 'approved') {
                 $query->approved();
             } elseif ($request->status === 'pending') {
                 $query->pending();
             }
+            // If status is empty string, show all
+        } else {
+            // Default to pending reviews when no status filter is applied
+            $query->pending();
         }
 
         if ($request->filled('rating')) {
@@ -56,7 +60,7 @@ class ReviewsController extends Controller
 
         $reviews = $query->paginate(15);
 
-        // Transform the pagination response
+        // Transform the pagination response to ensure proper structure
         $reviewsData = [
             'data' => $reviews->items(),
             'meta' => [
@@ -83,10 +87,16 @@ class ReviewsController extends Controller
             'average_rating' => (float) (Review::approved()->avg('rating') ?? 0),
         ];
 
+        $filters = $request->only(['status', 'rating', 'search', 'date_from', 'date_to']);
+        // Set default status to pending if not specified
+        if (!$request->filled('status')) {
+            $filters['status'] = 'pending';
+        }
+
         return Inertia::render('Admin/Reviews/Index', [
             'reviews' => $reviewsData,
             'kpis' => $kpis,
-            'filters' => $request->only(['status', 'rating', 'search', 'date_from', 'date_to']),
+            'filters' => $filters,
         ]);
     }
 
@@ -187,6 +197,10 @@ class ReviewsController extends Controller
     public function bulkUpdate(Request $request)
     {
         try {
+            Log::info('Bulk update request received', [
+                'request_data' => $request->all(),
+            ]);
+
             $request->validate([
                 'review_ids' => 'required|array',
                 'review_ids.*' => 'exists:reviews,id',
@@ -195,8 +209,20 @@ class ReviewsController extends Controller
 
             $isApproved = $request->action === 'approve';
             
-            Review::whereIn('id', $request->review_ids)
+            Log::info('About to update reviews', [
+                'review_ids' => $request->review_ids,
+                'is_approved' => $isApproved,
+                'action' => $request->action,
+            ]);
+
+            $updatedCount = Review::whereIn('id', $request->review_ids)
                 ->update(['is_approved' => $isApproved]);
+
+            Log::info('Reviews updated', [
+                'updated_count' => $updatedCount,
+                'review_ids' => $request->review_ids,
+                'is_approved' => $isApproved,
+            ]);
 
             $count = count($request->review_ids);
             $action = $request->action . 'd';
@@ -205,13 +231,15 @@ class ReviewsController extends Controller
                 'review_ids' => $request->review_ids,
                 'action' => $request->action,
                 'count' => $count,
+                'updated_count' => $updatedCount,
             ]);
 
             return back()->with('success', "{$count} reviews {$action} successfully.");
         } catch (\Exception $e) {
             Log::error('Failed to bulk update reviews', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all(),
             ]);
             return back()->with('error', 'Failed to update reviews: ' . $e->getMessage());
         }

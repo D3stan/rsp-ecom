@@ -83,6 +83,11 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function size(): BelongsTo
+    {
+        return $this->belongsTo(Size::class);
+    }
+
     // Scopes
     public function scopePending($query)
     {

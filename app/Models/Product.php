@@ -29,9 +29,22 @@ class Product extends Model
     protected $casts = [
         'images' => 'array',
         'price' => 'decimal:2',
-        'compare_price' => 'decimal:2',
+        'compare_at_price' => 'decimal:2',
+        'is_published' => 'boolean',
         'featured' => 'boolean',
     ];
+
+    protected $appends = ['image_url'];
+
+    public function getImageUrlAttribute(): string
+    {
+        if ($this->images && count($this->images) > 0) {
+            return asset('storage/' . $this->images[0]);
+        }
+
+        // Return a default placeholder image if no images are set
+        return asset('images/product.png');
+    }
 
     // Relationships
     public function category(): BelongsTo

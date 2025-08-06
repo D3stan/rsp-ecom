@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Settings } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Settings, ShoppingBag } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -13,6 +13,11 @@ export function AppSidebar() {
             title: 'Dashboard',
             href: '/dashboard',
             icon: LayoutGrid,
+        },
+        {
+            title: 'Orders',
+            href: '/dashboard/orders',
+            icon: ShoppingBag,
         },
     ];
 

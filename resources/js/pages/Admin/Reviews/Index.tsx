@@ -109,7 +109,7 @@ const statusColors = {
 
 export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
     const [search, setSearch] = useState(filters.search || '');
-    const [statusFilter, setStatusFilter] = useState(filters.status || '');
+    const [statusFilter, setStatusFilter] = useState(filters.status || 'pending');
     const [ratingFilter, setRatingFilter] = useState(filters.rating || '');
     const [isKPIsOpen, setIsKPIsOpen] = useState(false);
     const [selectedReviews, setSelectedReviews] = useState<number[]>([]);
@@ -142,9 +142,9 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
 
     const clearFilters = () => {
         setSearch('');
-        setStatusFilter('');
+        setStatusFilter('pending');
         setRatingFilter('');
-        router.get('/admin/reviews');
+        router.get('/admin/reviews', { status: 'pending' });
     };
 
     const formatDate = (dateString: string) => {
@@ -181,7 +181,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
             await router.patch(`/admin/reviews/${reviewId}`, {
                 is_approved: isApproved,
             }, {
-                preserveState: true,
+                preserveState: false, // Allow page to refresh with updated data
                 preserveScroll: true,
                 onSuccess: () => {
                     addToast({
@@ -222,7 +222,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                 review_ids: selectedReviews,
                 action: action,
             }, {
-                preserveState: true,
+                preserveState: false, // Allow page to refresh with updated data
                 preserveScroll: true,
                 onSuccess: () => {
                     addToast({
@@ -441,7 +441,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                             </div>
                             
                             <div className="flex items-end">
-                                {(search || statusFilter || ratingFilter) && (
+                                {(search || statusFilter !== 'pending' || ratingFilter) && (
                                     <Button 
                                         onClick={clearFilters} 
                                         variant="outline" 
@@ -463,6 +463,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                             <span className="text-sm font-medium">
                                 {selectedReviews.length} review{selectedReviews.length > 1 ? 's' : ''} selected
                             </span>
+                            <br></br>
                             <div className="flex gap-2">
                                 <Button 
                                     size="sm" 
@@ -747,17 +748,27 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                     Showing {reviewsMeta.from} to {reviewsMeta.to} of {reviewsMeta.total} results
                                 </p>
                                 <div className="flex items-center justify-center space-x-1 md:space-x-2">
-                                    {reviewsLinks.map((link, index) => (
-                                        <Button
-                                            key={index}
-                                            variant={link.active ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => link.url && router.get(link.url)}
-                                            disabled={!link.url}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                            className="h-8 min-w-[32px]"
-                                        />
-                                    ))}
+                                    {reviewsLinks.map((link, index) => {
+                                        if (!link.label) return null;
+                                        return (
+                                            <Button
+                                                key={index}
+                                                variant={link.active ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => {
+                                                    if (link.url) {
+                                                        router.get(link.url, {}, { 
+                                                            preserveState: true,
+                                                            preserveScroll: false
+                                                        });
+                                                    }
+                                                }}
+                                                disabled={!link.url}
+                                                dangerouslySetInnerHTML={{ __html: link.label }}
+                                                className="h-8 min-w-[32px]"
+                                            />
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>

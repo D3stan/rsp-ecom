@@ -40,10 +40,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::delete('/sizes/{size}', [CategoriesAndSizesController::class, 'destroySize'])->name('sizes.destroy');
 
     // Reviews Management
-    Route::resource('reviews', ReviewsController::class)->only(['index', 'show', 'update', 'destroy']);
+    Route::patch('reviews/bulk-update', [ReviewsController::class, 'bulkUpdate'])->name('reviews.bulk-update');
     Route::patch('reviews/{review}/approve', [ReviewsController::class, 'approve'])->name('reviews.approve');
     Route::patch('reviews/{review}/reject', [ReviewsController::class, 'reject'])->name('reviews.reject');
-    Route::patch('reviews/bulk-update', [ReviewsController::class, 'bulkUpdate'])->name('reviews.bulk-update');
+    Route::resource('reviews', ReviewsController::class)->only(['index', 'show', 'update', 'destroy']);
 
     // TODO: Add other admin routes as they are implemented
     // Route::resource('customers', CustomersController::class);
