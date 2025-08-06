@@ -197,10 +197,6 @@ class ReviewsController extends Controller
     public function bulkUpdate(Request $request)
     {
         try {
-            Log::info('Bulk update request received', [
-                'request_data' => $request->all(),
-            ]);
-
             $request->validate([
                 'review_ids' => 'required|array',
                 'review_ids.*' => 'exists:reviews,id',
@@ -209,36 +205,16 @@ class ReviewsController extends Controller
 
             $isApproved = $request->action === 'approve';
             
-            Log::info('About to update reviews', [
-                'review_ids' => $request->review_ids,
-                'is_approved' => $isApproved,
-                'action' => $request->action,
-            ]);
-
             $updatedCount = Review::whereIn('id', $request->review_ids)
                 ->update(['is_approved' => $isApproved]);
 
-            Log::info('Reviews updated', [
-                'updated_count' => $updatedCount,
-                'review_ids' => $request->review_ids,
-                'is_approved' => $isApproved,
-            ]);
-
             $count = count($request->review_ids);
             $action = $request->action . 'd';
-
-            Log::info("Bulk reviews {$action}", [
-                'review_ids' => $request->review_ids,
-                'action' => $request->action,
-                'count' => $count,
-                'updated_count' => $updatedCount,
-            ]);
 
             return back()->with('success', "{$count} reviews {$action} successfully.");
         } catch (\Exception $e) {
             Log::error('Failed to bulk update reviews', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all(),
             ]);
             return back()->with('error', 'Failed to update reviews: ' . $e->getMessage());
