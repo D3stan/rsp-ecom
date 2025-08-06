@@ -33,13 +33,25 @@ class CheckoutService
 
         // For now, use simple calculations
         // In Phase 3, we'll add tax calculation and shipping
-        $taxRate = 0.0875; // 8.75% - This should come from config or be calculated based on address
-        $taxAmount = round($subtotal * $taxRate, 2);
+        $taxRate = \App\Models\Setting::getTaxRate() / 100; // Get from settings and convert percentage to decimal
+        $pricesIncludeTax = \App\Models\Setting::getPricesIncludeTax();
+        
+        if ($pricesIncludeTax) {
+            // Prices include tax - calculate tax portion and tax-exclusive subtotal
+            $taxAmount = round(($subtotal * $taxRate) / (1 + $taxRate), 2);
+            $subtotalExcludingTax = round($subtotal / (1 + $taxRate), 2);
+        } else {
+            // Prices exclude tax - add tax on top
+            $taxAmount = round($subtotal * $taxRate, 2);
+            $subtotalExcludingTax = $subtotal;
+        }
+        
         $shippingCost = $this->calculateShipping($subtotal, $totalQuantity);
-        $total = $subtotal + $taxAmount + $shippingCost;
+        $total = $subtotal + $shippingCost;
 
         return [
-            'subtotal' => round($subtotal, 2),
+            'subtotal' => round($subtotal, 2), // Tax-inclusive subtotal (display price)
+            'subtotal_excluding_tax' => round($subtotalExcludingTax, 2), // Tax-exclusive subtotal
             'tax_amount' => $taxAmount,
             'tax_rate' => $taxRate,
             'shipping_cost' => $shippingCost,
@@ -580,13 +592,25 @@ class CheckoutService
             $totalQuantity += $item['quantity'];
         }
 
-        $taxRate = 0.0875; // 8.75% - Should be configurable
-        $taxAmount = round($subtotal * $taxRate, 2);
+        $taxRate = \App\Models\Setting::getTaxRate() / 100; // Get from settings and convert percentage to decimal
+        $pricesIncludeTax = \App\Models\Setting::getPricesIncludeTax();
+        
+        if ($pricesIncludeTax) {
+            // Prices include tax - calculate tax portion and tax-exclusive subtotal
+            $taxAmount = round(($subtotal * $taxRate) / (1 + $taxRate), 2);
+            $subtotalExcludingTax = round($subtotal / (1 + $taxRate), 2);
+        } else {
+            // Prices exclude tax - add tax on top
+            $taxAmount = round($subtotal * $taxRate, 2);
+            $subtotalExcludingTax = $subtotal;
+        }
+        
         $shippingCost = $this->calculateShipping($subtotal, $totalQuantity);
-        $total = $subtotal + $taxAmount + $shippingCost;
+        $total = $subtotal + $shippingCost;
 
         return [
-            'subtotal' => round($subtotal, 2),
+            'subtotal' => round($subtotal, 2), // Tax-inclusive subtotal (display price)
+            'subtotal_excluding_tax' => round($subtotalExcludingTax, 2), // Tax-exclusive subtotal
             'tax_amount' => $taxAmount,
             'tax_rate' => $taxRate,
             'shipping_cost' => $shippingCost,

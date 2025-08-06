@@ -326,6 +326,30 @@ class Order extends Model
         $data['shipping_amount'] = (float) $this->shipping_amount;
         $data['total_amount'] = (float) $this->total_amount;
         
+        // Include order items with proper formatting
+        if ($this->relationLoaded('orderItems')) {
+            $data['orderItems'] = $this->orderItems->map(function ($item) {
+                // Get product information, handling cases where product_id might be null
+                $product = $item->product_id ? $item->product : null;
+                
+                return [
+                    'id' => $item->id,
+                    'product' => [
+                        'id' => $item->product_id ?? 'unknown',
+                        'name' => $item->product_name ?? ($product ? $product->name : 'Unknown Product'),
+                        'price' => (float) $item->price,
+                        'image_url' => $product ? $product->image_url : null,
+                    ],
+                    'size' => null, // OrderItem model doesn't have size relation currently
+                    'quantity' => $item->quantity,
+                    'price' => (float) $item->price,
+                    'total' => (float) $item->total,
+                ];
+            })->toArray();
+        } else {
+            $data['orderItems'] = [];
+        }
+        
         return $data;
     }
 }

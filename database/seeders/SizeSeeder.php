@@ -81,7 +81,10 @@ class SizeSeeder extends Seeder
         ];
 
         foreach ($sizes as $size) {
-            Size::create($size);
+            Size::updateOrCreate(
+                ['name' => $size['name']], // Find by name
+                $size // Update or create with all data
+            );
         }
     }
 }

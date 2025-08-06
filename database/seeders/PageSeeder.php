@@ -67,8 +67,11 @@ class PageSeeder extends Seeder
         ];
 
         foreach ($pages as $pageData) {
-            Page::create($pageData);
-            $this->command->info("Created page: {$pageData['title']}");
+            Page::updateOrCreate(
+                ['slug' => $pageData['slug']], // Find by slug
+                $pageData // Update or create with all data
+            );
+            $this->command->info("Created/updated page: {$pageData['title']}");
         }
 
         $this->command->info('Pages seeded successfully!');

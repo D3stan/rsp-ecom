@@ -591,7 +591,7 @@ export default function CheckoutDetails() {
                                 <CollapsibleContent>
                                     <CardContent className="space-y-3">
                                         <div className="flex justify-between text-gray-600">
-                                            <span>Subtotal ({totalItems} items)</span>
+                                            <span>Subtotal</span>
                                             <span className="text-black font-medium">${subtotal.toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between text-gray-600">

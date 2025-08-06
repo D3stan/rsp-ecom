@@ -126,6 +126,11 @@ class Setting extends Model
         return (float) static::get('tax_rate', 0);
     }
 
+    public static function getPricesIncludeTax(): bool
+    {
+        return (bool) static::get('prices_include_tax', false);
+    }
+
     public static function getShippingEnabled(): bool
     {
         return static::get('shipping_enabled', true);

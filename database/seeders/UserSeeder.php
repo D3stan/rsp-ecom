@@ -15,28 +15,34 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Create admin user
-        $admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'email_verified_at' => now(),
-            'password' => Hash::make('password'),
-            'role' => 'admin',
-            'is_active' => true,
-        ]);
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@example.com'], // Find by email
+            [
+                'name' => 'Admin User',
+                'email' => 'admin@example.com',
+                'email_verified_at' => now(),
+                'password' => Hash::make('password'),
+                'role' => 'admin',
+                'is_active' => true,
+            ]
+        );
 
-        $this->command->info('Admin user created: admin@example.com / password');
+        $this->command->info('Admin user created/updated: admin@example.com / password');
 
         // Create test user
-        $testUser = User::create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'email_verified_at' => now(),
-            'password' => Hash::make('password'),
-            'role' => 'customer',
-            'is_active' => true,
-        ]);
+        $testUser = User::updateOrCreate(
+            ['email' => 'test@example.com'], // Find by email
+            [
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+                'email_verified_at' => now(),
+                'password' => Hash::make('password'),
+                'role' => 'customer',
+                'is_active' => true,
+            ]
+        );
 
-        $this->command->info('Test user created: test@example.com / password');
+        $this->command->info('Test user created/updated: test@example.com / password');
 
         // Create regular users
         $regularUsersCount = 50 * SeederConfig::VOLUME_MULTIPLIER;

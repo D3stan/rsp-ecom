@@ -197,10 +197,10 @@ class CheckoutController extends Controller
                 try {
                     // Create order from session data
                     $order = $this->createOrderFromSession($checkoutSession, $request->user());
-                    $orderData = $order->toFrontendArray();
                     
                     // Reload with relationships for display
                     $order->load(['orderItems.product']);
+                    $orderData = $order->toFrontendArray();
                 } catch (\Exception $e) {
                     Log::error('Failed to create order from session in success page', [
                         'session_id' => $sessionId,
@@ -220,6 +220,10 @@ class CheckoutController extends Controller
                     }
                 }
             } else {
+                // Make sure order items are loaded before calling toFrontendArray
+                if (!$order->relationLoaded('orderItems')) {
+                    $order->load(['orderItems.product']);
+                }
                 $orderData = $order->toFrontendArray();
                 
                 // Update payment status if needed
@@ -294,10 +298,25 @@ class CheckoutController extends Controller
             $cart = null;
             if (isset($metadata->cart_id)) {
                 $cart = Cart::with(['cartItems.product', 'cartItems.size'])->find($metadata->cart_id);
+                Log::info('Found cart by cart_id', [
+                    'cart_id' => $metadata->cart_id,
+                    'cart_found' => $cart ? true : false,
+                    'cart_items_count' => $cart ? $cart->cartItems->count() : 0
+                ]);
             } elseif (isset($metadata->guest_session_id)) {
                 $cart = Cart::where('session_id', $metadata->guest_session_id)
                     ->with(['cartItems.product', 'cartItems.size'])
                     ->first();
+                Log::info('Found cart by guest_session_id', [
+                    'guest_session_id' => $metadata->guest_session_id,
+                    'cart_found' => $cart ? true : false,
+                    'cart_items_count' => $cart ? $cart->cartItems->count() : 0
+                ]);
+            } else {
+                Log::warning('No cart identifier found in metadata', [
+                    'metadata' => $metadata,
+                    'session_id' => $checkoutSession->id
+                ]);
             }
 
             // Parse shipping address from metadata if available
@@ -344,20 +363,43 @@ class CheckoutController extends Controller
 
             // Create order items from cart or extract from session
             if ($cart && $cart->cartItems->isNotEmpty()) {
+                Log::info('Creating order items from cart', [
+                    'cart_id' => $cart->id,
+                    'cart_items_count' => $cart->cartItems->count(),
+                    'order_id' => $order->id
+                ]);
+                
                 foreach ($cart->cartItems as $cartItem) {
-                    $order->orderItems()->create([
+                    $orderItem = $order->orderItems()->create([
                         'product_id' => $cartItem->product_id,
                         'product_name' => $cartItem->product->name,
                         'quantity' => $cartItem->quantity,
                         'price' => $cartItem->price,
-                        'total' => $cartItem->price * $cartItem->quantity,
+                        'total' => $cartItem->total, // Use the calculated total from CartItem accessor
+                    ]);
+                    
+                    Log::debug('Created order item', [
+                        'order_item_id' => $orderItem->id,
+                        'product_id' => $cartItem->product_id,
+                        'product_name' => $cartItem->product->name,
+                        'quantity' => $cartItem->quantity,
+                        'price' => $cartItem->price,
+                        'total' => $cartItem->total
                     ]);
                 }
                 
                 // Clear the cart after order creation
                 $cart->cartItems()->delete();
                 $cart->delete();
+                
+                Log::info('Cart cleared after order creation', ['original_cart_id' => $cart->id]);
             } else {
+                Log::info('No cart found or cart empty, extracting line items from session', [
+                    'cart_found' => $cart ? true : false,
+                    'cart_items_empty' => $cart ? $cart->cartItems->isEmpty() : true,
+                    'session_id' => $checkoutSession->id
+                ]);
+                
                 // Extract line items from session
                 $this->createOrderItemsFromSession($order, $checkoutSession);
             }
@@ -566,15 +608,17 @@ class CheckoutController extends Controller
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
-            // Calculate totals
-            $subtotal = $cart->cartItems->sum(function ($item) {
+            // Calculate totals (cart prices are tax-inclusive)
+            $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
             
-            $shippingCost = $this->calculateShippingCost($subtotal);
-            $taxAmount = $this->calculateTaxAmount($subtotal);
+            // Calculate tax-exclusive subtotal and tax amount
+            $subtotal = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
+            $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
+            $shippingCost = $this->calculateShippingCost($taxInclusiveSubtotal);
             $discountAmount = 0; // TODO: Implement discount logic
-            $total = $subtotal + $shippingCost + $taxAmount - $discountAmount;
+            $total = $taxInclusiveSubtotal + $shippingCost - $discountAmount;
             $totalItems = $cart->cartItems->sum('quantity');
 
             return Inertia::render('Checkout/Details', [
@@ -608,15 +652,17 @@ class CheckoutController extends Controller
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
-            // Calculate totals
-            $subtotal = $cart->cartItems->sum(function ($item) {
+            // Calculate totals (cart prices are tax-inclusive)
+            $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
             
-            $shippingCost = $this->calculateShippingCost($subtotal);
-            $taxAmount = $this->calculateTaxAmount($subtotal);
+            // Calculate tax-exclusive subtotal and tax amount
+            $subtotal = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
+            $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
+            $shippingCost = $this->calculateShippingCost($taxInclusiveSubtotal);
             $discountAmount = 0; // TODO: Implement discount logic
-            $total = $subtotal + $shippingCost + $taxAmount - $discountAmount;
+            $total = $taxInclusiveSubtotal + $shippingCost - $discountAmount;
             $totalItems = $cart->cartItems->sum('quantity');
 
             return Inertia::render('Checkout/Details', [
@@ -831,8 +877,33 @@ class CheckoutController extends Controller
 
     private function calculateTaxAmount(float $subtotal): float
     {
-        // Simple tax calculation - 8.5% tax rate
-        return $subtotal * 0.085;
+        $taxRate = \App\Models\Setting::getTaxRate() / 100; // Convert percentage to decimal
+        $pricesIncludeTax = \App\Models\Setting::getPricesIncludeTax();
+        
+        if ($pricesIncludeTax) {
+            // If prices include tax, calculate the tax portion from the tax-inclusive price
+            // Formula: tax_amount = (tax_inclusive_price * tax_rate) / (1 + tax_rate)
+            return round(($subtotal * $taxRate) / (1 + $taxRate), 2);
+        } else {
+            // If prices exclude tax, add tax to the price
+            return round($subtotal * $taxRate, 2);
+        }
+    }
+
+    /**
+     * Calculate subtotal excluding tax when prices include tax
+     */
+    private function calculateSubtotalExcludingTax(float $taxInclusiveSubtotal): float
+    {
+        $taxRate = \App\Models\Setting::getTaxRate() / 100;
+        $pricesIncludeTax = \App\Models\Setting::getPricesIncludeTax();
+        
+        if ($pricesIncludeTax) {
+            // Formula: subtotal_excluding_tax = tax_inclusive_price / (1 + tax_rate)
+            return round($taxInclusiveSubtotal / (1 + $taxRate), 2);
+        } else {
+            return $taxInclusiveSubtotal;
+        }
     }
 
     /**
@@ -870,14 +941,15 @@ class CheckoutController extends Controller
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
-            // Calculate total amount for the entire cart
-            $subtotal = $cart->cartItems->sum(function ($item) {
+            // Calculate total amount for the entire cart (prices are tax-inclusive)
+            $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
             
-            $shippingCost = $this->calculateShippingCost($subtotal);
-            $taxAmount = $this->calculateTaxAmount($subtotal);
-            $totalAmount = $subtotal + $shippingCost + $taxAmount;
+            $shippingCost = $this->calculateShippingCost($taxInclusiveSubtotal);
+            $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
+            $subtotalExcludingTax = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
+            $totalAmount = $taxInclusiveSubtotal + $shippingCost;
 
             // Convert to cents for Stripe
             $totalAmountCents = (int)($totalAmount * 100);
@@ -959,14 +1031,15 @@ class CheckoutController extends Controller
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
-            // Calculate total amount from cart items
-            $subtotal = $cart->cartItems->sum(function ($item) {
+            // Calculate total amount from cart items (prices are tax-inclusive)
+            $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
             
-            $shippingCost = $this->calculateShippingCost($subtotal);
-            $taxAmount = $this->calculateTaxAmount($subtotal);
-            $totalAmount = $subtotal + $shippingCost + $taxAmount;
+            $shippingCost = $this->calculateShippingCost($taxInclusiveSubtotal);
+            $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
+            $subtotalExcludingTax = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
+            $totalAmount = $taxInclusiveSubtotal + $shippingCost;
 
             // Convert to cents for Stripe
             $totalAmountCents = (int)($totalAmount * 100);
@@ -1036,6 +1109,9 @@ class CheckoutController extends Controller
      */
     private function createFallbackOrderData(object $checkoutSession): array
     {
+        // Try to extract line items from the session for fallback display
+        $orderItems = $this->extractLineItemsFromSession($checkoutSession);
+        
         return [
             'id' => 'pending',
             'order_number' => 'PENDING',
@@ -1047,7 +1123,7 @@ class CheckoutController extends Controller
             'shipping_amount' => (float) (($checkoutSession->total_details->amount_shipping ?? 0) / 100),
             'currency' => strtoupper($checkoutSession->currency),
             'created_at' => now()->toISOString(),
-            'orderItems' => [] // Empty array since we couldn't create the order
+            'orderItems' => $orderItems // Include the extracted line items
         ];
     }
 }

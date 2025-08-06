@@ -394,12 +394,14 @@
                     <tr>
                         <td>
                             <div class="product-info">
-                                @if($item->product && $item->product->main_image_url)
+                                @if($item->product && $item->product->main_image_url )
                                     <img src="{{ $item->product->main_image_url }}" alt="{{ $item->product->name }}" class="product-image">
                                 @else
-                                    <div style="width: 60px; height: 60px; background-color: #e9ecef; border-radius: 8px; margin-right: 12px; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 12px;">
+                                    <img src="{{ asset('images/product.png') }}" alt="Product" class="product-image">
+
+                                    <!-- <div style="width: 60px; height: 60px; background-color: #e9ecef; border-radius: 8px; margin-right: 12px; display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 12px;">
                                         IMG
-                                    </div>
+                                    </div> -->
                                 @endif
                                 <div class="product-details">
                                     <h4>{{ $item->product->name ?? $item->product_name }}</h4>
@@ -410,7 +412,7 @@
                             </div>
                         </td>
                         <td style="text-align: center; font-weight: 600;">{{ $item->quantity }}</td>
-                        <td style="text-align: right;">€{{ number_format($item->price, 2) }}</td>
+                        <td style="text-align: right;">€{{ number_format($item->price, 2) }} <span style="font-size: 11px; color: #666;">(incl. IVA)</span></td>
                         <td style="text-align: right; font-weight: 600;">€{{ number_format($item->quantity * $item->price, 2) }}</td>
                     </tr>
                     @endforeach
@@ -420,21 +422,21 @@
             <!-- Price Breakdown -->
             <div class="price-breakdown">
                 <div class="price-row">
-                    <span>Subtotale:</span>
+                    <span>Subtotale (esclusa IVA): </span>
                     <span>€{{ number_format($order->subtotal, 2) }}</span>
                 </div>
                 @if($order->tax_amount > 0)
                 <div class="price-row">
-                    <span>Tasse:</span>
+                    <span>IVA (22%): </span>
                     <span>€{{ number_format($order->tax_amount, 2) }}</span>
                 </div>
                 @endif
                 <div class="price-row">
-                    <span>Spedizione:</span>
+                    <span>Spedizione: </span>
                     <span>{{ $order->shipping_amount > 0 ? '€' . number_format($order->shipping_amount, 2) : 'Gratuita' }}</span>
                 </div>
                 <div class="price-row total">
-                    <span>Totale:</span>
+                    <span>Totale: </span>
                     <span>€{{ number_format($order->total_amount, 2) }}</span>
                 </div>
             </div>
@@ -445,7 +447,6 @@
         <div class="content-section">
             <h3 class="section-title">Indirizzo di Spedizione</h3>
             <div class="shipping-address">
-                <h3>Spedizione a:</h3>
                 <div class="address-details">
                     <strong>{{ $order->shippingAddress->first_name }} {{ $order->shippingAddress->last_name }}</strong><br>
                     {{ $order->shippingAddress->address_line_1 }}<br>

@@ -31,8 +31,13 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'tax_rate',
-                'value' => '8.25',
+                'value' => '22',
                 'type' => 'string',
+            ],
+            [
+                'key' => 'prices_include_tax',
+                'value' => '1',
+                'type' => 'boolean',
             ],
             [
                 'key' => 'shipping_enabled',
@@ -89,7 +94,10 @@ class SettingSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
-            Setting::create($setting);
+            Setting::updateOrCreate(
+                ['key' => $setting['key']], // Find by key
+                $setting // Update or create with all data
+            );
         }
     }
 }
