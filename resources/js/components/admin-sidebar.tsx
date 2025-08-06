@@ -55,16 +55,6 @@ const mainNavItems: NavItem[] = [
         icon: MessageSquare,
     },
     {
-        title: 'Content',
-        href: '/admin/content',
-        icon: FileText,
-    },
-    {
-        title: 'Reports',
-        href: '/admin/reports',
-        icon: BarChart3,
-    },
-    {
         title: 'Settings',
         href: '/admin/settings',
         icon: Settings,
