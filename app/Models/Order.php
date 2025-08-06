@@ -310,6 +310,22 @@ class Order extends Model
      */
     public function hasEmailBeenSent(): bool
     {
-        return $this->confirmation_email_sent;
+        return (bool) $this->confirmation_email_sent;
+    }
+
+    /**
+     * Get order data formatted for frontend (with numeric values as floats)
+     */
+    public function toFrontendArray(): array
+    {
+        $data = $this->toArray();
+        
+        // Convert decimal strings to floats for frontend
+        $data['subtotal'] = (float) $this->subtotal;
+        $data['tax_amount'] = (float) $this->tax_amount;
+        $data['shipping_amount'] = (float) $this->shipping_amount;
+        $data['total_amount'] = (float) $this->total_amount;
+        
+        return $data;
     }
 }

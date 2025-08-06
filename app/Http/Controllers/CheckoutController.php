@@ -184,7 +184,7 @@ class CheckoutController extends Controller
             
             // Find the order in our database by session ID
             $order = Order::where('stripe_checkout_session_id', $sessionId)
-                ->with(['orderItems.product', 'orderItems.product.sizes'])
+                ->with(['orderItems.product'])
                 ->first();
             
             // If no order found, create one from the session data
@@ -197,10 +197,10 @@ class CheckoutController extends Controller
                 try {
                     // Create order from session data
                     $order = $this->createOrderFromSession($checkoutSession, $request->user());
-                    $orderData = $order;
+                    $orderData = $order->toFrontendArray();
                     
                     // Reload with relationships for display
-                    $order->load(['orderItems.product', 'orderItems.product.sizes']);
+                    $order->load(['orderItems.product']);
                 } catch (\Exception $e) {
                     Log::error('Failed to create order from session in success page', [
                         'session_id' => $sessionId,
@@ -220,7 +220,7 @@ class CheckoutController extends Controller
                     }
                 }
             } else {
-                $orderData = $order;
+                $orderData = $order->toFrontendArray();
                 
                 // Update payment status if needed
                 if ($checkoutSession->payment_status === 'paid' && $order->payment_status !== 'succeeded') {
@@ -252,7 +252,7 @@ class CheckoutController extends Controller
                     'id' => $checkoutSession->id,
                     'payment_status' => $checkoutSession->payment_status,
                     'customer_email' => $checkoutSession->customer_details->email ?? $checkoutSession->metadata->guest_email ?? 'N/A',
-                    'amount_total' => $checkoutSession->amount_total,
+                    'amount_total' => (float) ($checkoutSession->amount_total / 100),
                     'currency' => $checkoutSession->currency,
                     'created' => $checkoutSession->created,
                 ],
@@ -309,10 +309,10 @@ class CheckoutController extends Controller
             $shippingAddress = $this->createAddressFromSession($checkoutSession, $addressParts, 'shipping');
 
             // Calculate totals from session
-            $subtotal = ($checkoutSession->amount_subtotal ?? $checkoutSession->amount_total) / 100;
-            $taxAmount = ($checkoutSession->total_details->amount_tax ?? 0) / 100;
-            $shippingCost = ($checkoutSession->total_details->amount_shipping ?? 0) / 100;
-            $totalAmount = $checkoutSession->amount_total / 100;
+            $subtotal = (float) (($checkoutSession->amount_subtotal ?? $checkoutSession->amount_total) / 100);
+            $taxAmount = (float) (($checkoutSession->total_details->amount_tax ?? 0) / 100);
+            $shippingCost = (float) (($checkoutSession->total_details->amount_shipping ?? 0) / 100);
+            $totalAmount = (float) ($checkoutSession->amount_total / 100);
 
             // Create order
             $orderData = [
@@ -417,7 +417,7 @@ class CheckoutController extends Controller
     private function createAddressFromSession(object $session, array $addressParts, string $type): Address
     {
         $customerDetails = $session->customer_details ?? (object)[];
-        $address = $customerDetails->address ?? (object)[];
+        $address = $customerDetails->address ?? [];
         
         // Parse name
         $nameParts = explode(' ', $addressParts['name'] ?: ($customerDetails->name ?? ''), 2);
@@ -430,18 +430,43 @@ class CheckoutController extends Controller
         $state = $statePostalParts[0] ?? '';
         $postalCode = $statePostalParts[1] ?? '';
 
+        // Handle address data whether it's an array or object
+        $addressLine1 = $addressParts['address_line_1'] ?: '';
+        $addressLine2 = null;
+        $city = $addressParts['city'] ?: '';
+        $stateFromAddress = $state ?: '';
+        $postalCodeFromAddress = $postalCode ?: '';
+        $country = $addressParts['country'] ?: 'IT';
+        
+        // If address data from Stripe is available, use it as fallback
+        if (is_array($address)) {
+            $addressLine1 = $addressLine1 ?: ($address['line1'] ?? '');
+            $addressLine2 = $address['line2'] ?? null;
+            $city = $city ?: ($address['city'] ?? '');
+            $stateFromAddress = $stateFromAddress ?: ($address['state'] ?? '');
+            $postalCodeFromAddress = $postalCodeFromAddress ?: ($address['postal_code'] ?? '');
+            $country = $country ?: ($address['country'] ?? 'IT');
+        } elseif (is_object($address)) {
+            $addressLine1 = $addressLine1 ?: ($address->line1 ?? '');
+            $addressLine2 = $address->line2 ?? null;
+            $city = $city ?: ($address->city ?? '');
+            $stateFromAddress = $stateFromAddress ?: ($address->state ?? '');
+            $postalCodeFromAddress = $postalCodeFromAddress ?: ($address->postal_code ?? '');
+            $country = $country ?: ($address->country ?? 'IT');
+        }
+
         return Address::create([
             'user_id' => null, // Guest address
             'type' => $type,
             'first_name' => $firstName,
             'last_name' => $lastName,
             'company' => null,
-            'address_line_1' => $addressParts['address_line_1'] ?: ($address->line1 ?? ''),
-            'address_line_2' => $address->line2 ?? null,
-            'city' => $addressParts['city'] ?: ($address->city ?? ''),
-            'state' => $state ?: ($address->state ?? ''),
-            'postal_code' => $postalCode ?: ($address->postal_code ?? ''),
-            'country' => $addressParts['country'] ?: ($address->country ?? 'US'),
+            'address_line_1' => $addressLine1,
+            'address_line_2' => $addressLine2,
+            'city' => $city,
+            'state' => $stateFromAddress,
+            'postal_code' => $postalCodeFromAddress,
+            'country' => $country,
             'phone' => $customerDetails->phone ?? null,
         ]);
     }
@@ -1009,17 +1034,17 @@ class CheckoutController extends Controller
     /**
      * Create fallback order data when order creation fails but payment succeeded
      */
-    private function createFallbackOrderData(object $checkoutSession): object
+    private function createFallbackOrderData(object $checkoutSession): array
     {
-        return (object) [
+        return [
             'id' => 'pending',
             'order_number' => 'PENDING',
-            'total_amount' => $checkoutSession->amount_total / 100,
+            'total_amount' => (float) ($checkoutSession->amount_total / 100),
             'status' => 'processing',
             'payment_status' => 'succeeded',
-            'subtotal' => ($checkoutSession->amount_subtotal ?? $checkoutSession->amount_total) / 100,
-            'tax_amount' => ($checkoutSession->total_details->amount_tax ?? 0) / 100,
-            'shipping_cost' => ($checkoutSession->total_details->amount_shipping ?? 0) / 100,
+            'subtotal' => (float) (($checkoutSession->amount_subtotal ?? $checkoutSession->amount_total) / 100),
+            'tax_amount' => (float) (($checkoutSession->total_details->amount_tax ?? 0) / 100),
+            'shipping_amount' => (float) (($checkoutSession->total_details->amount_shipping ?? 0) / 100),
             'currency' => strtoupper($checkoutSession->currency),
             'created_at' => now()->toISOString(),
             'orderItems' => [] // Empty array since we couldn't create the order

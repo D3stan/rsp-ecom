@@ -32,7 +32,12 @@ class OrderItem extends Model
 
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class)->withDefault([
+            'id' => null,
+            'name' => $this->product_name ?? 'Unknown Product',
+            'price' => $this->price,
+            'image_url' => null,
+        ]);
     }
 
     // Accessors
