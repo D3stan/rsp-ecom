@@ -249,11 +249,11 @@ export default function Products() {
                                             Filters
                                         </Button>
                                     </SheetTrigger>
-                                    <SheetContent side="left" className="w-80">
-                                        <SheetHeader>
-                                            <SheetTitle>Filters</SheetTitle>
+                                    <SheetContent side="left" className="w-80 bg-white border-r border-gray-200 filters-modal-content">
+                                        <SheetHeader className="border-b border-gray-200 pb-4 mb-6">
+                                            <SheetTitle className="text-lg font-semibold text-gray-900 text-left">Filters</SheetTitle>
                                         </SheetHeader>
-                                        <div className="py-6">
+                                        <div className="py-0 px-4">
                                             <FilterSection 
                                                 categories={categories}
                                                 priceRange={priceRange}
@@ -314,7 +314,7 @@ export default function Products() {
                     <div className="flex gap-8">
                         {/* Desktop Filters Sidebar */}
                         <div className="hidden lg:block w-72 flex-shrink-0">
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6">
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-6 filters-modal-content">
                                 <FilterSection 
                                     categories={categories}
                                     priceRange={priceRange}
@@ -516,29 +516,40 @@ function FilterSection({
     clearFilters
 }: FilterSectionProps) {
     return (
-        <div className="space-y-8">
+        <div className="space-y-6 bg-white">
             <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900">Filters</h3>
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-600 hover:text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearFilters} 
+                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-2 py-1"
+                >
                     <X className="w-4 h-4 mr-1" />
                     Clear
                 </Button>
             </div>
 
             {/* Categories */}
-            <div>
-                <Label className="text-base font-semibold mb-4 block text-gray-900">Category</Label>
+            <div className="space-y-3">
+                <Label className="text-sm font-semibold text-gray-900 block">Category</Label>
                 <Select value={selectedCategory} onValueChange={(value) => {
                     setSelectedCategory(value);
                     applyFilters();
                 }}>
-                    <SelectTrigger className="bg-white border-gray-300 text-gray-900">
+                    <SelectTrigger className="w-full bg-white border-gray-300 text-gray-900 h-10 focus:border-blue-500 focus:ring-blue-500">
                         <SelectValue placeholder="All Categories" className="text-gray-900" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200">
-                        <SelectItem value="all" className="text-gray-900 hover:bg-gray-100">All Categories</SelectItem>
+                    <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                        <SelectItem value="all" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">
+                            All Categories
+                        </SelectItem>
                         {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.slug} className="text-gray-900 hover:bg-gray-100">
+                            <SelectItem 
+                                key={category.id} 
+                                value={category.slug} 
+                                className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100"
+                            >
                                 {category.name} ({category.count})
                             </SelectItem>
                         ))}
@@ -547,8 +558,8 @@ function FilterSection({
             </div>
 
             {/* Price Range */}
-            <div>
-                <Label className="text-base font-semibold mb-4 block text-gray-900">Price Range</Label>
+            <div className="space-y-4">
+                <Label className="text-sm font-semibold text-gray-900 block">Price Range</Label>
                 <div className="space-y-3">
                     {PRICE_RANGES.map((range, index) => (
                         <div key={index} className="flex items-center space-x-3">
@@ -566,9 +577,12 @@ function FilterSection({
                                     setPriceMin(newMin);
                                     setPriceMax(newMax);
                                 }}
-                                className="w-4 h-4 text-black border-gray-300 focus:ring-black focus:ring-2"
+                                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2"
                             />
-                            <Label htmlFor={`price-range-${index}`} className="text-sm cursor-pointer text-gray-700 font-medium">
+                            <Label 
+                                htmlFor={`price-range-${index}`} 
+                                className="text-sm cursor-pointer text-gray-700 font-normal flex-1"
+                            >
                                 {range.label}
                             </Label>
                         </div>
@@ -576,10 +590,10 @@ function FilterSection({
                 </div>
                 
                 {/* Custom Range Inputs */}
-                <div className="mt-6 space-y-4 pt-4 border-t border-gray-200">
-                    <Label className="text-sm font-semibold text-gray-900">Custom Range</Label>
+                <div className="mt-4 space-y-3 pt-4 border-t border-gray-200">
+                    <Label className="text-sm font-semibold text-gray-900 block">Custom Range</Label>
                     <div className="grid grid-cols-2 gap-3">
-                        <div>
+                        <div className="space-y-1">
                             <Label className="text-xs text-gray-600 font-medium">Min</Label>
                             <Input 
                                 type="number" 
@@ -587,10 +601,11 @@ function FilterSection({
                                 onChange={(e) => setPriceMin(parseInt(e.target.value) || priceRange?.min || 0)}
                                 min={priceRange?.min || 0}
                                 max={priceRange?.max || 1000}
-                                className="h-10 border-gray-300 focus:border-black focus:ring-black text-black"
+                                className="h-10 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-gray-900"
+                                placeholder="0"
                             />
                         </div>
-                        <div>
+                        <div className="space-y-1">
                             <Label className="text-xs text-gray-600 font-medium">Max</Label>
                             <Input 
                                 type="number" 
@@ -598,17 +613,21 @@ function FilterSection({
                                 onChange={(e) => setPriceMax(parseInt(e.target.value) || priceRange?.max || 1000)}
                                 min={priceRange?.min || 0}
                                 max={priceRange?.max || 1000}
-                                className="h-10 border-gray-300 focus:border-black focus:ring-black text-black"
+                                className="h-10 bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500 text-gray-900"
+                                placeholder="1000"
                             />
                         </div>
                     </div>
-                    <div className="text-sm text-gray-700 text-center font-medium bg-gray-200 py-2 px-3 rounded-md">
-                        ${priceMin} - ${priceMax}
+                    <div className="text-sm text-gray-700 text-center font-medium bg-gray-50 border border-gray-200 py-2 px-3 rounded-md">
+                        ${priceMin.toLocaleString()} - ${priceMax.toLocaleString()}
                     </div>
                 </div>
             </div>
 
-            <Button onClick={applyFilters} className="w-full h-12 font-semibold text-base text-white bg-black hover:bg-gray-900">
+            <Button 
+                onClick={applyFilters} 
+                className="w-full h-11 font-semibold text-base text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-200"
+            >
                 Apply Filters
             </Button>
         </div>

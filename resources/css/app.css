@@ -149,6 +149,52 @@
         line-clamp: 2;
     }
     
+    /* Filters Modal Styles - Override dark theme for better contrast */
+    .filters-modal-content {
+        background-color: white !important;
+        color: #111827 !important;
+    }
+    
+    .filters-modal-content [data-slot="sheet-content"] {
+        background-color: white !important;
+    }
+    
+    .filters-modal-content .text-foreground {
+        color: #111827 !important;
+    }
+    
+    .filters-modal-content .text-muted-foreground {
+        color: #6b7280 !important;
+    }
+    
+    .filters-modal-content input[type="radio"] {
+        accent-color: #3b82f6;
+        border-color: #d1d5db;
+    }
+    
+    .filters-modal-content input[type="radio"]:checked {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+    }
+    
+    .filters-modal-content select,
+    .filters-modal-content input[type="number"] {
+        background-color: white !important;
+        color: #111827 !important;
+        border-color: #d1d5db !important;
+    }
+    
+    .filters-modal-content button {
+        transition: all 0.2s ease;
+    }
+    
+    /* Ensure proper focus states */
+    .filters-modal-content input:focus,
+    .filters-modal-content select:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    }
+    
     /* Smooth scrolling for the entire page */
     html {
         scroll-behavior: smooth;
