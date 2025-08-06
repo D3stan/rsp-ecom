@@ -830,8 +830,11 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                 </div>
                             </div>
                         </div>
+                        
                     )}
                 </Card>
+                
+                                <div className='py-5'></div>
                 
                 {/* Mobile Bottom Navigation */}
                 <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t z-50">
@@ -840,21 +843,22 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                             <Button 
                                 variant="outline" 
                                 size="sm"
-                                asChild
-                                disabled={reviewsData.length === 0}
+                                onClick={() => {
+                                    if (reviewsMeta.current_page > 1) {
+                                        router.get('/admin/reviews', {
+                                            ...filters,
+                                            page: reviewsMeta.current_page - 1
+                                        }, { 
+                                            preserveState: true,
+                                            preserveScroll: false
+                                        });
+                                    }
+                                }}
+                                disabled={reviewsMeta.current_page <= 1}
                                 className="flex-1 h-12 text-xs"
                             >
-                                {reviewsData.length > 0 ? (
-                                    <Link href={`/admin/reviews/${reviewsData[0].id}`}>
-                                        <ChevronLeft className="h-4 w-4 mr-1" />
-                                        First
-                                    </Link>
-                                ) : (
-                                    <span>
-                                        <ChevronLeft className="h-4 w-4 mr-1" />
-                                        First
-                                    </span>
-                                )}
+                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                Prev Page
                             </Button>
                             <Button 
                                 variant="outline" 
@@ -868,21 +872,22 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                             <Button 
                                 variant="outline" 
                                 size="sm"
-                                asChild
-                                disabled={reviewsData.length === 0}
+                                onClick={() => {
+                                    if (reviewsMeta.current_page < reviewsMeta.last_page) {
+                                        router.get('/admin/reviews', {
+                                            ...filters,
+                                            page: reviewsMeta.current_page + 1
+                                        }, { 
+                                            preserveState: true,
+                                            preserveScroll: false
+                                        });
+                                    }
+                                }}
+                                disabled={reviewsMeta.current_page >= reviewsMeta.last_page}
                                 className="flex-1 h-12 text-xs"
                             >
-                                {reviewsData.length > 0 ? (
-                                    <Link href={`/admin/reviews/${reviewsData[reviewsData.length - 1].id}`}>
-                                        Last
-                                        <ChevronRight className="h-4 w-4 ml-1" />
-                                    </Link>
-                                ) : (
-                                    <span>
-                                        Last
-                                        <ChevronRight className="h-4 w-4 ml-1" />
-                                    </span>
-                                )}
+                                Next Page
+                                <ChevronRight className="h-4 w-4 ml-1" />
                             </Button>
                         </div>
                     </div>
