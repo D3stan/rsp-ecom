@@ -29,7 +29,6 @@ interface Product {
     size?: {
         id: number;
         name: string;
-        slug: string;
     };
     main_image_url: string;
     image_urls: string[];

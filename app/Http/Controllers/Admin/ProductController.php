@@ -95,7 +95,7 @@ class ProductController extends Controller
         return Inertia::render('Admin/Products/Index', [
             'products' => $products,
             'categories' => Category::where('is_active', true)->get(['id', 'name', 'slug']),
-            'sizes' => Size::all(['id', 'name', 'slug']),
+            'sizes' => Size::all(['id', 'name']),
             'filters' => $request->only(['search', 'category', 'status', 'stock_filter', 'sort', 'direction']),
             'stats' => $stats,
         ]);
