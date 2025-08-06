@@ -148,8 +148,17 @@ export default function Header({ transparent = false }: HeaderProps) {
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <div className="flex-shrink-0">
-                        <Link href="/" className={`text-2xl font-bold transition-colors duration-300 ${isDarkTheme ? 'text-white' : 'text-black'}`}>
-                            {name || 'Store'}
+                        <Link href="/" className={`flex items-center space-x-2 transition-colors duration-300`}>
+                            <img 
+                                src="/images/rsplogo.png" 
+                                alt={name || 'Store'} 
+                                className="h-8"
+                                onError={(e) => {
+                                    // Fallback to favicon.ico if SVG fails
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = '/favicon.ico';
+                                }}
+                            />
                         </Link>
                     </div>
 
