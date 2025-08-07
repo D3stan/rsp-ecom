@@ -479,7 +479,7 @@ export default function Products() {
                                     <div className="max-w-md mx-auto">
                                         <h2 className="text-2xl font-bold text-gray-900 mb-3">No products found</h2>
                                         <p className="text-gray-600 mb-6 text-lg">Try adjusting your search or filters to find what you're looking for</p>
-                                        <Button onClick={clearFilters} size="lg" className="bg-black hover:bg-gray-900 font-semibold">
+                                        <Button onClick={clearFilters} size="lg" className="bg-black text-white hover:bg-gray-900 font-semibold">
                                             Clear all filters
                                         </Button>
                                     </div>
@@ -555,14 +555,14 @@ function FilterSection({
                         <SelectValue placeholder="All Categories" className="text-gray-900" />
                     </SelectTrigger>
                     <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                        <SelectItem value="all" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100">
+                        <SelectItem value="all" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white">
                             All Categories
                         </SelectItem>
                         {categories.map((category) => (
                             <SelectItem 
                                 key={category.id} 
                                 value={category.slug} 
-                                className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100"
+                                className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white"
                             >
                                 {category.name} ({category.count})
                             </SelectItem>

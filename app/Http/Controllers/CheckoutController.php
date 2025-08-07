@@ -7,6 +7,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Checkout;
 use App\Models\Order;
@@ -585,11 +586,56 @@ class CheckoutController extends Controller
      */
     public function cancel(Request $request): Response
     {
+        $sessionId = $request->get('session_id');
         $message = $request->get('message', 'Your payment was cancelled. You can try again anytime.');
+        
+        // If session_id is provided, update the order status to cancelled
+        if ($sessionId) {
+            $order = Order::where('stripe_checkout_session_id', $sessionId)->first();
+            if ($order) {
+                $order->update(['payment_status' => 'cancelled']);
+            }
+        }
         
         return Inertia::render('Checkout/Cancel', [
             'message' => $message,
         ]);
+    }
+
+    /**
+     * Show completed checkout session details
+     */
+    public function show(Request $request): Response|RedirectResponse
+    {
+        $sessionId = $request->get('session_id');
+
+        if (!$sessionId) {
+            return redirect()->route('checkout.details');
+        }
+
+        try {
+            // Initialize Stripe client
+            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
+            
+            // Retrieve the checkout session
+            $session = $stripe->checkout->sessions->retrieve($sessionId);
+            
+            // Find the corresponding order
+            $order = Order::where('stripe_checkout_session_id', $sessionId)->first();
+            
+            if (!$order) {
+                return redirect()->route('checkout.details')->with('error', 'Order not found.');
+            }
+
+            return Inertia::render('Checkout/Show', [
+                'session' => $session,
+                'order' => $order,
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to show checkout session: ' . $e->getMessage());
+            return redirect()->route('checkout.details')->with('error', 'Unable to load checkout session.');
+        }
     }
 
     /**
@@ -620,6 +666,7 @@ class CheckoutController extends Controller
             $subtotal = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
             $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
             $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
+            
             $discountAmount = 0; // TODO: Implement discount logic
             $total = $taxInclusiveSubtotal + $shippingCost - $discountAmount;
             $totalItems = $cart->cartItems->sum('quantity');
@@ -663,7 +710,11 @@ class CheckoutController extends Controller
             // Calculate tax-exclusive subtotal and tax amount
             $subtotal = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
             $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
-            $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
+            
+            // Apply free shipping logic for orders over $100
+            $baseShippingCost = $cart->shipping_cost; // Size-based shipping
+            $shippingCost = $taxInclusiveSubtotal >= 100 ? 0 : $baseShippingCost;
+            
             $discountAmount = 0; // TODO: Implement discount logic
             $total = $taxInclusiveSubtotal + $shippingCost - $discountAmount;
             $totalItems = $cart->cartItems->sum('quantity');
@@ -706,40 +757,39 @@ class CheckoutController extends Controller
      * Create a checkout session from form data
      * This handles the POST request from the checkout form
      */
-    public function createSession(Request $request): RedirectResponse|HttpResponse
+    public function createSession(Request $request): RedirectResponse|HttpResponse|JsonResponse
     {
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json(['error' => 'Authentication required'], 401);
+        }
+
+        // Validate the checkout details using the CheckoutRequest - this should be outside try-catch
+        $validated = $request->validate([
+            'billing_address' => 'required|array',
+            'billing_address.first_name' => 'required|string|max:255',
+            'billing_address.last_name' => 'required|string|max:255',
+            'billing_address.email' => 'required|email|max:255',
+            'billing_address.phone' => 'nullable|string|max:20',
+            'billing_address.company' => 'nullable|string|max:255',
+            'billing_address.address_line_1' => 'required|string|max:255',
+            'billing_address.address_line_2' => 'nullable|string|max:255',
+            'billing_address.city' => 'required|string|max:255',
+            'billing_address.state' => 'required|string|max:255',
+            'billing_address.postal_code' => 'required|string|max:20',
+            'billing_address.country' => 'required|string|size:2',
+            'shipping_same_as_billing' => 'boolean',
+            'shipping_address' => 'nullable|array',
+            'payment_method_id' => 'nullable|string',
+            'save_payment_method' => 'boolean',
+            'promotion_code' => 'nullable|string|max:50',
+            'allow_promotion_codes' => 'boolean',
+            'collect_tax_id' => 'boolean',
+            'checkout_mode' => 'in:payment,subscription',
+        ]);
+
         try {
-            $user = $request->user();
-            
-            if (!$user) {
-                return response()->json(['error' => 'Authentication required'], 401);
-            }
-
-            // Validate the checkout details using the CheckoutRequest
-            $validated = $request->validate([
-                'billing_address' => 'required|array',
-                'billing_address.first_name' => 'required|string|max:255',
-                'billing_address.last_name' => 'required|string|max:255',
-                'billing_address.email' => 'required|email|max:255',
-                'billing_address.phone' => 'nullable|string|max:20',
-                'billing_address.company' => 'nullable|string|max:255',
-                'billing_address.address_line_1' => 'required|string|max:255',
-                'billing_address.address_line_2' => 'nullable|string|max:255',
-                'billing_address.city' => 'required|string|max:255',
-                'billing_address.state' => 'required|string|max:255',
-                'billing_address.postal_code' => 'required|string|max:20',
-                'billing_address.country' => 'required|string|size:2',
-                'shipping_same_as_billing' => 'boolean',
-                'shipping_address' => 'nullable|array',
-                'payment_method_id' => 'nullable|string',
-                'save_payment_method' => 'boolean',
-                'promotion_code' => 'nullable|string|max:50',
-                'allow_promotion_codes' => 'boolean',
-                'collect_tax_id' => 'boolean',
-                'checkout_mode' => 'in:payment,subscription',
-                'locale' => 'nullable|string|max:10',
-            ]);
-
             // Get user's cart with cart items
             $cart = $user->carts()->with(['cartItems.product', 'cartItems.size'])->latest()->first();
             

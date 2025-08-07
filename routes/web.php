@@ -52,6 +52,7 @@ Route::get('/checkout', function (Request $request) {
 // Checkout details pages (new intermediate step)
 Route::middleware(['auth'])->group(function () {
     Route::get('/checkout/details', [CheckoutController::class, 'showDetails'])->name('checkout.details');
+    Route::get('/checkout/show', [CheckoutController::class, 'show'])->name('checkout.show');
 });
 
 Route::get('/guest/checkout/details', [CheckoutController::class, 'showGuestDetails'])->name('guest.checkout.details');

@@ -49,7 +49,15 @@ class CheckoutService
         // Use cart's shipping cost if available (considers size-based shipping)
         // Otherwise fall back to simple calculation
         $shippingCost = $cart ? $cart->shipping_cost : $this->calculateShipping($subtotal, $totalQuantity);
-        $total = $subtotal + $shippingCost;
+        
+        // Calculate total based on whether prices include tax
+        if ($pricesIncludeTax) {
+            // Prices already include tax, so total = subtotal + shipping
+            $total = $subtotal + $shippingCost;
+        } else {
+            // Prices exclude tax, so total = subtotal + tax + shipping
+            $total = $subtotal + $taxAmount + $shippingCost;
+        }
 
         return [
             'subtotal' => round($subtotal, 2), // Tax-inclusive subtotal (display price)

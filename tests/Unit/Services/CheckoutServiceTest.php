@@ -205,7 +205,7 @@ class CheckoutServiceTest extends TestCase
 
         $totals = $this->checkoutService->calculateTotals($cartItems);
 
-        $expectedSubtotal = (19.99 * 3) + (29.99 * 2); // 59.97 + 59.98 = 119.95
+        $expectedSubtotal = round((19.99 * 3) + (29.99 * 2), 2); // Round expected result
         $this->assertEquals($expectedSubtotal, $totals['subtotal']);
         
         // Ensure totals are properly rounded to 2 decimal places

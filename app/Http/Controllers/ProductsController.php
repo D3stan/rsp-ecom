@@ -29,8 +29,11 @@ class ProductsController extends Controller
         }
 
         // Category filter
-        if ($categoryId = $request->get('category')) {
-            $query->where('category_id', $categoryId);
+        if ($categorySlug = $request->get('category')) {
+            $category = Category::where('slug', $categorySlug)->first();
+            if ($category) {
+                $query->where('category_id', $category->id);
+            }
         }
 
         // Price range filter
