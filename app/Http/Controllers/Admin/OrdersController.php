@@ -307,9 +307,15 @@ class OrdersController extends Controller
             'account_holder' => \App\Models\Setting::get('company_account_holder', ''),
         ];
 
+        // Get available sizes for shipping box information
+        $sizes = \App\Models\Size::select('id', 'name', 'length', 'width', 'height', 'box_type', 'shipping_cost')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Admin/Orders/Ship', [
             'order' => $order->toFrontendArray(),
             'adminSettings' => $adminSettings,
+            'sizes' => $sizes,
         ]);
     }
 
@@ -323,13 +329,24 @@ class OrdersController extends Controller
             'sender_info.address' => 'required|string|max:1000',
             'sender_info.phone' => 'required|string|max:50',
             'sender_info.email' => 'required|email|max:255',
+            'customer_info.name' => 'required|string|max:255',
+            'customer_info.email' => 'required|email|max:255',
+            'customer_info.phone' => 'nullable|string|max:50',
+            'shipping_address.first_name' => 'required|string|max:255',
+            'shipping_address.last_name' => 'required|string|max:255',
+            'shipping_address.company' => 'nullable|string|max:255',
+            'shipping_address.address_line_1' => 'required|string|max:255',
+            'shipping_address.address_line_2' => 'nullable|string|max:255',
+            'shipping_address.city' => 'required|string|max:255',
+            'shipping_address.state' => 'required|string|max:255',
+            'shipping_address.postal_code' => 'required|string|max:20',
+            'shipping_address.country' => 'required|string|max:255',
+            'shipping_address.phone' => 'nullable|string|max:50',
+            'box_info.size_id' => 'nullable|exists:sizes,id',
             'box_info.weight' => 'nullable|numeric|min:0',
-            'box_info.length' => 'nullable|numeric|min:0',
-            'box_info.width' => 'nullable|numeric|min:0',
-            'box_info.height' => 'nullable|numeric|min:0',
-            'box_info.tracking_number' => 'nullable|string|max:100',
             'box_info.carrier' => 'nullable|string|max:100',
             'box_info.service_type' => 'nullable|string|max:100',
+            'additional_settings.insurance_enabled' => 'boolean',
             'additional_settings.insurance_value' => 'nullable|numeric|min:0',
             'additional_settings.contrassegno_enabled' => 'boolean',
             'additional_settings.contrassegno_amount' => 'nullable|numeric|min:0',
@@ -342,7 +359,6 @@ class OrdersController extends Controller
             // Update order with shipping information
             $updateData = [
                 'status' => 'shipped',
-                'tracking_number' => $request->input('box_info.tracking_number'),
                 'notes' => $this->buildShippingNotes($order, $request->all()),
             ];
 
@@ -351,12 +367,11 @@ class OrdersController extends Controller
             // Send shipping notification email if enabled
             if (\App\Models\Setting::get('order_shipped_enabled', true)) {
                 $emailService = app(\App\Services\EmailService::class);
-                $emailService->sendOrderShipped($order, $request->input('box_info.tracking_number'));
+                $emailService->sendOrderShipped($order, null); // No tracking number for now
             }
 
             Log::info('Order shipped successfully', [
                 'order_id' => $order->id,
-                'tracking_number' => $request->input('box_info.tracking_number'),
                 'carrier' => $request->input('box_info.carrier'),
             ]);
 
@@ -394,21 +409,50 @@ class OrdersController extends Controller
             $notes .= "- Email: " . ($senderInfo['email'] ?? 'N/A') . "\n";
         }
         
+        // Customer information
+        $customerInfo = $shippingData['customer_info'] ?? [];
+        if (!empty($customerInfo)) {
+            $notes .= "\nCustomer:\n";
+            $notes .= "- Name: " . ($customerInfo['name'] ?? 'N/A') . "\n";
+            $notes .= "- Email: " . ($customerInfo['email'] ?? 'N/A') . "\n";
+            $notes .= "- Phone: " . ($customerInfo['phone'] ?? 'N/A') . "\n";
+        }
+        
+        // Shipping address
+        $shippingAddress = $shippingData['shipping_address'] ?? [];
+        if (!empty($shippingAddress)) {
+            $notes .= "\nShipping Address:\n";
+            $notes .= "- Name: " . ($shippingAddress['first_name'] ?? '') . " " . ($shippingAddress['last_name'] ?? '') . "\n";
+            if (!empty($shippingAddress['company'])) $notes .= "- Company: " . $shippingAddress['company'] . "\n";
+            $notes .= "- Address: " . ($shippingAddress['address_line_1'] ?? 'N/A') . "\n";
+            if (!empty($shippingAddress['address_line_2'])) $notes .= "- Address 2: " . $shippingAddress['address_line_2'] . "\n";
+            $notes .= "- City: " . ($shippingAddress['city'] ?? 'N/A') . "\n";
+            $notes .= "- State: " . ($shippingAddress['state'] ?? 'N/A') . "\n";
+            $notes .= "- Postal Code: " . ($shippingAddress['postal_code'] ?? 'N/A') . "\n";
+            $notes .= "- Country: " . ($shippingAddress['country'] ?? 'N/A') . "\n";
+            if (!empty($shippingAddress['phone'])) $notes .= "- Phone: " . $shippingAddress['phone'] . "\n";
+        }
+        
         // Box information
         $boxInfo = $shippingData['box_info'] ?? [];
         if (!empty($boxInfo)) {
             $notes .= "\nPackage Details:\n";
+            if (!empty($boxInfo['size_id'])) {
+                $size = \App\Models\Size::find($boxInfo['size_id']);
+                if ($size) {
+                    $notes .= "- Size: " . $size->name . " (" . $size->length . "x" . $size->width . "x" . $size->height . " cm)\n";
+                    $notes .= "- Box Type: " . ucfirst(str_replace('_', ' ', $size->box_type)) . "\n";
+                }
+            }
             if (!empty($boxInfo['weight'])) $notes .= "- Weight: " . $boxInfo['weight'] . " kg\n";
-            if (!empty($boxInfo['length'])) $notes .= "- Dimensions: " . $boxInfo['length'] . "x" . ($boxInfo['width'] ?? '0') . "x" . ($boxInfo['height'] ?? '0') . " cm\n";
             if (!empty($boxInfo['carrier'])) $notes .= "- Carrier: " . $boxInfo['carrier'] . "\n";
             if (!empty($boxInfo['service_type'])) $notes .= "- Service Type: " . $boxInfo['service_type'] . "\n";
-            if (!empty($boxInfo['tracking_number'])) $notes .= "- Tracking Number: " . $boxInfo['tracking_number'] . "\n";
         }
         
         // Additional settings
         $additionalSettings = $shippingData['additional_settings'] ?? [];
         if (!empty($additionalSettings)) {
-            if (!empty($additionalSettings['insurance_value'])) {
+            if (!empty($additionalSettings['insurance_enabled']) && !empty($additionalSettings['insurance_value'])) {
                 $notes .= "\nInsurance: €" . number_format($additionalSettings['insurance_value'], 2) . "\n";
             }
             

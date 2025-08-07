@@ -8,6 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
@@ -68,12 +75,23 @@ interface AdminSettings {
     account_holder?: string;
 }
 
+interface Size {
+    id: number;
+    name: string;
+    length: number;
+    width: number;
+    height: number;
+    box_type: string;
+    shipping_cost: number;
+}
+
 interface Props {
     order: Order;
     adminSettings: AdminSettings;
+    sizes: Size[];
 }
 
-export default function OrderShip({ order, adminSettings }: Props) {
+export default function OrderShip({ order, adminSettings, sizes }: Props) {
     const [openSections, setOpenSections] = useState({
         sender: false,
         customer: true,
@@ -90,17 +108,36 @@ export default function OrderShip({ order, adminSettings }: Props) {
         email: adminSettings.company_email || '',
     });
 
+    // Customer info (editable)
+    const [customerInfo, setCustomerInfo] = useState({
+        name: order.user?.name || 'Guest Customer',
+        email: order.user?.email || order.guest_email || '',
+        phone: order.user?.phone || order.guest_phone || '',
+    });
+
+    // Shipping address (editable)
+    const [shippingAddress, setShippingAddress] = useState({
+        first_name: order.shippingAddress?.first_name || '',
+        last_name: order.shippingAddress?.last_name || '',
+        company: order.shippingAddress?.company || '',
+        address_line_1: order.shippingAddress?.address_line_1 || '',
+        address_line_2: order.shippingAddress?.address_line_2 || '',
+        city: order.shippingAddress?.city || '',
+        state: order.shippingAddress?.state || '',
+        postal_code: order.shippingAddress?.postal_code || '',
+        country: order.shippingAddress?.country || '',
+        phone: order.shippingAddress?.phone || '',
+    });
+
     const [boxInfo, setBoxInfo] = useState({
+        size_id: '',
         weight: '',
-        length: '',
-        width: '',
-        height: '',
-        tracking_number: '',
         carrier: '',
         service_type: '',
     });
 
     const [additionalSettings, setAdditionalSettings] = useState({
+        insurance_enabled: false,
         insurance_value: '',
         contrassegno_enabled: false,
         contrassegno_amount: '',
@@ -125,6 +162,8 @@ export default function OrderShip({ order, adminSettings }: Props) {
         try {
             const shippingData = {
                 sender_info: senderInfo,
+                customer_info: customerInfo,
+                shipping_address: shippingAddress,
                 box_info: boxInfo,
                 additional_settings: additionalSettings,
             };
@@ -153,22 +192,14 @@ export default function OrderShip({ order, adminSettings }: Props) {
         }).format(amount);
     };
 
-    const getCustomerInfo = () => {
-        if (order.user) {
-            return {
-                name: order.user.name,
-                email: order.user.email,
-                phone: order.user.phone || 'N/A',
-            };
-        }
-        return {
-            name: 'Guest Customer',
-            email: order.guest_email || 'N/A',
-            phone: order.guest_phone || 'N/A',
-        };
+    const getSelectedSize = () => {
+        if (!boxInfo.size_id) return null;
+        return sizes.find(size => size.id.toString() === boxInfo.size_id);
     };
 
-    const customer = getCustomerInfo();
+    const formatDimensions = (length: number, width: number, height: number) => {
+        return `${length} × ${width} × ${height} cm`;
+    };
 
     return (
         <AppLayout
@@ -309,17 +340,39 @@ export default function OrderShip({ order, adminSettings }: Props) {
                                 <CardContent className="space-y-4">
                                     <div className="grid md:grid-cols-2 gap-4">
                                         <div>
-                                            <Label>Customer Name</Label>
-                                            <Input value={customer.name} readOnly className="bg-muted" />
+                                            <Label htmlFor="customer_name">Customer Name</Label>
+                                            <Input 
+                                                id="customer_name"
+                                                value={customerInfo.name} 
+                                                onChange={(e) => setCustomerInfo(prev => ({
+                                                    ...prev,
+                                                    name: e.target.value
+                                                }))}
+                                            />
                                         </div>
                                         <div>
-                                            <Label>Email</Label>
-                                            <Input value={customer.email} readOnly className="bg-muted" />
+                                            <Label htmlFor="customer_email">Email</Label>
+                                            <Input 
+                                                id="customer_email"
+                                                type="email"
+                                                value={customerInfo.email} 
+                                                onChange={(e) => setCustomerInfo(prev => ({
+                                                    ...prev,
+                                                    email: e.target.value
+                                                }))}
+                                            />
                                         </div>
                                     </div>
                                     <div>
-                                        <Label>Phone</Label>
-                                        <Input value={customer.phone} readOnly className="bg-muted" />
+                                        <Label htmlFor="customer_phone">Phone</Label>
+                                        <Input 
+                                            id="customer_phone"
+                                            value={customerInfo.phone} 
+                                            onChange={(e) => setCustomerInfo(prev => ({
+                                                ...prev,
+                                                phone: e.target.value
+                                            }))}
+                                        />
                                     </div>
                                     {order.orderItems && order.orderItems.length > 0 && (
                                         <div>
@@ -366,64 +419,129 @@ export default function OrderShip({ order, adminSettings }: Props) {
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                                 <CardContent className="space-y-4">
-                                    {order.shippingAddress ? (
-                                        <>
-                                            <div className="grid md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <Label>First Name</Label>
-                                                    <Input value={order.shippingAddress.first_name} readOnly className="bg-muted" />
-                                                </div>
-                                                <div>
-                                                    <Label>Last Name</Label>
-                                                    <Input value={order.shippingAddress.last_name} readOnly className="bg-muted" />
-                                                </div>
-                                            </div>
-                                            {order.shippingAddress.company && (
-                                                <div>
-                                                    <Label>Company</Label>
-                                                    <Input value={order.shippingAddress.company} readOnly className="bg-muted" />
-                                                </div>
-                                            )}
-                                            <div>
-                                                <Label>Address Line 1</Label>
-                                                <Input value={order.shippingAddress.address_line_1} readOnly className="bg-muted" />
-                                            </div>
-                                            {order.shippingAddress.address_line_2 && (
-                                                <div>
-                                                    <Label>Address Line 2</Label>
-                                                    <Input value={order.shippingAddress.address_line_2} readOnly className="bg-muted" />
-                                                </div>
-                                            )}
-                                            <div className="grid md:grid-cols-3 gap-4">
-                                                <div>
-                                                    <Label>City</Label>
-                                                    <Input value={order.shippingAddress.city} readOnly className="bg-muted" />
-                                                </div>
-                                                <div>
-                                                    <Label>State/Province</Label>
-                                                    <Input value={order.shippingAddress.state} readOnly className="bg-muted" />
-                                                </div>
-                                                <div>
-                                                    <Label>Postal Code</Label>
-                                                    <Input value={order.shippingAddress.postal_code} readOnly className="bg-muted" />
-                                                </div>
-                                            </div>
-                                            <div className="grid md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <Label>Country</Label>
-                                                    <Input value={order.shippingAddress.country} readOnly className="bg-muted" />
-                                                </div>
-                                                {order.shippingAddress.phone && (
-                                                    <div>
-                                                        <Label>Phone</Label>
-                                                        <Input value={order.shippingAddress.phone} readOnly className="bg-muted" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <p className="text-muted-foreground">No shipping address available</p>
-                                    )}
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div>
+                                            <Label htmlFor="shipping_first_name">First Name</Label>
+                                            <Input 
+                                                id="shipping_first_name"
+                                                value={shippingAddress.first_name} 
+                                                onChange={(e) => setShippingAddress(prev => ({
+                                                    ...prev,
+                                                    first_name: e.target.value
+                                                }))}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="shipping_last_name">Last Name</Label>
+                                            <Input 
+                                                id="shipping_last_name"
+                                                value={shippingAddress.last_name} 
+                                                onChange={(e) => setShippingAddress(prev => ({
+                                                    ...prev,
+                                                    last_name: e.target.value
+                                                }))}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="shipping_company">Company</Label>
+                                        <Input 
+                                            id="shipping_company"
+                                            value={shippingAddress.company} 
+                                            onChange={(e) => setShippingAddress(prev => ({
+                                                ...prev,
+                                                company: e.target.value
+                                            }))}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="shipping_address_1">Address Line 1</Label>
+                                        <Input 
+                                            id="shipping_address_1"
+                                            value={shippingAddress.address_line_1} 
+                                            onChange={(e) => setShippingAddress(prev => ({
+                                                ...prev,
+                                                address_line_1: e.target.value
+                                            }))}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="shipping_address_2">Address Line 2</Label>
+                                        <Input 
+                                            id="shipping_address_2"
+                                            value={shippingAddress.address_line_2} 
+                                            onChange={(e) => setShippingAddress(prev => ({
+                                                ...prev,
+                                                address_line_2: e.target.value
+                                            }))}
+                                        />
+                                    </div>
+                                    <div className="grid md:grid-cols-3 gap-4">
+                                        <div>
+                                            <Label htmlFor="shipping_city">City</Label>
+                                            <Input 
+                                                id="shipping_city"
+                                                value={shippingAddress.city} 
+                                                onChange={(e) => setShippingAddress(prev => ({
+                                                    ...prev,
+                                                    city: e.target.value
+                                                }))}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="shipping_state">State/Province</Label>
+                                            <Input 
+                                                id="shipping_state"
+                                                value={shippingAddress.state} 
+                                                onChange={(e) => setShippingAddress(prev => ({
+                                                    ...prev,
+                                                    state: e.target.value
+                                                }))}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="shipping_postal_code">Postal Code</Label>
+                                            <Input 
+                                                id="shipping_postal_code"
+                                                value={shippingAddress.postal_code} 
+                                                onChange={(e) => setShippingAddress(prev => ({
+                                                    ...prev,
+                                                    postal_code: e.target.value
+                                                }))}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        <div>
+                                            <Label htmlFor="shipping_country">Country</Label>
+                                            <Input 
+                                                id="shipping_country"
+                                                value={shippingAddress.country} 
+                                                onChange={(e) => setShippingAddress(prev => ({
+                                                    ...prev,
+                                                    country: e.target.value
+                                                }))}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="shipping_phone">Phone</Label>
+                                            <Input 
+                                                id="shipping_phone"
+                                                value={shippingAddress.phone} 
+                                                onChange={(e) => setShippingAddress(prev => ({
+                                                    ...prev,
+                                                    phone: e.target.value
+                                                }))}
+                                            />
+                                        </div>
+                                    </div>
                                 </CardContent>
                             </CollapsibleContent>
                         </Collapsible>
@@ -452,61 +570,55 @@ export default function OrderShip({ order, adminSettings }: Props) {
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                                 <CardContent className="space-y-4">
-                                    <div className="grid md:grid-cols-4 gap-4">
-                                        <div>
-                                            <Label htmlFor="weight">Weight (kg)</Label>
-                                            <Input
-                                                id="weight"
-                                                type="number"
-                                                step="0.1"
-                                                value={boxInfo.weight}
-                                                onChange={(e) => setBoxInfo(prev => ({
-                                                    ...prev,
-                                                    weight: e.target.value
-                                                }))}
-                                                placeholder="1.5"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="length">Length (cm)</Label>
-                                            <Input
-                                                id="length"
-                                                type="number"
-                                                value={boxInfo.length}
-                                                onChange={(e) => setBoxInfo(prev => ({
-                                                    ...prev,
-                                                    length: e.target.value
-                                                }))}
-                                                placeholder="30"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="width">Width (cm)</Label>
-                                            <Input
-                                                id="width"
-                                                type="number"
-                                                value={boxInfo.width}
-                                                onChange={(e) => setBoxInfo(prev => ({
-                                                    ...prev,
-                                                    width: e.target.value
-                                                }))}
-                                                placeholder="20"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="height">Height (cm)</Label>
-                                            <Input
-                                                id="height"
-                                                type="number"
-                                                value={boxInfo.height}
-                                                onChange={(e) => setBoxInfo(prev => ({
-                                                    ...prev,
-                                                    height: e.target.value
-                                                }))}
-                                                placeholder="10"
-                                            />
-                                        </div>
+                                    {/* Size Selection */}
+                                    <div>
+                                        <Label htmlFor="size_select">Box Size</Label>
+                                        <Select 
+                                            value={boxInfo.size_id} 
+                                            onValueChange={(value) => setBoxInfo(prev => ({
+                                                ...prev,
+                                                size_id: value
+                                            }))}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a box size" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {sizes.map((size) => (
+                                                    <SelectItem key={size.id} value={size.id.toString()}>
+                                                        {size.name} - {formatDimensions(size.length, size.width, size.height)} 
+                                                        - {formatCurrency(size.shipping_cost)}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {getSelectedSize() && (
+                                            <div className="mt-2 p-3 bg-muted rounded-md">
+                                                <div className="text-sm text-muted-foreground">
+                                                    <p><strong>Dimensions:</strong> {formatDimensions(getSelectedSize()!.length, getSelectedSize()!.width, getSelectedSize()!.height)}</p>
+                                                    <p><strong>Box Type:</strong> {getSelectedSize()!.box_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                                                    <p><strong>Shipping Cost:</strong> {formatCurrency(getSelectedSize()!.shipping_cost)}</p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
+
+                                    {/* Weight */}
+                                    <div>
+                                        <Label htmlFor="weight">Weight (kg)</Label>
+                                        <Input
+                                            id="weight"
+                                            type="number"
+                                            step="0.1"
+                                            value={boxInfo.weight}
+                                            onChange={(e) => setBoxInfo(prev => ({
+                                                ...prev,
+                                                weight: e.target.value
+                                            }))}
+                                            placeholder="1.5"
+                                        />
+                                    </div>
+
                                     <div className="grid md:grid-cols-2 gap-4">
                                         <div>
                                             <Label htmlFor="carrier">Carrier</Label>
@@ -532,18 +644,6 @@ export default function OrderShip({ order, adminSettings }: Props) {
                                                 placeholder="Express, Standard, etc."
                                             />
                                         </div>
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="tracking_number">Tracking Number</Label>
-                                        <Input
-                                            id="tracking_number"
-                                            value={boxInfo.tracking_number}
-                                            onChange={(e) => setBoxInfo(prev => ({
-                                                ...prev,
-                                                tracking_number: e.target.value
-                                            }))}
-                                            placeholder="1234567890"
-                                        />
                                     </div>
                                 </CardContent>
                             </CollapsibleContent>
@@ -573,20 +673,43 @@ export default function OrderShip({ order, adminSettings }: Props) {
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                                 <CardContent className="space-y-6">
-                                    {/* Insurance */}
-                                    <div>
-                                        <Label htmlFor="insurance_value">Insurance Value (€)</Label>
-                                        <Input
-                                            id="insurance_value"
-                                            type="number"
-                                            step="0.01"
-                                            value={additionalSettings.insurance_value}
-                                            onChange={(e) => setAdditionalSettings(prev => ({
-                                                ...prev,
-                                                insurance_value: e.target.value
-                                            }))}
-                                            placeholder="0.00"
-                                        />
+                                    {/* Insurance Section */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center space-x-2">
+                                            <input
+                                                type="checkbox"
+                                                id="insurance_enabled"
+                                                checked={additionalSettings.insurance_enabled}
+                                                onChange={(e) => setAdditionalSettings(prev => ({
+                                                    ...prev,
+                                                    insurance_enabled: e.target.checked
+                                                }))}
+                                                className="rounded border-gray-300"
+                                            />
+                                            <Label htmlFor="insurance_enabled" className="flex items-center gap-2">
+                                                <Shield className="h-4 w-4" />
+                                                Enable Insurance
+                                            </Label>
+                                        </div>
+
+                                        {additionalSettings.insurance_enabled && (
+                                            <div className="ml-6 p-4 border rounded-lg bg-muted/50">
+                                                <div>
+                                                    <Label htmlFor="insurance_value">Insurance Value (€)</Label>
+                                                    <Input
+                                                        id="insurance_value"
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={additionalSettings.insurance_value}
+                                                        onChange={(e) => setAdditionalSettings(prev => ({
+                                                            ...prev,
+                                                            insurance_value: e.target.value
+                                                        }))}
+                                                        placeholder="0.00"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Contrassegno Section */}

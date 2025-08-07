@@ -32,6 +32,26 @@ task('upload:build', function () {
 });
 before('deploy:symlink', 'upload:build');
 
+task('laravel:restart', function () {
+    run("tmux has-session -t laravel 2>/dev/null && tmux send-keys -t laravel C-c || echo 'No session to kill'");
+    run("tmux has-session -t laravel 2>/dev/null && tmux send-keys -t laravel 'cd {{release_path}} && php artisan serve C-m || echo 'No session to restart'");
+});
+
+task('laravel:optimize', function () {
+    run('cd {{release_path}} && php artisan config:cache');
+    run('cd {{release_path}} && php artisan route:cache');
+    run('cd {{release_path}} && php artisan view:cache');
+});
+
+task('laravel:migrate', function () {
+    run('cd {{release_path}} && php artisan migrate --force');
+});
+
+after('deploy:shared', 'deploy:vendors');         // Install composer dependencies
+after('deploy:vendors', 'laravel:optimize');      // Run Laravel cache commands
+after('deploy:vendors', 'laravel:migrate');       // Run migrations (optional)
+after('deploy:unlock', 'laravel:restart');       // Restart app
+
 // Laravel options
 
 set('keep_releases', 3);
