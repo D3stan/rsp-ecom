@@ -59,7 +59,7 @@ Route::get('/guest/checkout/details', [CheckoutController::class, 'showGuestDeta
 // Add missing guest checkout route that redirects to details
 Route::get('/guest/checkout', function (Request $request) {
     return redirect()->route('guest.checkout.details');
-})->name('guest.checkout');
+})->name('guest.checkout.redirect');
 
 // Cart-based checkout routes (bridges cart workflow with Cashier)
 Route::middleware(['auth'])->group(function () {

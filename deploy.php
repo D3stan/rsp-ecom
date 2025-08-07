@@ -16,8 +16,8 @@ add('writable_dirs', ['storage', 'bootstrap/cache']);
 // Hosts
 
 host('production')
-    ->set('hostname', 'rsp-industries.com')
-    ->set('remote_user', 'deployer')
+    ->set('hostname', '37.27.26.211')
+    ->set('remote_user', 'deploy')
     ->set('deploy_path', '~/ecommerce')
     ->set('branch', 'main');
 
