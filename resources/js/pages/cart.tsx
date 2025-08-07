@@ -6,6 +6,7 @@ import Header from '@/components/header';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cartService } from '@/services/cartService';
+import { useTranslation } from '@/hooks/useTranslation';
 import { 
     ShoppingCart,
     Plus,
@@ -48,6 +49,7 @@ export default function Cart() {
     const { cartItems, subtotal, shippingCost, total, totalItems } = pageProps;
     const { auth } = pageProps;
     const isMobile = useIsMobile();
+    const { t } = useTranslation();
     
     const [isUpdating, setIsUpdating] = useState<number | null>(null);
 
@@ -124,7 +126,7 @@ export default function Cart() {
     if (!cartItems || cartItems.length === 0) {
         return (
             <>
-                <Head title="Your Cart" />
+                <Head title={t('cart.title')} />
                 
                 <div className="min-h-screen bg-white">
                     <Header />
@@ -139,7 +141,7 @@ export default function Cart() {
                             </div>
                             
                             <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                                Your cart is empty
+                                {t('cart.empty_cart')}
                             </h1>
                             <p className="text-lg text-gray-600 mb-8">
                                 Add items to get started
@@ -160,7 +162,7 @@ export default function Cart() {
 
     return (
         <>
-            <Head title={`Your Cart (${totalItems})`} />
+            <Head title={t('cart.title_with_items', { count: totalItems })} />
             
             <div className={`min-h-screen bg-white ${isMobile ? 'pb-24' : ''}`}>
                 <Header />
@@ -169,10 +171,10 @@ export default function Cart() {
                     {/* Cart Header */}
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-gray-900">
-                            Your Cart
+                            {t('cart.title')}
                         </h1>
                         <p className="text-gray-600 mt-2">
-                            {totalItems} {totalItems === 1 ? 'item' : 'items'} in your cart
+                            {t('cart.items_in_cart', { count: totalItems })}
                         </p>
                     </div>
 
@@ -287,18 +289,18 @@ export default function Cart() {
                                 {/* Order Summary */}
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-gray-700">
-                                        <span>Subtotal</span>
+                                        <span>{t('cart.subtotal')}</span>
                                         <span>${subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-gray-700">
-                                        <span>Shipping</span>
+                                        <span>{t('cart.shipping')}</span>
                                         <span>
-                                            {shippingCost > 0 ? `$${shippingCost.toFixed(2)}` : 'Calculated at checkout'}
+                                            {shippingCost > 0 ? `$${shippingCost.toFixed(2)}` : t('cart.calculated_at_checkout')}
                                         </span>
                                     </div>
                                     <div className="border-t border-gray-200 pt-3">
                                         <div className="flex justify-between text-lg font-semibold text-gray-900">
-                                            <span>Total</span>
+                                            <span>{t('cart.total')}</span>
                                             <span>${total.toFixed(2)}</span>
                                         </div>
                                     </div>
@@ -313,7 +315,7 @@ export default function Cart() {
                                         size="lg"
                                     >
                                         <Package className="w-5 h-5 mr-2" />
-                                        Proceed to Checkout
+                                        {t('cart.proceed_to_checkout')}
                                     </Button>
 
                                     {/* Alternative options for non-authenticated users - Hidden on mobile */}
@@ -367,7 +369,7 @@ export default function Cart() {
                                 className="flex-1 h-12 font-semibold border border-black"
                             >
                                 <Package className="w-5 h-5 mr-2" />
-                                Checkout
+                                {t('cart.checkout')}
                             </Button>
                         </div>
                     </div>

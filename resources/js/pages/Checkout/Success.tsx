@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Package, Truck, CreditCard, User, Mail } from 'lucide-react';
+import useTranslation from '@/hooks/useTranslation';
 
 interface OrderItem {
     id: number | string;
@@ -60,6 +61,8 @@ interface Props {
 }
 
 export default function CheckoutSuccess({ order, session, isGuest, user }: Props) {
+    const { t } = useTranslation();
+    
     // Image handling helper
     const getImageSrc = (item: OrderItem) => {
         return item.product.image_url || '/images/product.png';
@@ -77,11 +80,11 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                         <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
                             <CheckCircle className="h-8 w-8 text-green-600" />
                         </div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('checkout.success.title')}</h1>
                         <p className="text-gray-600">
                             {isGuest 
-                                ? 'Thank you for your purchase. Your order has been successfully placed.'
-                                : `Thank you, ${user?.name}! Your order has been successfully placed.`
+                                ? t('checkout.success.thank_you_guest')
+                                : t('checkout.success.thank_you_user', { name: user?.name || '' })
                             }
                         </p>
                     </div>
@@ -94,13 +97,13 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-gray-800">
                                     <Package className="h-5 w-5" />
-                                    Order Details
+                                    {t('checkout.success.order_details')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Order Number</span>
+                                        <span className="text-sm text-gray-600">{t('checkout.success.order_number')}</span>
                                         <span className="font-mono text-sm text-black">
                                             {order.id === 'pending' 
                                                 ? 'Processing...' 
@@ -109,7 +112,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Order Date</span>
+                                        <span className="text-sm text-gray-600">{t('checkout.success.order_date')}</span>
                                         <span className="text-sm text-black">
                                             {new Date(order.created_at).toLocaleDateString('it-IT', {
                                                 year: 'numeric',
@@ -121,14 +124,14 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Payment Status</span>
+                                        <span className="text-sm text-gray-600">{t('checkout.success.payment_status')}</span>
                                         <Badge variant={session.payment_status === 'paid' ? 'default' : 'secondary'}>
                                             {session.payment_status}
                                         </Badge>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-600">
-                                            {isGuest ? 'Email' : 'Account'}
+                                            {isGuest ? t('checkout.success.email') : t('checkout.success.account')}
                                         </span>
                                         <div className="flex items-center gap-2">
                                             {isGuest ? (

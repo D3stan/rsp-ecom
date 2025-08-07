@@ -1,8 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public-layout';
 import { Button } from '@/components/ui/button';
+import useTranslation from '@/hooks/useTranslation';
 
 export default function About() {
+    const { t } = useTranslation();
     return (
         <PublicLayout currentPage="about">
             <Head title="About Us - Your Store" />
@@ -10,61 +12,56 @@ export default function About() {
             {/* Main Content */}
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="text-center mb-16">
-                    <h1 className="text-4xl font-bold text-black mb-6">About Our Store</h1>
+                    <h1 className="text-4xl font-bold text-black mb-6">{t('about.title')}</h1>
                     <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                        We're passionate about bringing you the latest and greatest in technology, 
-                        with a focus on quality, innovation, and exceptional customer service.
+                        {t('about.subtitle')}
                     </p>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-12 mb-16">
                     <div>
-                        <h2 className="text-2xl font-bold text-black mb-4">Our Mission</h2>
+                        <h2 className="text-2xl font-bold text-black mb-4">{t('about.mission_title')}</h2>
                         <p className="text-gray-600 mb-6">
-                            To provide our customers with access to cutting-edge technology products 
-                            that enhance their daily lives, backed by unparalleled customer support 
-                            and competitive pricing.
+                            {t('about.mission_text_1')}
                         </p>
                         <p className="text-gray-600">
-                            We believe that great technology should be accessible to everyone, 
-                            and we work tirelessly to curate a selection of products that meet 
-                            the highest standards of quality and innovation.
+                            {t('about.mission_text_2')}
                         </p>
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-black mb-4">Why Choose Us</h2>
+                        <h2 className="text-2xl font-bold text-black mb-4">{t('about.why_choose_title')}</h2>
                         <ul className="space-y-3 text-gray-600">
                             <li className="flex items-start">
                                 <span className="font-semibold text-black mr-2">•</span>
-                                Carefully curated product selection
+                                {t('about.curated_selection')}
                             </li>
                             <li className="flex items-start">
                                 <span className="font-semibold text-black mr-2">•</span>
-                                Competitive pricing and regular deals
+                                {t('about.competitive_pricing')}
                             </li>
                             <li className="flex items-start">
                                 <span className="font-semibold text-black mr-2">•</span>
-                                Fast and reliable shipping
+                                {t('about.fast_shipping')}
                             </li>
                             <li className="flex items-start">
                                 <span className="font-semibold text-black mr-2">•</span>
-                                30-day return policy
+                                {t('about.return_policy')}
                             </li>
                             <li className="flex items-start">
                                 <span className="font-semibold text-black mr-2">•</span>
-                                Dedicated customer support team
+                                {t('about.customer_support')}
                             </li>
                         </ul>
                     </div>
                 </div>
 
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold text-black mb-4">Ready to Shop?</h2>
+                    <h2 className="text-2xl font-bold text-black mb-4">{t('about.ready_to_shop')}</h2>
                     <p className="text-gray-600 mb-8">
-                        Discover our amazing collection of tech products and find something perfect for you.
+                        {t('about.explore_cta')}
                     </p>
                     <Link href="/">
-                        <Button size="lg" className="bg-black text-white hover:bg-gray-900">Explore Products</Button>
+                        <Button size="lg" className="bg-black text-white hover:bg-gray-900">{t('about.explore_products')}</Button>
                     </Link>
                 </div>
             </div>

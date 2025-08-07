@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import Header from '@/components/header';
 import ProductCard from '@/components/ProductCard';
+import { useTranslation } from '@/hooks/useTranslation';
 import { useState, useEffect, useCallback } from 'react';
 import { 
     Search, 
@@ -87,6 +88,7 @@ const PRICE_RANGES = [
 
 export default function Products() {
     const { products, categories, priceRange, filters, pagination } = usePage<ProductsPageProps>().props;
+    const { t } = useTranslation();
     
     // Local state for filters
     const [searchTerm, setSearchTerm] = useState(filters.search);
@@ -215,7 +217,7 @@ export default function Products() {
 
     return (
         <>
-            <Head title="Products" />
+            <Head title={t('products.title')} />
             
             <div className="min-h-screen bg-gray-50">
                 {/* Header */}
@@ -225,7 +227,7 @@ export default function Products() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {/* Page Header */}
                     <div className="mb-10">
-                        <h1 className="text-4xl font-bold text-gray-900 mb-6">All Products</h1>
+                        <h1 className="text-4xl font-bold text-gray-900 mb-6">{t('products.all_products')}</h1>
                         
                         {/* Search Bar */}
                         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
@@ -234,7 +236,7 @@ export default function Products() {
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                                     <Input 
                                         type="search"
-                                        placeholder="Search products..."
+                                        placeholder={t('products.search_placeholder')}
                                         className="pl-12 pr-4 h-12 text-base bg-white text-gray-900 placeholder-gray-500 border-gray-300 focus:border-black focus:ring-black"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -339,7 +341,11 @@ export default function Products() {
                             {/* Results Summary */}
                             <div className="flex items-center justify-between mb-8">
                                 <p className="text-lg font-medium text-gray-700">
-                                    Showing {pagination.from || 0}-{pagination.to || 0} of {pagination.total} products
+                                    {t('products.showing_results', { 
+                                        from: pagination.from || 0, 
+                                        to: pagination.to || 0, 
+                                        total: pagination.total 
+                                    })}
                                 </p>
                             </div>
 

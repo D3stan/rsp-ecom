@@ -1,7 +1,9 @@
 import { Head } from '@inertiajs/react';
 import Header from '@/components/header';
+import useTranslation from '@/hooks/useTranslation';
 
 export default function ShippingReturns() {
+    const { t } = useTranslation();
     return (
         <>
             <Head title="Shipping & Returns - Your Store" />
@@ -11,9 +13,9 @@ export default function ShippingReturns() {
 
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                     <div className="text-center mb-12">
-                        <h1 className="text-4xl font-bold text-black mb-6">Shipping & Returns</h1>
+                        <h1 className="text-4xl font-bold text-black mb-6">{t('shipping_returns.title')}</h1>
                         <p className="text-lg text-gray-600">
-                            Information about our shipping policies and your right of withdrawal
+                            {t('shipping_returns.subtitle')}
                         </p>
                     </div>
 
@@ -21,58 +23,56 @@ export default function ShippingReturns() {
                         <div className="space-y-12">
                             {/* Shipping Policy Section */}
                             <section>
-                                <h2 className="text-3xl font-bold text-black mb-6">Shipping Policy</h2>
+                                <h2 className="text-3xl font-bold text-black mb-6">{t('shipping_returns.shipping_policy')}</h2>
                                 
                                 <div className="space-y-6">
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">Shipping Destinations</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.shipping_destinations')}</h3>
                                         <p className="text-gray-600 mb-3">
-                                            We ship to all EU Member States. We do not ship to PO boxes or remote territories.
+                                            {t('shipping_returns.shipping_destinations_text')}
                                         </p>
                                         <p className="text-gray-600">
-                                            For UK deliveries, please note that additional customs delays may apply post-Brexit.
+                                            {t('shipping_returns.uk_notice')}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">Carriers & Methods</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.carriers_methods')}</h3>
                                         <p className="text-gray-600 mb-3">
-                                            We use trusted carriers including DHL, UPS, and local postal services. 
-                                            We reserve the right to select the most appropriate carrier for your delivery.
+                                            {t('shipping_returns.carriers_text')}
                                         </p>
                                         <div className="bg-gray-50 p-4 rounded-lg">
-                                            <h4 className="font-semibold text-black mb-2">Available Options:</h4>
+                                            <h4 className="font-semibold text-black mb-2">{t('shipping_returns.available_options')}</h4>
                                             <ul className="list-disc list-inside text-gray-600 space-y-1">
-                                                <li>Standard Delivery (3-5 business days)</li>
-                                                <li>Express Delivery (1-2 business days)</li>
-                                                <li>Tracked Delivery (with tracking number)</li>
+                                                <li>{t('shipping_returns.standard_delivery')}</li>
+                                                <li>{t('shipping_returns.express_delivery')}</li>
+                                                <li>{t('shipping_returns.tracked_delivery')}</li>
                                             </ul>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">Shipping Costs</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.shipping_costs')}</h3>
                                         <p className="text-gray-600 mb-3">
-                                            All shipping costs include VAT and are displayed before checkout. 
-                                            Free shipping is available for orders over €50.
+                                            {t('shipping_returns.shipping_costs_text')}
                                         </p>
                                         <div className="bg-gray-50 p-4 rounded-lg">
                                             <table className="w-full text-sm">
                                                 <thead>
                                                     <tr className="border-b border-gray-200">
-                                                        <th className="text-left py-2 text-black">Destination</th>
-                                                        <th className="text-left py-2 text-black">Standard</th>
-                                                        <th className="text-left py-2 text-black">Express</th>
+                                                        <th className="text-left py-2 text-black">{t('shipping_returns.destination')}</th>
+                                                        <th className="text-left py-2 text-black">{t('shipping_returns.standard')}</th>
+                                                        <th className="text-left py-2 text-black">{t('shipping_returns.express')}</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="text-gray-600">
                                                     <tr>
-                                                        <td className="py-1">EU Countries</td>
+                                                        <td className="py-1">{t('shipping_returns.eu_countries')}</td>
                                                         <td className="py-1">€4.99</td>
                                                         <td className="py-1">€9.99</td>
                                                     </tr>
                                                     <tr>
-                                                        <td className="py-1">UK</td>
+                                                        <td className="py-1">{t('shipping_returns.uk')}</td>
                                                         <td className="py-1">€7.99</td>
                                                         <td className="py-1">€14.99</td>
                                                     </tr>
@@ -82,23 +82,22 @@ export default function ShippingReturns() {
                                     </div>
 
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">Dispatch & Delivery Times</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.dispatch_delivery')}</h3>
                                         <p className="text-gray-600 mb-3">
-                                            Orders are dispatched within 1-2 business days. Delivery takes 3-5 business days for standard shipping.
+                                            {t('shipping_returns.dispatch_text')}
                                         </p>
                                         <p className="text-gray-600">
-                                            Risk of loss or damage passes to you upon delivery to your specified address.
+                                            {t('shipping_returns.risk_transfer')}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">Missing or Damaged Parcels</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.missing_damaged')}</h3>
                                         <p className="text-gray-600 mb-3">
-                                            Please notify us within 48 hours of delivery if your parcel is missing or damaged. 
-                                            Photo evidence may be required for damage claims.
+                                            {t('shipping_returns.missing_damaged_text')}
                                         </p>
                                         <p className="text-gray-600">
-                                            Contact us at: <a href="mailto:support@rsp-industries.com" className="text-blue-600 hover:underline">support@rsp-industries.com</a>
+                                            {t('shipping_returns.contact_email')}
                                         </p>
                                     </div>
                                 </div>
@@ -106,115 +105,93 @@ export default function ShippingReturns() {
 
                             {/* Returns & Right of Withdrawal Section */}
                             <section>
-                                <h2 className="text-3xl font-bold text-black mb-6">Returns & Right of Withdrawal</h2>
+                                <h2 className="text-3xl font-bold text-black mb-6">{t('shipping_returns.returns_withdrawal')}</h2>
                                 
                                 <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
                                     <p className="text-blue-800 font-medium">
-                                        <strong>Important:</strong> Our store does not offer free returns. Returns are only accepted 
-                                        if the product is defective or we have made an error with your order.
+                                        <strong>Important:</strong> {t('shipping_returns.no_free_returns')}
                                     </p>
                                 </div>
 
                                 <div className="space-y-6">
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">EU Right of Withdrawal</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.eu_withdrawal')}</h3>
                                         <p className="text-gray-600 mb-3">
-                                            Under EU consumer protection law, you have the right to withdraw from your purchase 
-                                            within 14 calendar days of delivery, but only in the following cases:
+                                            {t('shipping_returns.withdrawal_text')}
                                         </p>
                                         <ul className="list-disc list-inside text-gray-600 space-y-2 mb-4">
-                                            <li>The product is defective or not as described</li>
-                                            <li>We sent you the wrong item</li>
-                                            <li>The product was damaged during shipping</li>
+                                            <li>{t('shipping_returns.defective_product')}</li>
+                                            <li>{t('shipping_returns.wrong_item')}</li>
+                                            <li>{t('shipping_returns.damaged_shipping')}</li>
                                         </ul>
                                         <p className="text-gray-600">
-                                            <strong>Note:</strong> We do not accept returns for change of mind, wrong size selection, 
-                                            or other non-defect related reasons.
+                                            <strong>Note:</strong> {t('shipping_returns.no_change_mind')}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">How to Request a Return</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.return_request')}</h3>
                                         <p className="text-gray-600 mb-3">
-                                            To request a return for a defective product or our error:
+                                            {t('shipping_returns.return_steps')}
                                         </p>
                                         <ol className="list-decimal list-inside text-gray-600 space-y-2 mb-4">
-                                            <li>Contact us within 14 days of delivery</li>
-                                            <li>Provide your order number and description of the issue</li>
-                                            <li>Include photos if the product is damaged</li>
-                                            <li>We will provide a return authorization (RMA) number</li>
+                                            <li>{t('shipping_returns.step_1')}</li>
+                                            <li>{t('shipping_returns.step_2')}</li>
+                                            <li>{t('shipping_returns.step_3')}</li>
+                                            <li>{t('shipping_returns.step_4')}</li>
                                         </ol>
                                         <div className="bg-gray-50 p-4 rounded-lg">
                                             <p className="text-gray-600">
                                                 <strong>Contact for Returns:</strong><br />
-                                                Email: <a href="mailto:support@rsp-industries.com" className="text-blue-600 hover:underline">support@rsp-industries.com</a><br />
+                                                {t('shipping_returns.contact_email')}<br />
                                             </p>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">Return Shipping</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.return_shipping')}</h3>
                                         <p className="text-gray-600 mb-3">
-                                            For defective products or our errors, we will provide a prepaid return label. 
-                                            For all other cases, return shipping costs are borne by the customer.
+                                            {t('shipping_returns.return_shipping_text')}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">Condition of Returned Goods</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.condition_goods')}</h3>
                                         <p className="text-gray-600 mb-3">
-                                            Products must be returned in their original condition and packaging. 
-                                            Reasonable handling for inspection is allowed.
+                                            {t('shipping_returns.condition_text')}
                                         </p>
                                         <p className="text-gray-600">
-                                            We reserve the right to apply partial refunds for items that show excessive wear 
-                                            beyond normal inspection handling.
+                                            {t('shipping_returns.partial_refunds')}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">Refund Processing</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.refund_processing')}</h3>
                                         <p className="text-gray-600 mb-3">
-                                            Approved refunds will be processed within 14 days of receiving the returned item. 
-                                            Refunds will be issued to the original payment method.
+                                            {t('shipping_returns.refund_text')}
                                         </p>
                                         <p className="text-gray-600">
-                                            We may withhold the refund until we receive and inspect the returned goods.
+                                            {t('shipping_returns.withhold_refund')}
                                         </p>
                                     </div>
 
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">Items Exempt from Returns</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.exempt_items')}</h3>
                                         <ul className="list-disc list-inside text-gray-600 space-y-2">
-                                            <li>Personalized or custom-made products</li>
-                                            <li>Sealed hygiene items once opened</li>
-                                            <li>Perishable goods</li>
-                                            <li>Digital content after download</li>
+                                            <li>{t('shipping_returns.personalized_items')}</li>
+                                            <li>{t('shipping_returns.hygiene_items')}</li>
+                                            <li>{t('shipping_returns.perishable_goods')}</li>
+                                            <li>{t('shipping_returns.digital_content')}</li>
                                         </ul>
                                     </div>
 
-                                    {/* <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">Return Address</h3>
-                                        <div className="bg-gray-50 p-4 rounded-lg">
-                                            <p className="text-gray-600">
-                                                <strong>Returns Department</strong><br />
-                                                Your Store S.r.l.<br />
-                                                Via Roma 123<br />
-                                                00100 Roma, Italy<br />
-                                                <br />
-                                                <strong>RMA Format:</strong> RMA-[ORDER-NUMBER]-[DATE]
-                                            </p>
-                                        </div>
-                                    </div> */}
-
                                     <div>
-                                        <h3 className="text-xl font-semibold text-black mb-3">Dispute Resolution</h3>
+                                        <h3 className="text-xl font-semibold text-black mb-3">{t('shipping_returns.dispute_resolution')}</h3>
                                         <p className="text-gray-600 mb-3">
-                                            For unresolved disputes, you may contact the Italian Consumer Ombudsman 
-                                            or use the EU Alternative Dispute Resolution platform.
+                                            {t('shipping_returns.dispute_text')}
                                         </p>
                                         <p className="text-gray-600">
-                                            ADR Contact: <a href="https://www.risolviconline.com" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">www.risolviconline.com</a>
+                                            {t('shipping_returns.adr_contact')}
                                         </p>
                                     </div>
                                 </div>
@@ -224,7 +201,7 @@ export default function ShippingReturns() {
 
                     <div className="text-center mt-12 pt-8 border-t border-gray-200">
                         <p className="text-sm text-gray-500">
-                            Last updated: August 5, 2025
+                            {t('last_updated')}: August 5, 2025
                         </p>
                     </div>
                 </div>

@@ -13,6 +13,7 @@ import {
     AlertCircle,
 } from 'lucide-react';
 import { type SharedData } from '@/types';
+import useTranslation from '@/hooks/useTranslation';
 
 interface ContactPageProps extends SharedData {
     errors: Record<string, string>;
@@ -22,6 +23,7 @@ interface ContactPageProps extends SharedData {
 
 export default function Contact() {
     const { errors, success, error } = usePage<ContactPageProps>().props;
+    const { t } = useTranslation();
     
     const { data, setData, post, processing, reset } = useForm({
         firstName: '',
@@ -47,10 +49,9 @@ export default function Contact() {
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="text-center mb-16">
-                    <h1 className="text-4xl font-bold text-black mb-6">Contact Us</h1>
+                    <h1 className="text-4xl font-bold text-black mb-6">{t('contact.title')}</h1>
                     <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                        Have a question or need assistance? We're here to help! 
-                        Reach out to us through any of the methods below.
+                        {t('contact.subtitle')}
                     </p>
                 </div>
 
@@ -82,13 +83,13 @@ export default function Contact() {
                     <div>
                         <Card className="border border-gray-200 shadow-sm pb-0">
                             <CardHeader className="bg-black text-white">
-                                <CardTitle>Send us a Message</CardTitle>
+                                <CardTitle>{t('contact.send_message')}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6 p-6 bg-white">
                                 <form onSubmit={handleSubmit} className="space-y-6">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <Label htmlFor="firstName" className="text-gray-900">First Name *</Label>
+                                            <Label htmlFor="firstName" className="text-gray-900">{t('contact.first_name')} {t('contact.required_field')}</Label>
                                             <Input 
                                                 id="firstName" 
                                                 value={data.firstName}
@@ -100,7 +101,7 @@ export default function Contact() {
                                             {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
                                         </div>
                                         <div>
-                                            <Label htmlFor="lastName" className="text-gray-900">Last Name *</Label>
+                                            <Label htmlFor="lastName" className="text-gray-900">{t('contact.last_name')} {t('contact.required_field')}</Label>
                                             <Input 
                                                 id="lastName" 
                                                 value={data.lastName}
@@ -113,7 +114,7 @@ export default function Contact() {
                                         </div>
                                     </div>
                                     <div>
-                                        <Label htmlFor="email" className="text-gray-900">Email *</Label>
+                                        <Label htmlFor="email" className="text-gray-900">{t('contact.email')} {t('contact.required_field')}</Label>
                                         <Input 
                                             id="email" 
                                             type="email" 
@@ -126,7 +127,7 @@ export default function Contact() {
                                         {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                                     </div>
                                     <div>
-                                        <Label htmlFor="subject" className="text-gray-900">Subject *</Label>
+                                        <Label htmlFor="subject" className="text-gray-900">{t('contact.subject')} {t('contact.required_field')}</Label>
                                         <Input 
                                             id="subject" 
                                             value={data.subject}
@@ -138,7 +139,7 @@ export default function Contact() {
                                         {errors.subject && <p className="text-red-500 text-sm mt-1">{errors.subject}</p>}
                                     </div>
                                     <div>
-                                        <Label htmlFor="message" className="text-gray-900">Message *</Label>
+                                        <Label htmlFor="message" className="text-gray-900">{t('contact.message')} {t('contact.required_field')}</Label>
                                         <textarea 
                                             id="message"
                                             value={data.message}
@@ -154,7 +155,7 @@ export default function Contact() {
                                         disabled={processing}
                                         className="w-full bg-black text-white hover:bg-gray-900 disabled:opacity-50"
                                     >
-                                        {processing ? 'Sending...' : 'Send Message'}
+                                        {processing ? t('contact.sending') : t('contact.send_message_btn')}
                                     </Button>
                                 </form>
                             </CardContent>
@@ -170,26 +171,12 @@ export default function Contact() {
                                         <Mail className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-black mb-1">Email Us</h3>
+                                        <h3 className="font-semibold text-black mb-1">{t('contact.email_us')}</h3>
                                         <p className="text-gray-600">support@rsp-industries.com</p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
-
-                        {/* <Card className="border border-gray-200 shadow-sm bg-white">
-                            <CardContent className="p-6">
-                                <div className="flex items-start space-x-4">
-                                    <div className="bg-black text-white p-3 rounded-full">
-                                        <Phone className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-black mb-1">Call Us</h3>
-                                        <p className="text-gray-600">+1 (555) 123-4567</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card> */}
 
                         <Card className="border border-gray-200 shadow-sm bg-white">
                             <CardContent className="p-6">
@@ -198,10 +185,10 @@ export default function Contact() {
                                         <Clock className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-black mb-1">Business Hours</h3>
-                                        <p className="text-gray-600">Monday - Friday: 9:00 AM - 6:00 PM</p>
-                                        <p className="text-gray-600">Saturday: 10:00 AM - 4:00 PM</p>
-                                        <p className="text-gray-600">Sunday: Closed</p>
+                                        <h3 className="font-semibold text-black mb-1">{t('contact.business_hours')}</h3>
+                                        <p className="text-gray-600">{t('contact.monday_friday')}</p>
+                                        <p className="text-gray-600">{t('contact.saturday')}</p>
+                                        <p className="text-gray-600">{t('contact.sunday')}</p>
                                     </div>
                                 </div>
                             </CardContent>

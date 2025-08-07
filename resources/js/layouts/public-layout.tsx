@@ -57,7 +57,7 @@ export default function PublicLayout({ children, transparent = false, currentPag
                             <h4 className="font-semibold mb-4">{t('quick_links')}</h4>
                             <ul className="space-y-2 text-gray-400">
                                 <li><Link href="/about" className="hover:text-white footer-link md:footer-link-none">{t('about_us')}</Link></li>
-                                <li><Link href="/contact" className="hover:text-white footer-link md:footer-link-none">{t('contact')}</Link></li>
+                                <li><Link href="/contact" className="hover:text-white footer-link md:footer-link-none">{t('contact_page')}</Link></li>
                                 <li><Link href="/faq" className="hover:text-white footer-link md:footer-link-none">{t('faq')}</Link></li>
                             </ul>
                         </div>
@@ -67,7 +67,7 @@ export default function PublicLayout({ children, transparent = false, currentPag
                             <ul className="space-y-2 text-gray-400">
                                 <li><Link href="/privacy" className="hover:text-white footer-link md:footer-link-none">{t('privacy_policy')}</Link></li>
                                 <li><Link href="/terms" className="hover:text-white footer-link md:footer-link-none">{t('terms_of_service')}</Link></li>
-                                <li><Link href="/shipping-returns" className="hover:text-white footer-link md:footer-link-none">{t('shipping_returns')}</Link></li>
+                                <li><Link href="/shipping-returns" className="hover:text-white footer-link md:footer-link-none">{t('shipping_returns_link')}</Link></li>
                             </ul>
                         </div>
                         

@@ -1,103 +1,103 @@
 import { Head } from '@inertiajs/react';
 import Header from '@/components/header';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Privacy() {
+    const { t } = useTranslation();
+
     return (
         <>
-            <Head title="Privacy Policy - Your Store" />
+            <Head title={`${t('privacy.title')} - Your Store`} />
             
             <div className="min-h-screen bg-white">
                 <Header />
 
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                     <div className="text-center mb-12">
-                        <h1 className="text-4xl font-bold text-black mb-6">Privacy Policy</h1>
+                        <h1 className="text-4xl font-bold text-black mb-6">{t('privacy.title')}</h1>
                     </div>
 
                     <div className="prose prose-lg max-w-none">
                         <div className="space-y-8">
                             <section>
-                                <h2 className="text-2xl font-bold text-black mb-4">Information We Collect</h2>
+                                <h2 className="text-2xl font-bold text-black mb-4">{t('privacy.info_collect')}</h2>
                                 <p className="text-gray-600 mb-4">
-                                    We collect information you provide directly to us, such as when you create an account, 
-                                    make a purchase, or contact us for support.
+                                    {t('privacy.info_collect_text')}
                                 </p>
                                 <ul className="list-disc list-inside text-gray-600 space-y-2">
-                                    <li>Personal information (name, email address, phone number)</li>
-                                    <li>Billing and shipping addresses</li>
-                                    <li>Payment information (processed securely through Stripe)</li>
-                                    <li>Order history and preferences</li>
+                                    <li>{t('privacy.personal_info')}</li>
+                                    <li>{t('privacy.billing_shipping')}</li>
+                                    <li>{t('privacy.payment_info')}</li>
+                                    <li>{t('privacy.order_history')}</li>
                                 </ul>
                             </section>
 
                             <section>
-                                <h2 className="text-2xl font-bold text-black mb-4">How We Use Your Information</h2>
+                                <h2 className="text-2xl font-bold text-black mb-4">{t('privacy.how_we_use')}</h2>
                                 <p className="text-gray-600 mb-4">
-                                    We use the information we collect to provide, maintain, and improve our services:
+                                    {t('privacy.how_we_use_text')}
                                 </p>
                                 <ul className="list-disc list-inside text-gray-600 space-y-2">
-                                    <li>Process and fulfill your orders</li>
-                                    <li>Send order confirmations and shipping updates</li>
-                                    <li>Provide customer support</li>
-                                    <li>Improve our products and services</li>
-                                    <li>Send promotional emails (with your consent)</li>
+                                    <li>{t('privacy.process_orders')}</li>
+                                    <li>{t('privacy.send_confirmations')}</li>
+                                    <li>{t('privacy.provide_support')}</li>
+                                    <li>{t('privacy.improve_services')}</li>
+                                    <li>{t('privacy.send_promotional')}</li>
                                 </ul>
                             </section>
 
                             <section>
-                                <h2 className="text-2xl font-bold text-black mb-4">Information Sharing</h2>
+                                <h2 className="text-2xl font-bold text-black mb-4">{t('privacy.info_sharing')}</h2>
                                 <p className="text-gray-600 mb-4">
-                                    We do not sell, trade, or otherwise transfer your personal information to third parties, 
-                                    except in the following circumstances:
+                                    {t('privacy.info_sharing_text')}
                                 </p>
                                 <ul className="list-disc list-inside text-gray-600 space-y-2">
-                                    <li>With service providers who help us operate our business</li>
-                                    <li>When required by law or to protect our rights</li>
-                                    <li>With your explicit consent</li>
+                                    <li>{t('privacy.service_providers')}</li>
+                                    <li>{t('privacy.required_by_law')}</li>
+                                    <li>{t('privacy.explicit_consent')}</li>
                                 </ul>
                             </section>
 
                             <section>
-                                <h2 className="text-2xl font-bold text-black mb-4">Data Security</h2>
+                                <h2 className="text-2xl font-bold text-black mb-4">{t('privacy.data_security')}</h2>
                                 <p className="text-gray-600 mb-4">
-                                    We implement appropriate security measures to protect your personal information:
+                                    {t('privacy.data_security_text')}
                                 </p>
                                 <ul className="list-disc list-inside text-gray-600 space-y-2">
-                                    <li>SSL encryption for all data transmission</li>
-                                    <li>Secure payment processing through Stripe</li>
-                                    <li>Regular security audits and updates</li>
-                                    <li>Limited access to personal information</li>
+                                    <li>{t('privacy.ssl_encryption')}</li>
+                                    <li>{t('privacy.secure_payment')}</li>
+                                    <li>{t('privacy.security_audits')}</li>
+                                    <li>{t('privacy.limited_access')}</li>
                                 </ul>
                             </section>
 
                             <section>
-                                <h2 className="text-2xl font-bold text-black mb-4">Your Rights</h2>
+                                <h2 className="text-2xl font-bold text-black mb-4">{t('privacy.your_rights')}</h2>
                                 <p className="text-gray-600 mb-4">
-                                    You have the right to:
+                                    {t('privacy.your_rights_text')}
                                 </p>
                                 <ul className="list-disc list-inside text-gray-600 space-y-2">
-                                    <li>Access and update your personal information</li>
-                                    <li>Request deletion of your account and data</li>
-                                    <li>Opt out of promotional communications</li>
-                                    <li>Request a copy of your data</li>
+                                    <li>{t('privacy.access_update')}</li>
+                                    <li>{t('privacy.request_deletion')}</li>
+                                    <li>{t('privacy.opt_out')}</li>
+                                    <li>{t('privacy.request_copy')}</li>
                                 </ul>
                             </section>
 
                             <section>
-                                <h2 className="text-2xl font-bold text-black mb-4">Cookies</h2>
+                                <h2 className="text-2xl font-bold text-black mb-4">{t('privacy.cookies')}</h2>
                                 <p className="text-gray-600 mb-4">
-                                    We use cookies to enhance your browsing experience and analyze site traffic. 
-                                    You can control cookie settings through your browser preferences.
+                                    {t('privacy.cookies_text')}
                                 </p>
                             </section>
 
                             <section>
-                                <h2 className="text-2xl font-bold text-black mb-4">Contact Us</h2>
+                                <h2 className="text-2xl font-bold text-black mb-4">{t('contact.contact_us')}</h2>
                                 <p className="text-gray-600 mb-4">
-                                    If you have any questions about this Privacy Policy, please contact us:
+                                    {t('privacy.contact_privacy')}
                                 </p>
                                 <ul className="list-none text-gray-600 space-y-2">
-                                    <li>Email: support@rsp-industries.com</li>
+                                    <li>{t('privacy.contact_email')}</li>
                                 </ul>
                             </section>
                         </div>

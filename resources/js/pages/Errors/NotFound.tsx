@@ -3,8 +3,10 @@ import PublicLayout from '@/layouts/public-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Home, ArrowLeft, ShoppingBag } from 'lucide-react';
+import useTranslation from '@/hooks/useTranslation';
 
 export default function NotFound() {
+    const { t } = useTranslation();
     return (
         <PublicLayout currentPage="home">
             <Head title="404 Not Found" />
@@ -23,11 +25,10 @@ export default function NotFound() {
                             {/* Error Message */}
                             <div className="mb-8 space-y-4">
                                 <h2 className="text-3xl font-bold text-gray-900">
-                                    Page Not Found
+                                    {t('error_pages.404.title')}
                                 </h2>
                                 <p className="text-gray-600 text-lg leading-relaxed">
-                                    Sorry, we couldn't find the page you're looking for. 
-                                    The page might have been moved, deleted, or the URL might be incorrect.
+                                    {t('error_pages.404.message')}
                                 </p>
                             </div>
                             
@@ -36,14 +37,14 @@ export default function NotFound() {
                                 <Button asChild size="lg" className="w-full sm:w-auto border bg-white text-black hover:bg-gray-300">
                                     <Link href="/">
                                         <Home className="w-4 h-4 mr-2" />
-                                        Go Home
+                                        {t('error_pages.404.go_home')}
                                     </Link>
                                 </Button>
                                 
                                 <Button asChild variant="outline" size="lg" className="w-full sm:w-auto border-gray-300 text-white hover:bg-gray-50 hover:text-black">
                                     <Link href="/products">
                                         <ShoppingBag className="w-4 h-4 mr-2" />
-                                        Shop Products
+                                        {t('error_pages.404.shop_products')}
                                     </Link>
                                 </Button>
                                 
@@ -54,35 +55,35 @@ export default function NotFound() {
                                     className="w-full sm:w-auto text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                                 >
                                     <ArrowLeft className="w-4 h-4 mr-2" />
-                                    Go Back
+                                    {t('error_pages.404.go_back')}
                                 </Button>
                             </div>
                             
                             {/* Help Section */}
                             <div className="mt-12 pt-8 border-t border-gray-200">
                                 <p className="text-sm text-gray-600 mb-4">
-                                    Need help finding what you're looking for?
+                                    {t('error_pages.404.need_help')}
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center text-sm">
                                     <Link 
                                         href="/contact" 
                                         className="text-black hover:text-gray-700 transition-colors font-medium"
                                     >
-                                        Contact Support
+                                        {t('error_pages.404.contact_support')}
                                     </Link>
                                     <span className="hidden sm:inline text-gray-400">•</span>
                                     <Link 
                                         href="/about" 
                                         className="text-black hover:text-gray-700 transition-colors font-medium"
                                     >
-                                        About Us
+                                        {t('about_us')}
                                     </Link>
                                     <span className="hidden sm:inline text-gray-400">•</span>
                                     <Link 
                                         href="/terms" 
                                         className="text-black hover:text-gray-700 transition-colors font-medium"
                                     >
-                                        Terms of Service
+                                        {t('terms_of_service')}
                                     </Link>
                                 </div>
                             </div>

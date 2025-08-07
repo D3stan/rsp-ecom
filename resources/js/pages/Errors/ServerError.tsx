@@ -3,8 +3,11 @@ import PublicLayout from '@/layouts/public-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Home, ArrowLeft, AlertTriangle, RefreshCw } from 'lucide-react';
+import useTranslation from '@/hooks/useTranslation';
 
 export default function ServerError() {
+    const { t } = useTranslation();
+    
     const refreshPage = () => {
         window.location.reload();
     };
@@ -27,11 +30,10 @@ export default function ServerError() {
                             {/* Error Message */}
                             <div className="mb-8 space-y-4">
                                 <h2 className="text-3xl font-bold text-gray-900">
-                                    Something Went Wrong
+                                    {t('error_pages.500.title')}
                                 </h2>
                                 <p className="text-gray-600 text-lg leading-relaxed">
-                                    We're experiencing some technical difficulties. Our team has been notified 
-                                    and is working to fix the issue. Please try again in a few moments.
+                                    {t('error_pages.500.message')}
                                 </p>
                             </div>
                             
@@ -43,13 +45,13 @@ export default function ServerError() {
                                     className="w-full sm:w-auto border bg-white text-black hover:bg-gray-300"
                                 >
                                     <RefreshCw className="w-4 h-4 mr-2" />
-                                    Try Again
+                                    {t('error_pages.500.try_again')}
                                 </Button>
                                 
                                 <Button asChild variant="outline" size="lg" className="w-full sm:w-auto border-gray-300 text-white hover:bg-gray-50 hover:text-black">
                                     <Link href="/">
                                         <Home className="w-4 h-4 mr-2" />
-                                        Go Home
+                                        {t('error_pages.500.go_home')}
                                     </Link>
                                 </Button>
                                 
@@ -60,20 +62,20 @@ export default function ServerError() {
                                     className="w-full sm:w-auto text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                                 >
                                     <ArrowLeft className="w-4 h-4 mr-2" />
-                                    Go Back
+                                    {t('error_pages.500.go_back')}
                                 </Button>
                             </div>
                             
                             {/* Contact Support */}
                             <div className="mt-12 pt-8 border-t border-gray-200">
                                 <p className="text-sm text-gray-600 mb-4">
-                                    If the problem persists, please contact our support team.
+                                    {t('error_pages.500.persistent_problem')}
                                 </p>
                                 <Link 
                                     href="/contact" 
                                     className="text-black hover:text-gray-700 transition-colors text-sm font-medium"
                                 >
-                                    Contact Support
+                                    {t('error_pages.500.contact_support')}
                                 </Link>
                             </div>
                         </CardContent>

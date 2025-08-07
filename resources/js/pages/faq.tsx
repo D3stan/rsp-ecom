@@ -6,149 +6,149 @@ import useTranslation from '@/hooks/useTranslation';
 
 interface FAQItem {
     id: string;
-    question: string;
-    answer: string;
+    questionKey: string;
+    answerKey: string;
     category: string;
 }
 
-const faqData: FAQItem[] = [
-    // Ordering
-    {
-        id: 'order-1',
-        question: 'How do I place an order?',
-        answer: 'Simply browse our products, add items to your cart, and proceed to checkout. You can either create an account for faster future orders or checkout as a guest.',
-        category: 'Ordering'
-    },
-    {
-        id: 'order-2',
-        question: 'Can I modify my order after placing it?',
-        answer: 'Orders can be modified within 1 hour of placement. Please contact our customer service team immediately at support@rsp-industries.com or call +1 (555) 123-4567.',
-        category: 'Ordering'
-    },
-    {
-        id: 'order-3',
-        question: 'Do I need an account to place an order?',
-        answer: 'No, you can checkout as a guest. However, having an account makes future orders easier and allows you to track your order history.',
-        category: 'Ordering'
-    },
-    {
-        id: 'order-4',
-        question: 'What payment methods do you accept?',
-        answer: 'We accept all major credit cards (Visa, MasterCard, American Express), PayPal, and bank transfers. All payments are processed securely through Stripe.',
-        category: 'Ordering'
-    },
-
-    // Shipping
-    {
-        id: 'shipping-1',
-        question: 'How long does shipping take?',
-        answer: 'Standard shipping takes 5-7 business days (€5.99), express shipping takes 2-3 business days (€9.99), and next day delivery is available (€19.99). Free standard shipping on orders over €50!',
-        category: 'Shipping'
-    },
-    {
-        id: 'shipping-2',
-        question: 'Do you ship internationally?',
-        answer: 'Yes, we ship to all EU countries. International shipping rates and delivery times vary by destination. Contact us for specific rates to your country.',
-        category: 'Shipping'
-    },
-    {
-        id: 'shipping-3',
-        question: 'How can I track my order?',
-        answer: 'Once your order ships, you\'ll receive a tracking number via email. You can also track your order by logging into your account and viewing your order history.',
-        category: 'Shipping'
-    },
-    {
-        id: 'shipping-4',
-        question: 'What if my package is damaged or lost?',
-        answer: 'If your package arrives damaged or is lost in transit, please contact us immediately. We\'ll work with the shipping carrier to resolve the issue and ensure you receive your items.',
-        category: 'Shipping'
-    },
-
-    // Returns
-    {
-        id: 'returns-1',
-        question: 'What is your return policy?',
-        answer: 'We accept returns within 30 days of delivery. Items must be in original condition with original packaging and tags included. Items must be unworn and unused.',
-        category: 'Returns'
-    },
-    {
-        id: 'returns-2',
-        question: 'Who pays for return shipping?',
-        answer: 'We provide free return shipping labels for all returns. Simply contact our customer service team and we\'ll email you a prepaid return label.',
-        category: 'Returns'
-    },
-    {
-        id: 'returns-3',
-        question: 'How long does it take to process a refund?',
-        answer: 'Refunds are processed within 5-7 business days after we receive your return. You\'ll receive an email confirmation once the refund has been processed.',
-        category: 'Returns'
-    },
-    {
-        id: 'returns-4',
-        question: 'Can I exchange an item instead of returning it?',
-        answer: 'Yes! If you need a different size or color, we can process an exchange. Contact our customer service team to arrange an exchange.',
-        category: 'Returns'
-    },
-
-    // Account
-    {
-        id: 'account-1',
-        question: 'How do I create an account?',
-        answer: 'Click the "Register" button in the top right corner of our website. You\'ll need to provide your name, email address, and create a password.',
-        category: 'Account'
-    },
-    {
-        id: 'account-2',
-        question: 'I forgot my password. How do I reset it?',
-        answer: 'Click the "Forgot Password" link on the login page. Enter your email address and we\'ll send you instructions to reset your password.',
-        category: 'Account'
-    },
-    {
-        id: 'account-3',
-        question: 'How do I update my account information?',
-        answer: 'Log into your account and go to "Account Settings" where you can update your personal information, addresses, and payment methods.',
-        category: 'Account'
-    },
-    {
-        id: 'account-4',
-        question: 'Can I save multiple addresses?',
-        answer: 'Yes! You can save multiple shipping and billing addresses in your account for faster checkout. Just go to "Account Settings" > "Addresses".',
-        category: 'Account'
-    },
-
-    // General
-    {
-        id: 'general-1',
-        question: 'How can I contact customer service?',
-        answer: 'You can reach us by email at support@rsp-industries.com, call us at +1 (555) 123-4567, or use our contact form. Our hours are Monday-Friday, 9:00 AM - 5:00 PM EST.',
-        category: 'General'
-    },
-    {
-        id: 'general-2',
-        question: 'Do you offer price matching?',
-        answer: 'We strive to offer competitive prices. If you find a lower price on an identical item from a competitor, please contact us and we\'ll do our best to match it.',
-        category: 'General'
-    },
-    {
-        id: 'general-3',
-        question: 'Is my personal information secure?',
-        answer: 'Yes, we take your privacy seriously. We use SSL encryption, secure payment processing through Stripe, and never share your personal information with third parties without your consent.',
-        category: 'General'
-    },
-    {
-        id: 'general-4',
-        question: 'Do you have a physical store?',
-        answer: 'We are primarily an online retailer, but we do have a customer service center at 123 Business Street, City, State 12345. Please call ahead if you need to visit in person.',
-        category: 'General'
-    }
-];
-
-const categories = ['All', 'Ordering', 'Shipping', 'Returns', 'Account', 'General'];
+const categories = ['all', 'ordering', 'shipping', 'returns', 'account', 'general'];
 
 export default function FAQ() {
     const { t } = useTranslation();
     const [openItems, setOpenItems] = useState<string[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState('All');
+    const [selectedCategory, setSelectedCategory] = useState('all');
+
+    const faqData: FAQItem[] = [
+        // Ordering
+        {
+            id: 'order-1',
+            questionKey: 'faq_items.ordering.question_1',
+            answerKey: 'faq_items.ordering.answer_1',
+            category: 'ordering'
+        },
+        {
+            id: 'order-2',
+            questionKey: 'faq_items.ordering.question_2',
+            answerKey: 'faq_items.ordering.answer_2',
+            category: 'ordering'
+        },
+        {
+            id: 'order-3',
+            questionKey: 'faq_items.ordering.question_3',
+            answerKey: 'faq_items.ordering.answer_3',
+            category: 'ordering'
+        },
+        {
+            id: 'order-4',
+            questionKey: 'faq_items.ordering.question_4',
+            answerKey: 'faq_items.ordering.answer_4',
+            category: 'ordering'
+        },
+
+        // Shipping
+        {
+            id: 'shipping-1',
+            questionKey: 'faq_items.shipping.question_1',
+            answerKey: 'faq_items.shipping.answer_1',
+            category: 'shipping'
+        },
+        {
+            id: 'shipping-2',
+            questionKey: 'faq_items.shipping.question_2',
+            answerKey: 'faq_items.shipping.answer_2',
+            category: 'shipping'
+        },
+        {
+            id: 'shipping-3',
+            questionKey: 'faq_items.shipping.question_3',
+            answerKey: 'faq_items.shipping.answer_3',
+            category: 'shipping'
+        },
+        {
+            id: 'shipping-4',
+            questionKey: 'faq_items.shipping.question_4',
+            answerKey: 'faq_items.shipping.answer_4',
+            category: 'shipping'
+        },
+
+        // Returns
+        {
+            id: 'returns-1',
+            questionKey: 'faq_items.returns.question_1',
+            answerKey: 'faq_items.returns.answer_1',
+            category: 'returns'
+        },
+        {
+            id: 'returns-2',
+            questionKey: 'faq_items.returns.question_2',
+            answerKey: 'faq_items.returns.answer_2',
+            category: 'returns'
+        },
+        {
+            id: 'returns-3',
+            questionKey: 'faq_items.returns.question_3',
+            answerKey: 'faq_items.returns.answer_3',
+            category: 'returns'
+        },
+        {
+            id: 'returns-4',
+            questionKey: 'faq_items.returns.question_4',
+            answerKey: 'faq_items.returns.answer_4',
+            category: 'returns'
+        },
+
+        // Account
+        {
+            id: 'account-1',
+            questionKey: 'faq_items.account.question_1',
+            answerKey: 'faq_items.account.answer_1',
+            category: 'account'
+        },
+        {
+            id: 'account-2',
+            questionKey: 'faq_items.account.question_2',
+            answerKey: 'faq_items.account.answer_2',
+            category: 'account'
+        },
+        {
+            id: 'account-3',
+            questionKey: 'faq_items.account.question_3',
+            answerKey: 'faq_items.account.answer_3',
+            category: 'account'
+        },
+        {
+            id: 'account-4',
+            questionKey: 'faq_items.account.question_4',
+            answerKey: 'faq_items.account.answer_4',
+            category: 'account'
+        },
+
+        // General
+        {
+            id: 'general-1',
+            questionKey: 'faq_items.general.question_1',
+            answerKey: 'faq_items.general.answer_1',
+            category: 'general'
+        },
+        {
+            id: 'general-2',
+            questionKey: 'faq_items.general.question_2',
+            answerKey: 'faq_items.general.answer_2',
+            category: 'general'
+        },
+        {
+            id: 'general-3',
+            questionKey: 'faq_items.general.question_3',
+            answerKey: 'faq_items.general.answer_3',
+            category: 'general'
+        },
+        {
+            id: 'general-4',
+            questionKey: 'faq_items.general.question_4',
+            answerKey: 'faq_items.general.answer_4',
+            category: 'general'
+        }
+    ];
 
     const toggleItem = (id: string) => {
         setOpenItems(prev => 
@@ -158,7 +158,7 @@ export default function FAQ() {
         );
     };
 
-    const filteredFAQ = selectedCategory === 'All' 
+    const filteredFAQ = selectedCategory === 'all' 
         ? faqData 
         : faqData.filter(item => item.category === selectedCategory);
 
@@ -190,7 +190,7 @@ export default function FAQ() {
                                             : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                                     }`}
                                 >
-                                    {t(`faq_categories.${category.toLowerCase()}`)}
+                                    {t(`faq_categories.${category}`)}
                                 </button>
                             ))}
                         </div>
@@ -206,10 +206,10 @@ export default function FAQ() {
                                 >
                                     <div>
                                         <span className="text-sm text-gray-500 uppercase tracking-wide">
-                                            {item.category}
+                                            {t(`faq_categories.${item.category}`)}
                                         </span>
                                         <h3 className="text-lg font-semibold text-black mt-1">
-                                            {item.question}
+                                            {t(item.questionKey)}
                                         </h3>
                                     </div>
                                     {openItems.includes(item.id) ? (
@@ -222,7 +222,7 @@ export default function FAQ() {
                                 {openItems.includes(item.id) && (
                                     <div className="px-6 pb-4">
                                         <div className="text-gray-600 leading-relaxed">
-                                            {item.answer}
+                                            {t(item.answerKey)}
                                         </div>
                                     </div>
                                 )}
