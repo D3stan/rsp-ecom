@@ -5,24 +5,21 @@ import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Head, Link, router } from '@inertiajs/react';
-import { 
-    ArrowLeft, 
-    Edit, 
-    Package, 
-    Truck, 
-    CheckCircle, 
+import { Head, router } from '@inertiajs/react';
+import {
+    Edit,
+    Package,
+    Truck,
+    CheckCircle,
     XCircle,
     CreditCard,
-    MapPin,
     User,
-    Calendar,
     DollarSign,
     ChevronDown,
     ChevronUp,
     SkipForward,
     ArrowRight,
-    Plus
+    Plus,
 } from 'lucide-react';
 import { useState } from 'react';
 // Removed EditOrderDialog import as we're now using a dedicated edit page

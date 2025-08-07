@@ -73,9 +73,10 @@ interface Category {
     slug: string;
 }
 
-interface Size {
-    id: number;
-    name: string;
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
 }
 
 interface Props {
@@ -89,10 +90,9 @@ interface Props {
             from: number;
             to: number;
         };
-        links: any[];
+        links: PaginationLink[];
     };
     categories: Category[];
-    sizes: Size[];
     filters: {
         search?: string;
         category?: string;
@@ -116,7 +116,7 @@ const statusColors = {
     draft: 'bg-yellow-100 text-yellow-800',
 };
 
-export default function ProductsIndex({ products, categories, sizes, filters, stats }: Props) {
+export default function ProductsIndex({ products, categories, filters, stats }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [categoryFilter, setCategoryFilter] = useState(filters.category || '');
     const [statusFilter, setStatusFilter] = useState(filters.status || '');

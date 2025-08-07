@@ -3,22 +3,20 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Head, Link } from '@inertiajs/react';
-import { 
-    ShoppingCart, 
-    DollarSign, 
-    Package, 
+import {
+    ShoppingCart,
+    DollarSign,
+    Package,
     Users,
     TrendingUp,
-    TrendingDown,
     AlertTriangle,
     Eye,
     Plus,
-    RefreshCw,
     BarChart3,
     ArrowUpRight,
-    ArrowDownRight
+    ArrowDownRight,
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface Stats {
     today: {

@@ -45,14 +45,14 @@ class CheckoutTest extends TestCase
         ]);
 
         // Create cart items for user
-        $cart->cartItems()->create([
+        $cartItem = $cart->cartItems()->create([
             'product_id' => $this->product->id,
             'size_id' => $this->size->id,
             'quantity' => 2,
             'price' => $this->product->price,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/checkout');
+        $response = $this->actingAs($this->user)->get('/checkout/details');
 
         $response->assertOk();
         $response->assertInertia(
@@ -67,7 +67,7 @@ class CheckoutTest extends TestCase
 
     public function test_checkout_redirects_when_cart_is_empty(): void
     {
-        $response = $this->actingAs($this->user)->get('/checkout');
+        $response = $this->actingAs($this->user)->get('/checkout/details');
 
         $response->assertRedirect('/cart');
         $response->assertSessionHas('error', 'Your cart is empty.');
@@ -223,7 +223,7 @@ class CheckoutTest extends TestCase
             'price' => $product2->price,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/checkout');
+        $response = $this->actingAs($this->user)->get('/checkout/details');
 
         $response->assertInertia(
             fn (Assert $page) => $page
@@ -255,7 +255,7 @@ class CheckoutTest extends TestCase
             'price' => $expensiveProduct->price,
         ]);
 
-        $response = $this->actingAs($this->user)->get('/checkout');
+        $response = $this->actingAs($this->user)->get('/checkout/details');
 
         $response->assertInertia(
             fn (Assert $page) => $page

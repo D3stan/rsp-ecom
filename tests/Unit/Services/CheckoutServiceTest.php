@@ -39,6 +39,10 @@ class CheckoutServiceTest extends TestCase
 
     public function test_calculate_totals_with_single_item(): void
     {
+        // Create required settings for tax calculation
+        \App\Models\Setting::set('tax_rate', '8.75', 'string');
+        \App\Models\Setting::set('prices_include_tax', '0', 'boolean');
+
         $cartItems = collect([
             (object) [
                 'product' => $this->product,
@@ -58,6 +62,10 @@ class CheckoutServiceTest extends TestCase
 
     public function test_calculate_totals_with_multiple_items(): void
     {
+        // Create required settings for tax calculation
+        \App\Models\Setting::set('tax_rate', '8.75', 'string');
+        \App\Models\Setting::set('prices_include_tax', '0', 'boolean');
+
         $product2 = Product::factory()->create([
             'category_id' => $this->category->id,
             'price' => 15.00,
@@ -87,6 +95,10 @@ class CheckoutServiceTest extends TestCase
 
     public function test_free_shipping_over_threshold(): void
     {
+        // Create required settings for tax calculation
+        \App\Models\Setting::set('tax_rate', '8.75', 'string');
+        \App\Models\Setting::set('prices_include_tax', '0', 'boolean');
+
         $expensiveProduct = Product::factory()->create([
             'category_id' => $this->category->id,
             'price' => 150.00,
@@ -110,6 +122,10 @@ class CheckoutServiceTest extends TestCase
 
     public function test_calculate_totals_handles_empty_cart(): void
     {
+        // Create required settings for tax calculation
+        \App\Models\Setting::set('tax_rate', '8.75', 'string');
+        \App\Models\Setting::set('prices_include_tax', '0', 'boolean');
+
         $cartItems = collect([]);
 
         $totals = $this->checkoutService->calculateTotals($cartItems);
@@ -123,6 +139,10 @@ class CheckoutServiceTest extends TestCase
 
     public function test_calculate_totals_tax_rate_applied_correctly(): void
     {
+        // Create required settings for tax calculation
+        \App\Models\Setting::set('tax_rate', '8.75', 'string');
+        \App\Models\Setting::set('prices_include_tax', '0', 'boolean');
+
         $cartItems = collect([
             (object) [
                 'product' => Product::factory()->create([
@@ -150,6 +170,10 @@ class CheckoutServiceTest extends TestCase
 
     public function test_calculate_totals_precision(): void
     {
+        // Create required settings for tax calculation
+        \App\Models\Setting::set('tax_rate', '8.75', 'string');
+        \App\Models\Setting::set('prices_include_tax', '0', 'boolean');
+
         // Test with prices that might cause floating point precision issues
         $product1 = Product::factory()->create([
             'category_id' => $this->category->id,
@@ -185,6 +209,10 @@ class CheckoutServiceTest extends TestCase
 
     public function test_calculate_totals_quantity_aggregation(): void
     {
+        // Create required settings for tax calculation
+        \App\Models\Setting::set('tax_rate', '8.75', 'string');
+        \App\Models\Setting::set('prices_include_tax', '0', 'boolean');
+
         $cartItems = collect([
             (object) [
                 'product' => $this->product,

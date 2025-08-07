@@ -32,7 +32,7 @@ interface DataTableProps<T> {
     loading?: boolean;
 }
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T extends Record<string, unknown>>({
     data,
     columns,
     pagination,
@@ -44,7 +44,12 @@ export function DataTable<T extends Record<string, any>>({
     loading = false
 }: DataTableProps<T>) {
     const getValue = (item: T, key: string) => {
-        return key.split('.').reduce((obj, k) => obj?.[k], item);
+        return key.split('.').reduce((obj: unknown, k: string) => {
+            if (typeof obj === 'object' && obj !== null) {
+                return (obj as Record<string, unknown>)[k];
+            }
+            return undefined;
+        }, item);
     };
 
     return (

@@ -4,26 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Head, Link, router } from '@inertiajs/react';
-import { 
-    Search, 
-    Filter, 
-    Eye, 
+import {
+    Search,
+    Filter,
+    Eye,
     Trash2,
     MoreHorizontal,
     Star,
-    StarOff,
-    Users,
     MessageSquare,
     ChevronDown,
     ChevronUp,
     CheckCircle,
-    XCircle,
     Clock,
     TrendingUp,
     Check,
     X,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
@@ -45,7 +42,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/contexts/ToastContext';
@@ -81,10 +77,16 @@ interface KPIs {
     average_rating: number;
 }
 
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
 interface Props {
     reviews?: {
         data?: Review[];
-        links?: any[];
+        links?: PaginationLink[];
         meta?: {
             total: number;
             per_page: number;
@@ -201,7 +203,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                     setIsUpdating(null);
                 }
             });
-        } catch (error) {
+        } catch {
             addToast({
                 type: 'error',
                 title: 'Failed to update review status',
@@ -240,7 +242,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                     });
                 }
             });
-        } catch (error) {
+        } catch {
             addToast({
                 type: 'error',
                 title: `Failed to ${action} reviews`,
@@ -266,7 +268,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                     });
                 }
             });
-        } catch (error) {
+        } catch {
             addToast({
                 type: 'error',
                 title: 'Failed to delete review',

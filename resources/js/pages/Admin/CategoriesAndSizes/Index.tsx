@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/layouts/admin-layout';
 import { Badge } from '@/components/ui/badge';
@@ -9,22 +9,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-    Package, 
-    Tag, 
+import {
+    Package,
+    Tag,
     TrendingUp,
-    Plus,
     Edit,
     Trash2,
     Save,
     X,
     GripVertical,
-    AlertTriangle,
     BarChart3,
     Ruler,
     Box,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
 } from 'lucide-react';
 
 import {

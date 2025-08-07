@@ -1,4 +1,4 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage, type Page } from '@inertiajs/react';
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,6 +68,10 @@ interface CheckoutDetailsProps extends SharedData {
     discountAmount?: number;
     total: number;
     totalItems: number;
+}
+
+interface CheckoutResponsePageProps extends SharedData {
+    url?: string;
 }
 
 export default function CheckoutDetails() {
@@ -215,7 +219,7 @@ export default function CheckoutDetails() {
         if (auth?.user) {
             // User is authenticated, proceed to cart checkout using Cashier
             router.post('/checkout/cart', checkoutData, {
-                onSuccess: (page: any) => {
+                onSuccess: (page: Page<CheckoutResponsePageProps>) => {
                     // Redirect to Stripe checkout will be handled by the backend
                     if (page.props?.url) {
                         window.location.href = page.props.url;
@@ -237,7 +241,7 @@ export default function CheckoutDetails() {
         } else {
             // User is not authenticated, redirect to guest cart checkout
             router.post('/guest/checkout/cart', checkoutData, {
-                onSuccess: (page: any) => {
+                onSuccess: (page: Page<CheckoutResponsePageProps>) => {
                     // Redirect to Stripe checkout will be handled by the backend
                     if (page.props?.url) {
                         window.location.href = page.props.url;

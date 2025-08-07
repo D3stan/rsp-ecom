@@ -3,13 +3,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Head, Link, router } from '@inertiajs/react';
-import { 
-    Search, 
-    Filter, 
-    Download, 
-    Eye, 
+import {
+    Search,
+    Filter,
+    Eye,
     Edit,
     MoreHorizontal,
     TrendingUp,
@@ -17,7 +15,7 @@ import {
     Package,
     Users,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
@@ -71,10 +69,16 @@ interface KPIs {
     };
 }
 
+interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
+
 interface Props {
     orders?: {
         data?: Order[];
-        links?: any[];
+        links?: PaginationLink[];
         meta?: {
             total: number;
             per_page: number;

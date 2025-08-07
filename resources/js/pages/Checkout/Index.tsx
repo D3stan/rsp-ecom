@@ -124,8 +124,6 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
         locale: 'en',
     });
 
-    const { showToast } = useToast();
-    
     // Image handling helper
     const getImageSrc = (item: CartItem) => {
         return item.product.image_url || '/images/product.png';

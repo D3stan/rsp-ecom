@@ -3,7 +3,7 @@ import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { XCircle, ArrowLeft, ShoppingCart, HelpCircle, User } from 'lucide-react';
+import { XCircle, ShoppingCart, HelpCircle, User } from 'lucide-react';
 import { SharedData } from '@/types';
 
 interface Props {

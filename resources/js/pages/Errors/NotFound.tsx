@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Home, ArrowLeft, Search, ShoppingBag } from 'lucide-react';
+import { Home, ArrowLeft, ShoppingBag } from 'lucide-react';
 
 export default function NotFound() {
     return (

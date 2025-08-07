@@ -40,11 +40,9 @@ const sidebarNavItems: NavItem[] = [
     },
 ];
 
-interface AdminSettingsLayoutProps extends PropsWithChildren {
-    activeTab?: string;
-}
+type AdminSettingsLayoutProps = PropsWithChildren;
 
-export default function AdminSettingsLayout({ children, activeTab = 'general' }: AdminSettingsLayoutProps) {
+export default function AdminSettingsLayout({ children }: AdminSettingsLayoutProps) {
     // When server-side rendering, we only render the layout on the client...
     if (typeof window === 'undefined') {
         return null;

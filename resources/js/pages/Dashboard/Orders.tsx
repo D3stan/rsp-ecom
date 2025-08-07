@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Timeline, TimelineItem, TimelineConnector, TimelineHeader, TimelineIcon, TimelineTitle, TimelineBody } from '@/components/ui/timeline';
-import { CheckCircle, Circle, Package, ShoppingCart, Truck } from 'lucide-react';
+import { CheckCircle, Circle, Package } from 'lucide-react';
 
 interface OrdersPageProps {
     orders: Order[];

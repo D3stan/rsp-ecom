@@ -3,19 +3,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Head, Link, router } from '@inertiajs/react';
-import { 
-    ArrowLeft, 
+import {
+    ArrowLeft,
     Star,
     User,
     Package,
     Calendar,
-    MessageSquare,
     Check,
     X,
-    Edit,
     Trash2,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -120,7 +118,7 @@ export default function ReviewShow({ review, navigation }: Props) {
                     setIsUpdating(false);
                 }
             });
-        } catch (error) {
+        } catch {
             addToast({
                 type: 'error',
                 title: 'Failed to update review status',
@@ -146,7 +144,7 @@ export default function ReviewShow({ review, navigation }: Props) {
                     });
                 }
             });
-        } catch (error) {
+        } catch {
             addToast({
                 type: 'error',
                 title: 'Failed to delete review',

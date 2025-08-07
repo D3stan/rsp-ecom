@@ -56,7 +56,7 @@ interface SettingsData {
     shipping_calculation_method: string;
     allow_international_shipping: boolean;
     processing_time_days: number;
-    shipping_zones: any[];
+    shipping_zones: Record<string, unknown>[];
 
     // Tax Settings
     tax_enabled: boolean;
@@ -206,10 +206,10 @@ export default function AdminSettings({ settings }: Props) {
         children 
     }: { 
         id: string; 
-        title: string; 
-        description: string; 
-        icon: any; 
-        children: React.ReactNode; 
+        title: string;
+        description: string;
+        icon: React.ElementType;
+        children: React.ReactNode;
     }) => {
         const isExpanded = expandedSection === id;
         

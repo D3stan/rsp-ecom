@@ -4,22 +4,20 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarGroup, SidebarGroupLabel, SidebarGroupContent } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { type NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
-import { 
-    BookOpen, 
-    Folder, 
-    LayoutGrid, 
-    Package, 
-    ShoppingCart, 
-    Users, 
-    Settings, 
+import { Link } from '@inertiajs/react';
+import {
+    BookOpen,
+    Folder,
+    LayoutGrid,
+    Package,
+    ShoppingCart,
+    Users,
+    Settings,
     BarChart3,
     Tags,
     MessageSquare,
-    FileText,
     Plus,
     AlertTriangle,
-    Eye
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -75,7 +73,6 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AdminSidebar() {
-    const { props } = usePage() as any;
     const pendingOrders = 8; // This would come from props in real implementation
     const lowStockCount = 3; // This would come from props in real implementation
 
