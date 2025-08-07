@@ -141,3 +141,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';
+
+// Fallback route for 404 errors - must be last
+Route::fallback(function () {
+    return Inertia::render('Errors/NotFound');
+});
