@@ -89,9 +89,8 @@ Route::get('/about', function () {
     return Inertia::render('about');
 })->name('about');
 
-Route::get('/contact', function () {
-    return Inertia::render('contact');
-})->name('contact');
+Route::get('/contact', [App\Http\Controllers\ContactController::class, 'index'])->name('contact');
+Route::post('/contact', [App\Http\Controllers\ContactController::class, 'store'])->name('contact.store');
 
 Route::get('/privacy', function () {
     return Inertia::render('privacy');
@@ -104,6 +103,14 @@ Route::get('/shipping-returns', function () {
 Route::get('/terms', function () {
     return Inertia::render('terms');
 })->name('terms');
+
+Route::get('/test-403', function () {
+    abort(403);
+});
+
+Route::get('/test-500', function () {
+    throw new \Exception('Test server error');
+});
 
 // API routes for AJAX calls
 Route::prefix('api')->group(function () {

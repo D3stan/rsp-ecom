@@ -46,7 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Handle 403 Forbidden errors
-        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException $e, $request) {
+        $exceptions->render(function (AccessDeniedHttpException $e, $request) {
             if (!$request->expectsJson()) {
                 return \Inertia\Inertia::render('Errors/Forbidden')
                     ->toResponse($request)
@@ -54,18 +54,41 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // Handle 500 Internal Server errors
+        // Handle all HTTP exceptions (including abort(403), abort(500), etc.)
         $exceptions->render(function (HttpException $e, $request) {
-            if ($e->getStatusCode() === 500 && !$request->expectsJson()) {
-                return \Inertia\Inertia::render('Errors/ServerError')
-                    ->toResponse($request)
-                    ->setStatusCode(500);
+            if (!$request->expectsJson()) {
+                $statusCode = $e->getStatusCode();
+                
+                switch ($statusCode) {
+                    case 403:
+                        return \Inertia\Inertia::render('Errors/Forbidden')
+                            ->toResponse($request)
+                            ->setStatusCode(403);
+                    case 500:
+                        return \Inertia\Inertia::render('Errors/ServerError')
+                            ->toResponse($request)
+                            ->setStatusCode(500);
+                    case 404:
+                        return \Inertia\Inertia::render('Errors/NotFound')
+                            ->toResponse($request)
+                            ->setStatusCode(404);
+                    default:
+                        // For other HTTP errors, check if we should show custom page
+                        if ($statusCode >= 500) {
+                            return \Inertia\Inertia::render('Errors/ServerError')
+                                ->toResponse($request)
+                                ->setStatusCode($statusCode);
+                        }
+                        // Let Laravel handle other codes
+                        return null;
+                }
             }
         });
 
-        // Handle general exceptions in production
+        // Handle general exceptions (non-HTTP exceptions)
         $exceptions->render(function (\Throwable $e, $request) {
-            if (app()->environment('production') && !$request->expectsJson()) {
+            // Only handle in production or if APP_DEBUG=false
+            if ((!app()->environment('local') || !config('app.debug')) && !$request->expectsJson()) {
                 return \Inertia\Inertia::render('Errors/ServerError')
                     ->toResponse($request)
                     ->setStatusCode(500);
