@@ -36,23 +36,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // Handle 404 Not Found errors
-        $exceptions->render(function (NotFoundHttpException $e, $request) {
-            if (!$request->expectsJson()) {
-                return \Inertia\Inertia::render('Errors/NotFound')
-                    ->toResponse($request)
-                    ->setStatusCode(404);
-            }
-        });
-
-        // Handle 403 Forbidden errors
-        $exceptions->render(function (AccessDeniedHttpException $e, $request) {
-            if (!$request->expectsJson()) {
-                return \Inertia\Inertia::render('Errors/Forbidden')
-                    ->toResponse($request)
-                    ->setStatusCode(403);
-            }
-        });
 
         // Handle all HTTP exceptions (including abort(403), abort(500), etc.)
         $exceptions->render(function (HttpException $e, $request) {
