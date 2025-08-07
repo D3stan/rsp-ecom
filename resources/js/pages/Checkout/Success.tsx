@@ -182,7 +182,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="font-medium">€{(item.quantity * item.price).toFixed(2)}</p>
-                                                    <p className="text-sm text-gray-600">€{item.price.toFixed(2)} each (incl. VAT)</p>
+                                                    {item.quantity > 1 && <p className="text-sm text-gray-600">€{item.price.toFixed(2)} each</p>}
                                                 </div>
                                             </div>
                                         ))
@@ -257,7 +257,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                 {/* Totals */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
-                                        <span className="text-sm">Subtotal (incl. VAT)</span>
+                                        <span className="text-sm">Subtotal</span>
                                         <span className="text-sm">€{((order.subtotal || 0) + (order.tax_amount || 0)).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between">
@@ -265,14 +265,6 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                         <span className="text-sm">
                                             {(order.shipping_cost || 0) === 0 ? 'Free' : `€${(order.shipping_cost || 0).toFixed(2)}`}
                                         </span>
-                                    </div>
-                                    <div className="flex justify-between text-xs text-gray-500">
-                                        <span>└ Net price (excl. VAT)</span>
-                                        <span>€{(order.subtotal || 0).toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-xs text-gray-500">
-                                        <span>└ VAT (22%)</span>
-                                        <span>€{(order.tax_amount || 0).toFixed(2)}</span>
                                     </div>
                                     <Separator />
                                     <div className="flex justify-between font-bold text-lg">

@@ -716,7 +716,7 @@ class CheckoutController extends Controller
             $shippingCost = $taxInclusiveSubtotal >= 100 ? 0 : $baseShippingCost;
             
             $discountAmount = 0; // TODO: Implement discount logic
-            $total = $taxInclusiveSubtotal + $shippingCost - $discountAmount;
+            $total = $subtotal + $taxAmount + $shippingCost - $discountAmount;
             $totalItems = $cart->cartItems->sum('quantity');
 
             return Inertia::render('Checkout/Details', [
