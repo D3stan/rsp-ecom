@@ -59,6 +59,10 @@ class SettingsSeeder extends Seeder
             ['key' => 'from_email', 'value' => 'noreply@rspecommerce.com', 'type' => 'string'],
             ['key' => 'from_name', 'value' => 'RSP Ecommerce', 'type' => 'string'],
             ['key' => 'admin_notification_email', 'value' => 'admin@rspecommerce.com', 'type' => 'string'],
+
+            // Company/Admin Information for Shipping
+            ['key' => 'company_iban', 'value' => '', 'type' => 'string'],
+            ['key' => 'company_account_holder', 'value' => '', 'type' => 'string'],
         ];
 
         foreach ($settings as $setting) {

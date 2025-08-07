@@ -16,6 +16,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
     // Orders Management
     Route::resource('orders', OrdersController::class)->only(['index', 'show', 'edit', 'update']);
+    Route::get('orders/{order}/ship', [OrdersController::class, 'showShip'])->name('orders.show-ship');
+    Route::post('orders/{order}/ship', [OrdersController::class, 'processShip'])->name('orders.process-ship');
     Route::patch('orders/{order}/status', [OrdersController::class, 'updateStatus'])->name('orders.update-status');
     Route::patch('orders/bulk-status', [OrdersController::class, 'bulkUpdateStatus'])->name('orders.bulk-update-status');
     Route::patch('orders/{order}/cancel', [OrdersController::class, 'cancel'])->name('orders.cancel');

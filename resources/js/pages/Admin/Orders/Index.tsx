@@ -16,6 +16,7 @@ import {
     Users,
     ChevronDown,
     ChevronUp,
+    Truck,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
@@ -406,31 +407,41 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                 <span className="text-sm">{formatDate(order.created_at)}</span>
                                             </td>
                                             <td className="p-4 text-right">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="sm">
-                                                            <MoreHorizontal className="h-4 w-4" />
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {order.status === 'pending' && (
+                                                        <Button asChild size="sm" variant="outline">
+                                                            <Link href={`/admin/orders/${order.id}/ship`}>
+                                                                <Truck className="h-4 w-4 mr-1" />
+                                                                Ship
+                                                            </Link>
                                                         </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem asChild>
-                                                            <Link href={`/admin/orders/${order.id}`}>
-                                                                <Eye className="h-4 w-4 mr-2" />
-                                                                View Details
-                                                            </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem asChild>
-                                                            <Link href={`/admin/orders/${order.id}/edit`}>
-                                                                <Edit className="h-4 w-4 mr-2" />
-                                                                Edit Order
-                                                            </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem className="text-red-600">
-                                                            Cancel Order
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                    )}
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="sm">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem asChild>
+                                                                <Link href={`/admin/orders/${order.id}`}>
+                                                                    <Eye className="h-4 w-4 mr-2" />
+                                                                    View Details
+                                                                </Link>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem asChild>
+                                                                <Link href={`/admin/orders/${order.id}/edit`}>
+                                                                    <Edit className="h-4 w-4 mr-2" />
+                                                                    Edit Order
+                                                                </Link>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem className="text-red-600">
+                                                                Cancel Order
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -470,6 +481,14 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                             >
                                                 {order.status}
                                             </Badge>
+                                            {order.status === 'pending' && (
+                                                <Button asChild size="sm" variant="outline">
+                                                    <Link href={`/admin/orders/${order.id}/ship`}>
+                                                        <Truck className="h-4 w-4 mr-1" />
+                                                        Ship
+                                                    </Link>
+                                                </Button>
+                                            )}
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="sm">
