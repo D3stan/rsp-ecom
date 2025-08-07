@@ -59,39 +59,53 @@ return Application::configure(basePath: dirname(__DIR__))
             if (!$request->expectsJson()) {
                 $statusCode = $e->getStatusCode();
                 
-                switch ($statusCode) {
-                    case 403:
-                        return \Inertia\Inertia::render('Errors/Forbidden')
-                            ->toResponse($request)
-                            ->setStatusCode(403);
-                    case 500:
-                        return \Inertia\Inertia::render('Errors/ServerError')
-                            ->toResponse($request)
-                            ->setStatusCode(500);
-                    case 404:
-                        return \Inertia\Inertia::render('Errors/NotFound')
-                            ->toResponse($request)
-                            ->setStatusCode(404);
-                    default:
-                        // For other HTTP errors, check if we should show custom page
-                        if ($statusCode >= 500) {
+                // Always show custom pages for test routes or specific conditions
+                $isTestRoute = str_contains($request->path(), 'test-');
+                $shouldShowCustomPage = $isTestRoute || !config('app.debug') || !app()->environment('local');
+                
+                if ($shouldShowCustomPage) {
+                    switch ($statusCode) {
+                        case 403:
+                            return \Inertia\Inertia::render('Errors/Forbidden')
+                                ->toResponse($request)
+                                ->setStatusCode(403);
+                        case 500:
                             return \Inertia\Inertia::render('Errors/ServerError')
                                 ->toResponse($request)
-                                ->setStatusCode($statusCode);
-                        }
-                        // Let Laravel handle other codes
-                        return null;
+                                ->setStatusCode(500);
+                        case 404:
+                            return \Inertia\Inertia::render('Errors/NotFound')
+                                ->toResponse($request)
+                                ->setStatusCode(404);
+                        default:
+                            // For other HTTP errors >= 500, show server error page
+                            if ($statusCode >= 500) {
+                                return \Inertia\Inertia::render('Errors/ServerError')
+                                    ->toResponse($request)
+                                    ->setStatusCode($statusCode);
+                            }
+                    }
                 }
             }
+            
+            // Return null to let Laravel handle it normally (debug page in development)
+            return null;
         });
 
         // Handle general exceptions (non-HTTP exceptions)
         $exceptions->render(function (\Throwable $e, $request) {
-            // Only handle in production or if APP_DEBUG=false
-            if ((!app()->environment('local') || !config('app.debug')) && !$request->expectsJson()) {
-                return \Inertia\Inertia::render('Errors/ServerError')
-                    ->toResponse($request)
-                    ->setStatusCode(500);
+            if (!$request->expectsJson()) {
+                $isTestRoute = str_contains($request->path(), 'test-');
+                $shouldShowCustomPage = $isTestRoute || !config('app.debug') || !app()->environment('local');
+                
+                if ($shouldShowCustomPage) {
+                    return \Inertia\Inertia::render('Errors/ServerError')
+                        ->toResponse($request)
+                        ->setStatusCode(500);
+                }
             }
+            
+            // Return null to let Laravel handle it normally (debug page in development)
+            return null;
         });
     })->create();

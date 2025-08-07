@@ -9,9 +9,9 @@ export default function Forbidden() {
         <PublicLayout currentPage="home">
             <Head title="403 Access Denied" />
             
-            <div className="min-h-screen flex items-center justify-center px-4 -mt-16 pt-16">
+            <div className="min-h-screen flex items-center justify-center px-4 -mt-16 pt-16 py-0">
                 <div className="max-w-2xl mx-auto text-center">
-                    <Card className="shadow-xl border border-gray-200">
+                    <Card className="shadow-xl bg-white py-2">
                         <CardContent className="p-12">
                             {/* 403 Icon */}
                             <div className="mb-8">
@@ -33,14 +33,14 @@ export default function Forbidden() {
                             
                             {/* Action Buttons */}
                             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                                <Button asChild size="lg" className="w-full sm:w-auto bg-black text-white hover:bg-gray-900">
+                                <Button asChild size="lg" className="w-full sm:w-auto border bg-white text-black hover:bg-gray-300">
                                     <Link href="/">
                                         <Home className="w-4 h-4 mr-2" />
                                         Go Home
                                     </Link>
                                 </Button>
                                 
-                                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto border-gray-300 text-gray-900 hover:bg-gray-50">
+                                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto border-gray-300 text-white hover:bg-gray-50 hover:text-black">
                                     <Link href="/login">
                                         <LogIn className="w-4 h-4 mr-2" />
                                         Sign In
