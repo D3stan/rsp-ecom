@@ -65,6 +65,21 @@
     "follow_us": "Follow Us",
     "stay_connected": "Stay connected for updates and special offers.",
     "rights_reserved": "All rights reserved.",
+    "faq_title": "Frequently Asked Questions",
+    "faq_subtitle": "Find answers to common questions about ordering, shipping, returns, and more.",
+    "faq_categories": {
+        "all": "All",
+        "ordering": "Ordering",
+        "shipping": "Shipping", 
+        "returns": "Returns",
+        "account": "Account",
+        "general": "General"
+    },
+    "still_have_questions": "Still have questions?",
+    "faq_contact_description": "Can't find what you're looking for? Our customer service team is here to help.",
+    "contact_us": "Contact Us",
+    "email_support": "Email Support",
+    "response_time": "Response time: Usually within 24 hours",
     "categories": {
         "smartphones": "Smartphones",
         "laptops": "Laptops", 

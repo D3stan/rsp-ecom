@@ -193,7 +193,7 @@ export default function ShippingReturns() {
                                         </ul>
                                     </div>
 
-                                    <div>
+                                    {/* <div>
                                         <h3 className="text-xl font-semibold text-black mb-3">Return Address</h3>
                                         <div className="bg-gray-50 p-4 rounded-lg">
                                             <p className="text-gray-600">
@@ -205,7 +205,7 @@ export default function ShippingReturns() {
                                                 <strong>RMA Format:</strong> RMA-[ORDER-NUMBER]-[DATE]
                                             </p>
                                         </div>
-                                    </div>
+                                    </div> */}
 
                                     <div>
                                         <h3 className="text-xl font-semibold text-black mb-3">Dispute Resolution</h3>

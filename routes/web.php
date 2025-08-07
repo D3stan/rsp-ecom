@@ -105,6 +105,10 @@ Route::get('/terms', function () {
     return Inertia::render('terms');
 })->name('terms');
 
+Route::get('/faq', function () {
+    return Inertia::render('faq');
+})->name('faq');
+
 // API routes for AJAX calls
 Route::prefix('api')->group(function () {
     Route::post('/promotion/validate', [App\Http\Controllers\Api\PromotionController::class, 'validate'])->name('api.promotion.validate');

@@ -65,6 +65,21 @@
     "follow_us": "Seguici",
     "stay_connected": "Rimani connesso per aggiornamenti e offerte speciali.",
     "rights_reserved": "Tutti i diritti riservati.",
+    "faq_title": "Domande Frequenti",
+    "faq_subtitle": "Trova risposte alle domande comuni su ordini, spedizioni, resi e altro ancora.",
+    "faq_categories": {
+        "all": "Tutte",
+        "ordering": "Ordini",
+        "shipping": "Spedizione",
+        "returns": "Resi",
+        "account": "Account",
+        "general": "Generale"
+    },
+    "still_have_questions": "Hai ancora domande?",
+    "faq_contact_description": "Non riesci a trovare quello che cerchi? Il nostro team di assistenza clienti è qui per aiutarti.",
+    "contact_us": "Contattaci",
+    "email_support": "Supporto Email",
+    "response_time": "Tempo di risposta: Di solito entro 24 ore",
     "categories": {
         "smartphones": "Smartphone",
         "laptops": "Laptop",

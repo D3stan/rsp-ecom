@@ -65,6 +65,21 @@
     "follow_us": "Síguenos",
     "stay_connected": "Mantente conectado para actualizaciones y ofertas especiales.",
     "rights_reserved": "Todos los derechos reservados.",
+    "faq_title": "Preguntas Frecuentes",
+    "faq_subtitle": "Encuentra respuestas a preguntas comunes sobre pedidos, envíos, devoluciones y más.",
+    "faq_categories": {
+        "all": "Todas",
+        "ordering": "Pedidos",
+        "shipping": "Envío",
+        "returns": "Devoluciones",
+        "account": "Cuenta",
+        "general": "General"
+    },
+    "still_have_questions": "¿Aún tienes preguntas?",
+    "faq_contact_description": "¿No encuentras lo que buscas? Nuestro equipo de atención al cliente está aquí para ayudar.",
+    "contact_us": "Contáctanos",
+    "email_support": "Soporte por Email",
+    "response_time": "Tiempo de respuesta: Generalmente dentro de 24 horas",
     "categories": {
         "smartphones": "Teléfonos Inteligentes",
         "laptops": "Portátiles",

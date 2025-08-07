@@ -33,8 +33,14 @@ task('upload:build', function () {
 before('deploy:symlink', 'upload:build');
 
 task('laravel:restart', function () {
-    run("tmux has-session -t laravel 2>/dev/null && tmux send-keys -t laravel C-c || echo 'No session to kill'");
-    run("tmux has-session -t laravel 2>/dev/null && tmux send-keys -t laravel 'cd {{release_path}} && php artisan serve C-m || echo 'No session to restart'");
+    run("
+        if tmux has-session -t laravel 2>/dev/null; then
+            tmux send-keys -t laravel C-c
+        else
+            tmux new-session -d -s laravel
+        fi
+        tmux send-keys -t laravel 'cd {{release_path}} && php artisan serve' C-m
+    ");
 });
 
 task('laravel:optimize', function () {

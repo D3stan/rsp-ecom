@@ -407,7 +407,6 @@ export default function Home() {
                                     <li><Link href="/about" className="hover:text-white footer-link md:footer-link-none">{t('about_us')}</Link></li>
                                     <li><Link href="/contact" className="hover:text-white footer-link md:footer-link-none">{t('contact')}</Link></li>
                                     <li><Link href="/faq" className="hover:text-white footer-link md:footer-link-none">{t('faq')}</Link></li>
-                                    <li><Link href="/shipping" className="hover:text-white footer-link md:footer-link-none">{t('shipping_info')}</Link></li>
                                 </ul>
                             </div>
                             
