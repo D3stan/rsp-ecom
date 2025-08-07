@@ -97,9 +97,7 @@ export default function Privacy() {
                                     If you have any questions about this Privacy Policy, please contact us:
                                 </p>
                                 <ul className="list-none text-gray-600 space-y-2">
-                                    <li>Email: privacy@yourstore.com</li>
-                                    <li>Phone: (555) 123-4567</li>
-                                    <li>Address: 123 Store Street, City, State 12345</li>
+                                    <li>Email: support@rsp-industries.com</li>
                                 </ul>
                             </section>
                         </div>

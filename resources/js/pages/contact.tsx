@@ -171,13 +171,13 @@ export default function Contact() {
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-black mb-1">Email Us</h3>
-                                        <p className="text-gray-600">support@store.com</p>
+                                        <p className="text-gray-600">support@rsp-industries.com</p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className="border border-gray-200 shadow-sm bg-white">
+                        {/* <Card className="border border-gray-200 shadow-sm bg-white">
                             <CardContent className="p-6">
                                 <div className="flex items-start space-x-4">
                                     <div className="bg-black text-white p-3 rounded-full">
@@ -189,7 +189,7 @@ export default function Contact() {
                                     </div>
                                 </div>
                             </CardContent>
-                        </Card>
+                        </Card> */}
 
                         <Card className="border border-gray-200 shadow-sm bg-white">
                             <CardContent className="p-6">

@@ -196,7 +196,7 @@ class PageFactory extends Factory
         return "# Contact Us\n\n" .
                "We'd love to hear from you! Get in touch with our customer service team.\n\n" .
                "## Customer Service\n\n" .
-               "- **Email**: support@example.com\n" .
+               "- **Email**: support@rsp-industries.com\n" .
                "- **Phone**: +1 (555) 123-4567\n" .
                "- **Hours**: Monday - Friday, 9:00 AM - 5:00 PM EST\n\n" .
                "## Business Address\n\n" .

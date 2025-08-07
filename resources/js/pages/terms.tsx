@@ -216,8 +216,7 @@ export default function Terms() {
                                         <div className="bg-gray-50 p-4 rounded-lg">
                                             <p className="text-gray-600">
                                                 <strong>Warranty Claims:</strong><br />
-                                                Email: <a href="mailto:warranty@yourstore.com" className="text-blue-600 hover:underline">warranty@yourstore.com</a><br />
-                                                Phone: +39 06 1234 5678<br />
+                                                Email: <a href="mailto:support@rsp-industries.com" className="text-blue-600 hover:underline">support@rsp-industries.com</a><br />
                                                 Hours: Monday-Friday, 9:00-17:00 CET
                                             </p>
                                         </div>

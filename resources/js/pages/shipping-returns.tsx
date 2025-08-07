@@ -98,7 +98,7 @@ export default function ShippingReturns() {
                                             Photo evidence may be required for damage claims.
                                         </p>
                                         <p className="text-gray-600">
-                                            Contact us at: <a href="mailto:support@yourstore.com" className="text-blue-600 hover:underline">support@yourstore.com</a>
+                                            Contact us at: <a href="mailto:support@rsp-industries.com" className="text-blue-600 hover:underline">support@rsp-industries.com</a>
                                         </p>
                                     </div>
                                 </div>
@@ -147,8 +147,7 @@ export default function ShippingReturns() {
                                         <div className="bg-gray-50 p-4 rounded-lg">
                                             <p className="text-gray-600">
                                                 <strong>Contact for Returns:</strong><br />
-                                                Email: <a href="mailto:returns@yourstore.com" className="text-blue-600 hover:underline">returns@yourstore.com</a><br />
-                                                Phone: +39 06 1234 5678
+                                                Email: <a href="mailto:support@rsp-industries.com" className="text-blue-600 hover:underline">support@rsp-industries.com</a><br />
                                             </p>
                                         </div>
                                     </div>
