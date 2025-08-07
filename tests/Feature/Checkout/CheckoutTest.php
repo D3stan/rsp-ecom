@@ -27,6 +27,10 @@ class CheckoutTest extends TestCase
     {
         parent::setUp();
 
+        // Create required settings for tax calculations
+        \App\Models\Setting::set('tax_rate', '8.75', 'string');
+        \App\Models\Setting::set('prices_include_tax', '0', 'boolean');
+
         $this->user = User::factory()->create();
         $this->category = Category::factory()->create();
         $this->size = Size::factory()->create();
@@ -75,7 +79,7 @@ class CheckoutTest extends TestCase
 
     public function test_checkout_requires_authentication(): void
     {
-        $response = $this->get('/checkout');
+        $response = $this->get('/checkout/details');
 
         $response->assertRedirect(route('login'));
     }
@@ -181,12 +185,7 @@ class CheckoutTest extends TestCase
             'price' => $this->product->price,
         ]);
 
-        $response = $this->get('/checkout/guest');
-
-        // Debug: Check where it's redirecting
-        if ($response->status() === 302) {
-            dump('Redirecting to: ' . $response->headers->get('location'));
-        }
+        $response = $this->get('/guest/checkout/details');
 
         $response->assertOk();
         $response->assertInertia(

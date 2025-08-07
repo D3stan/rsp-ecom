@@ -13,6 +13,7 @@ class OrderItem extends Model
         'order_id',
         'product_id', // Can be null for guest orders where we don't have a proper product reference
         'product_name',
+        'size_id',
         'quantity',
         'price',
         'total',
@@ -38,6 +39,11 @@ class OrderItem extends Model
             'price' => $this->price,
             'image_url' => null,
         ]);
+    }
+
+    public function size(): BelongsTo
+    {
+        return $this->belongsTo(Size::class);
     }
 
     // Accessors
