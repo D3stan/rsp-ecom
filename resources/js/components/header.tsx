@@ -152,7 +152,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                             <img 
                                 src="/images/rsplogo.png" 
                                 alt={name || 'Store'} 
-                                className="h-8"
+                                className={`h-8 brightness-0 ${isDarkTheme ? 'invert' : ''}`}
                                 onError={(e) => {
                                     // Fallback to favicon.ico if SVG fails
                                     const target = e.target as HTMLImageElement;

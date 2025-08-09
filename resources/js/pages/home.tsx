@@ -223,14 +223,14 @@ export default function Home() {
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                             <Link href={route('products')}>
-                                <Button size="lg" className="px-4 sm:px-6 py-3 text-base sm:text-lg bg-white text-black hover:bg-gray-100 font-semibold w-auto">
+                                <Button size="lg" className="px-4 border border-grey-600 border-1 shadow sm:px-6 py-3 text-base sm:text-lg bg-white text-black hover:bg-gray-200 font-semibold w-auto">
                                     {t('shop_now')}
                                     <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
                                 </Button>
                             </Link>
-                            <Button variant="outline" size="lg" className="px-4 sm:px-6 py-3 text-base sm:text-lg border-2 border-white text-white hover:bg-white hover:text-black font-semibold w-auto">
+                            {/* <Button variant="outline" size="lg" className="px-4 sm:px-6 py-3 text-base sm:text-lg border-2 border-white text-white hover:bg-white hover:text-black font-semibold w-auto">
                                 {t('view_deals')}
-                            </Button>
+                            </Button> */}
                         </div>
                     </div>
                     
@@ -329,13 +329,14 @@ export default function Home() {
                                 );
                             })}
                         </div>
-
+                        <Link href="/products">
                         <div className="text-center mt-12">
                             <Button variant="outline" size="lg">
                                 {t('view_all_products')}
                                 <ArrowRight className="w-4 h-4 ml-2" />
                             </Button>
                         </div>
+                        </Link>
                     </div>
                 </section>
 
@@ -395,7 +396,7 @@ export default function Home() {
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                             <div>
-                                <h3 className="text-xl font-bold mb-4">Store</h3>
+                                <h3 className="text-xl font-bold mb-4">RSP</h3>
                                 <p className="text-gray-400 mb-4">
                                     {t('store_description')}
                                 </p>
@@ -405,7 +406,7 @@ export default function Home() {
                                 <h4 className="font-semibold mb-4">{t('quick_links')}</h4>
                                 <ul className="space-y-2 text-gray-400">
                                     <li><Link href="/about" className="hover:text-white footer-link md:footer-link-none">{t('about_us')}</Link></li>
-                                    <li><Link href="/contact" className="hover:text-white footer-link md:footer-link-none">{t('contact')}</Link></li>
+                                    <li><Link href="/contact" className="hover:text-white footer-link md:footer-link-none">{t('contact.title')}</Link></li>
                                     <li><Link href="/faq" className="hover:text-white footer-link md:footer-link-none">{t('faq')}</Link></li>
                                 </ul>
                             </div>
@@ -415,7 +416,7 @@ export default function Home() {
                                 <ul className="space-y-2 text-gray-400">
                                     <li><Link href="/privacy" className="hover:text-white footer-link md:footer-link-none">{t('privacy_policy')}</Link></li>
                                     <li><Link href="/terms" className="hover:text-white footer-link md:footer-link-none">{t('terms_of_service')}</Link></li>
-                                    <li><Link href="/shipping-returns" className="hover:text-white footer-link md:footer-link-none">{t('shipping_returns')}</Link></li>
+                                    <li><Link href="/shipping-returns" className="hover:text-white footer-link md:footer-link-none">{t('shipping_returns.title')}</Link></li>
                                 </ul>
                             </div>
                             
@@ -425,20 +426,20 @@ export default function Home() {
                                     {t('stay_connected')}
                                 </p>
                                 <div className="flex space-x-4">
-                                    <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Facebook">
-                                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
+                                    {/* <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Facebook">
+                                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-black">
                                             <FacebookIcon className="w-5 h-5" />
                                             <span className="sr-only">Facebook</span>
                                         </Button>
-                                    </a>
-                                    <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Instagram">
-                                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
+                                    </a> */}
+                                    <a href="https://instagram.com/rsp.industries" target="_blank" rel="noopener noreferrer" aria-label="Follow us on Instagram">
+                                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-black">
                                             <InstagramIcon className="w-5 h-5" />
                                             <span className="sr-only">Instagram</span>
                                         </Button>
                                     </a>
                                     <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Follow us on TikTok">
-                                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
+                                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-black">
                                             <TikTokIcon className="w-5 h-5" />
                                             <span className="sr-only">TikTok</span>
                                         </Button>
