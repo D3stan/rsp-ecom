@@ -438,7 +438,7 @@ export default function Home() {
                                             <span className="sr-only">Instagram</span>
                                         </Button>
                                     </a>
-                                    <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Follow us on TikTok">
+                                    <a href="https://www.tiktok.com/@rspindustrie" target="_blank" rel="noopener noreferrer" aria-label="Follow us on TikTok">
                                         <Button variant="ghost" size="icon" className="text-gray-400 hover:text-black">
                                             <TikTokIcon className="w-5 h-5" />
                                             <span className="sr-only">TikTok</span>
