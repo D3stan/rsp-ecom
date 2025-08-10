@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Console\Commands\SendTestOrderConfirmation;
+use App\Console\Commands\GenerateSitemap;
+use App\Console\Commands\GenerateSitemapIndex;
+use App\Console\Commands\ClearSitemaps;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use Laravel\Cashier\Cashier;
@@ -18,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 SendTestOrderConfirmation::class,
+                GenerateSitemap::class,
+                GenerateSitemapIndex::class,
+                ClearSitemaps::class,
             ]);
         }
     }

@@ -37,8 +37,9 @@ class HomeController extends Controller
         TwitterCard::setDescription('Discover our wide range of quality products. Shop electronics, clothing, home & garden, sports, and more.');
         
         // Add default social image if available
-        $socialImageUrl = asset('images/social/default.jpg');
-        if (file_exists(public_path('images/social/default.jpg'))) {
+        $socialImagePath = 'images/rsplogo.png';
+        $socialImageUrl = asset($socialImagePath);
+        if (file_exists(public_path($socialImagePath))) {
             OpenGraph::addImage($socialImageUrl);
             TwitterCard::setImage($socialImageUrl);
         }

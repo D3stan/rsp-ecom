@@ -1,2 +1,11 @@
 User-agent: *
-Disallow:
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /cart/
+Disallow: /checkout/
+Disallow: /api/
+
+# Allow all other pages
+Allow: /
+
+# Sitemap location will be dynamically generated

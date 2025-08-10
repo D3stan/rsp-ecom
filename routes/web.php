@@ -145,6 +145,24 @@ require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';
 
+Route::get('/robots.txt', function () {
+    $content = "User-agent: *
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /cart/
+Disallow: /checkout/
+Disallow: /api/
+
+# Allow all other pages
+Allow: /
+
+# Sitemap location
+Sitemap: " . url('/sitemap.xml');
+    
+    return response($content)
+        ->header('Content-Type', 'text/plain');
+})->name('robots');
+
 // Fallback route for 404 errors - must be last
 Route::fallback(function () {
     return Inertia::render('Errors/NotFound');

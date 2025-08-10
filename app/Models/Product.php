@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\RegeneratesSitemap;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, RegeneratesSitemap;
     protected $fillable = [
         'name',
         'slug',
@@ -225,5 +226,13 @@ class Product extends Model
     public function incrementStock(int $quantity): bool
     {
         return $this->increment('stock_quantity', $quantity);
+    }
+
+    /**
+     * Get fields that should trigger sitemap regeneration when changed
+     */
+    protected function getSitemapImportantFields(): array
+    {
+        return ['slug', 'status', 'name', 'stock_quantity'];
     }
 }

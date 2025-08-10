@@ -6,18 +6,58 @@ use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Console\Command;
 use Spatie\Sitemap\Sitemap;
+use Spatie\Sitemap\SitemapIndex;
 use Spatie\Sitemap\Tags\Url;
 use Carbon\Carbon;
 
-class GenerateSitemap extends Command
+class GenerateSitemapIndex extends Command
 {
-    protected $signature = 'generate:sitemap';
-    protected $description = 'Generate comprehensive sitemap.xml with all public pages';
+    protected $signature = 'generate:sitemap-index {--force : Force regeneration even if files exist}';
+    protected $description = 'Generate sitemap index with separate sitemaps for different content types';
 
     public function handle(): int
     {
-        $this->info('Generating sitemap...');
+        $this->info('Generating sitemap index...');
 
+        $sitemapIndex = SitemapIndex::create();
+        $baseUrl = config('app.url');
+
+        // Generate main sitemap for static pages
+        $this->generateMainSitemap();
+        $sitemapIndex->add('/sitemap-main.xml');
+
+        // Generate categories sitemap
+        $this->generateCategoriesSitemap();
+        $sitemapIndex->add('/sitemap-categories.xml');
+
+        // Generate products sitemaps (split if too many products)
+        $productCount = Product::active()->inStock()->count();
+        $maxProductsPerSitemap = 5000; // Google recommends max 50,000 URLs per sitemap
+
+        if ($productCount > $maxProductsPerSitemap) {
+            $sitemapCount = ceil($productCount / $maxProductsPerSitemap);
+            for ($i = 1; $i <= $sitemapCount; $i++) {
+                $this->generateProductsSitemap($i, $maxProductsPerSitemap);
+                $sitemapIndex->add("/sitemap-products-{$i}.xml");
+            }
+        } else {
+            $this->generateProductsSitemap(1, $maxProductsPerSitemap);
+            $sitemapIndex->add('/sitemap-products-1.xml');
+        }
+
+        // Write sitemap index
+        $sitemapIndex->writeToFile(public_path('sitemap.xml'));
+
+        $this->info("Sitemap index generated with {$productCount} products across multiple sitemaps!");
+        $this->info('Sitemap index saved to: ' . public_path('sitemap.xml'));
+
+        return self::SUCCESS;
+    }
+
+    private function generateMainSitemap(): void
+    {
+        $this->info('Generating main sitemap...');
+        
         $sitemap = Sitemap::create();
 
         // Add homepage
@@ -69,8 +109,15 @@ class GenerateSitemap extends Command
             );
         }
 
-        // Add active categories
-        $this->info('Adding categories...');
+        $sitemap->writeToFile(public_path('sitemap-main.xml'));
+    }
+
+    private function generateCategoriesSitemap(): void
+    {
+        $this->info('Generating categories sitemap...');
+        
+        $sitemap = Sitemap::create();
+
         Category::where('is_active', true)
             ->withCount(['products' => function ($query) {
                 $query->active()->inStock();
@@ -87,12 +134,21 @@ class GenerateSitemap extends Command
                 }
             });
 
-        // Add active products
-        $this->info('Adding products...');
-        $productCount = 0;
+        $sitemap->writeToFile(public_path('sitemap-categories.xml'));
+    }
+
+    private function generateProductsSitemap(int $page, int $limit): void
+    {
+        $this->info("Generating products sitemap {$page}...");
+        
+        $sitemap = Sitemap::create();
+        $offset = ($page - 1) * $limit;
+
         Product::active()
             ->inStock()
-            ->chunk(100, function ($products) use ($sitemap, &$productCount) {
+            ->offset($offset)
+            ->limit($limit)
+            ->chunk(100, function ($products) use ($sitemap) {
                 foreach ($products as $product) {
                     $sitemap->add(
                         Url::create("/products/{$product->slug}")
@@ -100,16 +156,9 @@ class GenerateSitemap extends Command
                             ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
                             ->setPriority(0.7)
                     );
-                    $productCount++;
                 }
             });
 
-        // Write the sitemap to file
-        $sitemap->writeToFile(public_path('sitemap.xml'));
-
-        $this->info("Sitemap generated successfully with {$productCount} products and static pages!");
-        $this->info('Sitemap saved to: ' . public_path('sitemap.xml'));
-        
-        return self::SUCCESS;
+        $sitemap->writeToFile(public_path("sitemap-products-{$page}.xml"));
     }
 }
