@@ -5,6 +5,8 @@ use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\PageController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +16,9 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/products', [ProductsController::class, 'index'])->name('products');
 Route::get('/products/{slug}', [ProductsController::class, 'show'])->name('products.show');
+
+// Category routes
+Route::get('/categories/{slug}', [CategoryController::class, 'show'])->name('categories.show');
 
 // Cart routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
@@ -86,28 +91,18 @@ Route::get('/guest/checkout/{priceId}/promo/{promoCode}', [CheckoutController::c
 // Configure in Stripe Dashboard to point to: /stripe/webhook
 // Cashier registers this route automatically and uses our custom webhook controller
 
-Route::get('/about', function () {
-    return Inertia::render('about');
-})->name('about');
+Route::get('/about', [PageController::class, 'about'])->name('about');
 
 Route::get('/contact', [App\Http\Controllers\ContactController::class, 'index'])->name('contact');
 Route::post('/contact', [App\Http\Controllers\ContactController::class, 'store'])->name('contact.store');
 
-Route::get('/privacy', function () {
-    return Inertia::render('privacy');
-})->name('privacy');
+Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
 
-Route::get('/shipping-returns', function () {
-    return Inertia::render('shipping-returns');
-})->name('shipping-returns');
+Route::get('/shipping-returns', [PageController::class, 'shippingReturns'])->name('shipping-returns');
 
-Route::get('/terms', function () {
-    return Inertia::render('terms');
-})->name('terms');
+Route::get('/terms', [PageController::class, 'terms'])->name('terms');
 
-Route::get('/faq', function () {
-    return Inertia::render('faq');
-})->name('faq');
+Route::get('/faq', [PageController::class, 'faq'])->name('faq');
 
 // API routes for AJAX calls
 Route::prefix('api')->group(function () {
@@ -133,6 +128,10 @@ Route::get('/api/translations/{locale}', function ($locale) {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
+        // Set noindex for user dashboard
+        \Artesaos\SEOTools\Facades\SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
+        \Artesaos\SEOTools\Facades\SEOMeta::setTitle('Dashboard – ' . config('app.name'));
+        
         // Redirect admin users to admin dashboard
         if (auth()->user()->isAdmin()) {
             return redirect()->route('admin.dashboard');

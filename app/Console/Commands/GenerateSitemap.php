@@ -1,4 +1,5 @@
-// app/Console/Commands/GenerateSitemap.php
+<?php
+
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;

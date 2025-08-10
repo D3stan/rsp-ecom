@@ -6,8 +6,13 @@ use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Artesaos\SEOTools\Facades\SEOMeta;
+use Artesaos\SEOTools\Facades\OpenGraph;
+use Artesaos\SEOTools\Facades\TwitterCard;
+use Artesaos\SEOTools\Facades\JsonLd;
 
 class ProductsController extends Controller
 {
@@ -16,6 +21,41 @@ class ProductsController extends Controller
      */
     public function index(Request $request): Response
     {
+        // Set SEO for products listing page
+        $pageTitle = 'Products';
+        $metaDescription = 'Browse our wide selection of high-quality products. Find the perfect items for your needs with filters and search.';
+        
+        if ($search = $request->get('search')) {
+            $pageTitle = "Search results for '{$search}'";
+            $metaDescription = "Search results for '{$search}' - Find the products you're looking for.";
+        }
+        
+        if ($categorySlug = $request->get('category')) {
+            $category = Category::where('slug', $categorySlug)->first();
+            if ($category) {
+                $pageTitle = $category->name . ' Products';
+                $metaDescription = $category->description ?? "Browse our {$category->name} collection. Find the perfect products in this category.";
+            }
+        }
+        
+        SEOMeta::setTitle($pageTitle . ' – ' . config('app.name'));
+        SEOMeta::setDescription(Str::limit($metaDescription, 160));
+        SEOMeta::setCanonical(route('products', $request->except('page')));
+        
+        // Set noindex for filtered/search pages to avoid duplicate content
+        if ($request->hasAny(['search', 'category', 'min_price', 'max_price', 'sort'])) {
+            SEOMeta::addMeta('robots', 'noindex,follow', 'name');
+        }
+        
+        OpenGraph::setType('website');
+        OpenGraph::setUrl(route('products', $request->except('page')));
+        OpenGraph::setTitle($pageTitle . ' – ' . config('app.name'));
+        OpenGraph::setDescription(Str::limit($metaDescription, 300));
+        
+        TwitterCard::setType('summary');
+        TwitterCard::setTitle($pageTitle . ' – ' . config('app.name'));
+        TwitterCard::setDescription(Str::limit($metaDescription, 200));
+        
         $query = Product::with(['category', 'approvedReviews'])
             ->active()
             ->inStock();
@@ -168,6 +208,91 @@ class ProductsController extends Controller
             ->where('slug', $slug)
             ->where('status', 'active')
             ->firstOrFail();
+
+        // Set SEO meta tags for product page
+        $pageTitle = $product->seo_title ?: $product->name;
+        $metaDescription = $product->seo_description ?: strip_tags($product->description);
+        
+        SEOMeta::setTitle($pageTitle . ' – ' . config('app.name'));
+        SEOMeta::setDescription(Str::limit($metaDescription, 160));
+        SEOMeta::setCanonical(route('products.show', $product));
+
+        // Open Graph for product
+        OpenGraph::setType('product');
+        OpenGraph::setUrl(route('products.show', $product));
+        OpenGraph::setTitle($pageTitle . ' – ' . config('app.name'));
+        OpenGraph::setDescription(Str::limit($metaDescription, 300));
+        
+        // Get the main product image for social sharing
+        $socialImageUrl = $product->social_image_url ?: $product->main_image_url;
+        if ($socialImageUrl && !filter_var($socialImageUrl, FILTER_VALIDATE_URL)) {
+            $socialImageUrl = url($socialImageUrl);
+        }
+        
+        if ($socialImageUrl) {
+            OpenGraph::addImage($socialImageUrl);
+            TwitterCard::setImage($socialImageUrl);
+        }
+
+        // Twitter Card
+        TwitterCard::setType('summary_large_image');
+        TwitterCard::setTitle($pageTitle . ' – ' . config('app.name'));
+        TwitterCard::setDescription(Str::limit($metaDescription, 200));
+
+        // JSON-LD Product structured data
+        JsonLd::setType('Product');
+        JsonLd::addValue('name', $product->name);
+        JsonLd::addValue('description', Str::limit($metaDescription, 300));
+        JsonLd::addValue('sku', $product->sku);
+        
+        // Add product images
+        $productImages = [];
+        if (!empty($product->images)) {
+            foreach ($product->images as $image) {
+                $imageUrl = $product->getImageUrl($image);
+                if (!filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+                    $imageUrl = url($imageUrl);
+                }
+                $productImages[] = $imageUrl;
+            }
+        }
+        if (!empty($productImages)) {
+            JsonLd::addValue('image', $productImages);
+        }
+
+        // Add brand if category exists
+        if ($product->category) {
+            JsonLd::addValue('brand', [
+                '@type' => 'Brand',
+                'name' => $product->category->name
+            ]);
+        }
+
+        // Add offers data
+        JsonLd::addValue('offers', [
+            '@type' => 'Offer',
+            'price' => (string) $product->price,
+            'priceCurrency' => 'EUR',
+            'availability' => $product->stock_quantity > 0 
+                ? 'https://schema.org/InStock' 
+                : 'https://schema.org/OutOfStock',
+            'url' => route('products.show', $product),
+            'seller' => [
+                '@type' => 'Organization',
+                'name' => config('app.name')
+            ]
+        ]);
+
+        // Add aggregated rating if reviews exist
+        if ($product->review_count > 0) {
+            JsonLd::addValue('aggregateRating', [
+                '@type' => 'AggregateRating',
+                'ratingValue' => round($product->average_rating, 1),
+                'reviewCount' => $product->review_count,
+                'bestRating' => 5,
+                'worstRating' => 1
+            ]);
+        }
 
         // Handle empty image arrays - use default image
         $imageUrl = '/images/product.png';

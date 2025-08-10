@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\User;
+use Artesaos\SEOTools\Facades\SEOMeta;
 use App\Services\CheckoutService;
 
 class CheckoutController extends Controller
@@ -607,6 +608,10 @@ class CheckoutController extends Controller
      */
     public function show(Request $request): Response|RedirectResponse
     {
+        // Set noindex for checkout pages
+        SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
+        SEOMeta::setTitle('Checkout – ' . config('app.name'));
+        
         $sessionId = $request->get('session_id');
 
         if (!$sessionId) {
@@ -643,6 +648,10 @@ class CheckoutController extends Controller
      */
     public function showDetails(Request $request): Response|RedirectResponse
     {
+        // Set noindex for checkout pages
+        SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
+        SEOMeta::setTitle('Checkout Details – ' . config('app.name'));
+        
         try {
             $user = $request->user();
             
@@ -693,6 +702,10 @@ class CheckoutController extends Controller
      */
     public function showGuestDetails(Request $request): Response|RedirectResponse
     {
+        // Set noindex for checkout pages
+        SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
+        SEOMeta::setTitle('Guest Checkout – ' . config('app.name'));
+        
         try {
             // Get guest cart from database using session ID
             $guestSessionId = session()->getId();
