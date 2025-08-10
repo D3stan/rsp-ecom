@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
+use Inertia\Response;
+use Artesaos\SEOTools\Facades\SEOMeta;
 
 class CartController extends Controller
 {
@@ -18,6 +20,10 @@ class CartController extends Controller
      */
     public function index()
     {
+        // Set noindex for cart page
+        SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
+        SEOMeta::setTitle('Shopping Cart – ' . config('app.name'));
+        
         $cart = $this->getOrCreateCart();
         
         if (!$cart) {

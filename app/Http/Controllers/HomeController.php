@@ -8,6 +8,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Artesaos\SEOTools\Facades\SEOMeta;
+use Artesaos\SEOTools\Facades\OpenGraph;
+use Artesaos\SEOTools\Facades\TwitterCard;
+use Spatie\SchemaOrg\Schema;
 
 class HomeController extends Controller
 {
@@ -16,6 +20,40 @@ class HomeController extends Controller
      */
     public function index(): Response
     {
+        // Set SEO for homepage
+        $appName = config('app.name');
+        SEOMeta::setTitle($appName . ' - Quality Products Online');
+        SEOMeta::setDescription('Discover our wide range of quality products. Shop electronics, clothing, home & garden, sports, and more with fast shipping and excellent customer service.');
+        SEOMeta::setCanonical(url('/'));
+        
+        OpenGraph::setType('website');
+        OpenGraph::setUrl(url('/'));
+        OpenGraph::setTitle($appName . ' - Quality Products Online');
+        OpenGraph::setDescription('Discover our wide range of quality products. Shop electronics, clothing, home & garden, sports, and more with fast shipping and excellent customer service.');
+        OpenGraph::setSiteName($appName);
+        
+        TwitterCard::setType('summary_large_image');
+        TwitterCard::setTitle($appName . ' - Quality Products Online');
+        TwitterCard::setDescription('Discover our wide range of quality products. Shop electronics, clothing, home & garden, sports, and more.');
+        
+        // Add default social image if available
+        $socialImageUrl = asset('images/social/default.jpg');
+        if (file_exists(public_path('images/social/default.jpg'))) {
+            OpenGraph::addImage($socialImageUrl);
+            TwitterCard::setImage($socialImageUrl);
+        }
+
+        // Generate WebSite JSON-LD with SearchAction for sitelinks search box
+        $websiteJsonLd = Schema::webSite()
+            ->url(config('app.url'))
+            ->name($appName)
+            ->potentialAction(
+                Schema::searchAction()
+                    ->target(url('/products') . '?search={search_term_string}')
+                    ->queryInput('required name=search_term_string')
+            )
+            ->toScript();
+
         // Get featured products (active, in stock, featured flag)
         $featuredProducts = Product::with(['category', 'approvedReviews'])
             ->active()
@@ -72,6 +110,7 @@ class HomeController extends Controller
         return Inertia::render('home', [
             'featuredProducts' => $featuredProducts,
             'categories' => $categories,
+            'websiteJsonLd' => $websiteJsonLd,
         ]);
     }
 

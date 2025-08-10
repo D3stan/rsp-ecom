@@ -330,7 +330,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                         </div>
 
                         {/* Categories List */}
-                        <Card className="max-h-96 overflow-y-auto">
+                        {categories.length > 1 && (<Card className="max-h-96 overflow-y-auto">
                             <div className="space-y-2 p-4">
                                 {categories.map((category) => (
                                     <div
@@ -373,7 +373,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                     </div>
                                 ))}
                             </div>
-                        </Card>
+                        </Card>)}
 
                         {/* Category Form */}
                         <Card className="p-4">

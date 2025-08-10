@@ -57,6 +57,8 @@ after('deploy:shared', 'deploy:vendors');         // Install composer dependenci
 after('deploy:vendors', 'laravel:optimize');      // Run Laravel cache commands
 after('deploy:vendors', 'laravel:migrate');       // Run migrations (optional)
 after('deploy:unlock', 'laravel:restart');       // Restart app
+after('laravel:restart', 'artisan:app:generate-sitemap'); // sitemap generation
+
 
 // Laravel options
 

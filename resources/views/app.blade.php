@@ -5,6 +5,17 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        {{-- resources/views/layouts/app.blade.php --}}
+        {!! \Artesaos\SEOTools\Facades\SEOMeta::generate() !!}
+        {!! \Artesaos\SEOTools\Facades\OpenGraph::generate() !!}
+        {!! \Artesaos\SEOTools\Facades\TwitterCard::generate() !!}
+        {!! \Artesaos\SEOTools\Facades\JsonLd::generate() !!}
+
+        {{-- Include WebSite JSON-LD for sitelinks search box (homepage only) --}}
+        @if(isset($page['props']['websiteJsonLd']))
+            {!! $page['props']['websiteJsonLd'] !!}
+        @endif
+
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
             (function() {
@@ -30,8 +41,6 @@
                 background-color: oklch(0.145 0 0);
             }
         </style>
-
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">

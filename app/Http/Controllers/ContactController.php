@@ -7,11 +7,28 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
+use Artesaos\SEOTools\Facades\SEOMeta;
+use Artesaos\SEOTools\Facades\OpenGraph;
+use Artesaos\SEOTools\Facades\TwitterCard;
 
 class ContactController extends Controller
 {
     public function index()
     {
+        // Set SEO for contact page
+        SEOMeta::setTitle('Contact Us – ' . config('app.name'));
+        SEOMeta::setDescription('Get in touch with our customer service team. We\'re here to help with any questions about our products or services.');
+        SEOMeta::setCanonical(route('contact'));
+
+        OpenGraph::setType('website');
+        OpenGraph::setUrl(route('contact'));
+        OpenGraph::setTitle('Contact Us – ' . config('app.name'));
+        OpenGraph::setDescription('Get in touch with our customer service team. We\'re here to help with any questions about our products or services.');
+
+        TwitterCard::setType('summary');
+        TwitterCard::setTitle('Contact Us – ' . config('app.name'));
+        TwitterCard::setDescription('Get in touch with our customer service team. We\'re here to help with any questions.');
+
         return Inertia::render('contact');
     }
 
