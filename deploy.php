@@ -53,11 +53,15 @@ task('laravel:migrate', function () {
     run('cd {{release_path}} && php artisan migrate --force');
 });
 
+task('laravel:generate-sitemap', function () {
+    run('cd {{release_path}} && php artisan generate:sitemap-index');
+});
+
 after('deploy:shared', 'deploy:vendors');         // Install composer dependencies
 after('deploy:vendors', 'laravel:optimize');      // Run Laravel cache commands
 after('deploy:vendors', 'laravel:migrate');       // Run migrations (optional)
-after('deploy:unlock', 'laravel:restart');       // Restart app
-after('laravel:restart', 'artisan:app:generate-sitemap'); // sitemap generation
+after('deploy:unlock', 'laravel:restart');        // Restart app
+after('laravel:restart', 'laravel:generate-sitemap'); // Generate sitemap after deployment
 
 
 // Laravel options
