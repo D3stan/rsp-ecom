@@ -349,7 +349,36 @@
         "audio": "Audio",
         "wearables": "Wearables",
         "cameras": "Kameras",
-        "gaming": "Gaming"
+        "gaming": "Gaming",
+        "electronics": "Elektronik",
+        "clothing": "Kleidung",
+        "home___garden": "Haus und Garten",
+        "home_&_garden": "Haus und Garten",
+        "sports___outdoors": "Sport und Outdoor",
+        "sports_&_outdoors": "Sport und Outdoor",
+        "books___media": "Bücher und Medien",
+        "books_&_media": "Bücher und Medien",
+        "health___beauty": "Gesundheit und Schönheit",
+        "health_&_beauty": "Gesundheit und Schönheit"
+    },
+    "products": {
+        "title": "Produkte",
+        "all_products": "Alle Produkte",
+        "search_placeholder": "Produkte suchen...",
+        "showing_results": "Zeige {from}-{to} von {total} Produkten",
+        "no_products": "Keine Produkte gefunden",
+        "no_products_text": "Versuchen Sie, Ihre Such- oder Filterkriterien anzupassen.",
+        "filters": "Filter",
+        "clear_all": "Alle Löschen",
+        "price_range": "Preisbereich",
+        "categories": "Kategorien",
+        "sort_by": "Sortieren nach",
+        "grid_view": "Rasteransicht",
+        "list_view": "Listenansicht",
+        "apply_filters": "Filter Anwenden",
+        "in_stock": "Auf Lager",
+        "out_of_stock": "Ausverkauft",
+        "add_to_cart": "In den Warenkorb"
     },
     "products_count": "{{count}} Produkte"
 }

@@ -145,8 +145,8 @@ class CategoryController extends Controller
                 'per_page' => $products->perPage(),
                 'current_page' => $products->currentPage(),
                 'last_page' => $products->lastPage(),
-                'from' => $products->firstItem(),
-                'to' => $products->lastItem(),
+                'from' => $products->firstItem() ?? 0,
+                'to' => $products->lastItem() ?? 0,
             ],
         ]);
     }

@@ -66,9 +66,15 @@ export const useTranslation = () => {
       return key;
     }
     
-    // Handle replacements like {{count}}
+    // Handle replacements with both {placeholder} and {{placeholder}} formats
     if (replacements) {
-      return value.replace(/\{\{(\w+)\}\}/g, (match, placeholder) => {
+      // Handle single curly braces {placeholder}
+      value = value.replace(/\{(\w+)\}/g, (match: string, placeholder: string) => {
+        return replacements[placeholder]?.toString() || match;
+      });
+      
+      // Handle double curly braces {{placeholder}}
+      value = value.replace(/\{\{(\w+)\}\}/g, (match: string, placeholder: string) => {
         return replacements[placeholder]?.toString() || match;
       });
     }

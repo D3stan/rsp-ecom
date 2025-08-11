@@ -301,6 +301,25 @@
         "health___beauty": "Salud y Belleza",
         "health_&_beauty": "Salud y Belleza"
     },
+    "products": {
+        "title": "Productos",
+        "all_products": "Todos los Productos",
+        "search_placeholder": "Buscar productos...",
+        "showing_results": "Mostrando {from}-{to} de {total} productos",
+        "no_products": "No se encontraron productos",
+        "no_products_text": "Prueba ajustando tus criterios de búsqueda o filtro.",
+        "filters": "Filtros",
+        "clear_all": "Limpiar Todo",
+        "price_range": "Rango de Precio",
+        "categories": "Categorías",
+        "sort_by": "Ordenar por",
+        "grid_view": "Vista en Cuadrícula",
+        "list_view": "Vista en Lista",
+        "apply_filters": "Aplicar Filtros",
+        "in_stock": "En Stock",
+        "out_of_stock": "Agotado",
+        "add_to_cart": "Añadir al Carrito"
+    },
     "terms": {
         "title": "Términos de Servicio",
         "acceptance": "Aceptación de Términos",
