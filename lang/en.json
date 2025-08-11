@@ -435,5 +435,25 @@
         "health___beauty": "Health & Beauty",
         "health_&_beauty": "Health & Beauty"
     },
-    "products_count": "{{count}} products"
+    "products_count": "{{count}} products",
+    "product": {
+        "size": "Size",
+        "select_size": "Select size",
+        "quantity": "Quantity",
+        "in_stock": "in stock",
+        "add_to_cart": "Add to Cart",
+        "adding": "Adding...",
+        "out_of_stock": "Out of Stock",
+        "wishlist": "Wishlist",
+        "share": "Share",
+        "product_description": "Product Description",
+        "specifications": "Specifications",
+        "reviews": "Reviews",
+        "reviews_count": "Reviews ({count})",
+        "you_may_also_like": "You may also like",
+        "breadcrumb": {
+            "home": "Home",
+            "products": "Products"
+        }
+    }
 }

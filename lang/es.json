@@ -380,5 +380,25 @@
         "contact_terms": "Si tiene alguna pregunta sobre estos Términos de Servicio, por favor contáctenos:",
         "contact_email": "Email: support@rsp-industries.com"
     },
-    "products_count": "{{count}} productos"
+    "products_count": "{{count}} productos",
+    "product": {
+        "size": "Talla",
+        "select_size": "Seleccionar talla",
+        "quantity": "Cantidad",
+        "in_stock": "en stock",
+        "add_to_cart": "Agregar al Carrito",
+        "adding": "Agregando...",
+        "out_of_stock": "Agotado",
+        "wishlist": "Lista de Deseos",
+        "share": "Compartir",
+        "product_description": "Descripción del Producto",
+        "specifications": "Especificaciones",
+        "reviews": "Reseñas",
+        "reviews_count": "Reseñas ({count})",
+        "you_may_also_like": "También te puede gustar",
+        "breadcrumb": {
+            "home": "Inicio",
+            "products": "Productos"
+        }
+    }
 }

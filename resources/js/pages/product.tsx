@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import Header from '@/components/header';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from '@/hooks/useTranslation';
 import { cartService, type AddToCartData } from '@/services/cartService';
 import { 
     Star, 
@@ -18,8 +19,7 @@ import {
     ShoppingCart,
     Heart,
     Share2,
-    ChevronDown,
-    ChevronUp
+    ChevronDown
 } from 'lucide-react';
 
 interface Product {
@@ -90,6 +90,7 @@ const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
 export default function Product() {
     const { product, reviews, relatedProducts, breadcrumb } = usePage<ProductPageProps>().props;
     const isMobile = useIsMobile();
+    const { t } = useTranslation();
     
     // State for image carousel
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -190,7 +191,8 @@ export default function Product() {
                                             href={index === 0 ? '/' : index === 1 ? '/products' : '#'}
                                             className="text-gray-600 hover:text-gray-900"
                                         >
-                                            {item}
+                                            {index === 0 ? t('product.breadcrumb.home') : 
+                                             index === 1 ? t('product.breadcrumb.products') : item}
                                         </Link>
                                     ) : (
                                         <span className="text-gray-900 font-medium">{item}</span>
@@ -297,17 +299,17 @@ export default function Product() {
                                 </div>
                             </div>
 
-                            {/* Size Selector */}
+                                                        {/* Size Selector */}
                             {product.sizes.length > 0 && (
                                 <div>
                                     <Label className="text-sm font-medium text-gray-900 mb-3 block">
-                                        Size
+                                        {t('product.size')}
                                     </Label>
                                     <Select value={selectedSize} onValueChange={setSelectedSize}>
                                         <SelectTrigger className="w-full text-black">
-                                            <SelectValue placeholder="Select size" />
+                                            <SelectValue placeholder={t('product.select_size')} />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className='bg-white text-gray-900'>
                                             {product.sizes.map((size) => (
                                                 <SelectItem key={size.id} value={size.id.toString()}>
                                                     {size.name}
@@ -326,7 +328,7 @@ export default function Product() {
                             {/* Quantity Selector */}
                             <div>
                                 <Label className="text-sm font-medium text-gray-900 mb-3 block">
-                                    Quantity
+                                    {t('product.quantity')}
                                 </Label>
                                 <div className="flex items-center space-x-4">
                                     <div className="flex items-center border border-gray-300 rounded-lg">
@@ -353,7 +355,7 @@ export default function Product() {
                                         </Button>
                                     </div>
                                     <span className="text-sm text-gray-600">
-                                        {product.stockQuantity} in stock
+                                        {product.stockQuantity} {t('product.in_stock')}
                                     </span>
                                 </div>
                             </div>
@@ -367,7 +369,7 @@ export default function Product() {
                                     size="lg"
                                 >
                                     <ShoppingCart className="w-5 h-5 mr-2" />
-                                    {isAddingToCart ? 'Adding...' : (product.inStock ? 'Add to Cart' : 'Out of Stock')}
+                                    {isAddingToCart ? t('product.adding') : (product.inStock ? t('product.add_to_cart') : t('product.out_of_stock'))}
                                 </Button>
                                 
                                 <div className="grid grid-cols-2 gap-3">
@@ -377,7 +379,7 @@ export default function Product() {
                                         className="h-12"
                                     >
                                         <Heart className="w-5 h-5 mr-2" />
-                                        Wishlist
+                                        {t('product.wishlist')}
                                     </Button>
                                     
                                     <Button 
@@ -385,7 +387,7 @@ export default function Product() {
                                         className="h-12"
                                     >
                                         <Share2 className="w-5 h-5 mr-2" />
-                                        Share
+                                        {t('product.share')}
                                     </Button>
                                 </div>
                             </div>
@@ -412,13 +414,13 @@ export default function Product() {
                             >
                                 <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 hover:bg-gray-200 rounded-lg transition-colors">
                                     <span className="text-lg font-semibold text-gray-900">
-                                        Product Description
+                                        {t('product.product_description')}
                                     </span>
-                                    {isDescriptionOpen ? (
-                                        <ChevronUp className="w-5 h-5" />
-                                    ) : (
-                                        <ChevronDown className="w-5 h-5" />
-                                    )}
+                                    <ChevronDown 
+                                        className={`w-5 h-5 text-black transition-transform duration-200 ${
+                                            isDescriptionOpen ? 'rotate-180' : ''
+                                        }`} 
+                                    />
                                 </CollapsibleTrigger>
                                 <CollapsibleContent className="p-4 rounded-lg mt-2 text-black">
                                     <div 
@@ -438,13 +440,13 @@ export default function Product() {
                             >
                                 <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
                                     <span className="text-lg font-semibold text-gray-900">
-                                        Specifications
+                                        {t('product.specifications')}
                                     </span>
-                                    {isSpecsOpen ? (
-                                        <ChevronUp className="w-5 h-5" />
-                                    ) : (
-                                        <ChevronDown className="w-5 h-5" />
-                                    )}
+                                    <ChevronDown 
+                                        className={`w-5 h-5 text-black transition-transform duration-200 ${
+                                            isSpecsOpen ? 'rotate-180' : ''
+                                        }`} 
+                                    />
                                 </CollapsibleTrigger>
                                 <CollapsibleContent className="p-4 border border-gray-200 rounded-lg mt-2">
                                     <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -468,13 +470,13 @@ export default function Product() {
                             >
                                 <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
                                     <span className="text-lg font-semibold text-gray-900">
-                                        Reviews ({reviews.length})
+                                        {t('product.reviews_count', { count: reviews.length })}
                                     </span>
-                                    {isReviewsOpen ? (
-                                        <ChevronUp className="w-5 h-5" />
-                                    ) : (
-                                        <ChevronDown className="w-5 h-5" />
-                                    )}
+                                    <ChevronDown 
+                                        className={`w-5 h-5 text-black transition-transform duration-200 ${
+                                            isReviewsOpen ? 'rotate-180' : ''
+                                        }`} 
+                                    />
                                 </CollapsibleTrigger>
                                 <CollapsibleContent className="p-4 rounded-lg mt-2">
                                     <div className="space-y-6">
@@ -501,7 +503,7 @@ export default function Product() {
                     {/* Related Products */}
                     {relatedProducts.length > 0 && (
                         <div className={`mt-20 pt-8 border-t border-gray-200 ${isMobile ? 'mb-8' : ''}`}>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-8">You may also like</h2>
+                            <h2 className="text-2xl font-bold text-gray-900 mb-8">{t('product.you_may_also_like')}</h2>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                                 {relatedProducts.map((relatedProduct) => (
                                     <Link
@@ -549,7 +551,7 @@ export default function Product() {
                                 className="flex-1 h-12 font-semibold"
                             >
                                 <ShoppingCart className="w-5 h-5 mr-2" />
-                                {isAddingToCart ? 'Adding...' : (product.inStock ? 'Add to Cart' : 'Out of Stock')}
+                                {isAddingToCart ? t('product.adding') : (product.inStock ? t('product.add_to_cart') : t('product.out_of_stock'))}
                             </Button>
                         </div>
                     </div>

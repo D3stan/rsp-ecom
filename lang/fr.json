@@ -381,5 +381,25 @@
         "clear_all_filters": "Effacer tous les filtres",
         "try_adjusting_filters": "Essayez d'ajuster votre recherche ou vos filtres pour trouver ce que vous cherchez"
     },
-    "products_count": "{{count}} produits"
+    "products_count": "{{count}} produits",
+    "product": {
+        "size": "Taille",
+        "select_size": "Sélectionner la taille",
+        "quantity": "Quantité",
+        "in_stock": "en stock",
+        "add_to_cart": "Ajouter au Panier",
+        "adding": "Ajout...",
+        "out_of_stock": "Rupture de Stock",
+        "wishlist": "Liste de Souhaits",
+        "share": "Partager",
+        "product_description": "Description du Produit",
+        "specifications": "Spécifications",
+        "reviews": "Avis",
+        "reviews_count": "Avis ({count})",
+        "you_may_also_like": "Vous pourriez aussi aimer",
+        "breadcrumb": {
+            "home": "Accueil",
+            "products": "Produits"
+        }
+    }
 }
