@@ -403,7 +403,11 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                     </div>
                 </div>
                 <Button 
-                    className="w-full h-11 font-semibold bg-black text-white hover:bg-gray-900 hover:shadow-lg transition-all duration-200 mt-auto" 
+                    className="w-full min-h-[44px] px-3 py-2
+                        font-semibold text-sm text-center leading-tight
+                        bg-black text-white hover:bg-gray-900 hover:shadow-lg
+                        whitespace-normal break-words
+                        transition-all duration-200 mt-auto"
                     disabled={!product.inStock}
                     onClick={(e) => {
                         e.stopPropagation();
