@@ -50,7 +50,7 @@ export const useTranslation = () => {
     loadTranslations();
   }, [locale]);
 
-  const t = (key: string, replacements?: { [key: string]: string | number }) => {
+  const t = (key: string, replacements?: { [key: string]: string | number }): string => {
     const keys = key.split('.');
     let value: unknown = translations;
     
@@ -79,7 +79,7 @@ export const useTranslation = () => {
       });
     }
     
-    return value;
+    return value as string;
   };
 
   const changeLocale = (newLocale: string) => {

@@ -90,6 +90,17 @@ export default function Products() {
     const { products, categories, priceRange, filters, pagination } = usePage<ProductsPageProps>().props;
     const { t } = useTranslation();
     
+    // Predefined price ranges with translations
+    const PRICE_RANGES = [
+        { label: t('products.price_ranges.all_prices'), min: null, max: null },
+        { label: t('products.price_ranges.under_25'), min: 0, max: 25 },
+        { label: t('products.price_ranges.25_50'), min: 25, max: 50 },
+        { label: t('products.price_ranges.50_100'), min: 50, max: 100 },
+        { label: t('products.price_ranges.100_200'), min: 100, max: 200 },
+        { label: t('products.price_ranges.200_500'), min: 200, max: 500 },
+        { label: t('products.price_ranges.over_500'), min: 500, max: null },
+    ];
+    
     // Local state for filters
     const [searchTerm, setSearchTerm] = useState(filters.search);
     const [selectedCategory, setSelectedCategory] = useState(filters.category || 'all');
@@ -251,12 +262,12 @@ export default function Products() {
                                     <SheetTrigger asChild>
                                         <Button variant="outline" size="lg" className="lg:hidden">
                                             <Filter className="w-4 h-4 mr-2" />
-                                            Filters
+                                            {t('products.filters')}
                                         </Button>
                                     </SheetTrigger>
                                     <SheetContent side="left" className="w-80 bg-white border-r border-gray-200 filters-modal-content">
                                         <SheetHeader className="border-b border-gray-200 pb-4 mb-6">
-                                            <SheetTitle className="text-lg font-semibold text-gray-900 text-left">Filters</SheetTitle>
+                                            <SheetTitle className="text-lg font-semibold text-gray-900 text-left">{t('products.filters')}</SheetTitle>
                                         </SheetHeader>
                                         <div className="py-0 px-4">
                                             <FilterSection 
@@ -271,6 +282,7 @@ export default function Products() {
                                                 applyFilters={handleApplyFilters}
                                                 clearFilters={clearFilters}
                                                 closeModal={() => setIsFilterOpen(false)}
+                                                priceRanges={PRICE_RANGES}
                                             />
                                         </div>
                                     </SheetContent>
@@ -282,15 +294,15 @@ export default function Products() {
                                     applyFilters({ sort: value });
                                 }}>
                                     <SelectTrigger className="w-48 bg-white border-gray-300 text-gray-900">
-                                        <SelectValue placeholder="Sort by..." className="text-gray-900" />
+                                        <SelectValue placeholder={t('products.sort_by_placeholder')} className="text-gray-900" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-white border border-gray-200">
-                                        <SelectItem value="name" className="text-gray-900 hover:bg-gray-100">Name (A-Z)</SelectItem>
-                                        <SelectItem value="price" className="text-gray-900 hover:bg-gray-100">Price (Low-High)</SelectItem>
-                                        <SelectItem value="newest" className="text-gray-900 hover:bg-gray-100">Newest</SelectItem>
-                                        <SelectItem value="rating" className="text-gray-900 hover:bg-gray-100">Best Rated</SelectItem>
-                                        <SelectItem value="popular" className="text-gray-900 hover:bg-gray-100">Most Popular</SelectItem>
-                                        <SelectItem value="most_bought" className="text-gray-900 hover:bg-gray-100">Most Bought</SelectItem>
+                                        <SelectItem value="name" className="text-gray-900 hover:bg-gray-100">{t('products.sort_name_az')}</SelectItem>
+                                        <SelectItem value="price" className="text-gray-900 hover:bg-gray-100">{t('products.sort_price_low_high')}</SelectItem>
+                                        <SelectItem value="newest" className="text-gray-900 hover:bg-gray-100">{t('products.sort_newest')}</SelectItem>
+                                        <SelectItem value="rating" className="text-gray-900 hover:bg-gray-100">{t('products.sort_rating')}</SelectItem>
+                                        <SelectItem value="popular" className="text-gray-900 hover:bg-gray-100">{t('products.sort_popular')}</SelectItem>
+                                        <SelectItem value="most_bought" className="text-gray-900 hover:bg-gray-100">{t('products.sort_most_bought')}</SelectItem>
                                     </SelectContent>
                                 </Select>
 
@@ -332,6 +344,7 @@ export default function Products() {
                                     setPriceMax={setPriceMax}
                                     applyFilters={handleApplyFilters}
                                     clearFilters={clearFilters}
+                                    priceRanges={PRICE_RANGES}
                                 />
                             </div>
                         </div>
@@ -378,11 +391,11 @@ export default function Products() {
                                                     disabled={pagination.current_page <= 1}
                                                 >
                                                     <ChevronLeft className="w-4 h-4 mr-1" />
-                                                    Prev
+                                                    {t('products.prev')}
                                                 </Button>
                                                 
                                                 <span className="text-sm text-gray-600">
-                                                    Page {pagination.current_page} of {pagination.last_page}
+                                                    {t('products.page_of', { current: pagination.current_page, total: pagination.last_page })}
                                                 </span>
                                                 
                                                 <Button
@@ -391,7 +404,7 @@ export default function Products() {
                                                     onClick={() => handlePageChange(pagination.current_page + 1)}
                                                     disabled={pagination.current_page >= pagination.last_page}
                                                 >
-                                                    Next
+                                                    {t('products.next')}
                                                     <ChevronRight className="w-4 h-4 ml-1" />
                                                 </Button>
                                             </div>
@@ -406,7 +419,7 @@ export default function Products() {
                                                         disabled={pagination.current_page <= 1}
                                                     >
                                                         <ChevronLeft className="w-4 h-4 mr-1" />
-                                                        Previous
+                                                        {t('products.previous')}
                                                     </Button>
                                                     
                                                     {/* Dynamic Page Numbers with ellipsis */}
@@ -472,7 +485,7 @@ export default function Products() {
                                                         onClick={() => handlePageChange(pagination.current_page + 1)}
                                                         disabled={pagination.current_page >= pagination.last_page}
                                                     >
-                                                        Next
+                                                        {t('products.next')}
                                                         <ChevronRight className="w-4 h-4 ml-1" />
                                                     </Button>
                                                 </div>
@@ -483,10 +496,10 @@ export default function Products() {
                             ) : (
                                 <div className="text-center py-24 bg-white rounded-xl shadow-sm border border-gray-200">
                                     <div className="max-w-md mx-auto">
-                                        <h2 className="text-2xl font-bold text-gray-900 mb-3">No products found</h2>
-                                        <p className="text-gray-600 mb-6 text-lg">Try adjusting your search or filters to find what you're looking for</p>
+                                        <h2 className="text-2xl font-bold text-gray-900 mb-3">{t('products.no_products')}</h2>
+                                        <p className="text-gray-600 mb-6 text-lg">{t('products.try_adjusting_filters')}</p>
                                         <Button onClick={clearFilters} size="lg" className="bg-black text-white hover:bg-gray-900 font-semibold">
-                                            Clear all filters
+                                            {t('products.clear_all_filters')}
                                         </Button>
                                     </div>
                                 </div>
@@ -512,6 +525,7 @@ interface FilterSectionProps {
     applyFilters: () => void;
     clearFilters: () => void;
     closeModal?: () => void;
+    priceRanges: { label: string; min: number | null; max: number | null }[];
 }
 
 function FilterSection({
@@ -525,8 +539,11 @@ function FilterSection({
     setPriceMax,
     applyFilters,
     clearFilters,
-    closeModal
+    closeModal,
+    priceRanges
 }: FilterSectionProps) {
+    const { t } = useTranslation();
+    
     const handleApplyFilters = () => {
         applyFilters();
         // Close modal only if we're in mobile mode and closeModal is provided
@@ -538,7 +555,7 @@ function FilterSection({
     return (
         <div className="space-y-6 bg-white">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('products.filters')}</h3>
                 <Button 
                     variant="ghost" 
                     size="sm" 
@@ -546,23 +563,23 @@ function FilterSection({
                     className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-2 py-1"
                 >
                     <X className="w-4 h-4 mr-1" />
-                    Clear
+                    {t('products.clear')}
                 </Button>
             </div>
 
             {/* Categories */}
             <div className="space-y-3">
-                <Label className="text-sm font-semibold text-gray-900 block">Category</Label>
+                <Label className="text-sm font-semibold text-gray-900 block">{t('products.category')}</Label>
                 <Select value={selectedCategory} onValueChange={(value) => {
                     setSelectedCategory(value);
                     applyFilters();
                 }}>
                     <SelectTrigger className="w-full bg-white border-gray-300 text-gray-900 h-10 focus:border-blue-500 focus:ring-blue-500">
-                        <SelectValue placeholder="All Categories" className="text-gray-900" />
+                        <SelectValue placeholder={t('products.all_categories')} className="text-gray-900" />
                     </SelectTrigger>
                     <SelectContent className="bg-white border border-gray-200 shadow-lg">
                         <SelectItem value="all" className="text-gray-900 hover:bg-gray-100 focus:bg-gray-100 data-[state=checked]:bg-blue-500 data-[state=checked]:text-white">
-                            All Categories
+                            {t('products.all_categories')}
                         </SelectItem>
                         {categories.map((category) => (
                             <SelectItem 
@@ -579,9 +596,9 @@ function FilterSection({
 
             {/* Price Range */}
             <div className="space-y-4">
-                <Label className="text-sm font-semibold text-gray-900 block">Price Range</Label>
+                <Label className="text-sm font-semibold text-gray-900 block">{t('products.price_range')}</Label>
                 <div className="space-y-3">
-                    {PRICE_RANGES.map((range, index) => (
+                    {priceRanges.map((range, index) => (
                         <div key={index} className="flex items-center space-x-3">
                             <input
                                 type="radio"
@@ -611,10 +628,10 @@ function FilterSection({
                 
                 {/* Custom Range Inputs */}
                 <div className="mt-4 space-y-3 pt-4 border-t border-gray-200">
-                    <Label className="text-sm font-semibold text-gray-900 block">Custom Range</Label>
+                    <Label className="text-sm font-semibold text-gray-900 block">{t('products.custom_range')}</Label>
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                            <Label className="text-xs text-gray-600 font-medium">Min</Label>
+                            <Label className="text-xs text-gray-600 font-medium">{t('products.min')}</Label>
                             <Input 
                                 type="number" 
                                 value={priceMin}
@@ -626,7 +643,7 @@ function FilterSection({
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs text-gray-600 font-medium">Max</Label>
+                            <Label className="text-xs text-gray-600 font-medium">{t('products.max')}</Label>
                             <Input 
                                 type="number" 
                                 value={priceMax}
@@ -648,7 +665,7 @@ function FilterSection({
                 onClick={handleApplyFilters} 
                 className="w-full h-11 font-semibold text-base text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all duration-200"
             >
-                Apply Filters
+                {t('products.apply_filters')}
             </Button>
         </div>
     );

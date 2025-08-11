@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import type { Product } from '@/pages/products';
 import { cartService, type AddToCartData } from '@/services/cartService';
+import { useTranslation } from '@/hooks/useTranslation';
 import { 
     ShoppingCart, 
     Star, 
@@ -40,6 +41,7 @@ interface QuickViewModalProps {
 
 function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToProduct }: QuickViewModalProps) {
     const [quantity, setQuantity] = useState(1);
+    const { t } = useTranslation();
     const defaultImage = '/images/product.png';
     const [imageSrc, setImageSrc] = useState(() => {
         if (!product.image || product.image === '' || product.image === '/images/product.png') {
@@ -68,7 +70,7 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white" aria-describedby="quick-view-description">
                 <DialogHeader>
-                    <DialogTitle className="text-gray-900">Quick View</DialogTitle>
+                    <DialogTitle className="text-gray-900">{t('products.quick_view')}</DialogTitle>
                 </DialogHeader>
                 <div id="quick-view-description" className="sr-only">
                     Quick view modal for {product.name}. View product details, select quantity, and add to cart.
@@ -107,7 +109,7 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                             <div className="flex">
                                 {renderStars(product.rating)}
                             </div>
-                            <span className="text-sm text-gray-500">({product.reviews} reviews)</span>
+                            <span className="text-sm text-gray-500">({product.reviews} {t('products.reviews')})</span>
                         </div>
                         
                         <div className="flex items-center space-x-3">
@@ -120,7 +122,7 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                         </div>
                         
                         <div className="flex items-center space-x-4">
-                            <Label className="text-sm font-medium text-gray-900">Quantity:</Label>
+                            <Label className="text-sm font-medium text-gray-900">{t('products.quantity')}:</Label>
                             <div className="flex items-center border border-gray-300 rounded-md">
                                 <Button
                                     variant="ghost"
@@ -145,7 +147,7 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                                 </Button>
                             </div>
                             <span className="text-sm text-gray-600">
-                                {product.stockQuantity} in stock
+                                {product.stockQuantity} {t('products.in_stock_count')}
                             </span>
                         </div>
                         
@@ -157,7 +159,7 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                                 size="lg"
                             >
                                 <ShoppingCart className="w-5 h-5 mr-2" />
-                                {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                                {product.inStock ? t('products.add_to_cart') : t('products.out_of_stock')}
                             </Button>
                             
                             <Button 
@@ -165,12 +167,12 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                                 className="w-full"
                                 onClick={onNavigateToProduct}
                             >
-                                View Full Details
+                                {t('products.view_full_details')}
                             </Button>
                             
                             <Button variant="outline" size="sm" className="w-full">
                                 <Heart className="w-4 h-4 mr-2" />
-                                Add to Wishlist
+                                {t('products.add_to_wishlist')}
                             </Button>
                         </div>
                     </div>
@@ -190,6 +192,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
     const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
     const [quantity] = useState(1);
     const [isAddingToCart, setIsAddingToCart] = useState(false);
+    const { t } = useTranslation();
     // Use a more reliable fallback strategy
     const defaultImage = '/images/product.png';
     const [imageSrc, setImageSrc] = useState(() => {
@@ -272,7 +275,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                                     <div className="flex">
                                         {renderStars(product.rating)}
                                     </div>
-                                    <span className="text-base text-gray-500 font-medium">({product.reviews})</span>
+                                    <span className="text-base text-gray-500 font-medium">({product.reviews} {t('products.reviews')})</span>
                                 </div>
                                 <div className="flex items-center space-x-3">
                                     <span className="text-3xl font-bold text-gray-900">${product.price}</span>
@@ -294,7 +297,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                                     }}
                                 >
                                     <Eye className="w-5 h-5 mr-2" />
-                                    Quick View
+                                    {t('products.quick_view')}
                                 </Button>
                                 <Button 
                                     size="lg" 
@@ -306,7 +309,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                                     }}
                                 >
                                     <ShoppingCart className="w-5 h-5 mr-2 text-white" />
-                                    {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                                    {product.inStock ? t('products.add_to_cart') : t('products.out_of_stock')}
                                 </Button>
                                 <Button 
                                     variant="outline" 
@@ -315,7 +318,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <Heart className="w-5 h-5 mr-2" />
-                                    Wishlist
+                                    {t('products.add_to_wishlist')}
                                 </Button>
                             </div>
                         </div>
@@ -386,7 +389,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                         <div className="flex">
                             {renderStars(product.rating)}
                         </div>
-                        <span className="text-sm text-gray-500 font-medium">({product.reviews})</span>
+                        <span className="text-sm text-gray-500 font-medium">({product.reviews} {t('products.reviews')})</span>
                     </div>
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-2">
@@ -408,7 +411,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                     }}
                 >
                     <ShoppingCart className="w-5 h-5 mr-2 text-white" />
-                    {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                    {product.inStock ? t('products.add_to_cart') : t('products.out_of_stock')}
                 </Button>
             </CardContent>
 
