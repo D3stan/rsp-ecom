@@ -349,7 +349,7 @@
         "empty_cart": "Your cart is empty",
         "empty_cart_text": "Looks like you haven't added anything to your cart yet.",
         "continue_shopping": "Continue Shopping",
-        "items_in_cart": "{count} {count, plural, one {item} other {items}} in your cart",
+        "items_in_cart": "{count} {item_word} in your cart",
         "quantity": "Quantity",
         "remove": "Remove",
         "subtotal": "Subtotal",
@@ -361,7 +361,15 @@
         "update_cart": "Update Cart",
         "product_name": "Product",
         "price": "Price",
-        "item_total": "Total"
+        "item_total": "Total",
+        "category": "Category",
+        "size": "Size",
+        "each": "each",
+        "items": "items",
+        "item": "item",
+        "already_have_account": "Already have an account?",
+        "sign_in_to_continue": "Sign In to Continue",
+        "browse_products": "Browse Products"
     },
     "products": {
         "title": "Products",

@@ -12,7 +12,7 @@
     "add_to_cart": "Ajouter au Panier",
     "explore_products": "Explorer les Produits",
     "help": "Aide",
-    "cart": "Panier",
+    "cart_link": "Panier",
     "orders": "Commandes",
     "login": "Connexion",
     "register": "S'inscrire",
@@ -401,5 +401,33 @@
             "home": "Accueil",
             "products": "Produits"
         }
+    },
+    "cart": {
+        "title": "Votre Panier",
+        "title_with_items": "Votre Panier ({count})",
+        "empty_cart": "Votre panier est vide",
+        "empty_cart_text": "Il semble que vous n'ayez encore rien ajouté à votre panier.",
+        "continue_shopping": "Continuer les Achats",
+        "items_in_cart": "{count} {item_word} dans votre panier",
+        "quantity": "Quantité",
+        "remove": "Supprimer",
+        "subtotal": "Sous-total",
+        "shipping": "Livraison",
+        "calculated_at_checkout": "Calculée à la commande",
+        "total": "Total",
+        "proceed_to_checkout": "Procéder à la Commande",
+        "checkout": "Commande",
+        "update_cart": "Mettre à Jour le Panier",
+        "product_name": "Produit",
+        "price": "Prix",
+        "item_total": "Total",
+        "category": "Catégorie",
+        "size": "Taille",
+        "each": "chacun",
+        "items": "articles",
+        "item": "article",
+        "already_have_account": "Vous avez déjà un compte?",
+        "sign_in_to_continue": "Se Connecter pour Continuer",
+        "browse_products": "Parcourir les Produits"
     }
 }

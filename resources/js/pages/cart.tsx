@@ -149,7 +149,7 @@ export default function Cart() {
                             
                             <Button asChild size="lg" className="px-8">
                                 <Link href="/products">
-                                    Browse Products
+                                    {t('cart.browse_products')}
                                     <ArrowRight className="w-5 h-5 ml-2" />
                                 </Link>
                             </Button>
@@ -174,7 +174,10 @@ export default function Cart() {
                             {t('cart.title')}
                         </h1>
                         <p className="text-gray-600 mt-2">
-                            {t('cart.items_in_cart', { count: totalItems })}
+                            {t('cart.items_in_cart', { 
+                                count: totalItems,
+                                item_word: totalItems === 1 ? t('cart.item') : t('cart.items')
+                            })}
                         </p>
                     </div>
 
@@ -217,13 +220,13 @@ export default function Cart() {
                                             <div className="space-y-1">
                                                 {item.product.category && (
                                                     <p className="text-sm text-gray-500">
-                                                        Category: {item.product.category}
+                                                        {t('cart.category')}: {item.product.category}
                                                     </p>
                                                 )}
                                                 
                                                 {item.size && (
                                                     <p className="text-sm text-gray-600">
-                                                        Size: {item.size}
+                                                        {t('cart.size')}: {item.size}
                                                     </p>
                                                 )}
                                             </div>
@@ -231,7 +234,7 @@ export default function Cart() {
                                             {/* Quantity Controls */}
                                             <div className="flex items-center space-x-2 mt-3">
                                                 <Label className="text-sm font-medium text-gray-700">
-                                                    Quantity:
+                                                    {t('cart.quantity')}:
                                                 </Label>
                                                 <div className="flex items-center border border-gray-300 rounded-lg text-black">
                                                     <Button
@@ -267,7 +270,7 @@ export default function Cart() {
                                                 ${item.total.toFixed(2)}
                                             </p>
                                             <p className="text-sm text-gray-500">
-                                                ${item.price.toFixed(2)} each
+                                                ${item.price.toFixed(2)} {t('cart.each')}
                                             </p>
                                         </div>
                                         <Button
@@ -322,7 +325,7 @@ export default function Cart() {
                                     {!auth?.user && (
                                         <div className="text-center hidden md:block">
                                             <p className="text-sm text-gray-600 mb-2">
-                                                Already have an account?
+                                                {t('cart.already_have_account')}
                                             </p>
                                             <Button
                                                 variant="outline"
@@ -330,7 +333,7 @@ export default function Cart() {
                                                 className="w-full"
                                             >
                                                 <Link href="/login">
-                                                    Sign In to Continue
+                                                    {t('cart.sign_in_to_continue')}
                                                 </Link>
                                             </Button>
                                         </div>
@@ -344,7 +347,7 @@ export default function Cart() {
                                     className="w-full hidden md:flex"
                                 >
                                     <Link href="/products">
-                                        Continue Shopping
+                                        {t('cart.continue_shopping')}
                                     </Link>
                                 </Button>
                             </div>
@@ -361,7 +364,7 @@ export default function Cart() {
                                     ${total.toFixed(2)}
                                 </p>
                                 <p className="text-sm text-gray-500">
-                                    {totalItems} items
+                                    {totalItems} {t('cart.items')}
                                 </p>
                             </div>
                             <Button

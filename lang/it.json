@@ -12,7 +12,7 @@
     "add_to_cart": "Aggiungi al Carrello",
     "explore_products": "Esplora Prodotti",
     "help": "Aiuto",
-    "cart": "Carrello",
+    "cart_link": "Carrello",
     "orders": "Ordini",
     "login": "Accedi",
     "register": "Registrati",
@@ -399,5 +399,33 @@
             "home": "Home",
             "products": "Prodotti"
         }
+    },
+    "cart": {
+        "title": "Il Tuo Carrello",
+        "title_with_items": "Il Tuo Carrello ({count})",
+        "empty_cart": "Il tuo carrello è vuoto",
+        "empty_cart_text": "Sembra che tu non abbia ancora aggiunto nulla al tuo carrello.",
+        "continue_shopping": "Continua gli Acquisti",
+        "items_in_cart": "{count} {item_word} nel tuo carrello",
+        "quantity": "Quantità",
+        "remove": "Rimuovi",
+        "subtotal": "Subtotale",
+        "shipping": "Spedizione",
+        "calculated_at_checkout": "Calcolata al checkout",
+        "total": "Totale",
+        "proceed_to_checkout": "Procedi al Checkout",
+        "checkout": "Checkout",
+        "update_cart": "Aggiorna Carrello",
+        "product_name": "Prodotto",
+        "price": "Prezzo",
+        "item_total": "Totale",
+        "category": "Categoria",
+        "size": "Taglia",
+        "each": "cad.",
+        "items": "articoli",
+        "item": "articolo",
+        "already_have_account": "Hai già un account?",
+        "sign_in_to_continue": "Accedi per Continuare",
+        "browse_products": "Sfoglia Prodotti"
     }
 }

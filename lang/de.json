@@ -12,7 +12,7 @@
     "add_to_cart": "In den Warenkorb",
     "explore_products": "Produkte Erkunden",
     "help": "Hilfe",
-    "cart": "Warenkorb",
+    "cart_link": "Warenkorb",
     "orders": "Bestellungen",
     "login": "Anmelden",
     "register": "Registrieren",
@@ -435,5 +435,33 @@
             "home": "Startseite",
             "products": "Produkte"
         }
+    },
+    "cart": {
+        "title": "Ihr Warenkorb",
+        "title_with_items": "Ihr Warenkorb ({count})",
+        "empty_cart": "Ihr Warenkorb ist leer",
+        "empty_cart_text": "Es sieht so aus, als hätten Sie noch nichts zu Ihrem Warenkorb hinzugefügt.",
+        "continue_shopping": "Weiter Einkaufen",
+        "items_in_cart": "{count} {item_word} in Ihrem Warenkorb",
+        "quantity": "Menge",
+        "remove": "Entfernen",
+        "subtotal": "Zwischensumme",
+        "shipping": "Versand",
+        "calculated_at_checkout": "Wird beim Checkout berechnet",
+        "total": "Gesamt",
+        "proceed_to_checkout": "Zur Kasse",
+        "checkout": "Kasse",
+        "update_cart": "Warenkorb Aktualisieren",
+        "product_name": "Produkt",
+        "price": "Preis",
+        "item_total": "Gesamt",
+        "category": "Kategorie",
+        "size": "Größe",
+        "each": "je",
+        "items": "Artikel",
+        "item": "Artikel",
+        "already_have_account": "Haben Sie bereits ein Konto?",
+        "sign_in_to_continue": "Anmelden zum Fortfahren",
+        "browse_products": "Produkte Durchstöbern"
     }
 }
