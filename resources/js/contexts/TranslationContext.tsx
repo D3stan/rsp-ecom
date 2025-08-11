@@ -26,7 +26,7 @@ interface TranslationProviderProps {
 export function TranslationProvider({ 
   children, 
   initialTranslations = {}, 
-  initialLocale = 'en' 
+  initialLocale = 'it' 
 }: TranslationProviderProps) {
   const [locale, setLocale] = useState(() => {
     // Try to get from localStorage first, then use initialLocale
@@ -127,15 +127,11 @@ export function TranslationProvider({
     
     // Handle replacements with both {placeholder} and {{placeholder}} formats
     if (replacements && typeof value === 'string') {
-      // Handle single curly braces {placeholder}
-      value = value.replace(/\{(\w+)\}/g, (match: string, placeholder: string) => {
-        return replacements[placeholder]?.toString() || match;
-      });
-      
-      // Handle double curly braces {{placeholder}}
-      value = value.replace(/\{\{(\w+)\}\}/g, (match: string, placeholder: string) => {
-        return replacements[placeholder]?.toString() || match;
-      });
+      // Handle curly braces placeholder
+    value = value.replace(/\{\{?(\w+)\}?\}/g, (match, placeholder) =>
+      replacements[placeholder]?.toString() || match
+    );
+
     }
     
     return value as string;
