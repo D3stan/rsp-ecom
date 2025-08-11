@@ -6,9 +6,25 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
 import { ToastProvider } from './contexts/ToastContext';
+import { TranslationProvider } from './contexts/TranslationContext';
 import { ToastContainer } from './components/Toast';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+// Wrapper component to access Inertia props
+function AppWrapper({ Component, props }: { Component: React.ComponentType<any>, props: any }) {
+    const translations = props.translations || {};
+    const locale = props.locale || 'en';
+    
+    return (
+        <TranslationProvider initialTranslations={translations} initialLocale={locale}>
+            <ToastProvider>
+                <Component {...props} />
+                <ToastContainer />
+            </ToastProvider>
+        </TranslationProvider>
+    );
+}
 
 createInertiaApp({
     title: (title) => title ? `${title} - ${appName}` : appName,
@@ -16,12 +32,7 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
 
-        root.render(
-            React.createElement(ToastProvider, null,
-                React.createElement(App, props),
-                React.createElement(ToastContainer)
-            )
-        );
+        root.render(React.createElement(AppWrapper, { Component: App, props }));
     },
     progress: {
         color: '#4B5563',
