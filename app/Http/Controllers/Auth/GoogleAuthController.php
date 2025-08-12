@@ -18,7 +18,20 @@ class GoogleAuthController extends Controller
      */
     public function redirectToGoogle(): RedirectResponse
     {
-        return Socialite::driver('google')->redirect();
+        try {
+            // Use default browser user-agent for Google OAuth compliance
+            // Do not use custom HTTP client to avoid "embedded user-agent" policy violations
+            return Socialite::driver('google')
+                ->scopes(['openid', 'profile', 'email'])
+                ->redirect();
+        } catch (\Exception $e) {
+            \Log::error('Google OAuth redirect error', [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+            ]);
+            
+            return redirect()->route('login')->with('error', 'Unable to connect to Google. Please try again later.');
+        }
     }
 
     /**
@@ -27,7 +40,8 @@ class GoogleAuthController extends Controller
     public function handleGoogleCallback(): RedirectResponse
     {
         try {
-            // For local development, disable SSL verification to avoid certificate issues
+            // For local development only, disable SSL verification to avoid certificate issues
+            // Do not set custom user-agent to comply with Google's "secure browsers" policy
             if (config('app.env') === 'local') {
                 $googleUser = Socialite::driver('google')
                     ->setHttpClient(new \GuzzleHttp\Client(['verify' => false]))
@@ -43,6 +57,26 @@ class GoogleAuthController extends Controller
                 // User exists, log them in
                 Auth::login($user);
                 return redirect()->intended('/dashboard');
+            }
+            
+            // Check if there's already a logged-in user wanting to link their account
+            $currentUser = Auth::user();
+            if ($currentUser) {
+                // Check if this Google account is already linked to another user
+                $googleAccountAlreadyLinked = User::where('google_id', $googleUser->getId())->exists();
+                
+                if ($googleAccountAlreadyLinked) {
+                    return redirect()->route('profile.edit')->with('error', 'This Google account is already linked to another user account.');
+                }
+                
+                // Link Google account to the current logged-in user
+                $currentUser->update([
+                    'google_id' => $googleUser->getId(),
+                    'avatar' => $googleUser->getAvatar(),
+                    'email_verified_at' => now(), // Ensure Google accounts are verified
+                ]);
+                
+                return redirect()->route('profile.edit')->with('success', 'Google account linked successfully!');
             }
             
             // Check if user exists with the same email
@@ -101,7 +135,19 @@ class GoogleAuthController extends Controller
         } catch (\Exception $e) {
             \Log::error('Google OAuth callback error', [
                 'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'trace' => $e->getTraceAsString(),
             ]);
+            
+            // Handle specific Google OAuth errors
+            if (str_contains($e->getMessage(), 'disallowed_useragent')) {
+                return redirect()->route('login')->with('error', 'Google authentication failed. Please ensure you are using a supported browser and try again.');
+            }
+            
+            if (str_contains($e->getMessage(), '403')) {
+                return redirect()->route('login')->with('error', 'Google authentication access denied. Please try again or contact support.');
+            }
+            
             return redirect()->route('login')->with('error', 'Authentication failed. Please try again.');
         }
     }

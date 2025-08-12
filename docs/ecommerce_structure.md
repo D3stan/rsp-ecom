@@ -178,3 +178,4 @@ resources/js/
 - **Mandatory email verification** with secure token-based system
 - **Protected checkout routes** requiring verified email addresses
 - **Pending user verification system** preventing database pollution from unverified accounts
+- **Google account linking** for existing users to connect their social accounts

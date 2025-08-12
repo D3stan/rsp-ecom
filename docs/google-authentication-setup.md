@@ -107,6 +107,9 @@ This adds:
 2. Sees "Connected Accounts" section
 3. Can link/unlink Google account
 4. Warning shown if no password set before unlinking
+5. When clicking "Connect", users are redirected to Google OAuth
+6. After authorization, Google account is linked to current user
+7. User receives confirmation message and returns to profile page
 
 ## Security Features
 
@@ -152,6 +155,17 @@ php artisan test --filter=GoogleAuth
    - User needs to set a password first
    - Handled gracefully with error message
 
+5. **"Clicking Connect just redirects to dashboard"**
+   - Fixed: Google auth routes now accessible to authenticated users
+   - System properly detects when logged-in user wants to link account
+   - Provides appropriate success/error messages
+
+6. **"403 disallowed_useragent" Error**
+   - **Root Cause**: Using custom HTTP client violates Google's "secure browsers" policy
+   - **Solution**: Remove custom user-agent and HTTP client configuration
+   - **Compliance**: Let browser handle OAuth flow naturally without embedded user-agent
+   - **Additional Steps**: Ensure OAuth consent screen is properly configured and published
+
 ### Debugging
 
 Enable Laravel debugging to see detailed error messages:
@@ -161,6 +175,34 @@ LOG_LEVEL=debug
 ```
 
 Check logs at `storage/logs/laravel.log` for OAuth-related errors.
+
+**Additional Troubleshooting for 403 Errors:**
+1. **OAuth Consent Screen Configuration**:
+   - Ensure your OAuth consent screen is published (not in testing mode)
+   - Add your domain to "Authorized domains" list
+   - Complete all required fields including privacy policy URL
+   - If using sensitive scopes, submit for verification
+
+2. **OAuth Client Configuration**:
+   - Use "Web application" client type (not "Desktop app" or other types)
+   - Ensure redirect URIs exactly match your configuration
+   - Add both HTTP and HTTPS variants for development
+
+3. **Domain and SSL Configuration**:
+   - Verify your domain is properly configured
+   - Ensure HTTPS is working in production
+   - For localhost development, HTTP is acceptable
+
+4. **General Troubleshooting**:
+   - Clear browser cache and cookies
+   - Try using an incognito/private browsing window
+   - Test with different browsers
+   - Check if your IP is blocked or restricted by Google
+
+5. **App Verification Status**:
+   - Unverified apps may have limited functionality
+   - Submit for verification if using sensitive scopes
+   - Ensure your app complies with Google's policies
 
 ## File Structure
 

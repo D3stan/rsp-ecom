@@ -136,9 +136,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         if (auth()->user()->isAdmin()) {
             return redirect()->route('admin.dashboard');
         }
-        return Inertia::render('dashboard');
+        return Inertia::render('Dashboard/Dashboard');
     })->name('dashboard');
-    Route::get('dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
+    Route::get('dashboard/orders', [DashboardController::class, 'orders'])->name('orders.index');
+    Route::get('dashboard/wishlist', [DashboardController::class, 'wishlist'])->name('wishlist.index');
 });
 
 require __DIR__.'/settings.php';

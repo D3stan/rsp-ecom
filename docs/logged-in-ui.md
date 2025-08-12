@@ -21,13 +21,14 @@
 
 | # | Section | Purpose & key DB entities |
 |---|---------|---------------------------|
-| **1** | **Orders** | History & real-time tracking (`orders`, `order_items`). Returns, invoices. |
-| **2** | **Profile** | Edit personal data (`users`), manage **Addresses** (`addresses`). |
-| **3** | **Payment Methods** | Add / remove cards via Stripe Billing Portal. |
-| **4** | **Wishlist / Favorites** | Save products (`wishlists`) with “Move to Cart”. |
-| **5** | **Account Settings** | Notification toggles, privacy, self-delete. |
-| **6** | **Reviews** | Write & manage product reviews (`reviews`). |
-| **7** | **Support** | Open tickets / chat; reference order #. |
+| **1** | **Dashboard** | At-a-glance summary of recent activity. Quick links to orders, wishlist, and support. |
+| **2** | **Orders** | History & real-time tracking (`orders`, `order_items`). Returns, invoices. |
+| **3** | **Profile** | Edit personal data (`users`), manage **Addresses** (`addresses`). |
+| **4** | **Payment Methods** | Add / remove cards via Stripe Billing Portal. |
+| **5** | **Wishlist / Favorites** | Save products (`wishlists`) with “Move to Cart”. |
+| **6** | **Account Settings** | Notification toggles, privacy, self-delete. |
+| **7** | **Reviews** | Write & manage product reviews (`reviews`). |
+| **8** | **Support** | Open tickets / chat; reference order #. |
 
 ---
 
@@ -59,6 +60,7 @@
 
 | Page | Primary Components | Layout notes |
 |------|--------------------|--------------|
+| **Dashboard** | `Card`, `Button`, `Avatar` | **Mobile-first**: Single-column stack of cards: 1. Welcome + Profile avatar; 2. Latest order status (badge, link); 3. Wishlist preview (2-3 items); 4. Prominent "Get Support" button. **Desktop**: 2-col grid. |
 | **Orders** | `Timeline`, `Card`, `Button` | Order card: header (status badge, date), product thumbs, total. Expand → timeline; CTA (Re-order, Return). |
 | **Profile** | `Form` + `AvatarUploader` | Two-panel: left profile form, right default address card + “Manage Addresses”. |
 | **Payment Methods** | `Card`, `Badge` (default), `Button` | Cards listed; “Add Card” opens Stripe modal. |

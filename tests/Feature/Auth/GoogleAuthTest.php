@@ -137,6 +137,83 @@ class GoogleAuthTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_authenticated_user_can_link_google_account(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'john@example.com',
+            'google_id' => null,
+        ]);
+
+        $mockUser = Mockery::mock('Laravel\Socialite\Two\User');
+        $mockUser->shouldReceive('getId')
+            ->andReturn('123456789');
+        $mockUser->shouldReceive('getName')
+            ->andReturn('John Doe');
+        $mockUser->shouldReceive('getEmail')
+            ->andReturn('different@example.com'); // Different email from user's account
+        $mockUser->shouldReceive('getAvatar')
+            ->andReturn('https://example.com/avatar.jpg');
+
+        $mockSocialite = Mockery::mock('Laravel\Socialite\Contracts\Provider');
+        $mockSocialite->shouldReceive('user')
+            ->andReturn($mockUser);
+
+        Socialite::shouldReceive('driver')
+            ->with('google')
+            ->andReturn($mockSocialite);
+
+        $response = $this->actingAs($user)
+            ->get(route('auth.google.callback'));
+
+        $response->assertRedirect(route('profile.edit'));
+        $response->assertSessionHas('success', 'Google account linked successfully!');
+
+        $user->refresh();
+        $this->assertEquals('123456789', $user->google_id);
+        $this->assertEquals('https://example.com/avatar.jpg', $user->avatar);
+        $this->assertNotNull($user->email_verified_at);
+    }
+
+    public function test_authenticated_user_cannot_link_already_linked_google_account(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'john@example.com',
+            'google_id' => null,
+        ]);
+
+        // Create another user with the Google ID we're trying to link
+        User::factory()->create([
+            'google_id' => '123456789',
+        ]);
+
+        $mockUser = Mockery::mock('Laravel\Socialite\Two\User');
+        $mockUser->shouldReceive('getId')
+            ->andReturn('123456789');
+        $mockUser->shouldReceive('getName')
+            ->andReturn('John Doe');
+        $mockUser->shouldReceive('getEmail')
+            ->andReturn('different@example.com');
+        $mockUser->shouldReceive('getAvatar')
+            ->andReturn('https://example.com/avatar.jpg');
+
+        $mockSocialite = Mockery::mock('Laravel\Socialite\Contracts\Provider');
+        $mockSocialite->shouldReceive('user')
+            ->andReturn($mockUser);
+
+        Socialite::shouldReceive('driver')
+            ->with('google')
+            ->andReturn($mockSocialite);
+
+        $response = $this->actingAs($user)
+            ->get(route('auth.google.callback'));
+
+        $response->assertRedirect(route('profile.edit'));
+        $response->assertSessionHas('error', 'This Google account is already linked to another user account.');
+
+        $user->refresh();
+        $this->assertNull($user->google_id);
+    }
+
     public function test_authenticated_user_can_unlink_google_account(): void
     {
         $user = User::factory()->create([

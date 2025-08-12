@@ -36,13 +36,6 @@ Route::middleware('guest')->group(function () {
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
 
-    // Google Authentication Routes
-    Route::get('auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
-        ->name('auth.google');
-
-    Route::get('auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
-        ->name('auth.google.callback');
-
     // Pending User Verification Routes
     Route::get('verification/pending', [PendingUserVerificationController::class, 'show'])
         ->name('verification.pending');
@@ -60,6 +53,13 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:200,1')
         ->name('verification.status');
 });
+
+// Google Authentication Routes (accessible by both guest and authenticated users)
+Route::get('auth/google', [GoogleAuthController::class, 'redirectToGoogle'])
+    ->name('auth.google');
+
+Route::get('auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
+    ->name('auth.google.callback');
 
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)

@@ -22,4 +22,18 @@ class DashboardController extends Controller
             'orders' => $orders,
         ]);
     }
+
+    public function wishlist()
+    {
+        // Set noindex for user account pages
+        SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
+        SEOMeta::setTitle('My Wishlist – ' . config('app.name'));
+        
+        $user = Auth::user();
+        $wishlist = $user->wishlist()->with('product.category')->get();
+
+        return Inertia::render('Dashboard/Wishlist', [
+            'wishlist' => $wishlist,
+        ]);
+    }
 }
