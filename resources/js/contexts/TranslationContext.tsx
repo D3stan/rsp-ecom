@@ -17,6 +17,23 @@ const TranslationContext = createContext<TranslationContextType | undefined>(und
 // Global cache for translations - persists across component remounts
 const globalTranslationCache: { [locale: string]: Translations } = {};
 
+// Available locales
+const availableLocales = ['en', 'es', 'fr', 'de', 'it'];
+
+// Detect browser language
+function detectBrowserLanguage(): string | null {
+    if (typeof window === 'undefined') return null;
+    
+    const browserLang = navigator.language || (navigator as any).userLanguage;
+    if (!browserLang) return null;
+    
+    // Extract the language code (e.g., 'it-IT' -> 'it')
+    const langCode = browserLang.toLowerCase().split('-')[0];
+    
+    // Check if the detected language is supported
+    return availableLocales.includes(langCode) ? langCode : null;
+}
+
 interface TranslationProviderProps {
     children: React.ReactNode;
     initialTranslations?: Translations;
@@ -25,9 +42,18 @@ interface TranslationProviderProps {
 
 export function TranslationProvider({ children, initialTranslations = {}, initialLocale = 'en' }: TranslationProviderProps) {
     const [locale, setLocale] = useState(() => {
-        // Try to get from localStorage first, then use initialLocale
+        // Try to get from localStorage first, then detect from browser, then use initialLocale
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('locale') || initialLocale;
+            const savedLocale = localStorage.getItem('locale');
+            if (savedLocale) {
+                return savedLocale;
+            }
+            
+            // Detect browser language
+            const browserLocale = detectBrowserLanguage();
+            if (browserLocale) {
+                return browserLocale;
+            }
         }
         return initialLocale;
     });
@@ -138,13 +164,34 @@ export function TranslationProvider({ children, initialTranslations = {}, initia
             localStorage.setItem('locale', newLocale);
         }
 
-        // Load translations for new locale
-        loadTranslations(newLocale).then(() => {
-            // Reload page to apply new locale server-side
-            if (typeof window !== 'undefined') {
-                window.location.reload();
+        // Send request to backend to update session
+        const updateBackendLocale = async () => {
+            try {
+                const response = await fetch('/change-language', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                    body: JSON.stringify({ locale: newLocale }),
+                });
+                
+                if (response.ok) {
+                    // Load translations for new locale
+                    await loadTranslations(newLocale);
+                    // Reload page to apply new locale server-side
+                    if (typeof window !== 'undefined') {
+                        window.location.reload();
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to update backend locale:', error);
+                // Still try to load translations for frontend
+                await loadTranslations(newLocale);
             }
-        });
+        };
+
+        updateBackendLocale();
     };
 
     const contextValue: TranslationContextType = {
@@ -152,7 +199,7 @@ export function TranslationProvider({ children, initialTranslations = {}, initia
         locale,
         changeLocale,
         isLoading,
-        availableLocales: ['en', 'es', 'fr', 'de', 'it'],
+        availableLocales,
     };
 
     return <TranslationContext.Provider value={contextValue}>{children}</TranslationContext.Provider>;

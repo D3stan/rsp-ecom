@@ -13,6 +13,13 @@ return [
         'less' => 'Weniger Details',
     ],
     'save' => 'Einstellungen speichern',
+    'cookie' => 'Cookie',
+    'purpose' => 'Zweck',
+    'duration' => 'Dauer',
+    'year' => 'Jahr|Jahre',
+    'day' => 'Tag|Tage',
+    'hour' => 'Stunde|Stunden',
+    'minute' => 'Minute|Minuten',
 
     'categories' => [
         'essentials' => [

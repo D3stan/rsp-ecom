@@ -8,7 +8,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PageController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -125,6 +127,19 @@ Route::get('/api/translations/{locale}', function ($locale) {
     
     return response()->json(['error' => 'Translations not found'], 404);
 })->name('translations');
+
+// Language switching route
+Route::post('/change-language', function (Request $request) {
+    $locale = $request->input('locale');
+    $supportedLocales = ['en', 'es', 'fr', 'de', 'it'];
+    
+    if (in_array($locale, $supportedLocales)) {
+        Session::put('locale', $locale);
+        App::setLocale($locale);
+    }
+    
+    return back();
+})->name('change-language');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
