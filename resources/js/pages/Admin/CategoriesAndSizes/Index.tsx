@@ -6,10 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, router, useForm } from '@inertiajs/react';
-import { BarChart3, Box, ChevronDown, ChevronUp, Edit, GripVertical, Package, Ruler, Save, Tag, Trash2, TrendingUp, X } from 'lucide-react';
-import { useState } from 'react';
+import { BarChart3, Box, ChevronDown, ChevronUp, Edit, GripVertical, Package, Ruler, Save, Tag, Trash2, TrendingUp, X, AlertTriangle } from 'lucide-react';
+import { useState, useRef } from 'react';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -62,6 +64,25 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
     const [editingSize, setEditingSize] = useState<number | null>(null);
     const [isStatsOpen, setIsStatsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'categories' | 'sizes'>('categories');
+    
+    // Delete dialog state
+    const [deleteDialog, setDeleteDialog] = useState<{
+        open: boolean;
+        type: 'category' | 'size';
+        item: Category | Size | null;
+        canDelete: boolean;
+    }>({
+        open: false,
+        type: 'category',
+        item: null,
+        canDelete: true,
+    });
+
+    // Form refs for scrolling
+    const categoryFormRef = useRef<HTMLDivElement>(null);
+    const sizeFormRef = useRef<HTMLDivElement>(null);
+    const mobileCategoryFormRef = useRef<HTMLDivElement>(null);
+    const mobileSizeFormRef = useRef<HTMLDivElement>(null);
 
     // Category form
     const categoryForm = useForm({
@@ -101,6 +122,19 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
     const getBoxTypeName = (boxType: string | undefined) => {
         if (!boxType) return 'Not specified';
         return boxTypes[boxType] || boxType;
+    };
+
+    const scrollToForm = (formType: 'category' | 'size') => {
+        // Use setTimeout to ensure the form is rendered first
+        setTimeout(() => {
+            if (window.innerWidth >= 768) { // Desktop
+                const ref = formType === 'category' ? categoryFormRef : sizeFormRef;
+                ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else { // Mobile
+                const ref = formType === 'category' ? mobileCategoryFormRef : mobileSizeFormRef;
+                ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }, 100);
     };
 
     const handleCategorySubmit = (e: React.FormEvent) => {
@@ -148,6 +182,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
         categoryForm.setData('image', category.image || '');
         categoryForm.setData('is_active', Boolean(category.is_active));
         categoryForm.setData('sort_order', category.sort_order);
+        scrollToForm('category');
     };
 
     const startEditSize = (size: Size) => {
@@ -160,6 +195,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
             box_type: size.box_type || '',
             shipping_cost: size.shipping_cost,
         });
+        scrollToForm('size');
     };
 
     const cancelEdit = () => {
@@ -169,16 +205,42 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
         sizeForm.reset();
     };
 
-    const deleteCategory = (id: number) => {
-        if (confirm('Are you sure you want to delete this category?')) {
-            router.delete(`/admin/categories/${id}`);
-        }
+    const openDeleteDialog = (type: 'category' | 'size', item: Category | Size) => {
+        const canDelete = item.products_count === 0;
+        setDeleteDialog({
+            open: true,
+            type,
+            item,
+            canDelete,
+        });
     };
 
-    const deleteSize = (id: number) => {
-        if (confirm('Are you sure you want to delete this size?')) {
-            router.delete(`/admin/sizes/${id}`);
-        }
+    const closeDeleteDialog = () => {
+        setDeleteDialog({
+            open: false,
+            type: 'category',
+            item: null,
+            canDelete: true,
+        });
+    };
+
+    const confirmDelete = () => {
+        if (!deleteDialog.item || !deleteDialog.canDelete) return;
+        
+        const endpoint = deleteDialog.type === 'category' 
+            ? `/admin/categories/${deleteDialog.item.id}`
+            : `/admin/sizes/${deleteDialog.item.id}`;
+        
+        router.delete(endpoint);
+        closeDeleteDialog();
+    };
+
+    const deleteCategory = (category: Category) => {
+        openDeleteDialog('category', category);
+    };
+
+    const deleteSize = (size: Size) => {
+        openDeleteDialog('size', size);
     };
 
     return (
@@ -321,7 +383,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => deleteCategory(category.id)}
+                                                    onClick={() => deleteCategory(category)}
                                                     className="text-red-600 hover:text-red-700"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -334,7 +396,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                         )}
 
                         {/* Category Form */}
-                        <Card className="p-4">
+                        <Card className="p-4" ref={categoryFormRef}>
                             <h3 className="mb-4 text-lg font-medium">{editingCategory ? 'Edit Category' : 'Add Category'}</h3>
                             <form onSubmit={handleCategorySubmit} className="space-y-4">
                                 <div>
@@ -416,7 +478,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => deleteSize(size.id)}
+                                                onClick={() => deleteSize(size)}
                                                 className="text-red-600 hover:text-red-700"
                                             >
                                                 <Trash2 className="h-4 w-4" />
@@ -428,7 +490,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                         </Card>
 
                         {/* Size Form */}
-                        <Card className="p-4">
+                        <Card className="p-4" ref={sizeFormRef}>
                             <h3 className="mb-4 text-lg font-medium">{editingSize ? 'Edit Size' : 'Add Size'}</h3>
                             <form onSubmit={handleSizeSubmit} className="space-y-4">
                                 <div>
@@ -562,7 +624,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => deleteCategory(category.id)}
+                                                    onClick={() => deleteCategory(category)}
                                                     className="text-red-600 hover:text-red-700"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -574,7 +636,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                             </div>
 
                             {/* Mobile Category Form */}
-                            <Card className="p-4">
+                            <Card className="p-4" ref={mobileCategoryFormRef}>
                                 <h3 className="mb-4 text-lg font-medium">{editingCategory ? 'Edit Category' : 'Add Category'}</h3>
                                 <form onSubmit={handleCategorySubmit} className="space-y-4">
                                     <div>
@@ -653,7 +715,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => deleteSize(size.id)}
+                                                    onClick={() => deleteSize(size)}
                                                     className="text-red-600 hover:text-red-700"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -665,7 +727,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                             </div>
 
                             {/* Mobile Size Form */}
-                            <Card className="p-4">
+                            <Card className="p-4" ref={mobileSizeFormRef}>
                                 <h3 className="mb-4 text-lg font-medium">{editingSize ? 'Edit Size' : 'Add Size'}</h3>
                                 <form onSubmit={handleSizeSubmit} className="space-y-4">
                                     <div>
@@ -766,8 +828,11 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                     )}
                 </div>
 
+                {/* Add bottom padding to account for fixed navigation */}
+                <div className="h-10 md:hidden"></div>
+
                 {/* Mobile Bottom Navigation */}
-                <div className="safe-area-pb fixed right-0 bottom-0 left-0 border-t bg-background p-4 md:hidden">
+                <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background p-4 md:hidden">
                     <div className="flex justify-center gap-4">
                         <Button variant="outline" size="sm" onClick={() => setIsStatsOpen(!isStatsOpen)} className="flex-1">
                             <BarChart3 className="mr-2 h-4 w-4" />
@@ -794,8 +859,46 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                     </div>
                 </div>
 
-                {/* Add bottom padding to account for fixed navigation */}
-                <div className="h-20 md:hidden"></div>
+
+                {/* Delete Confirmation Dialog */}
+                <Dialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                Delete {deleteDialog.type === 'category' ? 'Category' : 'Size'}
+                            </DialogTitle>
+                            <DialogDescription>
+                                {deleteDialog.canDelete ? (
+                                    `Are you sure you want to delete "${deleteDialog.item?.name}"? This action cannot be undone.`
+                                ) : (
+                                    `Cannot delete "${deleteDialog.item?.name}" because it has ${deleteDialog.item?.products_count} associated products.`
+                                )}
+                            </DialogDescription>
+                        </DialogHeader>
+                        
+                        {!deleteDialog.canDelete && (
+                            <Alert>
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertDescription>
+                                    To delete this {deleteDialog.type}, please first remove or reassign all associated products to another {deleteDialog.type}.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
+                        <DialogFooter>
+                            <Button variant="outline" onClick={closeDeleteDialog}>
+                                Cancel
+                            </Button>
+                            {deleteDialog.canDelete && (
+                                <Button variant="destructive" onClick={confirmDelete}>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                </Button>
+                            )}
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </AdminLayout>
     );
