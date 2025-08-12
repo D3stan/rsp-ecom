@@ -27,18 +27,10 @@ class CategoriesAndSizesController extends Controller
                 return $size;
             });
 
-        // Define available box types
+        // Define available box types (must match enum values in database)
         $boxTypes = [
-            'standard' => 'Standard Box',
-            'small' => 'Small Package',
-            'medium' => 'Medium Box',
-            'large' => 'Large Box',
-            'extra_large' => 'Extra Large Box',
-            'fragile' => 'Fragile Item Box',
-            'heavy_duty' => 'Heavy Duty Box',
-            'envelope' => 'Envelope/Mailer',
-            'tube' => 'Tube/Poster Box',
-            'custom' => 'Custom Packaging',
+            'box' => 'Rigid Box',
+            'non_rigid_box' => 'Non-Rigid Box',
         ];
 
         $categoryStats = [
@@ -119,10 +111,10 @@ class CategoriesAndSizesController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:sizes,name',
-            'length' => 'required|numeric|min:0',
-            'width' => 'required|numeric|min:0',
-            'height' => 'required|numeric|min:0',
-            'box_type' => 'nullable|string|max:100',
+            'length' => 'required|numeric|min:0.1',
+            'width' => 'required|numeric|min:0.1',
+            'height' => 'required|numeric|min:0.1',
+            'box_type' => 'required|in:box,non_rigid_box',
             'shipping_cost' => 'required|numeric|min:0',
         ]);
 
@@ -135,10 +127,10 @@ class CategoriesAndSizesController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:sizes,name,' . $size->id,
-            'length' => 'required|numeric|min:0',
-            'width' => 'required|numeric|min:0',
-            'height' => 'required|numeric|min:0',
-            'box_type' => 'nullable|string|max:100',
+            'length' => 'required|numeric|min:0.1',
+            'width' => 'required|numeric|min:0.1',
+            'height' => 'required|numeric|min:0.1',
+            'box_type' => 'required|in:box,non_rigid_box',
             'shipping_cost' => 'required|numeric|min:0',
         ]);
 

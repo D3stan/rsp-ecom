@@ -72,13 +72,18 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
         sort_order: 0,
     });
 
-    // Size form
+    // Size form - Set random default box type
+    const getRandomBoxType = () => {
+        const boxTypeKeys = Object.keys(boxTypes);
+        return boxTypeKeys[Math.floor(Math.random() * boxTypeKeys.length)];
+    };
+
     const sizeForm = useForm({
         name: '',
-        length: 0,
-        width: 0,
-        height: 0,
-        box_type: '',
+        length: 1,
+        width: 1,
+        height: 1,
+        box_type: getRandomBoxType(),
         shipping_cost: 0,
     });
 
@@ -439,35 +444,38 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                                 <div className="grid grid-cols-3 gap-2">
                                     <div>
-                                        <Label htmlFor="size-length">Length (in)</Label>
+                                        <Label htmlFor="size-length">Length (cm)</Label>
                                         <Input
                                             id="size-length"
                                             type="number"
-                                            step="0.01"
+                                            step="0.1"
+                                            min="0.1"
                                             value={sizeForm.data.length}
-                                            onChange={(e) => sizeForm.setData('length', parseFloat(e.target.value) || 0)}
+                                            onChange={(e) => sizeForm.setData('length', Math.max(0.1, parseFloat(e.target.value) || 0.1))}
                                             required
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="size-width">Width (in)</Label>
+                                        <Label htmlFor="size-width">Width (cm)</Label>
                                         <Input
                                             id="size-width"
                                             type="number"
-                                            step="0.01"
+                                            step="0.1"
+                                            min="0.1"
                                             value={sizeForm.data.width}
-                                            onChange={(e) => sizeForm.setData('width', parseFloat(e.target.value) || 0)}
+                                            onChange={(e) => sizeForm.setData('width', Math.max(0.1, parseFloat(e.target.value) || 0.1))}
                                             required
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="size-height">Height (in)</Label>
+                                        <Label htmlFor="size-height">Height (cm)</Label>
                                         <Input
                                             id="size-height"
                                             type="number"
-                                            step="0.01"
+                                            step="0.1"
+                                            min="0.1"
                                             value={sizeForm.data.height}
-                                            onChange={(e) => sizeForm.setData('height', parseFloat(e.target.value) || 0)}
+                                            onChange={(e) => sizeForm.setData('height', Math.max(0.1, parseFloat(e.target.value) || 0.1))}
                                             required
                                         />
                                     </div>
@@ -476,14 +484,13 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                 <div>
                                     <Label htmlFor="size-box-type">Box Type</Label>
                                     <Select
-                                        value={sizeForm.data.box_type || 'none'}
-                                        onValueChange={(value) => sizeForm.setData('box_type', value === 'none' ? '' : value)}
+                                        value={sizeForm.data.box_type}
+                                        onValueChange={(value) => sizeForm.setData('box_type', value)}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select box type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">No box type</SelectItem>
                                             {Object.entries(boxTypes).map(([key, label]) => (
                                                 <SelectItem key={key} value={key}>
                                                     {label}
@@ -678,9 +685,10 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                             <Input
                                                 id="mobile-size-length"
                                                 type="number"
-                                                step="0.01"
+                                                step="0.1"
+                                                min="0.1"
                                                 value={sizeForm.data.length}
-                                                onChange={(e) => sizeForm.setData('length', parseFloat(e.target.value) || 0)}
+                                                onChange={(e) => sizeForm.setData('length', Math.max(0.1, parseFloat(e.target.value) || 0.1))}
                                                 required
                                             />
                                         </div>
@@ -689,9 +697,10 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                             <Input
                                                 id="mobile-size-width"
                                                 type="number"
-                                                step="0.01"
+                                                step="0.1"
+                                                min="0.1"
                                                 value={sizeForm.data.width}
-                                                onChange={(e) => sizeForm.setData('width', parseFloat(e.target.value) || 0)}
+                                                onChange={(e) => sizeForm.setData('width', Math.max(0.1, parseFloat(e.target.value) || 0.1))}
                                                 required
                                             />
                                         </div>
@@ -700,9 +709,10 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                             <Input
                                                 id="mobile-size-height"
                                                 type="number"
-                                                step="0.01"
+                                                step="0.1"
+                                                min="0.1"
                                                 value={sizeForm.data.height}
-                                                onChange={(e) => sizeForm.setData('height', parseFloat(e.target.value) || 0)}
+                                                onChange={(e) => sizeForm.setData('height', Math.max(0.1, parseFloat(e.target.value) || 0.1))}
                                                 required
                                             />
                                         </div>
@@ -711,14 +721,13 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                     <div>
                                         <Label htmlFor="mobile-size-box-type">Box Type</Label>
                                         <Select
-                                            value={sizeForm.data.box_type || 'none'}
-                                            onValueChange={(value) => sizeForm.setData('box_type', value === 'none' ? '' : value)}
+                                            value={sizeForm.data.box_type}
+                                            onValueChange={(value) => sizeForm.setData('box_type', value)}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select box type" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">No box type</SelectItem>
                                                 {Object.entries(boxTypes).map(([key, label]) => (
                                                     <SelectItem key={key} value={key}>
                                                         {label}
