@@ -63,9 +63,7 @@ interface CheckoutDetailsProps extends SharedData {
     totalItems: number;
 }
 
-interface CheckoutResponsePageProps extends SharedData {
-    url?: string;
-}
+
 
 export default function CheckoutDetails() {
     const pageProps = usePage<CheckoutDetailsProps>().props;
@@ -219,7 +217,7 @@ export default function CheckoutDetails() {
         if (auth?.user) {
             // User is authenticated, proceed to cart checkout using Cashier
             router.post('/checkout/cart', checkoutData, {
-                onSuccess: (page: any) => {
+                onSuccess: (page: { props: { url?: string } }) => {
                     // Redirect to Stripe checkout will be handled by the backend
                     if (page.props?.url) {
                         window.location.href = page.props.url;
@@ -241,7 +239,7 @@ export default function CheckoutDetails() {
         } else {
             // User is not authenticated, redirect to guest cart checkout
             router.post('/guest/checkout/cart', checkoutData, {
-                onSuccess: (page: any) => {
+                onSuccess: (page: { props: { url?: string } }) => {
                     // Redirect to Stripe checkout will be handled by the backend
                     if (page.props?.url) {
                         window.location.href = page.props.url;

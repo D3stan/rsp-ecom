@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -163,7 +163,7 @@ export default function VerificationPending({ email, status }: Props) {
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [isPolling, verificationStatus]);
+    }, [isPolling, verificationStatus, checkVerificationStatus]);
 
     // Timer for rate limiting
     useEffect(() => {

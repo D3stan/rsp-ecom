@@ -126,7 +126,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
         e.preventDefault();
 
         post(route('checkout.guest.session'), {
-            onSuccess: (response: any) => {
+            onSuccess: (response: { props: { checkout_url?: string } }) => {
                 if (response.props?.checkout_url) {
                     window.location.href = response.props.checkout_url;
                 }

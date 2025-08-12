@@ -12,9 +12,9 @@ import { initializeTheme } from './hooks/use-appearance';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 // Wrapper component to access Inertia props
-function AppWrapper({ Component, props }: { Component: React.ComponentType<any>; props: any }) {
-    const translations = props.translations;
-    const locale = props.locale;
+function AppWrapper({ Component, props }: { Component: React.ComponentType<Record<string, unknown>>; props: Record<string, unknown> }) {
+    const translations = props.translations as Record<string, string>;
+    const locale = props.locale as string;
 
     return (
         <TranslationProvider initialTranslations={translations} initialLocale={locale}>

@@ -46,7 +46,7 @@ interface Address {
 }
 
 interface CheckoutFormData {
-    [key: string]: any;
+    [key: string]: unknown;
     billing_address: Address;
     shipping_address: Address;
     shipping_same_as_billing: boolean;
@@ -138,7 +138,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
         setIsProcessing(true);
 
         post(route('checkout.session'), {
-            onSuccess: (response: any) => {
+            onSuccess: (response: { props: { sessionId?: string; url?: string } }) => {
                 if (response.props?.sessionId && response.props?.url) {
                     // Redirect to Stripe Checkout
                     window.location.href = response.props.url;

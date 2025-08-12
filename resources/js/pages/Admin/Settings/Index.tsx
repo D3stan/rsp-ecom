@@ -106,7 +106,7 @@ export default function AdminSettings({ settings }: Props) {
         shipping_calculation_method: settings.shipping_calculation_method,
         allow_international_shipping: settings.allow_international_shipping,
         processing_time_days: settings.processing_time_days,
-        shipping_zones: settings.shipping_zones as any,
+        shipping_zones: settings.shipping_zones,
     });
 
     const taxForm = useForm({
