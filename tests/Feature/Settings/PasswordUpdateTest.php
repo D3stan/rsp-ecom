@@ -2,6 +2,9 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Foundation\Testing\WithoutMiddleware;
+
+uses(WithoutMiddleware::class);
 
 test('password can be updated', function () {
     $user = User::factory()->create();

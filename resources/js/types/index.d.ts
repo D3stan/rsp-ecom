@@ -45,5 +45,9 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    google_id?: string | null;
+    password?: string | null;
+    role?: string;
+    is_active?: boolean;
     [key: string]: unknown; // This allows for additional properties...
 }

@@ -31,6 +31,8 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
             'role' => 'customer', // Default role
             'is_active' => true, // Default active
+            'google_id' => null,
+            'avatar' => null,
         ];
     }
 
@@ -41,6 +43,29 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user has a Google account linked.
+     */
+    public function withGoogle(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'google_id' => fake()->unique()->numerify('############'),
+            'avatar' => fake()->imageUrl(200, 200, 'people'),
+        ]);
+    }
+
+    /**
+     * Indicate that the user only has Google authentication (no password).
+     */
+    public function googleOnly(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'google_id' => fake()->unique()->numerify('############'),
+            'avatar' => fake()->imageUrl(200, 200, 'people'),
+            'password' => null,
         ]);
     }
 }

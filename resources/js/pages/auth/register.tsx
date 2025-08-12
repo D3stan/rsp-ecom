@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
+import GoogleButton from '@/components/google-button';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,22 @@ export default function Register() {
     return (
         <AuthLayout title="Create an account" description="Enter your details below to create your account">
             <Head title="Register" />
+
+            <div className="flex flex-col gap-4">
+                <GoogleButton disabled={processing}>
+                    Continue with Google
+                </GoogleButton>
+
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                    </div>
+                </div>
+            </div>
+
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">

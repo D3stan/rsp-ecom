@@ -1,5 +1,9 @@
 <?php
 
+use Illuminate\Foundation\Testing\WithoutMiddleware;
+
+uses(WithoutMiddleware::class);
+
 test('registration screen can be rendered', function () {
     $response = $this->get('/register');
 

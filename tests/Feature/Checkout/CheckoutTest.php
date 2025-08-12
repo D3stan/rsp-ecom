@@ -13,10 +13,13 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Stripe\Checkout\Session;
 use Tests\TestCase;
+use Illuminate\Foundation\Testing\WithoutMiddleware;
+
+uses(WithoutMiddleware::class);
 
 class CheckoutTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, WithoutMiddleware;
 
     protected User $user;
     protected Product $product;
@@ -303,7 +306,7 @@ class CheckoutTest extends TestCase
             'total_amount' => 37.19,
             'currency' => 'usd',
             'stripe_checkout_session_id' => 'cs_test_valid_session',
-            'payment_status' => 'paid',
+            'payment_status' => 'succeeded',
             'payment_method' => 'stripe_checkout',
         ]);
 
