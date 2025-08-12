@@ -14,15 +14,17 @@ import {
     Clock, 
     Truck, 
     ArrowLeft,
-    Eye,
     Download,
     Calendar,
-    CreditCard
+    CreditCard,
+    Star,
+    MapPin
 } from 'lucide-react';
 import React from 'react';
 
 interface OrdersPageProps {
     orders: Order[];
+    userReviews?: { product_id: number }[]; // Products the user has already reviewed
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -80,7 +82,7 @@ const OrderStatusTimeline: React.FC<{ status: string }> = ({ status }) => {
     );
 };
 
-const OrdersPage: React.FC<OrdersPageProps> = ({ orders }) => {
+const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => {
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', { 
             style: 'currency', 
@@ -124,6 +126,21 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders }) => {
             default:
                 return 'bg-gray-100 text-gray-800 border-gray-200';
         }
+    };
+
+    const hasUserReviewedProduct = (productId: number) => {
+        return userReviews.some(review => review.product_id === productId);
+    };
+
+    const canReviewOrder = (order: Order) => {
+        return ['completed', 'delivered'].includes(order.status.toLowerCase());
+    };
+
+    const getUnreviewedProducts = (order: Order) => {
+        if (!canReviewOrder(order)) return [];
+        return order.order_items?.filter(item => 
+            item.product_id && !hasUserReviewedProduct(item.product_id)
+        ) || [];
     };
 
     return (
@@ -211,12 +228,24 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders }) => {
                                                 {getOrderStatusIcon(order.status)}
                                                 {order.status}
                                             </Badge>
-                                            <div className="flex gap-2">
-                                                <Button size="sm" variant="outline">
-                                                    <Eye className="h-4 w-4 mr-2" />
-                                                    Invoice
+                                            
+                                            {/* Tracking Number for Shipped Orders */}
+                                            {order.status.toLowerCase() === 'shipped' && order.tracking_number && (
+                                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    <MapPin className="h-3 w-3" />
+                                                    Tracking: {order.tracking_number}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Review Button for Completed Orders */}
+                                            {canReviewOrder(order) && getUnreviewedProducts(order).length > 0 && (
+                                                <Button size="sm" className="w-fit" asChild>
+                                                    <Link href={route('reviews.create', { product: getUnreviewedProducts(order)[0].product_id })}>
+                                                        <Star className="h-4 w-4 mr-2" />
+                                                        Write Review
+                                                    </Link>
                                                 </Button>
-                                            </div>
+                                            )}
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -257,8 +286,18 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders }) => {
                                                                             )}
                                                                             <span>Qty: {item.quantity}</span>
                                                                         </div>
-                                                                        <div className="mt-2 font-medium">
-                                                                            {formatCurrency(item.price * item.quantity)}
+                                                                        <div className="flex items-center justify-between mt-2">
+                                                                            <div className="font-medium">
+                                                                                {formatCurrency(item.price * item.quantity)}
+                                                                            </div>
+                                                                            {canReviewOrder(order) && item.product_id && !hasUserReviewedProduct(item.product_id) && (
+                                                                                <Button size="sm" variant="outline" asChild>
+                                                                                    <Link href={route('reviews.create', { product: item.product_id })}>
+                                                                                        <Star className="h-4 w-4 mr-1" />
+                                                                                        Review
+                                                                                    </Link>
+                                                                                </Button>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -269,8 +308,19 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders }) => {
                                                     {/* Order Tracking */}
                                                     <div className="space-y-4">
                                                         <h4 className="font-medium">Order Status</h4>
-                                                        <div className="p-4 border rounded-lg">
+                                                        <div className="p-4 border rounded-lg space-y-4">
                                                             <OrderStatusTimeline status={order.status} />
+                                                            
+                                                            {/* Tracking Information */}
+                                                            {order.tracking_number && ['shipped', 'delivered'].includes(order.status.toLowerCase()) && (
+                                                                <div className="pt-4 border-t">
+                                                                    <div className="flex items-center gap-2 text-sm">
+                                                                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                                        <span className="font-medium">Tracking Number:</span>
+                                                                        <span className="font-mono text-blue-600">{order.tracking_number}</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>

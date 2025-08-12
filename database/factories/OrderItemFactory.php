@@ -28,6 +28,7 @@ class OrderItemFactory extends Factory
             'order_id' => Order::factory(),
             'product_id' => $product->id,
             'product_name' => $product->name,
+            'size_id' => $product->size_id, // Use the product's size
             'quantity' => $quantity,
             'price' => $unitPrice,
             'total' => $totalPrice,
@@ -46,6 +47,7 @@ class OrderItemFactory extends Factory
             return [
                 'product_id' => $product->id,
                 'product_name' => $product->name,
+                'size_id' => $product->size_id,
                 'price' => $unitPrice,
                 'total' => $unitPrice * $quantity,
             ];
@@ -73,7 +75,7 @@ class OrderItemFactory extends Factory
     public function withoutSize(): static
     {
         return $this->state(fn (array $attributes) => [
-            // No size_id column in migration
+            'size_id' => null,
         ]);
     }
 

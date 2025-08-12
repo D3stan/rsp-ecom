@@ -207,6 +207,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
     Route::get('dashboard/orders', [DashboardController::class, 'orders'])->name('orders.index');
     Route::get('dashboard/wishlist', [DashboardController::class, 'wishlist'])->name('wishlist.index');
+    
+    // Review routes
+    Route::get('reviews/create/{product}', [App\Http\Controllers\ReviewController::class, 'create'])->name('reviews.create');
+    Route::post('reviews', [App\Http\Controllers\ReviewController::class, 'store'])->name('reviews.store');
 });
 
 require __DIR__.'/settings.php';

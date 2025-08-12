@@ -23,7 +23,7 @@ interface TranslationProviderProps {
     initialLocale?: string;
 }
 
-export function TranslationProvider({ children, initialTranslations = {}, initialLocale = 'it' }: TranslationProviderProps) {
+export function TranslationProvider({ children, initialTranslations = {}, initialLocale = 'en' }: TranslationProviderProps) {
     const [locale, setLocale] = useState(() => {
         // Try to get from localStorage first, then use initialLocale
         if (typeof window !== 'undefined') {

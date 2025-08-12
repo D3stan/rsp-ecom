@@ -24,6 +24,7 @@ class DashboardController extends Controller
                 // Format order data for frontend
                 $orderData = $order->toArray();
                 $orderData['total'] = $order->total_amount; // Add alias for backward compatibility
+                $orderData['tracking_number'] = $order->tracking_number; // Ensure tracking number is included
                 $orderData['order_items'] = $order->orderItems->map(function ($item) {
                     return [
                         'id' => $item->id,
@@ -46,9 +47,13 @@ class DashboardController extends Controller
                 
                 return $orderData;
             });
+        
+        // Get user's reviews to check which products have been reviewed
+        $userReviews = $user->reviews()->select('product_id')->get();
 
         return Inertia::render('Dashboard/Orders', [
             'orders' => $orders,
+            'userReviews' => $userReviews,
         ]);
     }
 
