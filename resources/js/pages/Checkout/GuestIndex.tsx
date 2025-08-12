@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import { Head } from '@inertiajs/react';
+import Header from '@/components/header';
+import LoadingOverlay from '@/components/LoadingOverlay';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface CartItem {
     id: string;
@@ -38,6 +41,7 @@ interface Props {
 }
 
 export default function GuestCheckout({ cartItems, totals, guestSessionId }: Props) {
+    const { t, isLoading } = useTranslation();
     const [shippingSameAsBilling, setShippingSameAsBilling] = useState(true);
     const [collectTaxId, setCollectTaxId] = useState(false);
     const [marketingConsent, setMarketingConsent] = useState(false);
@@ -161,14 +165,14 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
 
     return (
         <>
-            <Head title="Guest Checkout" />
+            <Head title={t('checkout.guest_checkout')} />
             
-            <div className="min-h-screen bg-gray-50 py-12">
+            <LoadingOverlay isLoading={isLoading} className="min-h-screen bg-gray-50 py-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* Checkout Form */}
                         <div className="bg-white rounded-lg shadow-sm p-6">
-                            <h1 className="text-2xl font-bold text-gray-900 mb-6">Guest Checkout</h1>
+                            <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('checkout.guest_checkout')}</h1>
                             
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 {/* Contact Information */}
@@ -455,7 +459,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                         </div>
                     </div>
                 </div>
-            </div>
+            </LoadingOverlay>
         </>
     );
 }

@@ -1,5 +1,6 @@
 import { Head, Link, router, usePage, type Page } from '@inertiajs/react';
 import Header from '@/components/header';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import { SharedData } from '@/types';
 import { 
     ChevronDown,
@@ -77,6 +79,7 @@ interface CheckoutResponsePageProps extends SharedData {
 export default function CheckoutDetails() {
     const pageProps = usePage<CheckoutDetailsProps>().props;
     const { cartItems, subtotal, shippingCost, taxAmount, discountAmount = 0, total, totalItems, auth } = pageProps;
+    const { t, isLoading } = useTranslation();
     const isMobile = useIsMobile();
     const { addToast } = useToast();
     
@@ -266,7 +269,7 @@ export default function CheckoutDetails() {
     if (!cartItems || cartItems.length === 0) {
         return (
             <>
-                <Head title="Checkout" />
+                <Head title={t('checkout.title')} />
                 
                 <div className="min-h-screen bg-white">
                     <Header />
@@ -274,15 +277,15 @@ export default function CheckoutDetails() {
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                         <div className="text-center">
                             <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                                Your cart is empty
+                                {t('checkout.cart_empty')}
                             </h1>
                             <p className="text-lg text-gray-600 mb-8">
-                                Add items to proceed with checkout
+                                {t('checkout.continue_shopping')}
                             </p>
                             
                             <Button asChild size="lg" className="px-8">
                                 <Link href="/products">
-                                    Browse Products
+                                    {t('cart.browse_products')}
                                 </Link>
                             </Button>
                         </div>
@@ -294,19 +297,19 @@ export default function CheckoutDetails() {
 
     return (
         <>
-            <Head title={`Checkout - ${totalItems} items`} />
+            <Head title={`${t('checkout.title')} - ${totalItems} ${totalItems === 1 ? t('cart.item') : t('cart.items')}`} />
             
-            <div className={`min-h-screen bg-white ${isMobile ? 'pb-24' : ''}`}>
+            <LoadingOverlay isLoading={isLoading} className={`min-h-screen bg-white ${isMobile ? 'pb-24' : ''}`}>
                 <Header />
                 
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {/* Checkout Header */}
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-gray-900">
-                            Checkout Details
+                            {t('checkout.title')}
                         </h1>
                         <p className="text-gray-600 mt-2">
-                            {totalItems} {totalItems === 1 ? 'item' : 'items'} ready for checkout
+                            {totalItems} {totalItems === 1 ? t('cart.item') : t('cart.items')} {t('checkout.ready_for_checkout')}
                         </p>
                     </div>
 
@@ -319,7 +322,7 @@ export default function CheckoutDetails() {
                                         <CardTitle className="flex items-center justify-between text-black">
                                             <div className="flex items-center gap-2">
                                                 <CreditCard className="h-5 w-5" />
-                                                Contact Information
+                                                {t('checkout.contact_information')}
                                             </div>
                                             {isContactOpen ? (
                                                 <ChevronUp className="h-5 w-5" />
@@ -332,18 +335,18 @@ export default function CheckoutDetails() {
                                 <CollapsibleContent>
                                     <CardContent className="space-y-4">
                                         <div>
-                                            <Label htmlFor="email" className="text-black font-medium">Email Address *</Label>
+                                            <Label htmlFor="email" className="text-black font-medium">{t('checkout.email')} *</Label>
                                             <Input
                                                 id="email"
                                                 type="email"
                                                 value={contactInfo.email}
                                                 onChange={(e) => updateContactInfo('email', e.target.value)}
                                                 required
-                                                placeholder="your@email.com"
+                                                placeholder={t('checkout.email_placeholder')}
                                                 className="text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
                                             />
                                             <p className="text-sm text-gray-600 mt-1">
-                                                We'll send your order confirmation and receipt to this email address.
+                                                {t('checkout.email_confirmation_text')}
                                             </p>
                                         </div>
                                     </CardContent>
@@ -359,7 +362,7 @@ export default function CheckoutDetails() {
                                         <CardTitle className="flex items-center justify-between text-black">
                                             <div className="flex items-center gap-2">
                                                 <Truck className="h-5 w-5" />
-                                                Shipping Information
+                                                {t('checkout.shipping_information')}
                                             </div>
                                             {isShippingOpen ? (
                                                 <ChevronUp className="h-5 w-5" />
@@ -373,7 +376,7 @@ export default function CheckoutDetails() {
                                     <CardContent className="space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <Label htmlFor="first_name" className="text-black font-medium">First Name *</Label>
+                                                <Label htmlFor="first_name" className="text-black font-medium">{t('checkout.first_name')} *</Label>
                                                 <Input
                                                     id="first_name"
                                                     value={shippingAddress.first_name}
@@ -383,7 +386,7 @@ export default function CheckoutDetails() {
                                                 />
                                             </div>
                                             <div>
-                                                <Label htmlFor="last_name" className="text-black font-medium">Last Name *</Label>
+                                                <Label htmlFor="last_name" className="text-black font-medium">{t('checkout.last_name')} *</Label>
                                                 <Input
                                                     id="last_name"
                                                     value={shippingAddress.last_name}
@@ -395,7 +398,7 @@ export default function CheckoutDetails() {
                                         </div>
 
                                         <div>
-                                            <Label htmlFor="company" className="text-gray-600">Company (optional)</Label>
+                                            <Label htmlFor="company" className="text-gray-600">{t('checkout.company')} ({t('checkout.optional')})</Label>
                                             <Input
                                                 id="company"
                                                 value={shippingAddress.company}
@@ -405,7 +408,7 @@ export default function CheckoutDetails() {
                                         </div>
 
                                         <div>
-                                            <Label htmlFor="address_line_1" className="text-black font-medium">Address Line 1 *</Label>
+                                            <Label htmlFor="address_line_1" className="text-black font-medium">{t('checkout.address_line_1')} *</Label>
                                             <Input
                                                 id="address_line_1"
                                                 value={shippingAddress.address_line_1}
@@ -416,7 +419,7 @@ export default function CheckoutDetails() {
                                         </div>
 
                                         <div>
-                                            <Label htmlFor="address_line_2" className="text-gray-600">Address Line 2 (optional)</Label>
+                                            <Label htmlFor="address_line_2" className="text-gray-600">{t('checkout.address_line_2')} ({t('checkout.optional')})</Label>
                                             <Input
                                                 id="address_line_2"
                                                 value={shippingAddress.address_line_2}
@@ -427,7 +430,7 @@ export default function CheckoutDetails() {
 
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             <div>
-                                                <Label htmlFor="city" className="text-black font-medium">City *</Label>
+                                                <Label htmlFor="city" className="text-black font-medium">{t('checkout.city')} *</Label>
                                                 <Input
                                                     id="city"
                                                     value={shippingAddress.city}
@@ -437,7 +440,7 @@ export default function CheckoutDetails() {
                                                 />
                                             </div>
                                             <div>
-                                                <Label htmlFor="state" className="text-black font-medium">State *</Label>
+                                                <Label htmlFor="state" className="text-black font-medium">{t('checkout.state')} *</Label>
                                                 <Input
                                                     id="state"
                                                     value={shippingAddress.state}
@@ -447,7 +450,7 @@ export default function CheckoutDetails() {
                                                 />
                                             </div>
                                             <div>
-                                                <Label htmlFor="postal_code" className="text-black font-medium">Postal Code *</Label>
+                                                <Label htmlFor="postal_code" className="text-black font-medium">{t('checkout.postal_code')} *</Label>
                                                 <Input
                                                     id="postal_code"
                                                     value={shippingAddress.postal_code}
@@ -460,7 +463,7 @@ export default function CheckoutDetails() {
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
-                                                <Label htmlFor="country" className="text-black font-medium">Country *</Label>
+                                                <Label htmlFor="country" className="text-black font-medium">{t('checkout.country')} *</Label>
                                                 <Select value={shippingAddress.country} onValueChange={(value) => updateShippingAddress('country', value)}>
                                                     <SelectTrigger className="bg-white text-black border-gray-300 focus:border-gray-500 focus:ring-gray-500">
                                                         <SelectValue />
@@ -475,7 +478,7 @@ export default function CheckoutDetails() {
                                                 </Select>
                                             </div>
                                             <div>
-                                                <Label htmlFor="phone" className="text-gray-600">Phone</Label>
+                                                <Label htmlFor="phone" className="text-gray-600">{t('checkout.phone')}</Label>
                                                 <Input
                                                     id="phone"
                                                     value={shippingAddress.phone}
@@ -497,7 +500,7 @@ export default function CheckoutDetails() {
                                         <CardTitle className="flex items-center justify-between text-black">
                                             <div className="flex items-center gap-2">
                                                 <Tag className="h-5 w-5" />
-                                                Discount Code
+                                                {t('cart.discount_code')}
                                             </div>
                                             {isDiscountOpen ? (
                                                 <ChevronUp className="h-5 w-5" />
@@ -512,7 +515,7 @@ export default function CheckoutDetails() {
                                         <div className="flex space-x-2">
                                             <Input
                                                 type="text"
-                                                placeholder="Enter discount code"
+                                                placeholder={t('cart.coupon_placeholder')}
                                                 value={couponCode}
                                                 onChange={(e) => setCouponCode(e.target.value)}
                                                 className="flex-1 text-black bg-white border-gray-300 focus:border-gray-500 focus:ring-gray-500"
@@ -523,13 +526,13 @@ export default function CheckoutDetails() {
                                                 disabled={!couponCode.trim() || isApplyingCoupon}
                                                 className="border-gray-300 hover:bg-gray-50"
                                             >
-                                                {isApplyingCoupon ? 'Applying...' : 'Apply'}
+                                                {isApplyingCoupon ? t('cart.applying') : t('cart.apply')}
                                             </Button>
                                         </div>
                                         {discountAmount > 0 && (
                                             <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                                                 <p className="text-sm text-green-800">
-                                                    Discount applied: -${discountAmount.toFixed(2)}
+                                                    {t('cart.discount_applied', { amount: discountAmount.toFixed(2) })}
                                                 </p>
                                             </div>
                                         )}
@@ -546,7 +549,7 @@ export default function CheckoutDetails() {
                                         <CardTitle className="flex items-center justify-between text-black">
                                             <div className="flex items-center gap-2">
                                                 <FileText className="h-5 w-5" />
-                                                Order Notes (Optional)
+                                                {t('checkout.order_notes')} ({t('checkout.optional')})
                                             </div>
                                             {isNotesOpen ? (
                                                 <ChevronUp className="h-5 w-5" />
@@ -559,7 +562,7 @@ export default function CheckoutDetails() {
                                 <CollapsibleContent>
                                     <CardContent>
                                         <Textarea
-                                            placeholder="Special instructions for your order..."
+                                            placeholder={t('checkout.order_notes_placeholder')}
                                             value={orderNotes}
                                             onChange={(e) => setOrderNotes(e.target.value)}
                                             maxLength={200}
@@ -567,7 +570,7 @@ export default function CheckoutDetails() {
                                             rows={3}
                                         />
                                         <p className="text-xs text-gray-500 mt-1">
-                                            {orderNotes.length}/200 characters
+                                            {orderNotes.length}/200 {t('checkout.characters')}
                                         </p>
                                     </CardContent>
                                 </CollapsibleContent>
@@ -582,7 +585,7 @@ export default function CheckoutDetails() {
                                         <CardTitle className="flex items-center justify-between text-black">
                                             <div className="flex items-center gap-2">
                                                 <Calculator className="h-5 w-5" />
-                                                Order Summary
+                                                {t('cart.order_summary')}
                                             </div>
                                             {isTotalsOpen ? (
                                                 <ChevronUp className="h-5 w-5" />
@@ -595,28 +598,28 @@ export default function CheckoutDetails() {
                                 <CollapsibleContent>
                                     <CardContent className="space-y-3">
                                         <div className="flex justify-between text-gray-600">
-                                            <span>Subtotal</span>
+                                            <span>{t('cart.subtotal')}</span>
                                             <span className="text-black font-medium">${subtotal.toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between text-gray-600">
-                                            <span>Shipping</span>
+                                            <span>{t('cart.shipping')}</span>
                                             <span className="text-black font-medium">
-                                                {shippingCost > 0 ? `$${shippingCost.toFixed(2)}` : 'Free'}
+                                                {shippingCost > 0 ? `$${shippingCost.toFixed(2)}` : t('cart.free')}
                                             </span>
                                         </div>
                                         <div className="flex justify-between text-gray-600">
-                                            <span>Tax</span>
+                                            <span>{t('cart.tax')}</span>
                                             <span className="text-black font-medium">${taxAmount.toFixed(2)}</span>
                                         </div>
                                         {discountAmount > 0 && (
                                             <div className="flex justify-between text-green-600">
-                                                <span>Discount</span>
+                                                <span>{t('cart.discount')}</span>
                                                 <span className="font-medium">-${discountAmount.toFixed(2)}</span>
                                             </div>
                                         )}
                                         <div className="border-t border-gray-200 pt-3">
                                             <div className="flex justify-between text-lg font-semibold text-black">
-                                                <span>Total</span>
+                                                <span>{t('cart.total')}</span>
                                                 <span>${total.toFixed(2)}</span>
                                             </div>
                                         </div>
@@ -634,7 +637,7 @@ export default function CheckoutDetails() {
                                 className="w-full border-gray-300 hover:bg-gray-50"
                             >
                                 <ArrowLeft className="w-5 h-5 mr-2" />
-                                Back to Cart
+                                {t('cart.back_to_cart')}
                             </Button>
                             <Button
                                 onClick={proceedToPayment}
@@ -643,7 +646,7 @@ export default function CheckoutDetails() {
                                 className="w-full bg-black text-white hover:bg-gray-800"
                             >
                                 <CreditCard className="w-5 h-5 mr-2" />
-                                {isProcessing ? 'Processing...' : `Pay $${total.toFixed(2)}`}
+                                {isProcessing ? t('checkout.processing') : t('checkout.pay', { amount: total.toFixed(2) })}
                             </Button>
                         </div>
                     </div>
@@ -659,7 +662,7 @@ export default function CheckoutDetails() {
                                 className="h-12 border-gray-300 hover:bg-gray-50"
                             >
                                 <ArrowLeft className="w-5 h-5 mr-2" />
-                                Back
+                                {t('cart.back')}
                             </Button>
                             <Button
                                 onClick={proceedToPayment}
@@ -667,12 +670,12 @@ export default function CheckoutDetails() {
                                 className="h-12 bg-black text-white hover:bg-gray-800 font-semibold"
                             >
                                 <CreditCard className="w-5 h-5 mr-2" />
-                                {isProcessing ? 'Processing...' : `Pay $${total.toFixed(2)}`}
+                                {isProcessing ? t('checkout.processing') : t('checkout.pay', { amount: total.toFixed(2) })}
                             </Button>
                         </div>
                     </div>
                 )}
-            </div>
+            </LoadingOverlay>
         </>
     );
 }

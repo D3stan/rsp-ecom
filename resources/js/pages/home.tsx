@@ -3,6 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/header';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import { useEffect, useRef, useState } from 'react';
 import useTranslation from '@/hooks/useTranslation';
 import { useMobileInteractions } from '@/hooks/use-mobile-interactions';
@@ -162,16 +163,7 @@ export default function Home() {
         <>
             <Head title="Home" />
             
-            {/* Loading Overlay for Language Changes */}
-            {isLoading && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-                    <div className=" rounded-lg p-4 sm:p-6 flex items-center space-x-3 max-w-xs">
-                        <div className="animate-spin rounded-full h-9 w-9 sm:h-6 sm:w-6 border-b-3 border-white flex-shrink-0"></div>
-                    </div>
-                </div>
-            )}
-            
-            <div className={`min-h-screen bg-white transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'} select-none`}>
+            <LoadingOverlay isLoading={isLoading} className="min-h-screen bg-white">
                 {/* Header */}
                 <Header currentPage="home" transparent={true} />
                 
@@ -453,7 +445,7 @@ export default function Home() {
                         </div>
                     </div>
                 </footer>
-            </div>
+            </LoadingOverlay>
         </>
     );
 }

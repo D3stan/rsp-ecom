@@ -3,6 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import Header from '@/components/header';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cartService } from '@/services/cartService';
@@ -49,7 +50,7 @@ export default function Cart() {
     const { cartItems, subtotal, shippingCost, total, totalItems } = pageProps;
     const { auth } = pageProps;
     const isMobile = useIsMobile();
-    const { t } = useTranslation();
+    const { t, isLoading } = useTranslation();
     
     const [isUpdating, setIsUpdating] = useState<number | null>(null);
 
@@ -128,7 +129,7 @@ export default function Cart() {
             <>
                 <Head title={t('cart.title')} />
                 
-                <div className="min-h-screen bg-white">
+                <LoadingOverlay isLoading={isLoading} className="min-h-screen bg-white">
                     <Header />
                     
                     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -155,7 +156,7 @@ export default function Cart() {
                             </Button>
                         </div>
                     </div>
-                </div>
+                </LoadingOverlay>
             </>
         );
     }
@@ -164,7 +165,7 @@ export default function Cart() {
         <>
             <Head title={t('cart.title_with_items', { count: totalItems })} />
             
-            <div className={`min-h-screen bg-white ${isMobile ? 'pb-24' : ''}`}>
+            <LoadingOverlay isLoading={isLoading} className={`min-h-screen bg-white ${isMobile ? 'pb-24' : ''}`}>
                 <Header />
                 
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -377,7 +378,7 @@ export default function Cart() {
                         </div>
                     </div>
                 )}
-            </div>
+            </LoadingOverlay>
         </>
     );
 }

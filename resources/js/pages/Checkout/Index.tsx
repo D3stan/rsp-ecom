@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import Header from '@/components/header';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 // Badge component not used in this file
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import { CreditCard, Truck, ShoppingBag, AlertCircle } from 'lucide-react';
 
 interface CartItem {
@@ -83,6 +85,7 @@ interface Props {
 
 export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props) {
     const { addToast } = useToast();
+    const { t, isLoading } = useTranslation();
     const [isProcessing, setIsProcessing] = useState(false);
 
     const { data, setData, post, processing } = useForm<CheckoutFormData>({
@@ -193,13 +196,13 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
     if (cartItems.length === 0) {
         return (
             <>
-                <Head title="Checkout" />
+                <Head title={t('checkout.title')} />
                 <Header />
                 <div className="container mx-auto px-4 py-8">
                     <Alert>
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
-                            Your cart is empty. <Link href={route('products')} className="underline">Continue shopping</Link>
+                            {t('checkout.cart_empty')} <Link href={route('products')} className="underline">{t('checkout.continue_shopping')}</Link>
                         </AlertDescription>
                     </Alert>
                 </div>
@@ -209,14 +212,14 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
 
     return (
         <>
-            <Head title="Checkout" />
+            <Head title={t('checkout.title')} />
             <Header />
             
-            <div className="min-h-screen bg-white">
+            <LoadingOverlay isLoading={isLoading} className="min-h-screen bg-white">
                 <div className="container mx-auto px-4 py-8">
                     <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-gray-900">Checkout</h1>
-                        <p className="text-gray-600">Complete your order</p>
+                        <h1 className="text-3xl font-bold text-gray-900">{t('checkout.title')}</h1>
+                        <p className="text-gray-600">{t('checkout.complete_your_order')}</p>
                     </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -228,13 +231,13 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <CreditCard className="h-5 w-5" />
-                                        Billing Address
+                                        {t('checkout.billing_address')}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <Label htmlFor="billing_first_name">First Name *</Label>
+                                            <Label htmlFor="billing_first_name">{t('checkout.first_name')} {t('checkout.required')}</Label>
                                             <Input
                                                 id="billing_first_name"
                                                 value={data.billing_address.first_name}
@@ -246,7 +249,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                             )}
                                         </div>
                                         <div>
-                                            <Label htmlFor="billing_last_name">Last Name *</Label>
+                                            <Label htmlFor="billing_last_name">{t('checkout.last_name')} {t('checkout.required')}</Label>
                                             <Input
                                                 id="billing_last_name"
                                                 value={data.billing_address.last_name}
@@ -260,7 +263,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="billing_email">Email *</Label>
+                                        <Label htmlFor="billing_email">{t('checkout.email')} {t('checkout.required')}</Label>
                                         <Input
                                             id="billing_email"
                                             type="email"
@@ -275,7 +278,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <Label htmlFor="billing_phone">Phone</Label>
+                                            <Label htmlFor="billing_phone">{t('checkout.phone')}</Label>
                                             <Input
                                                 id="billing_phone"
                                                 value={data.billing_address.phone}
@@ -283,7 +286,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                             />
                                         </div>
                                         <div>
-                                            <Label htmlFor="billing_company">Company</Label>
+                                            <Label htmlFor="billing_company">{t('checkout.company')}</Label>
                                             <Input
                                                 id="billing_company"
                                                 value={data.billing_address.company}
@@ -293,7 +296,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="billing_address_1">Address Line 1 *</Label>
+                                        <Label htmlFor="billing_address_1">{t('checkout.address_line_1')} {t('checkout.required')}</Label>
                                         <Input
                                             id="billing_address_1"
                                             value={data.billing_address.address_line_1}
@@ -306,7 +309,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="billing_address_2">Address Line 2</Label>
+                                        <Label htmlFor="billing_address_2">{t('checkout.address_line_2')}</Label>
                                         <Input
                                             id="billing_address_2"
                                             value={data.billing_address.address_line_2}
@@ -316,7 +319,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>
-                                            <Label htmlFor="billing_city">City *</Label>
+                                            <Label htmlFor="billing_city">{t('checkout.city')} {t('checkout.required')}</Label>
                                             <Input
                                                 id="billing_city"
                                                 value={data.billing_address.city}
@@ -328,7 +331,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                             )}
                                         </div>
                                         <div>
-                                            <Label htmlFor="billing_state">State *</Label>
+                                            <Label htmlFor="billing_state">{t('checkout.state')} {t('checkout.required')}</Label>
                                             <Input
                                                 id="billing_state"
                                                 value={data.billing_address.state}
@@ -340,7 +343,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                             )}
                                         </div>
                                         <div>
-                                            <Label htmlFor="billing_postal">Postal Code *</Label>
+                                            <Label htmlFor="billing_postal">{t('checkout.postal_code')} {t('checkout.required')}</Label>
                                             <Input
                                                 id="billing_postal"
                                                 value={data.billing_address.postal_code}
@@ -354,19 +357,19 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="billing_country">Country *</Label>
+                                        <Label htmlFor="billing_country">{t('checkout.country')} {t('checkout.required')}</Label>
                                         <Select value={data.billing_address.country} onValueChange={(value) => updateBillingAddress('country', value)}>
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="US">United States</SelectItem>
-                                                <SelectItem value="CA">Canada</SelectItem>
-                                                <SelectItem value="GB">United Kingdom</SelectItem>
-                                                <SelectItem value="DE">Germany</SelectItem>
-                                                <SelectItem value="FR">France</SelectItem>
-                                                <SelectItem value="ES">Spain</SelectItem>
-                                                <SelectItem value="IT">Italy</SelectItem>
+                                                <SelectItem value="US">{t('checkout.countries.US')}</SelectItem>
+                                                <SelectItem value="CA">{t('checkout.countries.CA')}</SelectItem>
+                                                <SelectItem value="GB">{t('checkout.countries.GB')}</SelectItem>
+                                                <SelectItem value="DE">{t('checkout.countries.DE')}</SelectItem>
+                                                <SelectItem value="FR">{t('checkout.countries.FR')}</SelectItem>
+                                                <SelectItem value="ES">{t('checkout.countries.ES')}</SelectItem>
+                                                <SelectItem value="IT">{t('checkout.countries.IT')}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -378,7 +381,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <Truck className="h-5 w-5" />
-                                        Shipping Address
+                                        {t('checkout.shipping_address')}
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
@@ -390,7 +393,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                                 onCheckedChange={toggleShippingSameAsBilling}
                                             />
                                             <Label htmlFor="same_as_billing">
-                                                Same as billing address
+                                                {t('checkout.same_as_billing')}
                                             </Label>
                                         </div>
 
@@ -399,7 +402,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                                 {/* Similar form fields as billing address */}
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div>
-                                                        <Label htmlFor="shipping_first_name">First Name *</Label>
+                                                        <Label htmlFor="shipping_first_name">{t('checkout.first_name')} {t('checkout.required')}</Label>
                                                         <Input
                                                             id="shipping_first_name"
                                                             value={data.shipping_address.first_name}
@@ -408,7 +411,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                                         />
                                                     </div>
                                                     <div>
-                                                        <Label htmlFor="shipping_last_name">Last Name *</Label>
+                                                        <Label htmlFor="shipping_last_name">{t('checkout.last_name')} {t('checkout.required')}</Label>
                                                         <Input
                                                             id="shipping_last_name"
                                                             value={data.shipping_address.last_name}
@@ -431,7 +434,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                 size="lg"
                                 disabled={processing || isProcessing}
                             >
-                                {(processing || isProcessing) ? 'Processing...' : `Complete Order - $${totals.total.toFixed(2)}`}
+                                {(processing || isProcessing) ? t('checkout.processing') : `${t('checkout.complete_order')} - $${totals.total.toFixed(2)}`}
                             </Button>
                         </form>
                     </div>
@@ -442,7 +445,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <ShoppingBag className="h-5 w-5" />
-                                    Order Summary
+                                    {t('checkout.order_summary')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
@@ -458,9 +461,9 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                             <div className="flex-1">
                                                 <h4 className="font-medium text-sm">{item.product.name}</h4>
                                                 {item.size && (
-                                                    <p className="text-xs text-muted-foreground">Size: {item.size.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{t('checkout.size')}: {item.size.name}</p>
                                                 )}
-                                                <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                                <p className="text-xs text-muted-foreground">{t('checkout.qty')}: {item.quantity}</p>
                                             </div>
                                             <p className="font-medium">${(item.product.price * item.quantity).toFixed(2)}</p>
                                         </div>
@@ -472,35 +475,34 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                 {/* Totals */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
-                                        <span>Subtotal</span>
+                                        <span>{t('checkout.subtotal')}</span>
                                         <span>${totals.subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span>Shipping</span>
-                                        <span>{totals.shipping_cost === 0 ? 'Free' : `$${totals.shipping_cost.toFixed(2)}`}</span>
+                                        <span>{t('checkout.shipping')}</span>
+                                        <span>{totals.shipping_cost === 0 ? t('checkout.free') : `$${totals.shipping_cost.toFixed(2)}`}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span>Tax</span>
+                                        <span>{t('checkout.tax')}</span>
                                         <span>${totals.tax_amount.toFixed(2)}</span>
                                     </div>
                                     <Separator />
                                     <div className="flex justify-between font-bold text-lg">
-                                        <span>Total</span>
+                                        <span>{t('checkout.total')}</span>
                                         <span>${totals.total.toFixed(2)}</span>
                                     </div>
                                 </div>
 
                                 <div className="text-xs text-gray-600">
-                                    <p>• Secure payment powered by Stripe</p>
-                                    <p>• Free shipping on orders over $100</p>
-                                    <p>• 30-day return policy</p>
+                                    <p>• {t('checkout.secure_payment')}</p>
+                                    <p>• {t('checkout.free_shipping_notice')}</p>
+                                    <p>• {t('checkout.return_policy_notice')}</p>
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
                 </div>
-            </div>
-            </div>
+            </LoadingOverlay>
         </>
     );
 }
