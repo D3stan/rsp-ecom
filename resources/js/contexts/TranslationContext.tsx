@@ -74,16 +74,23 @@ export function TranslationProvider({ children, initialTranslations = {}, initia
 
     // Load translations when locale changes
     useEffect(() => {
-        if (locale !== initialLocale || Object.keys(translations).length === 0) {
+        // Only load if we don't have translations for the current locale
+        if (!globalTranslationCache[locale] && locale !== initialLocale) {
             loadTranslations(locale);
+        } else if (locale === initialLocale && Object.keys(translations).length === 0) {
+            // Load initial locale if no translations are set
+            loadTranslations(locale);
+        } else if (globalTranslationCache[locale] && globalTranslationCache[locale] !== translations) {
+            // Update translations if we have cached ones that are different
+            setTranslations(globalTranslationCache[locale]);
         }
-    }, [locale, initialLocale, translations]);
+    }, [locale, initialLocale]);
 
     const loadTranslations = async (newLocale: string) => {
         // Check cache first
         if (globalTranslationCache[newLocale]) {
             setTranslations(globalTranslationCache[newLocale]);
-            return;
+            return Promise.resolve();
         }
 
         setIsLoading(true);
@@ -159,14 +166,19 @@ export function TranslationProvider({ children, initialTranslations = {}, initia
     const changeLocale = (newLocale: string) => {
         if (newLocale === locale) return;
 
+        // Update the locale state and localStorage
         setLocale(newLocale);
         if (typeof window !== 'undefined') {
             localStorage.setItem('locale', newLocale);
         }
 
-        // Send request to backend to update session
+        // Send request to backend to update session and load translations
         const updateBackendLocale = async () => {
             try {
+                // First, try to load translations (this will use cache if available)
+                await loadTranslations(newLocale);
+                
+                // Then update backend session
                 const response = await fetch('/change-language', {
                     method: 'POST',
                     headers: {
@@ -176,16 +188,11 @@ export function TranslationProvider({ children, initialTranslations = {}, initia
                     body: JSON.stringify({ locale: newLocale }),
                 });
                 
-                if (response.ok) {
-                    // Load translations for new locale
-                    await loadTranslations(newLocale);
-                    // Reload page to apply new locale server-side
-                    if (typeof window !== 'undefined') {
-                        window.location.reload();
-                    }
+                if (!response.ok) {
+                    console.warn('Failed to update backend locale, but frontend translation will still work');
                 }
             } catch (error) {
-                console.error('Failed to update backend locale:', error);
+                console.error('Failed to update locale:', error);
                 // Still try to load translations for frontend
                 await loadTranslations(newLocale);
             }
