@@ -13,6 +13,12 @@ export interface CartResponse {
     maxQuantity?: number;
 }
 
+interface CustomWindow extends Window {
+    inertiaProps?: {
+        csrf_token?: string | null;
+    };
+}
+
 class CartService {
     /**
      * Get CSRF token from meta tag or Inertia props
@@ -23,10 +29,10 @@ class CartService {
         if (metaToken) {
             return metaToken;
         }
-        
+
         // Fallback to Inertia shared props (if available)
         try {
-            const inertiaProps = (window as Record<string, unknown>)?.inertiaProps || {};
+            const inertiaProps = (window as CustomWindow)?.inertiaProps || {};
             return inertiaProps.csrf_token || null;
         } catch {
             return null;
@@ -41,11 +47,11 @@ class CartService {
             const response = await fetch('/csrf-token', {
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 // Update the meta tag with the new token
@@ -67,12 +73,12 @@ class CartService {
     async addToCart(data: AddToCartData): Promise<CartResponse> {
         try {
             const token = this.getCSRFToken();
-            
+
             const response = await fetch('/cart/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     ...(token && { 'X-CSRF-TOKEN': token }),
                 },
@@ -87,28 +93,28 @@ class CartService {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Accept': 'application/json',
+                            Accept: 'application/json',
                             'X-Requested-With': 'XMLHttpRequest',
                             'X-CSRF-TOKEN': newToken,
                         },
                         body: JSON.stringify(data),
                     });
-                    
+
                     const retryResult = await retryResponse.json();
-                    
+
                     if (!retryResponse.ok) {
                         return {
                             success: false,
                             message: retryResult.message || 'Failed to add product to cart after token refresh.',
                         };
                     }
-                    
+
                     return retryResult;
                 }
             }
 
             const result = await response.json();
-            
+
             if (!response.ok) {
                 return {
                     success: false,
@@ -132,12 +138,12 @@ class CartService {
     async updateCartItem(itemId: number, quantity: number): Promise<CartResponse> {
         try {
             const token = this.getCSRFToken();
-            
+
             const response = await fetch(`/cart/items/${itemId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     ...(token && { 'X-CSRF-TOKEN': token }),
                 },
@@ -152,28 +158,28 @@ class CartService {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Accept': 'application/json',
+                            Accept: 'application/json',
                             'X-Requested-With': 'XMLHttpRequest',
                             'X-CSRF-TOKEN': newToken,
                         },
                         body: JSON.stringify({ quantity }),
                     });
-                    
+
                     const retryResult = await retryResponse.json();
-                    
+
                     if (!retryResponse.ok) {
                         return {
                             success: false,
                             message: retryResult.message || 'Failed to update cart after token refresh.',
                         };
                     }
-                    
+
                     return retryResult;
                 }
             }
 
             const result = await response.json();
-            
+
             if (!response.ok) {
                 return {
                     success: false,
@@ -197,11 +203,11 @@ class CartService {
     async removeFromCart(itemId: number): Promise<CartResponse> {
         try {
             const token = this.getCSRFToken();
-            
+
             const response = await fetch(`/cart/items/${itemId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     ...(token && { 'X-CSRF-TOKEN': token }),
                 },
@@ -214,27 +220,27 @@ class CartService {
                     const retryResponse = await fetch(`/cart/items/${itemId}`, {
                         method: 'DELETE',
                         headers: {
-                            'Accept': 'application/json',
+                            Accept: 'application/json',
                             'X-Requested-With': 'XMLHttpRequest',
                             'X-CSRF-TOKEN': newToken,
                         },
                     });
-                    
+
                     const retryResult = await retryResponse.json();
-                    
+
                     if (!retryResponse.ok) {
                         return {
                             success: false,
                             message: retryResult.message || 'Failed to remove item after token refresh.',
                         };
                     }
-                    
+
                     return retryResult;
                 }
             }
 
             const result = await response.json();
-            
+
             if (!response.ok) {
                 return {
                     success: false,
@@ -259,15 +265,15 @@ class CartService {
         try {
             const response = await fetch('/cart/count', {
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
-            
+
             if (!response.ok) {
                 throw new Error('Failed to fetch cart count');
             }
-            
+
             const data = await response.json();
             return data.count || 0;
         } catch (error) {
@@ -282,11 +288,11 @@ class CartService {
     async clearCart(): Promise<CartResponse> {
         try {
             const token = this.getCSRFToken();
-            
+
             const response = await fetch('/cart/clear', {
                 method: 'DELETE',
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     ...(token && { 'X-CSRF-TOKEN': token }),
                 },
@@ -299,27 +305,27 @@ class CartService {
                     const retryResponse = await fetch('/cart/clear', {
                         method: 'DELETE',
                         headers: {
-                            'Accept': 'application/json',
+                            Accept: 'application/json',
                             'X-Requested-With': 'XMLHttpRequest',
                             'X-CSRF-TOKEN': newToken,
                         },
                     });
-                    
+
                     const retryResult = await retryResponse.json();
-                    
+
                     if (!retryResponse.ok) {
                         return {
                             success: false,
                             message: retryResult.message || 'Failed to clear cart after token refresh.',
                         };
                     }
-                    
+
                     return retryResult;
                 }
             }
 
             const result = await response.json();
-            
+
             if (!response.ok) {
                 return {
                     success: false,
@@ -348,9 +354,11 @@ class CartService {
      * Trigger cart animation event
      */
     triggerCartAnimation(type: 'success' | 'error' = 'success'): void {
-        window.dispatchEvent(new CustomEvent('cartAnimation', { 
-            detail: { type } 
-        }));
+        window.dispatchEvent(
+            new CustomEvent('cartAnimation', {
+                detail: { type },
+            }),
+        );
     }
 }
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, ReactNode, useContext, useState } from 'react';
 
 export interface Toast {
     id: string;
@@ -34,8 +34,8 @@ export function ToastProvider({ children }: ToastProviderProps) {
     const addToast = (toast: Omit<Toast, 'id'>) => {
         const id = Math.random().toString(36).slice(2);
         const newToast = { ...toast, id };
-        
-        setToasts(prev => [...prev, newToast]);
+
+        setToasts((prev) => [...prev, newToast]);
 
         // Auto remove toast after duration
         const duration = toast.duration || 5000;
@@ -45,12 +45,8 @@ export function ToastProvider({ children }: ToastProviderProps) {
     };
 
     const removeToast = (id: string) => {
-        setToasts(prev => prev.filter(toast => toast.id !== id));
+        setToasts((prev) => prev.filter((toast) => toast.id !== id));
     };
 
-    return (
-        <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
-            {children}
-        </ToastContext.Provider>
-    );
+    return <ToastContext.Provider value={{ toasts, addToast, removeToast }}>{children}</ToastContext.Provider>;
 }

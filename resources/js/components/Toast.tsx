@@ -1,7 +1,6 @@
-import React from 'react';
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast, type Toast } from '@/contexts/ToastContext';
+import { AlertCircle, AlertTriangle, CheckCircle, Info, X } from 'lucide-react';
 
 const iconMap = {
     success: CheckCircle,
@@ -33,29 +32,18 @@ function ToastItem({ toast }: ToastItemProps) {
     const Icon = iconMap[toast.type];
 
     return (
-        <div className={`max-w-sm w-full border rounded-lg shadow-lg pointer-events-auto ${colorMap[toast.type]}`}>
+        <div className={`pointer-events-auto w-full max-w-sm rounded-lg border shadow-lg ${colorMap[toast.type]}`}>
             <div className="p-4">
                 <div className="flex items-start">
                     <div className="flex-shrink-0">
                         <Icon className={`h-5 w-5 ${iconColorMap[toast.type]}`} />
                     </div>
                     <div className="ml-3 w-0 flex-1 pt-0.5">
-                        <p className="text-sm font-medium">
-                            {toast.title}
-                        </p>
-                        {toast.description && (
-                            <p className="mt-1 text-sm opacity-90">
-                                {toast.description}
-                            </p>
-                        )}
+                        <p className="text-sm font-medium">{toast.title}</p>
+                        {toast.description && <p className="mt-1 text-sm opacity-90">{toast.description}</p>}
                     </div>
-                    <div className="ml-4 flex-shrink-0 flex">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 hover:bg-black/10"
-                            onClick={() => removeToast(toast.id)}
-                        >
+                    <div className="ml-4 flex flex-shrink-0">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-black/10" onClick={() => removeToast(toast.id)}>
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
@@ -73,7 +61,7 @@ export function ToastContainer() {
     return (
         <div
             aria-live="assertive"
-            className="fixed top-0 right-0 z-50 flex flex-col items-end justify-start w-full max-w-sm space-y-4 p-6 pointer-events-none"
+            className="pointer-events-none fixed top-0 right-0 z-50 flex w-full max-w-sm flex-col items-end justify-start space-y-4 p-6"
         >
             {toasts.map((toast) => (
                 <ToastItem key={toast.id} toast={toast} />

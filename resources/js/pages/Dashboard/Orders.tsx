@@ -1,13 +1,13 @@
-import React from 'react';
-import { Head } from '@inertiajs/react';
-import { Order } from '@/types';
-import AppLayout from '@/layouts/app-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Timeline, TimelineItem, TimelineConnector, TimelineHeader, TimelineIcon, TimelineTitle, TimelineBody } from '@/components/ui/timeline';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Timeline, TimelineBody, TimelineConnector, TimelineHeader, TimelineIcon, TimelineItem, TimelineTitle } from '@/components/ui/timeline';
+import AppLayout from '@/layouts/app-layout';
+import { Order } from '@/types';
+import { Head } from '@inertiajs/react';
 import { CheckCircle, Circle, Package } from 'lucide-react';
+import React from 'react';
 
 interface OrdersPageProps {
     orders: Order[];
@@ -43,7 +43,6 @@ const OrderStatusTimeline: React.FC<{ status: string }> = ({ status }) => {
     );
 };
 
-
 const OrdersPage: React.FC<OrdersPageProps> = ({ orders }) => {
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -62,10 +61,10 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders }) => {
             <Head title="My Orders" />
 
             <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
                         <div className="p-6 text-gray-900 dark:text-gray-100">
-                            <h1 className="text-2xl font-bold mb-6">Your Order History</h1>
+                            <h1 className="mb-6 text-2xl font-bold">Your Order History</h1>
                             {orders.length === 0 ? (
                                 <p>You have not placed any orders yet.</p>
                             ) : (
@@ -77,30 +76,44 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders }) => {
                                                 <Badge>{order.status}</Badge>
                                             </CardHeader>
                                             <CardContent>
-                                                <div className="flex flex-col md:flex-row justify-between">
+                                                <div className="flex flex-col justify-between md:flex-row">
                                                     <div>
-                                                        <p><strong>Date:</strong> {formatDate(order.created_at)}</p>
-                                                        <p><strong>Total:</strong> {formatCurrency(order.total)}</p>
+                                                        <p>
+                                                            <strong>Date:</strong> {formatDate(order.created_at)}
+                                                        </p>
+                                                        <p>
+                                                            <strong>Total:</strong> {formatCurrency(order.total)}
+                                                        </p>
                                                     </div>
                                                     <div className="mt-4 md:mt-0">
                                                         <Button>View Invoice</Button>
                                                     </div>
                                                 </div>
-                                                <Accordion type="single" collapsible className="w-full mt-4">
+                                                <Accordion type="single" collapsible className="mt-4 w-full">
                                                     <AccordionItem value="item-1">
                                                         <AccordionTrigger>View Details</AccordionTrigger>
                                                         <AccordionContent>
-                                                            <div className="grid md:grid-cols-2 gap-6">
+                                                            <div className="grid gap-6 md:grid-cols-2">
                                                                 <div>
-                                                                    <h4 className="font-bold mb-4">Items:</h4>
+                                                                    <h4 className="mb-4 font-bold">Items:</h4>
                                                                     <ul className="space-y-4">
                                                                         {order.order_items.map((item) => (
                                                                             <li key={item.id} className="flex items-center space-x-4">
-                                                                                <img src={item.product.image_url} alt={item.product.name} className="w-16 h-16 object-cover rounded-md" />
+                                                                                <img
+                                                                                    src={item.product.image_url}
+                                                                                    alt={item.product.name}
+                                                                                    className="h-16 w-16 rounded-md object-cover"
+                                                                                />
                                                                                 <div>
                                                                                     <p className="font-semibold">{item.product.name}</p>
-                                                                                    {order.size && <p className="text-sm text-muted-foreground">Size: {order.size.name}</p>}
-                                                                                    <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
+                                                                                    {order.size && (
+                                                                                        <p className="text-sm text-muted-foreground">
+                                                                                            Size: {order.size.name}
+                                                                                        </p>
+                                                                                    )}
+                                                                                    <p className="text-sm text-muted-foreground">
+                                                                                        Quantity: {item.quantity}
+                                                                                    </p>
                                                                                     <p className="font-medium">{formatCurrency(item.price)}</p>
                                                                                 </div>
                                                                             </li>
@@ -108,7 +121,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders }) => {
                                                                     </ul>
                                                                 </div>
                                                                 <div>
-                                                                    <h4 className="font-bold mb-4">Tracking:</h4>
+                                                                    <h4 className="mb-4 font-bold">Tracking:</h4>
                                                                     <OrderStatusTimeline status={order.status} />
                                                                 </div>
                                                             </div>

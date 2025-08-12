@@ -1,25 +1,25 @@
-import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
 import {
-    Edit,
-    Package,
-    Truck,
+    ArrowRight,
     CheckCircle,
-    XCircle,
-    CreditCard,
-    User,
-    DollarSign,
     ChevronDown,
     ChevronUp,
-    SkipForward,
-    ArrowRight,
+    CreditCard,
+    DollarSign,
+    Edit,
+    Package,
     Plus,
+    SkipForward,
+    Truck,
+    User,
+    XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 // Removed EditOrderDialog import as we're now using a dedicated edit page
@@ -126,9 +126,9 @@ export default function OrderShow({ order }: Props) {
     });
 
     const toggleSection = (section: keyof typeof collapsedSections) => {
-        setCollapsedSections(prev => ({
+        setCollapsedSections((prev) => ({
             ...prev,
-            [section]: !prev[section]
+            [section]: !prev[section],
         }));
     };
 
@@ -166,11 +166,12 @@ export default function OrderShow({ order }: Props) {
 
     const updateOrderStatus = (newStatus: string) => {
         setIsUpdating(true);
-        router.patch(`/admin/orders/${order.id}`, 
+        router.patch(
+            `/admin/orders/${order.id}`,
             { status: newStatus },
             {
                 onFinish: () => setIsUpdating(false),
-            }
+            },
         );
     };
 
@@ -190,16 +191,17 @@ export default function OrderShow({ order }: Props) {
 
     const updateTrackingNumber = () => {
         if (!trackingNumber.trim()) return;
-        
+
         setIsUpdating(true);
-        router.patch(`/admin/orders/${order.id}`, 
+        router.patch(
+            `/admin/orders/${order.id}`,
             { tracking_number: trackingNumber.trim() },
             {
                 onSuccess: () => {
                     setIsAddingTracking(false);
                 },
                 onFinish: () => setIsUpdating(false),
-            }
+            },
         );
     };
 
@@ -221,41 +223,31 @@ export default function OrderShow({ order }: Props) {
                     <div className="flex items-center space-x-4">
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">{order.order_number}</h1>
-                            <p className="text-muted-foreground">
-                                Placed on {formatDate(order.created_at)}
-                            </p>
+                            <p className="text-muted-foreground">Placed on {formatDate(order.created_at)}</p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => router.visit(`/admin/orders/${order.id}/edit`)}
-                        >
-                            <Edit className="h-4 w-4 mr-2" />
+                        <Button variant="outline" size="sm" onClick={() => router.visit(`/admin/orders/${order.id}/edit`)}>
+                            <Edit className="mr-2 h-4 w-4" />
                             Edit Order
                         </Button>
-
                     </div>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Order Details */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="space-y-6 lg:col-span-2">
                         {/* Order Status */}
                         <Collapsible open={!collapsedSections.orderStatus} onOpenChange={() => toggleSection('orderStatus')}>
                             <Card className="p-6">
-                                <CollapsibleTrigger className="flex items-center justify-between w-full mb-4">
+                                <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
                                     <h2 className="text-lg font-semibold">Order Status</h2>
                                     {collapsedSections.orderStatus ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
-                                    <div className="flex items-center justify-between mb-4">
+                                    <div className="mb-4 flex items-center justify-between">
                                         <div className="flex items-center space-x-2">
-                                            <Badge
-                                                className={statusColors[order.status as keyof typeof statusColors]}
-                                                variant="secondary"
-                                            >
+                                            <Badge className={statusColors[order.status as keyof typeof statusColors]} variant="secondary">
                                                 {getStatusIcon(order.status)}
                                                 <span className="ml-1 capitalize">{order.status}</span>
                                             </Badge>
@@ -263,18 +255,18 @@ export default function OrderShow({ order }: Props) {
                                                 className={paymentStatusColors[order.payment_status as keyof typeof paymentStatusColors]}
                                                 variant="secondary"
                                             >
-                                                <CreditCard className="h-4 w-4 mr-1" />
+                                                <CreditCard className="mr-1 h-4 w-4" />
                                                 {order.payment_status}
                                             </Badge>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Quick Status Update */}
                                     <div className="flex flex-wrap gap-2">
                                         {['pending', 'processing', 'shipped', 'delivered'].map((status) => (
                                             <Button
                                                 key={status}
-                                                variant={order.status === status ? "default" : "outline"}
+                                                variant={order.status === status ? 'default' : 'outline'}
                                                 size="sm"
                                                 onClick={() => updateOrderStatus(status)}
                                                 disabled={isUpdating}
@@ -301,14 +293,14 @@ export default function OrderShow({ order }: Props) {
                         {/* Timeline */}
                         <Collapsible open={!collapsedSections.timeline} onOpenChange={() => toggleSection('timeline')}>
                             <Card className="p-6">
-                                <CollapsibleTrigger className="flex items-center justify-between w-full mb-4">
+                                <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
                                     <h2 className="text-lg font-semibold">Order Timeline</h2>
                                     {collapsedSections.timeline ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
                                     <div className="space-y-4">
                                         <div className="flex items-center space-x-3">
-                                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
                                                 <CheckCircle className="h-4 w-4 text-green-600" />
                                             </div>
                                             <div>
@@ -318,7 +310,7 @@ export default function OrderShow({ order }: Props) {
                                         </div>
                                         {order.status !== 'pending' && (
                                             <div className="flex items-center space-x-3">
-                                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
                                                     <Package className="h-4 w-4 text-blue-600" />
                                                 </div>
                                                 <div>
@@ -329,7 +321,7 @@ export default function OrderShow({ order }: Props) {
                                         )}
                                         {(order.status === 'shipped' || order.status === 'delivered') && (
                                             <div className="flex items-center space-x-3">
-                                                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100">
                                                     <Truck className="h-4 w-4 text-purple-600" />
                                                 </div>
                                                 <div>
@@ -340,7 +332,7 @@ export default function OrderShow({ order }: Props) {
                                         )}
                                         {order.status === 'delivered' && (
                                             <div className="flex items-center space-x-3">
-                                                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
                                                     <CheckCircle className="h-4 w-4 text-green-600" />
                                                 </div>
                                                 <div>
@@ -350,17 +342,12 @@ export default function OrderShow({ order }: Props) {
                                             </div>
                                         )}
                                         {getNextStatus() && (
-                                            <Button 
-                                                size="sm"
-                                                onClick={() => updateOrderStatus(getNextStatus()!)}
-                                                disabled={isUpdating}
-                                            >
-                                                <SkipForward className="h-4 w-4 mr-2" />
+                                            <Button size="sm" onClick={() => updateOrderStatus(getNextStatus()!)} disabled={isUpdating}>
+                                                <SkipForward className="mr-2 h-4 w-4" />
                                                 Mark as {getNextStatus()!.charAt(0).toUpperCase() + getNextStatus()!.slice(1)}
                                             </Button>
                                         )}
                                     </div>
-                                    
                                 </CollapsibleContent>
                             </Card>
                         </Collapsible>
@@ -368,20 +355,20 @@ export default function OrderShow({ order }: Props) {
                         {/* Order Items */}
                         <Collapsible open={!collapsedSections.orderItems} onOpenChange={() => toggleSection('orderItems')}>
                             <Card className="p-6">
-                                <CollapsibleTrigger className="flex items-center justify-between w-full mb-4">
+                                <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
                                     <h2 className="text-lg font-semibold">Order Items</h2>
                                     {collapsedSections.orderItems ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
                                     <div className="space-y-4">
                                         {order.orderItems.map((item) => (
-                                            <div key={item.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                                                <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                                            <div key={item.id} className="flex items-center space-x-4 rounded-lg border p-4">
+                                                <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-muted">
                                                     {item.product.image_url ? (
                                                         <img
                                                             src={item.product.image_url}
                                                             alt={item.product.name}
-                                                            className="w-full h-full object-cover rounded-lg"
+                                                            className="h-full w-full rounded-lg object-cover"
                                                         />
                                                     ) : (
                                                         <Package className="h-6 w-6 text-muted-foreground" />
@@ -406,9 +393,9 @@ export default function OrderShow({ order }: Props) {
                         {/* Shipping Information */}
                         <Collapsible open={!collapsedSections.shipping} onOpenChange={() => toggleSection('shipping')}>
                             <Card className="p-6">
-                                <CollapsibleTrigger className="flex items-center justify-between w-full mb-4">
-                                    <h2 className="text-lg font-semibold flex items-center">
-                                        <Truck className="h-5 w-5 mr-2" />
+                                <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
+                                    <h2 className="flex items-center text-lg font-semibold">
+                                        <Truck className="mr-2 h-5 w-5" />
                                         Shipping Information
                                     </h2>
                                     {collapsedSections.shipping ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
@@ -421,30 +408,30 @@ export default function OrderShow({ order }: Props) {
                                                 <p className="text-sm">{formatCurrency(order.shipping_amount)}</p>
                                             </div>
                                         </div>
-                                        
+
                                         {/* Tracking Number Section */}
                                         <div className="grid grid-cols-1 gap-4">
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">Tracking Number</p>
                                                 {order.tracking_number ? (
-                                                    <p className="text-sm font-mono">{order.tracking_number}</p>
+                                                    <p className="font-mono text-sm">{order.tracking_number}</p>
                                                 ) : isAddingTracking ? (
-                                                    <div className="flex space-x-2 mt-1">
+                                                    <div className="mt-1 flex space-x-2">
                                                         <Input
                                                             value={trackingNumber}
                                                             onChange={(e) => setTrackingNumber(e.target.value)}
                                                             placeholder="Enter tracking number"
                                                             className="text-sm"
                                                         />
-                                                        <Button 
-                                                            size="sm" 
+                                                        <Button
+                                                            size="sm"
                                                             onClick={updateTrackingNumber}
                                                             disabled={isUpdating || !trackingNumber.trim()}
                                                         >
                                                             Save
                                                         </Button>
-                                                        <Button 
-                                                            size="sm" 
+                                                        <Button
+                                                            size="sm"
                                                             variant="outline"
                                                             onClick={() => {
                                                                 setIsAddingTracking(false);
@@ -457,51 +444,44 @@ export default function OrderShow({ order }: Props) {
                                                 ) : (
                                                     <div className="flex items-center space-x-2">
                                                         <p className="text-sm text-muted-foreground">Not assigned</p>
-                                                        <Button 
-                                                            size="sm" 
-                                                            variant="outline"
-                                                            onClick={() => setIsAddingTracking(true)}
-                                                        >
-                                                            <Plus className="h-3 w-3 mr-1" />
+                                                        <Button size="sm" variant="outline" onClick={() => setIsAddingTracking(true)}>
+                                                            <Plus className="mr-1 h-3 w-3" />
                                                             Add
                                                         </Button>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
-                                        
+
                                         {/* Status Display */}
                                         {order.status === 'shipped' || order.status === 'delivered' ? (
-                                            <div className="bg-blue-50 p-3 rounded-lg">
+                                            <div className="rounded-lg bg-blue-50 p-3">
                                                 <p className="text-sm font-medium text-blue-900">Package Status</p>
-                                                <p className="text-sm text-blue-700">
-                                                    {order.status === 'shipped' ? 'In Transit' : 'Delivered'}
-                                                </p>
+                                                <p className="text-sm text-blue-700">{order.status === 'shipped' ? 'In Transit' : 'Delivered'}</p>
                                                 {order.tracking_number && (
-                                                    <p className="text-xs text-blue-600 mt-1">
-                                                        Track your package with: {order.tracking_number}
-                                                    </p>
+                                                    <p className="mt-1 text-xs text-blue-600">Track your package with: {order.tracking_number}</p>
                                                 )}
                                             </div>
                                         ) : (
-                                            <div className="bg-yellow-50 p-3 rounded-lg">
+                                            <div className="rounded-lg bg-yellow-50 p-3">
                                                 <p className="text-sm font-medium text-yellow-900">Preparing for Shipment</p>
                                                 <p className="text-sm text-yellow-700">Order is being processed</p>
                                             </div>
                                         )}
-                                        
+
                                         {/* Shipping Address */}
                                         {order.shippingAddress && (
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground mb-2">Shipping To</p>
-                                                <div className="text-sm bg-muted p-3 rounded-lg">
-                                                    <p className="font-medium">{order.shippingAddress.first_name} {order.shippingAddress.last_name}</p>
+                                                <p className="mb-2 text-sm font-medium text-muted-foreground">Shipping To</p>
+                                                <div className="rounded-lg bg-muted p-3 text-sm">
+                                                    <p className="font-medium">
+                                                        {order.shippingAddress.first_name} {order.shippingAddress.last_name}
+                                                    </p>
                                                     <p>{order.shippingAddress.address_line_1}</p>
-                                                    {order.shippingAddress.address_line_2 && (
-                                                        <p>{order.shippingAddress.address_line_2}</p>
-                                                    )}
+                                                    {order.shippingAddress.address_line_2 && <p>{order.shippingAddress.address_line_2}</p>}
                                                     <p>
-                                                        {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postal_code}
+                                                        {order.shippingAddress.city}, {order.shippingAddress.state}{' '}
+                                                        {order.shippingAddress.postal_code}
                                                     </p>
                                                     <p>{order.shippingAddress.country}</p>
                                                     {order.shippingAddress.phone && (
@@ -514,8 +494,6 @@ export default function OrderShow({ order }: Props) {
                                 </CollapsibleContent>
                             </Card>
                         </Collapsible>
-
-                        
                     </div>
 
                     {/* Sidebar */}
@@ -523,9 +501,9 @@ export default function OrderShow({ order }: Props) {
                         {/* Customer Info */}
                         <Collapsible open={!collapsedSections.customer} onOpenChange={() => toggleSection('customer')}>
                             <Card className="p-6">
-                                <CollapsibleTrigger className="flex items-center justify-between w-full mb-4">
-                                    <h2 className="text-lg font-semibold flex items-center">
-                                        <User className="h-5 w-5 mr-2" />
+                                <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
+                                    <h2 className="flex items-center text-lg font-semibold">
+                                        <User className="mr-2 h-5 w-5" />
                                         Customer
                                     </h2>
                                     {collapsedSections.customer ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
@@ -539,14 +517,14 @@ export default function OrderShow({ order }: Props) {
                                         </Badge>
                                         {order.user && (
                                             <div className="pt-2">
-                                                <Button 
-                                                    size="sm" 
+                                                <Button
+                                                    size="sm"
                                                     variant="outline"
                                                     onClick={navigateToCustomer}
                                                     disabled
                                                     title="Customer management not yet implemented"
                                                 >
-                                                    <ArrowRight className="h-4 w-4 mr-2" />
+                                                    <ArrowRight className="mr-2 h-4 w-4" />
                                                     View Profile
                                                 </Button>
                                             </div>
@@ -559,9 +537,9 @@ export default function OrderShow({ order }: Props) {
                         {/* Order Summary */}
                         <Collapsible open={!collapsedSections.summary} onOpenChange={() => toggleSection('summary')}>
                             <Card className="p-6">
-                                <CollapsibleTrigger className="flex items-center justify-between w-full mb-4">
-                                    <h2 className="text-lg font-semibold flex items-center">
-                                        <DollarSign className="h-5 w-5 mr-2" />
+                                <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
+                                    <h2 className="flex items-center text-lg font-semibold">
+                                        <DollarSign className="mr-2 h-5 w-5" />
                                         Order Summary
                                     </h2>
                                     {collapsedSections.summary ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
@@ -598,14 +576,12 @@ export default function OrderShow({ order }: Props) {
                         {order.notes && (
                             <Collapsible open={!collapsedSections.notes} onOpenChange={() => toggleSection('notes')}>
                                 <Card className="p-6">
-                                    <CollapsibleTrigger className="flex items-center justify-between w-full mb-4">
+                                    <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
                                         <h2 className="text-lg font-semibold">Notes</h2>
                                         {collapsedSections.notes ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
-                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                            {order.notes}
-                                        </p>
+                                        <p className="text-sm whitespace-pre-wrap text-muted-foreground">{order.notes}</p>
                                     </CollapsibleContent>
                                 </Card>
                             </Collapsible>

@@ -1,4 +1,3 @@
-
 import { Product } from './product';
 import { Size } from './size';
 

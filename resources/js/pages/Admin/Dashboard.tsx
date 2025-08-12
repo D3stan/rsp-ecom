@@ -1,22 +1,22 @@
-import AppLayout from '@/layouts/app-layout';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import {
-    ShoppingCart,
-    DollarSign,
-    Package,
-    Users,
-    TrendingUp,
     AlertTriangle,
-    Eye,
-    Plus,
-    BarChart3,
-    ArrowUpRight,
     ArrowDownRight,
+    ArrowUpRight,
+    BarChart3,
+    DollarSign,
+    Eye,
+    Package,
+    Plus,
+    ShoppingCart,
+    TrendingUp,
+    Users,
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface Stats {
     today: {
@@ -99,19 +99,23 @@ export default function AdminDashboard({
     orderStatusDistribution,
     revenueChartData,
     topProducts,
-    lowStockProducts
+    lowStockProducts,
 }: Props) {
     // Add safety checks and defaults
     const safeStats = stats || {
         today: { orders: 0, revenue: 0, customers: 0 },
         month: { orders: 0, revenue: 0, customers: 0 },
-        year: { orders: 0, revenue: 0 }
+        year: { orders: 0, revenue: 0 },
     };
-    
+
     const safeGrowth = growth || { orders: 0, revenue: 0 };
     const safeRecentOrders = recentOrders || [];
     const safeOrderStatusDistribution = orderStatusDistribution || {
-        pending: 0, processing: 0, shipped: 0, delivered: 0, cancelled: 0
+        pending: 0,
+        processing: 0,
+        shipped: 0,
+        delivered: 0,
+        cancelled: 0,
     };
     const safeRevenueChartData = revenueChartData || [];
     const safeTopProducts = topProducts || [];
@@ -128,7 +132,7 @@ export default function AdminDashboard({
     const pieChartData = Object.entries(safeOrderStatusDistribution).map(([key, value]) => ({
         name: key.charAt(0).toUpperCase() + key.slice(1),
         value,
-        color: COLORS[Object.keys(safeOrderStatusDistribution).indexOf(key)]
+        color: COLORS[Object.keys(safeOrderStatusDistribution).indexOf(key)],
     }));
 
     return (
@@ -145,14 +149,12 @@ export default function AdminDashboard({
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-                        <p className="text-muted-foreground">
-                            Welcome to your admin dashboard
-                        </p>
+                        <p className="text-muted-foreground">Welcome to your admin dashboard</p>
                     </div>
                     <div className="flex items-center space-x-2">
                         <Button size="sm" asChild>
                             <Link href="/admin/orders">
-                                <Eye className="h-4 w-4 mr-2" />
+                                <Eye className="mr-2 h-4 w-4" />
                                 View Orders
                             </Link>
                         </Button>
@@ -169,11 +171,7 @@ export default function AdminDashboard({
                         <div className="mt-2">
                             <p className="text-2xl font-bold">{safeStats.today.orders}</p>
                             <div className={`flex items-center text-xs ${safeGrowth.orders >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {safeGrowth.orders >= 0 ? (
-                                    <ArrowUpRight className="h-3 w-3 mr-1" />
-                                ) : (
-                                    <ArrowDownRight className="h-3 w-3 mr-1" />
-                                )}
+                                {safeGrowth.orders >= 0 ? <ArrowUpRight className="mr-1 h-3 w-3" /> : <ArrowDownRight className="mr-1 h-3 w-3" />}
                                 {Math.abs(safeGrowth.orders)}% from yesterday
                             </div>
                         </div>
@@ -187,11 +185,7 @@ export default function AdminDashboard({
                         <div className="mt-2">
                             <p className="text-2xl font-bold">{formatCurrency(safeStats.today.revenue)}</p>
                             <div className={`flex items-center text-xs ${safeGrowth.revenue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {safeGrowth.revenue >= 0 ? (
-                                    <ArrowUpRight className="h-3 w-3 mr-1" />
-                                ) : (
-                                    <ArrowDownRight className="h-3 w-3 mr-1" />
-                                )}
+                                {safeGrowth.revenue >= 0 ? <ArrowUpRight className="mr-1 h-3 w-3" /> : <ArrowDownRight className="mr-1 h-3 w-3" />}
                                 {Math.abs(safeGrowth.revenue)}% from yesterday
                             </div>
                         </div>
@@ -205,7 +199,7 @@ export default function AdminDashboard({
                         <div className="mt-2">
                             <p className="text-2xl font-bold">{safeStats.month.orders}</p>
                             <div className="flex items-center text-xs text-blue-600">
-                                <BarChart3 className="h-3 w-3 mr-1" />
+                                <BarChart3 className="mr-1 h-3 w-3" />
                                 {formatCurrency(safeStats.month.revenue)} revenue
                             </div>
                         </div>
@@ -219,7 +213,7 @@ export default function AdminDashboard({
                         <div className="mt-2">
                             <p className="text-2xl font-bold">{safeStats.today.customers}</p>
                             <div className="flex items-center text-xs text-green-600">
-                                <TrendingUp className="h-3 w-3 mr-1" />
+                                <TrendingUp className="mr-1 h-3 w-3" />
                                 {safeStats.month.customers} this month
                             </div>
                         </div>
@@ -230,11 +224,11 @@ export default function AdminDashboard({
                 <div className="grid gap-6 lg:grid-cols-2">
                     {/* Revenue Chart */}
                     <Card className="p-6">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-lg font-semibold">Revenue Trend (7 Days)</h2>
                             <Button variant="outline" size="sm" asChild>
                                 <Link href="/admin/reports">
-                                    <BarChart3 className="h-4 w-4 mr-2" />
+                                    <BarChart3 className="mr-2 h-4 w-4" />
                                     View Reports
                                 </Link>
                             </Button>
@@ -245,19 +239,13 @@ export default function AdminDashboard({
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="date" />
                                     <YAxis />
-                                    <Tooltip 
+                                    <Tooltip
                                         formatter={(value: number, name: string) => [
                                             name === 'revenue' ? formatCurrency(value) : value,
-                                            name === 'revenue' ? 'Revenue' : 'Orders'
+                                            name === 'revenue' ? 'Revenue' : 'Orders',
                                         ]}
                                     />
-                                    <Line 
-                                        type="monotone" 
-                                        dataKey="revenue" 
-                                        stroke="#3B82F6" 
-                                        strokeWidth={2}
-                                        dot={{ fill: '#3B82F6' }}
-                                    />
+                                    <Line type="monotone" dataKey="revenue" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6' }} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
@@ -265,11 +253,11 @@ export default function AdminDashboard({
 
                     {/* Order Status Distribution */}
                     <Card className="p-6">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-lg font-semibold">Order Status Distribution</h2>
                             <Button variant="outline" size="sm" asChild>
                                 <Link href="/admin/orders">
-                                    <Eye className="h-4 w-4 mr-2" />
+                                    <Eye className="mr-2 h-4 w-4" />
                                     Manage Orders
                                 </Link>
                             </Button>
@@ -301,20 +289,18 @@ export default function AdminDashboard({
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Recent Orders */}
                     <Card className="p-6">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-lg font-semibold">Recent Orders</h2>
                             <Button variant="outline" size="sm" asChild>
-                                <Link href="/admin/orders">
-                                    View All
-                                </Link>
+                                <Link href="/admin/orders">View All</Link>
                             </Button>
                         </div>
                         <div className="space-y-3">
                             {safeRecentOrders.map((order) => (
-                                <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                <div key={order.id} className="flex items-center justify-between rounded-lg border p-3">
                                     <div className="flex-1">
                                         <div className="flex items-center space-x-2">
-                                            <p className="font-medium text-sm">{order.order_number}</p>
+                                            <p className="text-sm font-medium">{order.order_number}</p>
                                             <Badge
                                                 className={`text-xs ${statusColors[order.status as keyof typeof statusColors]}`}
                                                 variant="secondary"
@@ -326,7 +312,7 @@ export default function AdminDashboard({
                                         <p className="text-xs text-muted-foreground">{order.time_ago}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-medium text-sm">{formatCurrency(order.total_amount)}</p>
+                                        <p className="text-sm font-medium">{formatCurrency(order.total_amount)}</p>
                                         <Button variant="ghost" size="sm" asChild>
                                             <Link href={`/admin/orders/${order.id}`}>
                                                 <Eye className="h-3 w-3" />
@@ -340,68 +326,62 @@ export default function AdminDashboard({
 
                     {/* Top Products */}
                     <Card className="p-6">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="mb-4 flex items-center justify-between">
                             <h2 className="text-lg font-semibold">Top Products</h2>
                             <Button variant="outline" size="sm" asChild>
-                                <Link href="/admin/products">
-                                    View All
-                                </Link>
+                                <Link href="/admin/products">View All</Link>
                             </Button>
                         </div>
                         <div className="space-y-3">
-                            {safeTopProducts.length > 0 ? safeTopProducts.map((product) => (
-                                <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                    <div className="flex-1">
-                                        <p className="font-medium text-sm">{product.name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {product.sales_count} sales
-                                        </p>
+                            {safeTopProducts.length > 0 ? (
+                                safeTopProducts.map((product) => (
+                                    <div key={product.id} className="flex items-center justify-between rounded-lg border p-3">
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium">{product.name}</p>
+                                            <p className="text-xs text-muted-foreground">{product.sales_count} sales</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-medium">{formatCurrency(product.price)}</p>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="font-medium text-sm">{formatCurrency(product.price)}</p>
-                                    </div>
-                                </div>
-                            )) : (
-                                <p className="text-sm text-muted-foreground text-center py-4">
-                                    No sales data available
-                                </p>
+                                ))
+                            ) : (
+                                <p className="py-4 text-center text-sm text-muted-foreground">No sales data available</p>
                             )}
                         </div>
                     </Card>
 
                     {/* Low Stock Alerts */}
                     <Card className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold flex items-center">
-                                <AlertTriangle className="h-5 w-5 text-orange-500 mr-2" />
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className="flex items-center text-lg font-semibold">
+                                <AlertTriangle className="mr-2 h-5 w-5 text-orange-500" />
                                 Low Stock Alerts
                             </h2>
                             <Button variant="outline" size="sm" asChild>
                                 <Link href="/admin/products">
-                                    <Plus className="h-4 w-4 mr-2" />
+                                    <Plus className="mr-2 h-4 w-4" />
                                     Restock
                                 </Link>
                             </Button>
                         </div>
                         <div className="space-y-3">
-                            {safeLowStockProducts.length > 0 ? safeLowStockProducts.map((product) => (
-                                <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg bg-orange-50">
-                                    <div className="flex-1">
-                                        <p className="font-medium text-sm">{product.name}</p>
-                                        <p className="text-xs text-orange-600">
-                                            Only {product.stock_quantity} left in stock
-                                        </p>
+                            {safeLowStockProducts.length > 0 ? (
+                                safeLowStockProducts.map((product) => (
+                                    <div key={product.id} className="flex items-center justify-between rounded-lg border bg-orange-50 p-3">
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium">{product.name}</p>
+                                            <p className="text-xs text-orange-600">Only {product.stock_quantity} left in stock</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <Badge variant="outline" className="border-orange-600 text-orange-600">
+                                                {product.stock_quantity}
+                                            </Badge>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <Badge variant="outline" className="text-orange-600 border-orange-600">
-                                            {product.stock_quantity}
-                                        </Badge>
-                                    </div>
-                                </div>
-                            )) : (
-                                <p className="text-sm text-muted-foreground text-center py-4">
-                                    All products are well stocked
-                                </p>
+                                ))
+                            ) : (
+                                <p className="py-4 text-center text-sm text-muted-foreground">All products are well stocked</p>
                             )}
                         </div>
                     </Card>

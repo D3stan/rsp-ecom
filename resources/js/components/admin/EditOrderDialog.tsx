@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import { router } from '@inertiajs/react';
-import { Trash2, Plus, Minus } from 'lucide-react';
+import { Minus, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface OrderItem {
     id: number;
@@ -86,32 +86,32 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
 
     const updateItemQuantity = (itemId: number, newQuantity: number) => {
         if (newQuantity < 1) return;
-        
-        setFormData(prev => ({
+
+        setFormData((prev) => ({
             ...prev,
-            orderItems: prev.orderItems.map(item => 
-                item.id === itemId 
-                    ? { ...item, quantity: newQuantity, total: item.price * newQuantity }
-                    : item
-            )
+            orderItems: prev.orderItems.map((item) =>
+                item.id === itemId ? { ...item, quantity: newQuantity, total: item.price * newQuantity } : item,
+            ),
         }));
     };
 
     const removeItem = (itemId: number) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            orderItems: prev.orderItems.filter(item => item.id !== itemId)
+            orderItems: prev.orderItems.filter((item) => item.id !== itemId),
         }));
     };
 
     const updateAddress = (type: 'billing' | 'shipping', field: string, value: string) => {
         const addressKey = type === 'billing' ? 'billingAddress' : 'shippingAddress';
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            [addressKey]: prev[addressKey] ? {
-                ...prev[addressKey],
-                [field]: value
-            } : null
+            [addressKey]: prev[addressKey]
+                ? {
+                      ...prev[addressKey],
+                      [field]: value,
+                  }
+                : null,
         }));
     };
 
@@ -125,7 +125,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
 
     const handleSubmit = () => {
         setIsSubmitting(true);
-        
+
         const updateData = {
             status: formData.status,
             payment_status: formData.payment_status,
@@ -134,7 +134,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
             notes: formData.notes,
             subtotal: calculateSubtotal(),
             total_amount: calculateTotal(),
-            order_items: formData.orderItems.map(item => ({
+            order_items: formData.orderItems.map((item) => ({
                 id: item.id,
                 quantity: item.quantity,
                 price: item.price,
@@ -151,7 +151,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
             },
             onError: () => {
                 setIsSubmitting(false);
-            }
+            },
         });
     };
 
@@ -164,7 +164,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Edit Order {order.order_number}</DialogTitle>
                 </DialogHeader>
@@ -174,12 +174,12 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label htmlFor="status">Order Status</Label>
-                            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+                            <Select value={formData.status} onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}>
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {statusOptions.map(option => (
+                                    {statusOptions.map((option) => (
                                         <SelectItem key={option.value} value={option.value}>
                                             {option.label}
                                         </SelectItem>
@@ -189,12 +189,15 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                         </div>
                         <div>
                             <Label htmlFor="payment_status">Payment Status</Label>
-                            <Select value={formData.payment_status} onValueChange={(value) => setFormData(prev => ({ ...prev, payment_status: value }))}>
+                            <Select
+                                value={formData.payment_status}
+                                onValueChange={(value) => setFormData((prev) => ({ ...prev, payment_status: value }))}
+                            >
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {paymentStatusOptions.map(option => (
+                                    {paymentStatusOptions.map((option) => (
                                         <SelectItem key={option.value} value={option.value}>
                                             {option.label}
                                         </SelectItem>
@@ -209,14 +212,12 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                     {/* Order Items */}
                     <div>
                         <Label className="text-base font-semibold">Order Items</Label>
-                        <div className="space-y-3 mt-2">
+                        <div className="mt-2 space-y-3">
                             {formData.orderItems.map((item) => (
-                                <div key={item.id} className="flex items-center space-x-4 p-3 border rounded-lg">
+                                <div key={item.id} className="flex items-center space-x-4 rounded-lg border p-3">
                                     <div className="flex-1">
                                         <p className="font-medium">{item.product.name}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {formatCurrency(item.price)} each
-                                        </p>
+                                        <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</p>
                                     </div>
                                     <div className="flex items-center space-x-2">
                                         <Button
@@ -267,7 +268,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                 type="number"
                                 step="0.01"
                                 value={formData.shipping_amount}
-                                onChange={(e) => setFormData(prev => ({ ...prev, shipping_amount: parseFloat(e.target.value) || 0 }))}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, shipping_amount: parseFloat(e.target.value) || 0 }))}
                             />
                         </div>
                         <div>
@@ -277,13 +278,13 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                 type="number"
                                 step="0.01"
                                 value={formData.tax_amount}
-                                onChange={(e) => setFormData(prev => ({ ...prev, tax_amount: parseFloat(e.target.value) || 0 }))}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, tax_amount: parseFloat(e.target.value) || 0 }))}
                             />
                         </div>
                     </div>
 
                     {/* Order Summary */}
-                    <div className="bg-muted p-4 rounded-lg">
+                    <div className="rounded-lg bg-muted p-4">
                         <div className="space-y-2">
                             <div className="flex justify-between">
                                 <span>Subtotal</span>
@@ -308,12 +309,12 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                     <Separator />
 
                     {/* Addresses */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Billing Address */}
                         {formData.billingAddress && (
                             <div>
                                 <Label className="text-base font-semibold">Billing Address</Label>
-                                <div className="space-y-3 mt-2">
+                                <div className="mt-2 space-y-3">
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
                                             <Label htmlFor="billing_first_name">First Name</Label>
@@ -374,7 +375,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                         {formData.shippingAddress && (
                             <div>
                                 <Label className="text-base font-semibold">Shipping Address</Label>
-                                <div className="space-y-3 mt-2">
+                                <div className="mt-2 space-y-3">
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
                                             <Label htmlFor="shipping_first_name">First Name</Label>
@@ -440,24 +441,17 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                         <Textarea
                             id="notes"
                             value={formData.notes}
-                            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                             rows={3}
                         />
                     </div>
 
                     {/* Actions */}
                     <div className="flex justify-end space-x-2">
-                        <Button 
-                            variant="outline" 
-                            onClick={() => onOpenChange(false)}
-                            disabled={isSubmitting}
-                        >
+                        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
                             Cancel
                         </Button>
-                        <Button 
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                        >
+                        <Button onClick={handleSubmit} disabled={isSubmitting}>
                             {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </div>

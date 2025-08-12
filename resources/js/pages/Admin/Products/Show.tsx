@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { route } from 'ziggy-js';
-import AdminLayout from '@/layouts/admin-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit2, Package, DollarSign, Star, TrendingUp, Percent, Plus, MessageSquare } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import AdminLayout from '@/layouts/admin-layout';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { DollarSign, Edit2, MessageSquare, Package, Percent, Plus, Star, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import { route } from 'ziggy-js';
 
 interface Product {
     id: number;
@@ -62,17 +62,33 @@ export default function ProductsShow({ product }: Props) {
     const [isAddingReview, setIsAddingReview] = useState(false);
 
     // Quick restock form
-    const { data: restockData, setData: setRestockData, put: restockPut, processing: restockProcessing } = useForm({
+    const {
+        data: restockData,
+        setData: setRestockData,
+        put: restockPut,
+        processing: restockProcessing,
+    } = useForm({
         stock_quantity: product.stock_quantity.toString(),
     });
 
-    // Quick discount form  
-    const { data: discountData, setData: setDiscountData, put: discountPut, processing: discountProcessing } = useForm({
+    // Quick discount form
+    const {
+        data: discountData,
+        setData: setDiscountData,
+        put: discountPut,
+        processing: discountProcessing,
+    } = useForm({
         compare_price: product.compare_price?.toString() || '',
     });
 
     // Add review form
-    const { data: reviewData, setData: setReviewData, post: reviewPost, processing: reviewProcessing, reset: reviewReset } = useForm({
+    const {
+        data: reviewData,
+        setData: setReviewData,
+        post: reviewPost,
+        processing: reviewProcessing,
+        reset: reviewReset,
+    } = useForm({
         rating: '5',
         comment: '',
         user_name: '',
@@ -88,7 +104,7 @@ export default function ProductsShow({ product }: Props) {
     const getStatusBadge = (status: string) => {
         const variants = {
             active: 'default',
-            inactive: 'secondary', 
+            inactive: 'secondary',
             draft: 'outline',
         } as const;
 
@@ -110,9 +126,17 @@ export default function ProductsShow({ product }: Props) {
             return <Badge variant="destructive">Out of Stock</Badge>;
         }
         if (stock < 10) {
-            return <Badge variant="outline" className="text-orange-600 border-orange-600">Low Stock</Badge>;
+            return (
+                <Badge variant="outline" className="border-orange-600 text-orange-600">
+                    Low Stock
+                </Badge>
+            );
         }
-        return <Badge variant="default" className="bg-green-600">In Stock</Badge>;
+        return (
+            <Badge variant="default" className="bg-green-600">
+                In Stock
+            </Badge>
+        );
     };
 
     const handleQuickRestock = (e: React.FormEvent) => {
@@ -143,9 +167,9 @@ export default function ProductsShow({ product }: Props) {
         <AdminLayout>
             <Head title={`Product: ${product.name}`} />
 
-            <div className="p-4 sm:p-6 space-y-6">
+            <div className="space-y-6 p-4 sm:p-6">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-white">{product.name}</h1>
                         <p className="text-gray-500">SKU: {product.sku || 'N/A'}</p>
@@ -167,11 +191,11 @@ export default function ProductsShow({ product }: Props) {
                         <CardContent>
                             {product.image_urls.length > 0 ? (
                                 <div className="space-y-4">
-                                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                                        <img 
-                                            src={product.main_image_url} 
+                                    <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
+                                        <img
+                                            src={product.main_image_url}
                                             alt={product.name}
-                                            className="w-full h-full object-cover"
+                                            className="h-full w-full object-cover"
                                             onError={(e) => {
                                                 e.currentTarget.src = '/images/product.png';
                                             }}
@@ -180,11 +204,11 @@ export default function ProductsShow({ product }: Props) {
                                     {product.image_urls.length > 1 && (
                                         <div className="grid grid-cols-4 gap-2">
                                             {product.image_urls.slice(1).map((image, index) => (
-                                                <div key={index} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                                                    <img 
-                                                        src={image} 
+                                                <div key={index} className="aspect-square overflow-hidden rounded-lg bg-gray-100">
+                                                    <img
+                                                        src={image}
                                                         alt={`${product.name} ${index + 2}`}
-                                                        className="w-full h-full object-cover"
+                                                        className="h-full w-full object-cover"
                                                         onError={(e) => {
                                                             e.currentTarget.src = '/images/product.png';
                                                         }}
@@ -195,7 +219,7 @@ export default function ProductsShow({ product }: Props) {
                                     )}
                                 </div>
                             ) : (
-                                <div className="aspect-square rounded-lg bg-gray-100 flex items-center justify-center">
+                                <div className="flex aspect-square items-center justify-center rounded-lg bg-gray-100">
                                     <Package className="h-12 w-12 text-gray-400" />
                                 </div>
                             )}
@@ -216,7 +240,7 @@ export default function ProductsShow({ product }: Props) {
                                     <span className="text-sm font-medium text-gray-500">Status</span>
                                     <div className="mt-1">{getStatusBadge(product.status)}</div>
                                 </div>
-                                
+
                                 <div>
                                     <span className="text-sm font-medium text-gray-500">Stock</span>
                                     <div className="mt-1 flex items-center gap-2">
@@ -224,12 +248,12 @@ export default function ProductsShow({ product }: Props) {
                                         {getStockBadge(product.stock_quantity)}
                                     </div>
                                 </div>
-                                
+
                                 <div>
                                     <span className="text-sm font-medium text-gray-500">Category</span>
                                     <div className="mt-1">{product.category?.name || 'No category'}</div>
                                 </div>
-                                
+
                                 <div>
                                     <span className="text-sm font-medium text-gray-500">Size</span>
                                     <div className="mt-1">{product.size?.name || 'No size'}</div>
@@ -238,7 +262,7 @@ export default function ProductsShow({ product }: Props) {
 
                             {product.featured && (
                                 <div className="mt-4">
-                                    <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+                                    <Badge variant="outline" className="border-yellow-600 text-yellow-600">
                                         <Star className="mr-1 h-3 w-3" />
                                         Featured Product
                                     </Badge>
@@ -246,20 +270,17 @@ export default function ProductsShow({ product }: Props) {
                             )}
 
                             {/* Quick Restock */}
-                            <div className="mt-6 pt-4 border-t">
+                            <div className="mt-6 border-t pt-4">
                                 {!isRestocking ? (
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => setIsRestocking(true)}
-                                        className="w-full"
-                                    >
+                                    <Button variant="outline" size="sm" onClick={() => setIsRestocking(true)} className="w-full">
                                         <TrendingUp className="mr-2 h-4 w-4" />
                                         Quick Restock
                                     </Button>
                                 ) : (
                                     <form onSubmit={handleQuickRestock} className="space-y-3">
-                                        <Label htmlFor="stock_quantity" className="text-sm">New Stock Quantity</Label>
+                                        <Label htmlFor="stock_quantity" className="text-sm">
+                                            New Stock Quantity
+                                        </Label>
                                         <Input
                                             id="stock_quantity"
                                             type="number"
@@ -268,20 +289,10 @@ export default function ProductsShow({ product }: Props) {
                                             placeholder="Enter new stock quantity"
                                         />
                                         <div className="flex gap-2">
-                                            <Button 
-                                                type="submit" 
-                                                size="sm" 
-                                                disabled={restockProcessing}
-                                                className="flex-1"
-                                            >
+                                            <Button type="submit" size="sm" disabled={restockProcessing} className="flex-1">
                                                 {restockProcessing ? 'Updating...' : 'Update Stock'}
                                             </Button>
-                                            <Button 
-                                                type="button" 
-                                                variant="outline" 
-                                                size="sm"
-                                                onClick={() => setIsRestocking(false)}
-                                            >
+                                            <Button type="button" variant="outline" size="sm" onClick={() => setIsRestocking(false)}>
                                                 Cancel
                                             </Button>
                                         </div>
@@ -301,19 +312,17 @@ export default function ProductsShow({ product }: Props) {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
                                 <span className="text-sm font-medium text-gray-500">Current Price</span>
                                 <div className="mt-1 text-2xl font-bold">{formatCurrency(product.price)}</div>
                             </div>
-                            
+
                             {product.compare_price && product.compare_price > product.price && (
                                 <>
                                     <div>
                                         <span className="text-sm font-medium text-gray-500">Compare Price</span>
-                                        <div className="mt-1 text-lg line-through text-gray-500">
-                                            {formatCurrency(product.compare_price)}
-                                        </div>
+                                        <div className="mt-1 text-lg text-gray-500 line-through">{formatCurrency(product.compare_price)}</div>
                                     </div>
                                     {product.discount_percentage && (
                                         <div>
@@ -330,20 +339,17 @@ export default function ProductsShow({ product }: Props) {
                         </div>
 
                         {/* Quick Discount */}
-                        <div className="mt-6 pt-4 border-t">
+                        <div className="mt-6 border-t pt-4">
                             {!isDiscounting ? (
-                                <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => setIsDiscounting(true)}
-                                    className="w-full"
-                                >
+                                <Button variant="outline" size="sm" onClick={() => setIsDiscounting(true)} className="w-full">
                                     <Percent className="mr-2 h-4 w-4" />
                                     Quick Discount
                                 </Button>
                             ) : (
                                 <form onSubmit={handleQuickDiscount} className="space-y-3">
-                                    <Label htmlFor="compare_price" className="text-sm">Compare Price (for discount)</Label>
+                                    <Label htmlFor="compare_price" className="text-sm">
+                                        Compare Price (for discount)
+                                    </Label>
                                     <Input
                                         id="compare_price"
                                         type="number"
@@ -353,20 +359,10 @@ export default function ProductsShow({ product }: Props) {
                                         placeholder="Enter compare price"
                                     />
                                     <div className="flex gap-2">
-                                        <Button 
-                                            type="submit" 
-                                            size="sm" 
-                                            disabled={discountProcessing}
-                                            className="flex-1"
-                                        >
+                                        <Button type="submit" size="sm" disabled={discountProcessing} className="flex-1">
                                             {discountProcessing ? 'Updating...' : 'Set Discount'}
                                         </Button>
-                                        <Button 
-                                            type="button" 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={() => setIsDiscounting(false)}
-                                        >
+                                        <Button type="button" variant="outline" size="sm" onClick={() => setIsDiscounting(false)}>
                                             Cancel
                                         </Button>
                                     </div>
@@ -383,9 +379,7 @@ export default function ProductsShow({ product }: Props) {
                             <CardTitle className="text-lg">Description</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-gray-600 whitespace-pre-wrap">
-                                {product.description}
-                            </p>
+                            <p className="whitespace-pre-wrap text-gray-600">{product.description}</p>
                         </CardContent>
                     </Card>
                 )}
@@ -398,27 +392,19 @@ export default function ProductsShow({ product }: Props) {
                                 <Star className="h-5 w-5 text-yellow-500" />
                                 <CardTitle className="text-lg">Reviews</CardTitle>
                             </div>
-                            <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => setIsAddingReview(true)}
-                            >
+                            <Button variant="outline" size="sm" onClick={() => setIsAddingReview(true)}>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Review
                             </Button>
                         </div>
-                        <CardDescription>
-                            Customer reviews and ratings for this product
-                        </CardDescription>
+                        <CardDescription>Customer reviews and ratings for this product</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {/* Review Summary */}
-                        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4">
                             <div className="flex items-center gap-1">
                                 <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                                <span className="font-bold text-lg">
-                                    {product.average_rating.toFixed(1)}
-                                </span>
+                                <span className="text-lg font-bold">{product.average_rating.toFixed(1)}</span>
                             </div>
                             <div className="text-gray-600">
                                 {product.review_count} {product.review_count === 1 ? 'review' : 'reviews'}
@@ -427,9 +413,9 @@ export default function ProductsShow({ product }: Props) {
 
                         {/* Add Review Form */}
                         {isAddingReview && (
-                            <form onSubmit={handleAddReview} className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                            <form onSubmit={handleAddReview} className="space-y-4 rounded-lg border bg-gray-50 p-4">
                                 <h4 className="font-medium">Add New Review</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
                                         <Label htmlFor="user_name">Customer Name</Label>
                                         <Input
@@ -473,20 +459,10 @@ export default function ProductsShow({ product }: Props) {
                                     />
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button 
-                                        type="submit" 
-                                        size="sm" 
-                                        disabled={reviewProcessing}
-                                        className="flex-1"
-                                    >
+                                    <Button type="submit" size="sm" disabled={reviewProcessing} className="flex-1">
                                         {reviewProcessing ? 'Adding...' : 'Add Review'}
                                     </Button>
-                                    <Button 
-                                        type="button" 
-                                        variant="outline" 
-                                        size="sm"
-                                        onClick={() => setIsAddingReview(false)}
-                                    >
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setIsAddingReview(false)}>
                                         Cancel
                                     </Button>
                                 </div>
@@ -498,7 +474,7 @@ export default function ProductsShow({ product }: Props) {
                             <div className="space-y-4">
                                 {product.reviews.slice(0, 5).map((review) => (
                                     <div key={review.id} className="border-b pb-4 last:border-b-0">
-                                        <div className="flex items-center justify-between mb-2">
+                                        <div className="mb-2 flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <span className="font-medium">{review.user.name}</span>
                                                 <div className="flex items-center">
@@ -506,25 +482,21 @@ export default function ProductsShow({ product }: Props) {
                                                         <Star
                                                             key={i}
                                                             className={`h-4 w-4 ${
-                                                                i < review.rating
-                                                                    ? 'fill-yellow-400 text-yellow-400'
-                                                                    : 'text-gray-300'
+                                                                i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
                                                             }`}
                                                         />
                                                     ))}
                                                 </div>
                                             </div>
-                                            <span className="text-sm text-gray-500">
-                                                {new Date(review.created_at).toLocaleDateString()}
-                                            </span>
+                                            <span className="text-sm text-gray-500">{new Date(review.created_at).toLocaleDateString()}</span>
                                         </div>
                                         <p className="text-gray-600">{review.comment}</p>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-8 text-gray-500">
-                                <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                            <div className="py-8 text-center text-gray-500">
+                                <MessageSquare className="mx-auto mb-4 h-12 w-12 text-gray-300" />
                                 <p>No reviews yet</p>
                                 <p className="text-sm">Be the first to add a review for this product</p>
                             </div>

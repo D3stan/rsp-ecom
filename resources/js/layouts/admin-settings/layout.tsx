@@ -1,16 +1,10 @@
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
+import { CreditCard, Mail, Receipt, Settings, Truck } from 'lucide-react';
 import { type PropsWithChildren } from 'react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { 
-    Settings, 
-    CreditCard, 
-    Truck, 
-    Receipt, 
-    Mail 
-} from 'lucide-react';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -54,9 +48,7 @@ export default function AdminSettingsLayout({ children }: AdminSettingsLayoutPro
         <div className="px-4 py-6">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-                <p className="text-muted-foreground">
-                    Manage your store configuration and preferences
-                </p>
+                <p className="text-muted-foreground">Manage your store configuration and preferences</p>
             </div>
 
             <div className="flex flex-col space-y-8 lg:flex-row lg:space-y-0 lg:space-x-12">
@@ -65,7 +57,7 @@ export default function AdminSettingsLayout({ children }: AdminSettingsLayoutPro
                         {sidebarNavItems.map((item, index) => {
                             const IconComponent = item.icon;
                             const isActive = currentHash === item.href.split('#')[1];
-                            
+
                             return (
                                 <Button
                                     key={`${item.href}-${index}`}
@@ -77,7 +69,7 @@ export default function AdminSettingsLayout({ children }: AdminSettingsLayoutPro
                                     })}
                                 >
                                     <Link href={item.href} prefetch>
-                                        {IconComponent && <IconComponent className="w-4 h-4 mr-2" />}
+                                        {IconComponent && <IconComponent className="mr-2 h-4 w-4" />}
                                         {item.title}
                                     </Link>
                                 </Button>

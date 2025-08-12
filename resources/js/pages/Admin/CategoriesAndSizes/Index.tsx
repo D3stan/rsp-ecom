@@ -1,35 +1,17 @@
-import { useState } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
-import AdminLayout from '@/layouts/admin-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-    Package,
-    Tag,
-    TrendingUp,
-    Edit,
-    Trash2,
-    Save,
-    X,
-    GripVertical,
-    BarChart3,
-    Ruler,
-    Box,
-    ChevronDown,
-    ChevronUp,
-} from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import AdminLayout from '@/layouts/admin-layout';
+import { Head, router, useForm } from '@inertiajs/react';
+import { BarChart3, Box, ChevronDown, ChevronUp, Edit, GripVertical, Package, Ruler, Save, Tag, Trash2, TrendingUp, X } from 'lucide-react';
+import { useState } from 'react';
 
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Category {
     id: number;
@@ -118,7 +100,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
     const handleCategorySubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (editingCategory) {
             categoryForm.patch(`/admin/categories/${editingCategory}`, {
                 onSuccess: () => {
@@ -137,7 +119,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
     const handleSizeSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (editingSize) {
             sizeForm.patch(`/admin/sizes/${editingSize}`, {
                 onSuccess: () => {
@@ -207,36 +189,30 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                 {/* Mobile-First Page Header */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Categories & Sizes</h1>
-                        <p className="text-sm md:text-base text-muted-foreground">
-                            Manage product taxonomy and logistics dimensions
-                        </p>
+                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Categories & Sizes</h1>
+                        <p className="text-sm text-muted-foreground md:text-base">Manage product taxonomy and logistics dimensions</p>
                     </div>
                 </div>
 
                 {/* Mobile Tab Switcher */}
                 <div className="md:hidden">
-                    <div className="flex border rounded-lg p-1 bg-muted">
+                    <div className="flex rounded-lg border bg-muted p-1">
                         <button
                             onClick={() => setActiveTab('categories')}
-                            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                                activeTab === 'categories'
-                                    ? 'bg-background text-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground'
+                            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                                activeTab === 'categories' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                             }`}
                         >
-                            <Tag className="h-4 w-4 inline mr-2" />
+                            <Tag className="mr-2 inline h-4 w-4" />
                             Categories
                         </button>
                         <button
                             onClick={() => setActiveTab('sizes')}
-                            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                                activeTab === 'sizes'
-                                    ? 'bg-background text-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground'
+                            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                                activeTab === 'sizes' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                             }`}
                         >
-                            <Ruler className="h-4 w-4 inline mr-2" />
+                            <Ruler className="mr-2 inline h-4 w-4" />
                             Sizes
                         </button>
                     </div>
@@ -245,73 +221,57 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                 {/* Collapsible Stats Cards */}
                 <Collapsible open={isStatsOpen} onOpenChange={setIsStatsOpen}>
                     <CollapsibleTrigger asChild>
-                        <Button 
-                            variant="outline" 
-                            className="w-full justify-between"
-                            size="sm"
-                        >
+                        <Button variant="outline" className="w-full justify-between" size="sm">
                             <span className="flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4" />
                                 Quick Stats
                             </span>
-                            {isStatsOpen ? (
-                                <ChevronUp className="h-4 w-4" />
-                            ) : (
-                                <ChevronDown className="h-4 w-4" />
-                            )}
+                            {isStatsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
-                        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                    <CollapsibleContent className="mt-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                             <Card className="p-4">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="mb-2 flex items-center space-x-2">
                                     <Tag className="h-4 w-4 text-blue-600" />
                                     <h3 className="text-xs font-medium">Categories</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{categoryStats.total_categories}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {categoryStats.active_categories} active
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">{categoryStats.active_categories} active</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="mb-2 flex items-center space-x-2">
                                     <Package className="h-4 w-4 text-green-600" />
                                     <h3 className="text-xs font-medium">Categorized</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{categoryStats.products_with_categories}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Products
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">Products</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="mb-2 flex items-center space-x-2">
                                     <Ruler className="h-4 w-4 text-purple-600" />
                                     <h3 className="text-xs font-medium">Sizes</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{sizeStats.total_sizes}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {sizeStats.sizes_with_products} with products
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">{sizeStats.sizes_with_products} with products</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="mb-2 flex items-center space-x-2">
                                     <Box className="h-4 w-4 text-orange-600" />
                                     <h3 className="text-xs font-medium">Avg. Shipping</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{formatCurrency(sizeStats.avg_shipping_cost)}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Per package
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">Per package</p>
                                 </div>
                             </Card>
                         </div>
@@ -319,67 +279,58 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                 </Collapsible>
 
                 {/* Desktop: Two Column Layout */}
-                <div className="hidden md:grid md:grid-cols-2 gap-6">
+                <div className="hidden gap-6 md:grid md:grid-cols-2">
                     {/* Categories Section */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <h2 className="flex items-center gap-2 text-xl font-semibold">
                                 <Tag className="h-5 w-5" />
                                 Categories
                             </h2>
                         </div>
 
                         {/* Categories List */}
-                        {categories.length > 1 && (<Card className="max-h-96 overflow-y-auto">
-                            <div className="space-y-2 p-4">
-                                {categories.map((category) => (
-                                    <div
-                                        key={category.id}
-                                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
-                                    >
-                                        <div className="flex items-center space-x-3">
-                                            <GripVertical className="h-4 w-4 text-muted-foreground" />
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-medium">{category.name}</span>
-                                                    {!category.is_active && (
-                                                        <Badge variant="secondary" className="bg-gray-100 text-gray-800">
-                                                            Inactive
-                                                        </Badge>
-                                                    )}
+                        {categories.length > 1 && (
+                            <Card className="max-h-96 overflow-y-auto">
+                                <div className="space-y-2 p-4">
+                                    {categories.map((category) => (
+                                        <div key={category.id} className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50">
+                                            <div className="flex items-center space-x-3">
+                                                <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium">{category.name}</span>
+                                                        {!category.is_active && (
+                                                            <Badge variant="secondary" className="bg-gray-100 text-gray-800">
+                                                                Inactive
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground">{category.products_count} products</p>
                                                 </div>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {category.products_count} products
-                                                </p>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <Button variant="ghost" size="sm" onClick={() => startEditCategory(category)}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => deleteCategory(category.id)}
+                                                    className="text-red-600 hover:text-red-700"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
                                             </div>
                                         </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => startEditCategory(category)}
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => deleteCategory(category.id)}
-                                                className="text-red-600 hover:text-red-700"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>)}
+                                    ))}
+                                </div>
+                            </Card>
+                        )}
 
                         {/* Category Form */}
                         <Card className="p-4">
-                            <h3 className="text-lg font-medium mb-4">
-                                {editingCategory ? 'Edit Category' : 'Add Category'}
-                            </h3>
+                            <h3 className="mb-4 text-lg font-medium">{editingCategory ? 'Edit Category' : 'Add Category'}</h3>
                             <form onSubmit={handleCategorySubmit} className="space-y-4">
                                 <div>
                                     <Label htmlFor="category-name">Name</Label>
@@ -389,9 +340,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                         onChange={(e) => categoryForm.setData('name', e.target.value)}
                                         required
                                     />
-                                    {categoryForm.errors.name && (
-                                        <p className="text-sm text-red-600 mt-1">{categoryForm.errors.name}</p>
-                                    )}
+                                    {categoryForm.errors.name && <p className="mt-1 text-sm text-red-600">{categoryForm.errors.name}</p>}
                                 </div>
 
                                 <div>
@@ -415,12 +364,12 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                                 <div className="flex gap-2">
                                     <Button type="submit" disabled={categoryForm.processing}>
-                                        <Save className="h-4 w-4 mr-2" />
+                                        <Save className="mr-2 h-4 w-4" />
                                         {editingCategory ? 'Update' : 'Create'}
                                     </Button>
                                     {editingCategory && (
                                         <Button type="button" variant="outline" onClick={cancelEdit}>
-                                            <X className="h-4 w-4 mr-2" />
+                                            <X className="mr-2 h-4 w-4" />
                                             Cancel
                                         </Button>
                                     )}
@@ -432,7 +381,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                     {/* Sizes Section */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <h2 className="flex items-center gap-2 text-xl font-semibold">
                                 <Ruler className="h-5 w-5" />
                                 Sizes
                             </h2>
@@ -442,10 +391,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                         <Card className="max-h-96 overflow-y-auto">
                             <div className="space-y-2 p-4">
                                 {sizes.map((size) => (
-                                    <div
-                                        key={size.id}
-                                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
-                                    >
+                                    <div key={size.id} className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50">
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <span className="font-medium">{size.name}</span>
@@ -459,11 +405,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => startEditSize(size)}
-                                            >
+                                            <Button variant="ghost" size="sm" onClick={() => startEditSize(size)}>
                                                 <Edit className="h-4 w-4" />
                                             </Button>
                                             <Button
@@ -482,9 +424,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                         {/* Size Form */}
                         <Card className="p-4">
-                            <h3 className="text-lg font-medium mb-4">
-                                {editingSize ? 'Edit Size' : 'Add Size'}
-                            </h3>
+                            <h3 className="mb-4 text-lg font-medium">{editingSize ? 'Edit Size' : 'Add Size'}</h3>
                             <form onSubmit={handleSizeSubmit} className="space-y-4">
                                 <div>
                                     <Label htmlFor="size-name">Name</Label>
@@ -494,9 +434,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                         onChange={(e) => sizeForm.setData('name', e.target.value)}
                                         required
                                     />
-                                    {sizeForm.errors.name && (
-                                        <p className="text-sm text-red-600 mt-1">{sizeForm.errors.name}</p>
-                                    )}
+                                    {sizeForm.errors.name && <p className="mt-1 text-sm text-red-600">{sizeForm.errors.name}</p>}
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-2">
@@ -538,8 +476,8 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                 <div>
                                     <Label htmlFor="size-box-type">Box Type</Label>
                                     <Select
-                                        value={sizeForm.data.box_type || "none"}
-                                        onValueChange={(value) => sizeForm.setData('box_type', value === "none" ? "" : value)}
+                                        value={sizeForm.data.box_type || 'none'}
+                                        onValueChange={(value) => sizeForm.setData('box_type', value === 'none' ? '' : value)}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select box type" />
@@ -569,12 +507,12 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                                 <div className="flex gap-2">
                                     <Button type="submit" disabled={sizeForm.processing}>
-                                        <Save className="h-4 w-4 mr-2" />
+                                        <Save className="mr-2 h-4 w-4" />
                                         {editingSize ? 'Update' : 'Create'}
                                     </Button>
                                     {editingSize && (
                                         <Button type="button" variant="outline" onClick={cancelEdit}>
-                                            <X className="h-4 w-4 mr-2" />
+                                            <X className="mr-2 h-4 w-4" />
                                             Cancel
                                         </Button>
                                     )}
@@ -585,10 +523,10 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                 </div>
 
                 {/* Mobile: Stacked Layout with Tabs */}
-                <div className="md:hidden space-y-4">
+                <div className="space-y-4 md:hidden">
                     {activeTab === 'categories' && (
                         <div className="space-y-4">
-                            <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <h2 className="flex items-center gap-2 text-xl font-semibold">
                                 <Tag className="h-5 w-5" />
                                 Categories
                             </h2>
@@ -597,7 +535,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                             <div className="space-y-3">
                                 {categories.map((category) => (
                                     <Card key={category.id} className="p-4">
-                                        <div className="flex items-start justify-between mb-2">
+                                        <div className="mb-2 flex items-start justify-between">
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="font-medium">{category.name}</span>
@@ -607,21 +545,11 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                         </Badge>
                                                     )}
                                                 </div>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {category.products_count} products
-                                                </p>
-                                                {category.description && (
-                                                    <p className="text-sm text-muted-foreground mt-1">
-                                                        {category.description}
-                                                    </p>
-                                                )}
+                                                <p className="text-sm text-muted-foreground">{category.products_count} products</p>
+                                                {category.description && <p className="mt-1 text-sm text-muted-foreground">{category.description}</p>}
                                             </div>
                                             <div className="flex gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => startEditCategory(category)}
-                                                >
+                                                <Button variant="ghost" size="sm" onClick={() => startEditCategory(category)}>
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
                                                 <Button
@@ -640,9 +568,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                             {/* Mobile Category Form */}
                             <Card className="p-4">
-                                <h3 className="text-lg font-medium mb-4">
-                                    {editingCategory ? 'Edit Category' : 'Add Category'}
-                                </h3>
+                                <h3 className="mb-4 text-lg font-medium">{editingCategory ? 'Edit Category' : 'Add Category'}</h3>
                                 <form onSubmit={handleCategorySubmit} className="space-y-4">
                                     <div>
                                         <Label htmlFor="mobile-category-name">Name</Label>
@@ -652,9 +578,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                             onChange={(e) => categoryForm.setData('name', e.target.value)}
                                             required
                                         />
-                                        {categoryForm.errors.name && (
-                                            <p className="text-sm text-red-600 mt-1">{categoryForm.errors.name}</p>
-                                        )}
+                                        {categoryForm.errors.name && <p className="mt-1 text-sm text-red-600">{categoryForm.errors.name}</p>}
                                     </div>
 
                                     <div>
@@ -678,7 +602,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                                     <div className="flex gap-2">
                                         <Button type="submit" disabled={categoryForm.processing} className="flex-1">
-                                            <Save className="h-4 w-4 mr-2" />
+                                            <Save className="mr-2 h-4 w-4" />
                                             {editingCategory ? 'Update' : 'Create'}
                                         </Button>
                                         {editingCategory && (
@@ -694,7 +618,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                     {activeTab === 'sizes' && (
                         <div className="space-y-4">
-                            <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <h2 className="flex items-center gap-2 text-xl font-semibold">
                                 <Ruler className="h-5 w-5" />
                                 Sizes
                             </h2>
@@ -703,12 +627,12 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                             <div className="space-y-3">
                                 {sizes.map((size) => (
                                     <Card key={size.id} className="p-4">
-                                        <div className="flex items-start justify-between mb-2">
+                                        <div className="mb-2 flex items-start justify-between">
                                             <div>
-                                                <div className="flex items-center gap-2 mb-1">
+                                                <div className="mb-1 flex items-center gap-2">
                                                     <span className="font-medium">{size.name}</span>
                                                 </div>
-                                                <div className="text-sm text-muted-foreground space-y-1">
+                                                <div className="space-y-1 text-sm text-muted-foreground">
                                                     <p>Dimensions: {formatDimensions(size.length, size.width, size.height)} cm</p>
                                                     <p>Products: {size.products_count}</p>
                                                     <p>Shipping: {formatCurrency(size.shipping_cost)}</p>
@@ -716,11 +640,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => startEditSize(size)}
-                                                >
+                                                <Button variant="ghost" size="sm" onClick={() => startEditSize(size)}>
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
                                                 <Button
@@ -739,9 +659,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                             {/* Mobile Size Form */}
                             <Card className="p-4">
-                                <h3 className="text-lg font-medium mb-4">
-                                    {editingSize ? 'Edit Size' : 'Add Size'}
-                                </h3>
+                                <h3 className="mb-4 text-lg font-medium">{editingSize ? 'Edit Size' : 'Add Size'}</h3>
                                 <form onSubmit={handleSizeSubmit} className="space-y-4">
                                     <div>
                                         <Label htmlFor="mobile-size-name">Name</Label>
@@ -751,9 +669,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                             onChange={(e) => sizeForm.setData('name', e.target.value)}
                                             required
                                         />
-                                        {sizeForm.errors.name && (
-                                            <p className="text-sm text-red-600 mt-1">{sizeForm.errors.name}</p>
-                                        )}
+                                        {sizeForm.errors.name && <p className="mt-1 text-sm text-red-600">{sizeForm.errors.name}</p>}
                                     </div>
 
                                     <div className="grid grid-cols-3 gap-2">
@@ -795,8 +711,8 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                     <div>
                                         <Label htmlFor="mobile-size-box-type">Box Type</Label>
                                         <Select
-                                            value={sizeForm.data.box_type || "none"}
-                                            onValueChange={(value) => sizeForm.setData('box_type', value === "none" ? "" : value)}
+                                            value={sizeForm.data.box_type || 'none'}
+                                            onValueChange={(value) => sizeForm.setData('box_type', value === 'none' ? '' : value)}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select box type" />
@@ -826,7 +742,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                                     <div className="flex gap-2">
                                         <Button type="submit" disabled={sizeForm.processing} className="flex-1">
-                                            <Save className="h-4 w-4 mr-2" />
+                                            <Save className="mr-2 h-4 w-4" />
                                             {editingSize ? 'Update' : 'Create'}
                                         </Button>
                                         {editingSize && (
@@ -842,40 +758,35 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                 </div>
 
                 {/* Mobile Bottom Navigation */}
-                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t p-4 safe-area-pb">
+                <div className="safe-area-pb fixed right-0 bottom-0 left-0 border-t bg-background p-4 md:hidden">
                     <div className="flex justify-center gap-4">
-                        <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setIsStatsOpen(!isStatsOpen)}
-                            className="flex-1"
-                        >
-                            <BarChart3 className="h-4 w-4 mr-2" />
+                        <Button variant="outline" size="sm" onClick={() => setIsStatsOpen(!isStatsOpen)} className="flex-1">
+                            <BarChart3 className="mr-2 h-4 w-4" />
                             Stats
                         </Button>
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => setActiveTab(activeTab === 'categories' ? 'sizes' : 'categories')}
                             className="flex-1"
                         >
                             {activeTab === 'categories' ? (
                                 <>
-                                    <Ruler className="h-4 w-4 mr-2" />
+                                    <Ruler className="mr-2 h-4 w-4" />
                                     Sizes
                                 </>
                             ) : (
                                 <>
-                                    <Tag className="h-4 w-4 mr-2" />
+                                    <Tag className="mr-2 h-4 w-4" />
                                     Categories
                                 </>
                             )}
                         </Button>
                     </div>
                 </div>
-                
+
                 {/* Add bottom padding to account for fixed navigation */}
-                <div className="md:hidden h-20"></div>
+                <div className="h-20 md:hidden"></div>
             </div>
         </AdminLayout>
     );

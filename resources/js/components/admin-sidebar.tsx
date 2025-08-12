@@ -1,23 +1,34 @@
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarGroup, SidebarGroupLabel, SidebarGroupContent } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupContent,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
+    AlertTriangle,
+    BarChart3,
     BookOpen,
     Folder,
     LayoutGrid,
-    Package,
-    ShoppingCart,
-    Users,
-    Settings,
-    BarChart3,
-    Tags,
     MessageSquare,
+    Package,
     Plus,
-    AlertTriangle,
+    Settings,
+    ShoppingCart,
+    Tags,
+    Users,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -92,7 +103,7 @@ export function AdminSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
-                
+
                 {/* Quick Actions */}
                 <SidebarGroup>
                     <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
@@ -100,28 +111,28 @@ export function AdminSidebar() {
                         <div className="space-y-2 px-2">
                             <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                                 <Link href="/admin/products/create">
-                                    <Plus className="h-4 w-4 mr-2" />
+                                    <Plus className="mr-2 h-4 w-4" />
                                     Add Product
                                 </Link>
                             </Button>
-                            
+
                             <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                                 <Link href="/admin/orders?status=pending">
-                                    <AlertTriangle className="h-4 w-4 mr-2" />
+                                    <AlertTriangle className="mr-2 h-4 w-4" />
                                     Pending ({pendingOrders})
                                 </Link>
                             </Button>
-                            
+
                             <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                                 <Link href="/admin/products?filter=low-stock">
-                                    <Package className="h-4 w-4 mr-2" />
+                                    <Package className="mr-2 h-4 w-4" />
                                     Low Stock ({lowStockCount})
                                 </Link>
                             </Button>
-                            
+
                             <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                                 <Link href="/admin/reports">
-                                    <BarChart3 className="h-4 w-4 mr-2" />
+                                    <BarChart3 className="mr-2 h-4 w-4" />
                                     View Reports
                                 </Link>
                             </Button>

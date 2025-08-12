@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
 import Header from '@/components/header';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Head, Link, useForm } from '@inertiajs/react';
+import React, { useState } from 'react';
 // Badge component not used in this file
 import { useToast } from '@/contexts/ToastContext';
 import { useTranslation } from '@/hooks/useTranslation';
-import { CreditCard, Truck, ShoppingBag, AlertCircle } from 'lucide-react';
+import { AlertCircle, CreditCard, ShoppingBag, Truck } from 'lucide-react';
 
 interface CartItem {
     id: number;
@@ -45,7 +45,8 @@ interface Address {
     country: string;
 }
 
-interface CheckoutFormData extends Record<string, unknown> {
+interface CheckoutFormData {
+    [key: string]: any;
     billing_address: Address;
     shipping_address: Address;
     shipping_same_as_billing: boolean;
@@ -137,15 +138,15 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
         setIsProcessing(true);
 
         post(route('checkout.session'), {
-            onSuccess: (response: { props?: { sessionId?: string; url?: string } }) => {
+            onSuccess: (response: any) => {
                 if (response.props?.sessionId && response.props?.url) {
                     // Redirect to Stripe Checkout
                     window.location.href = response.props.url;
                 } else {
                     addToast({
-                        type: "error",
-                        title: "Error",
-                        description: "Unable to create checkout session. Please try again.",
+                        type: 'error',
+                        title: 'Error',
+                        description: 'Unable to create checkout session. Please try again.',
                     });
                     setIsProcessing(false);
                 }
@@ -153,9 +154,9 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
             onError: (errors) => {
                 console.error('Checkout errors:', errors);
                 addToast({
-                    type: "error",
-                    title: "Validation Error",
-                    description: "Please check your information and try again.",
+                    type: 'error',
+                    title: 'Validation Error',
+                    description: 'Please check your information and try again.',
                 });
                 setIsProcessing(false);
             },
@@ -163,33 +164,31 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
     };
 
     const updateBillingAddress = (field: keyof Address, value: string) => {
-        setData(prevData => ({
+        setData((prevData) => ({
             ...prevData,
             billing_address: {
                 ...prevData.billing_address,
                 [field]: value,
             },
-            shipping_address: prevData.shipping_same_as_billing 
-                ? { ...prevData.billing_address, [field]: value }
-                : prevData.shipping_address
+            shipping_address: prevData.shipping_same_as_billing ? { ...prevData.billing_address, [field]: value } : prevData.shipping_address,
         }));
     };
 
     const updateShippingAddress = (field: keyof Address, value: string) => {
-        setData(prevData => ({
+        setData((prevData) => ({
             ...prevData,
             shipping_address: {
                 ...prevData.shipping_address,
                 [field]: value,
-            }
+            },
         }));
     };
 
     const toggleShippingSameAsBilling = (checked: boolean) => {
-        setData(prevData => ({
+        setData((prevData) => ({
             ...prevData,
             shipping_same_as_billing: checked,
-            shipping_address: checked ? { ...prevData.billing_address } : prevData.shipping_address
+            shipping_address: checked ? { ...prevData.billing_address } : prevData.shipping_address,
         }));
     };
 
@@ -202,7 +201,10 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                     <Alert>
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
-                            {t('checkout.cart_empty')} <Link href={route('products')} className="underline">{t('checkout.continue_shopping')}</Link>
+                            {t('checkout.cart_empty')}{' '}
+                            <Link href={route('products')} className="underline">
+                                {t('checkout.continue_shopping')}
+                            </Link>
                         </AlertDescription>
                     </Alert>
                 </div>
@@ -214,7 +216,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
         <>
             <Head title={t('checkout.title')} />
             <Header />
-            
+
             <LoadingOverlay isLoading={isLoading} className="min-h-screen bg-white">
                 <div className="container mx-auto px-4 py-8">
                     <div className="mb-8">
@@ -222,7 +224,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                         <p className="text-gray-600">{t('checkout.complete_your_order')}</p>
                     </div>
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                     {/* Main Form */}
                     <div className="lg:col-span-2">
                         <form onSubmit={handleSubmit} className="space-y-8">
@@ -235,9 +237,11 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div>
-                                            <Label htmlFor="billing_first_name">{t('checkout.first_name')} {t('checkout.required')}</Label>
+                                            <Label htmlFor="billing_first_name">
+                                                {t('checkout.first_name')} {t('checkout.required')}
+                                            </Label>
                                             <Input
                                                 id="billing_first_name"
                                                 value={data.billing_address.first_name}
@@ -245,11 +249,13 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                                 required
                                             />
                                             {errors?.['billing_address.first_name'] && (
-                                                <p className="text-sm text-red-500 mt-1">{errors['billing_address.first_name']}</p>
+                                                <p className="mt-1 text-sm text-red-500">{errors['billing_address.first_name']}</p>
                                             )}
                                         </div>
                                         <div>
-                                            <Label htmlFor="billing_last_name">{t('checkout.last_name')} {t('checkout.required')}</Label>
+                                            <Label htmlFor="billing_last_name">
+                                                {t('checkout.last_name')} {t('checkout.required')}
+                                            </Label>
                                             <Input
                                                 id="billing_last_name"
                                                 value={data.billing_address.last_name}
@@ -257,13 +263,15 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                                 required
                                             />
                                             {errors?.['billing_address.last_name'] && (
-                                                <p className="text-sm text-red-500 mt-1">{errors['billing_address.last_name']}</p>
+                                                <p className="mt-1 text-sm text-red-500">{errors['billing_address.last_name']}</p>
                                             )}
                                         </div>
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="billing_email">{t('checkout.email')} {t('checkout.required')}</Label>
+                                        <Label htmlFor="billing_email">
+                                            {t('checkout.email')} {t('checkout.required')}
+                                        </Label>
                                         <Input
                                             id="billing_email"
                                             type="email"
@@ -272,11 +280,11 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                             required
                                         />
                                         {errors?.['billing_address.email'] && (
-                                            <p className="text-sm text-red-500 mt-1">{errors['billing_address.email']}</p>
+                                            <p className="mt-1 text-sm text-red-500">{errors['billing_address.email']}</p>
                                         )}
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div>
                                             <Label htmlFor="billing_phone">{t('checkout.phone')}</Label>
                                             <Input
@@ -296,7 +304,9 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="billing_address_1">{t('checkout.address_line_1')} {t('checkout.required')}</Label>
+                                        <Label htmlFor="billing_address_1">
+                                            {t('checkout.address_line_1')} {t('checkout.required')}
+                                        </Label>
                                         <Input
                                             id="billing_address_1"
                                             value={data.billing_address.address_line_1}
@@ -304,7 +314,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                             required
                                         />
                                         {errors?.['billing_address.address_line_1'] && (
-                                            <p className="text-sm text-red-500 mt-1">{errors['billing_address.address_line_1']}</p>
+                                            <p className="mt-1 text-sm text-red-500">{errors['billing_address.address_line_1']}</p>
                                         )}
                                     </div>
 
@@ -317,9 +327,11 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                         <div>
-                                            <Label htmlFor="billing_city">{t('checkout.city')} {t('checkout.required')}</Label>
+                                            <Label htmlFor="billing_city">
+                                                {t('checkout.city')} {t('checkout.required')}
+                                            </Label>
                                             <Input
                                                 id="billing_city"
                                                 value={data.billing_address.city}
@@ -327,11 +339,13 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                                 required
                                             />
                                             {errors?.['billing_address.city'] && (
-                                                <p className="text-sm text-red-500 mt-1">{errors['billing_address.city']}</p>
+                                                <p className="mt-1 text-sm text-red-500">{errors['billing_address.city']}</p>
                                             )}
                                         </div>
                                         <div>
-                                            <Label htmlFor="billing_state">{t('checkout.state')} {t('checkout.required')}</Label>
+                                            <Label htmlFor="billing_state">
+                                                {t('checkout.state')} {t('checkout.required')}
+                                            </Label>
                                             <Input
                                                 id="billing_state"
                                                 value={data.billing_address.state}
@@ -339,11 +353,13 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                                 required
                                             />
                                             {errors?.['billing_address.state'] && (
-                                                <p className="text-sm text-red-500 mt-1">{errors['billing_address.state']}</p>
+                                                <p className="mt-1 text-sm text-red-500">{errors['billing_address.state']}</p>
                                             )}
                                         </div>
                                         <div>
-                                            <Label htmlFor="billing_postal">{t('checkout.postal_code')} {t('checkout.required')}</Label>
+                                            <Label htmlFor="billing_postal">
+                                                {t('checkout.postal_code')} {t('checkout.required')}
+                                            </Label>
                                             <Input
                                                 id="billing_postal"
                                                 value={data.billing_address.postal_code}
@@ -351,14 +367,19 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                                 required
                                             />
                                             {errors?.['billing_address.postal_code'] && (
-                                                <p className="text-sm text-red-500 mt-1">{errors['billing_address.postal_code']}</p>
+                                                <p className="mt-1 text-sm text-red-500">{errors['billing_address.postal_code']}</p>
                                             )}
                                         </div>
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="billing_country">{t('checkout.country')} {t('checkout.required')}</Label>
-                                        <Select value={data.billing_address.country} onValueChange={(value) => updateBillingAddress('country', value)}>
+                                        <Label htmlFor="billing_country">
+                                            {t('checkout.country')} {t('checkout.required')}
+                                        </Label>
+                                        <Select
+                                            value={data.billing_address.country}
+                                            onValueChange={(value) => updateBillingAddress('country', value)}
+                                        >
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
@@ -392,17 +413,17 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                                 checked={data.shipping_same_as_billing}
                                                 onCheckedChange={toggleShippingSameAsBilling}
                                             />
-                                            <Label htmlFor="same_as_billing">
-                                                {t('checkout.same_as_billing')}
-                                            </Label>
+                                            <Label htmlFor="same_as_billing">{t('checkout.same_as_billing')}</Label>
                                         </div>
 
                                         {!data.shipping_same_as_billing && (
                                             <div className="space-y-4">
                                                 {/* Similar form fields as billing address */}
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                                     <div>
-                                                        <Label htmlFor="shipping_first_name">{t('checkout.first_name')} {t('checkout.required')}</Label>
+                                                        <Label htmlFor="shipping_first_name">
+                                                            {t('checkout.first_name')} {t('checkout.required')}
+                                                        </Label>
                                                         <Input
                                                             id="shipping_first_name"
                                                             value={data.shipping_address.first_name}
@@ -411,7 +432,9 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                                         />
                                                     </div>
                                                     <div>
-                                                        <Label htmlFor="shipping_last_name">{t('checkout.last_name')} {t('checkout.required')}</Label>
+                                                        <Label htmlFor="shipping_last_name">
+                                                            {t('checkout.last_name')} {t('checkout.required')}
+                                                        </Label>
                                                         <Input
                                                             id="shipping_last_name"
                                                             value={data.shipping_address.last_name}
@@ -428,13 +451,10 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                             </Card>
 
                             {/* Submit Button */}
-                            <Button 
-                                type="submit" 
-                                className="w-full" 
-                                size="lg"
-                                disabled={processing || isProcessing}
-                            >
-                                {(processing || isProcessing) ? t('checkout.processing') : `${t('checkout.complete_order')} - $${totals.total.toFixed(2)}`}
+                            <Button type="submit" className="w-full" size="lg" disabled={processing || isProcessing}>
+                                {processing || isProcessing
+                                    ? t('checkout.processing')
+                                    : `${t('checkout.complete_order')} - $${totals.total.toFixed(2)}`}
                             </Button>
                         </form>
                     </div>
@@ -453,17 +473,17 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                 <div className="space-y-3">
                                     {cartItems.map((item) => (
                                         <div key={item.id} className="flex items-center space-x-3">
-                                            <img
-                                                src={getImageSrc(item)}
-                                                alt={item.product.name}
-                                                className="h-12 w-12 rounded object-cover"
-                                            />
+                                            <img src={getImageSrc(item)} alt={item.product.name} className="h-12 w-12 rounded object-cover" />
                                             <div className="flex-1">
-                                                <h4 className="font-medium text-sm">{item.product.name}</h4>
+                                                <h4 className="text-sm font-medium">{item.product.name}</h4>
                                                 {item.size && (
-                                                    <p className="text-xs text-muted-foreground">{t('checkout.size')}: {item.size.name}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {t('checkout.size')}: {item.size.name}
+                                                    </p>
                                                 )}
-                                                <p className="text-xs text-muted-foreground">{t('checkout.qty')}: {item.quantity}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {t('checkout.qty')}: {item.quantity}
+                                                </p>
                                             </div>
                                             <p className="font-medium">${(item.product.price * item.quantity).toFixed(2)}</p>
                                         </div>
@@ -487,7 +507,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                                         <span>${totals.tax_amount.toFixed(2)}</span>
                                     </div>
                                     <Separator />
-                                    <div className="flex justify-between font-bold text-lg">
+                                    <div className="flex justify-between text-lg font-bold">
                                         <span>{t('checkout.total')}</span>
                                         <span>${totals.total.toFixed(2)}</span>
                                     </div>

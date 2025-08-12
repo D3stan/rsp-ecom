@@ -148,108 +148,108 @@
         -webkit-line-clamp: 2;
         line-clamp: 2;
     }
-    
+
     /* Filters Modal Styles - Override dark theme for better contrast */
     .filters-modal-content {
         background-color: white !important;
         color: #111827 !important;
     }
-    
-    .filters-modal-content [data-slot="sheet-content"] {
+
+    .filters-modal-content [data-slot='sheet-content'] {
         background-color: white !important;
     }
-    
+
     .filters-modal-content .text-foreground {
         color: #111827 !important;
     }
-    
+
     .filters-modal-content .text-muted-foreground {
         color: #6b7280 !important;
     }
-    
-    .filters-modal-content input[type="radio"] {
+
+    .filters-modal-content input[type='radio'] {
         accent-color: #3b82f6;
         border-color: #d1d5db;
     }
-    
-    .filters-modal-content input[type="radio"]:checked {
+
+    .filters-modal-content input[type='radio']:checked {
         background-color: #3b82f6;
         border-color: #3b82f6;
     }
-    
+
     .filters-modal-content select,
-    .filters-modal-content input[type="number"] {
+    .filters-modal-content input[type='number'] {
         background-color: white !important;
         color: #111827 !important;
         border-color: #d1d5db !important;
     }
-    
+
     .filters-modal-content button {
         transition: all 0.2s ease;
     }
-    
+
     /* Ensure proper focus states */
     .filters-modal-content input:focus,
     .filters-modal-content select:focus {
         border-color: #3b82f6 !important;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
     }
-    
+
     /* Smooth scrolling for the entire page */
     html {
         scroll-behavior: smooth;
     }
-    
+
     /* Improve touch interactions on mobile */
     @media (max-width: 768px) {
         /* Disable problematic hover effects on touch devices */
         .group:hover .group-hover\:scale-105 {
             transform: none;
         }
-        
+
         .group:hover .group-hover\:opacity-100 {
             opacity: 0;
         }
-        
+
         .group:hover .group-hover\:bg-black {
             background-color: rgb(249 250 251); /* Keep original bg-gray-50 */
         }
-        
+
         .group:hover .group-hover\:text-white {
             color: inherit; /* Keep original text color */
         }
-        
+
         .group:hover .group-hover\:scale-110 {
             transform: none;
         }
-        
+
         .group:hover .group-hover\:-translate-y-1 {
             transform: none;
         }
-        
+
         /* Disable hover on touch devices for cards */
         .hover\:shadow-lg:hover,
         .hover\:shadow-md:hover {
             box-shadow: var(--tw-shadow);
         }
-        
+
         /* Add touch feedback */
         .touch-feedback:active {
             transform: scale(0.98);
             transition: transform 0.1s ease;
         }
-        
+
         /* Better touch targets for categories */
         .category-card {
             min-height: 120px;
         }
-        
+
         /* Optimize performance for mobile devices */
         .parallax-bg {
             transform: none !important;
             background-attachment: scroll;
         }
-        
+
         /* Improve footer link touch targets */
         .footer-link {
             padding: 0.5rem 0;
@@ -259,7 +259,7 @@
             align-items: center;
         }
     }
-    
+
     /* Better hover handling for non-touch devices */
     @media (hover: hover) and (pointer: fine) {
         /* Only apply hover effects on devices that support true hover */
@@ -267,18 +267,21 @@
             color: white;
         }
     }
-    
+
     /* Ensure proper sizing for hero section */
     .hero-section {
         min-height: 100vh;
         min-height: 100dvh; /* Use dynamic viewport height on mobile */
     }
-    
+
     /* Enhanced header transitions for theme switching */
     header * {
-        transition: color 300ms ease, background-color 300ms ease, border-color 300ms ease;
+        transition:
+            color 300ms ease,
+            background-color 300ms ease,
+            border-color 300ms ease;
     }
-    
+
     @keyframes accordion-down {
         from {
             height: 0;

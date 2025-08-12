@@ -1,25 +1,17 @@
-import { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/contexts/ToastContext';
-import { 
-    ChevronDown, 
-    Package, 
-    DollarSign, 
-    User, 
-    MapPin,
-    Save,
-    LoaderCircle
-} from 'lucide-react';
+import AppLayout from '@/layouts/app-layout';
+import { Head, router } from '@inertiajs/react';
+import { ChevronDown, DollarSign, LoaderCircle, MapPin, Package, Save, User } from 'lucide-react';
+import { useState } from 'react';
 
 interface Product {
     id: number;
@@ -144,25 +136,25 @@ export default function Edit({ order }: Props) {
     };
 
     const toggleSection = (section: keyof typeof openSections) => {
-        setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+        setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
     };
 
     const updateOrderItemQuantity = (itemId: number, newQuantity: number) => {
         if (newQuantity < 1) return;
-        
-        setFormData(prev => ({
+
+        setFormData((prev) => ({
             ...prev,
-            order_items: prev.order_items.map(item => 
-                item.id === itemId 
-                    ? { 
-                        ...item, 
-                        quantity: newQuantity,
-                        total: item.price * newQuantity
-                    }
-                    : item
-            )
+            order_items: prev.order_items.map((item) =>
+                item.id === itemId
+                    ? {
+                          ...item,
+                          quantity: newQuantity,
+                          total: item.price * newQuantity,
+                      }
+                    : item,
+            ),
         }));
-        
+
         // Clear validation errors when user fixes quantity issues
         clearValidationErrors();
     };
@@ -171,25 +163,23 @@ export default function Edit({ order }: Props) {
         const itemsTotal = formData.order_items.reduce((sum, item) => sum + item.total, 0);
         const newSubtotal = itemsTotal;
         const newTotal = newSubtotal + formData.shipping_amount + formData.tax_amount;
-        
-        setFormData(prev => ({
+
+        setFormData((prev) => ({
             ...prev,
             subtotal: newSubtotal,
-            total_amount: newTotal
+            total_amount: newTotal,
         }));
     };
 
     const removeOrderItem = (itemId: number) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            order_items: prev.order_items.filter(item => item.id !== itemId)
+            order_items: prev.order_items.filter((item) => item.id !== itemId),
         }));
     };
 
     const hasValidationError = (fieldName: string): boolean => {
-        return validationErrors.some(error => 
-            error.toLowerCase().includes(fieldName.toLowerCase())
-        );
+        return validationErrors.some((error) => error.toLowerCase().includes(fieldName.toLowerCase()));
     };
 
     const clearValidationErrors = () => {
@@ -226,7 +216,7 @@ export default function Edit({ order }: Props) {
         // Validate billing address if it exists
         if (formData.billing_address) {
             const required = ['first_name', 'last_name', 'address_line_1', 'city', 'postal_code', 'country'];
-            required.forEach(field => {
+            required.forEach((field) => {
                 const value = formData.billing_address?.[field as keyof Address];
                 if (!value || value.toString().trim() === '') {
                     errors.push(`Billing address: ${field.replace('_', ' ')} is required`);
@@ -237,7 +227,7 @@ export default function Edit({ order }: Props) {
         // Validate shipping address if it exists
         if (formData.shipping_address) {
             const required = ['first_name', 'last_name', 'address_line_1', 'city', 'postal_code', 'country'];
-            required.forEach(field => {
+            required.forEach((field) => {
                 const value = formData.shipping_address?.[field as keyof Address];
                 if (!value || value.toString().trim() === '') {
                     errors.push(`Shipping address: ${field.replace('_', ' ')} is required`);
@@ -247,13 +237,13 @@ export default function Edit({ order }: Props) {
 
         return {
             isValid: errors.length === 0,
-            errors
+            errors,
         };
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (processing) return;
 
         // Validate form before submission
@@ -264,16 +254,16 @@ export default function Edit({ order }: Props) {
                 type: 'error',
                 title: 'Validation Error',
                 description: validation.errors[0], // Show the first error
-                duration: 5000
+                duration: 5000,
             });
             return;
         }
 
         // Clear validation errors if form is valid
         setValidationErrors([]);
-        
+
         calculateTotals();
-        
+
         const updateData = {
             status: formData.status,
             payment_status: formData.payment_status,
@@ -283,13 +273,15 @@ export default function Edit({ order }: Props) {
             total_amount: formData.total_amount,
             notes: formData.notes,
             tracking_number: formData.tracking_number,
-            order_items: JSON.stringify(formData.order_items.map(item => ({
-                id: item.id,
-                product_id: item.product_id,
-                quantity: item.quantity,
-                price: item.price,
-                total: item.total
-            }))),
+            order_items: JSON.stringify(
+                formData.order_items.map((item) => ({
+                    id: item.id,
+                    product_id: item.product_id,
+                    quantity: item.quantity,
+                    price: item.price,
+                    total: item.total,
+                })),
+            ),
             billing_address: formData.billing_address ? JSON.stringify(formData.billing_address) : null,
             shipping_address: formData.shipping_address ? JSON.stringify(formData.shipping_address) : null,
         };
@@ -303,9 +295,9 @@ export default function Edit({ order }: Props) {
                     type: 'success',
                     title: 'Order Updated',
                     description: 'Order details have been successfully updated.',
-                    duration: 3000
+                    duration: 3000,
                 });
-                
+
                 // Wait a moment for the toast to show before redirecting
                 setTimeout(() => {
                     router.visit(`/admin/orders/${order.id}`);
@@ -317,54 +309,54 @@ export default function Edit({ order }: Props) {
                     type: 'error',
                     title: 'Update Failed',
                     description: 'There was an error updating the order. Please try again.',
-                    duration: 5000
+                    duration: 5000,
                 });
             },
             onFinish: () => {
                 // This will run regardless of success or error
                 setTimeout(() => setProcessing(false), 1500);
-            }
+            },
         });
     };
 
     const updateBillingAddress = (field: keyof Address, value: string) => {
         if (!formData.billing_address) return;
-        
-        setFormData(prev => ({
+
+        setFormData((prev) => ({
             ...prev,
-            billing_address: prev.billing_address ? {
-                ...prev.billing_address,
-                [field]: value
-            } : null
+            billing_address: prev.billing_address
+                ? {
+                      ...prev.billing_address,
+                      [field]: value,
+                  }
+                : null,
         }));
     };
 
     const updateShippingAddress = (field: keyof Address, value: string) => {
         if (!formData.shipping_address) return;
-        
-        setFormData(prev => ({
+
+        setFormData((prev) => ({
             ...prev,
-            shipping_address: prev.shipping_address ? {
-                ...prev.shipping_address,
-                [field]: value
-            } : null
+            shipping_address: prev.shipping_address
+                ? {
+                      ...prev.shipping_address,
+                      [field]: value,
+                  }
+                : null,
         }));
     };
 
     return (
         <AppLayout>
             <Head title={`Edit Order #${order.order_number}`} />
-            
-            <div className="p-4 sm:p-6 space-y-6">
+
+            <div className="space-y-6 p-4 sm:p-6">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-white">
-                            Edit Order #{order.order_number}
-                        </h1>
-                        <p className="text-gray-500">
-                            Last updated: {new Date(order.updated_at).toLocaleDateString()}
-                        </p>
+                        <h1 className="text-2xl font-bold text-white">Edit Order #{order.order_number}</h1>
+                        <p className="text-gray-500">Last updated: {new Date(order.updated_at).toLocaleDateString()}</p>
                     </div>
                 </div>
 
@@ -373,7 +365,7 @@ export default function Edit({ order }: Props) {
                     <Collapsible open={openSections.orderDetails} onOpenChange={() => toggleSection('orderDetails')}>
                         <Card>
                             <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer hover:bg-gray-50 pb-4">
+                                <CardHeader className="cursor-pointer pb-4 hover:bg-gray-50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Package className="h-5 w-5 text-blue-600" />
@@ -385,13 +377,13 @@ export default function Edit({ order }: Props) {
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                                 <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div>
                                             <Label htmlFor="status">Order Status</Label>
-                                            <Select 
-                                                value={formData.status} 
+                                            <Select
+                                                value={formData.status}
                                                 onValueChange={(value: string) => {
-                                                    setFormData(prev => ({ ...prev, status: value }));
+                                                    setFormData((prev) => ({ ...prev, status: value }));
                                                     clearValidationErrors();
                                                 }}
                                             >
@@ -399,7 +391,7 @@ export default function Edit({ order }: Props) {
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {statusOptions.map(option => (
+                                                    {statusOptions.map((option) => (
                                                         <SelectItem key={option.value} value={option.value}>
                                                             {option.label}
                                                         </SelectItem>
@@ -407,15 +399,15 @@ export default function Edit({ order }: Props) {
                                                 </SelectContent>
                                             </Select>
                                             {hasValidationError('order status') && (
-                                                <p className="text-sm text-red-500 mt-1">Order status is required</p>
+                                                <p className="mt-1 text-sm text-red-500">Order status is required</p>
                                             )}
                                         </div>
                                         <div>
                                             <Label htmlFor="payment_status">Payment Status</Label>
-                                            <Select 
-                                                value={formData.payment_status} 
+                                            <Select
+                                                value={formData.payment_status}
                                                 onValueChange={(value: string) => {
-                                                    setFormData(prev => ({ ...prev, payment_status: value }));
+                                                    setFormData((prev) => ({ ...prev, payment_status: value }));
                                                     clearValidationErrors();
                                                 }}
                                             >
@@ -423,7 +415,7 @@ export default function Edit({ order }: Props) {
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {paymentStatusOptions.map(option => (
+                                                    {paymentStatusOptions.map((option) => (
                                                         <SelectItem key={option.value} value={option.value}>
                                                             {option.label}
                                                         </SelectItem>
@@ -431,7 +423,7 @@ export default function Edit({ order }: Props) {
                                                 </SelectContent>
                                             </Select>
                                             {hasValidationError('payment status') && (
-                                                <p className="text-sm text-red-500 mt-1">Payment status is required</p>
+                                                <p className="mt-1 text-sm text-red-500">Payment status is required</p>
                                             )}
                                         </div>
                                     </div>
@@ -440,7 +432,7 @@ export default function Edit({ order }: Props) {
                                         <Input
                                             id="tracking_number"
                                             value={formData.tracking_number}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, tracking_number: e.target.value }))}
+                                            onChange={(e) => setFormData((prev) => ({ ...prev, tracking_number: e.target.value }))}
                                             placeholder="Enter tracking number"
                                         />
                                     </div>
@@ -449,7 +441,7 @@ export default function Edit({ order }: Props) {
                                         <Textarea
                                             id="notes"
                                             value={formData.notes}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                                            onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                                             placeholder="Add any notes about this order..."
                                             rows={3}
                                         />
@@ -463,7 +455,7 @@ export default function Edit({ order }: Props) {
                     <Collapsible open={openSections.orderItems} onOpenChange={() => toggleSection('orderItems')}>
                         <Card>
                             <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer hover:bg-gray-50 pb-4">
+                                <CardHeader className="cursor-pointer pb-4 hover:bg-gray-50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Package className="h-5 w-5 text-blue-600" />
@@ -478,25 +470,28 @@ export default function Edit({ order }: Props) {
                                 <CardContent>
                                     <div className="space-y-4">
                                         {formData.order_items.map((item) => (
-                                            <div key={item.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-4">
+                                            <div
+                                                key={item.id}
+                                                className="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+                                            >
                                                 <div className="flex items-center gap-4">
                                                     {item.product.image_url && (
-                                                        <img 
-                                                            src={item.product.image_url} 
+                                                        <img
+                                                            src={item.product.image_url}
                                                             alt={item.product.name}
-                                                            className="w-12 h-12 object-cover rounded flex-shrink-0"
+                                                            className="h-12 w-12 flex-shrink-0 rounded object-cover"
                                                         />
                                                     )}
                                                     <div className="min-w-0 flex-1">
-                                                        <h4 className="font-medium truncate">{item.product.name}</h4>
-                                                        <p className="text-sm text-gray-600">
-                                                            {formatCurrency(item.price)} each
-                                                        </p>
+                                                        <h4 className="truncate font-medium">{item.product.name}</h4>
+                                                        <p className="text-sm text-gray-600">{formatCurrency(item.price)} each</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center justify-between sm:justify-end gap-4">
+                                                <div className="flex items-center justify-between gap-4 sm:justify-end">
                                                     <div className="flex items-center gap-2">
-                                                        <Label htmlFor={`quantity-${item.id}`} className="text-sm whitespace-nowrap">Qty:</Label>
+                                                        <Label htmlFor={`quantity-${item.id}`} className="text-sm whitespace-nowrap">
+                                                            Qty:
+                                                        </Label>
                                                         <Input
                                                             id={`quantity-${item.id}`}
                                                             type="number"
@@ -514,16 +509,16 @@ export default function Edit({ order }: Props) {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => removeOrderItem(item.id)}
-                                                        className="text-red-600 hover:text-red-800 whitespace-nowrap"
+                                                        className="whitespace-nowrap text-red-600 hover:text-red-800"
                                                     >
                                                         Remove
                                                     </Button>
                                                 </div>
                                             </div>
                                         ))}
-                                        
+
                                         {hasValidationError('order item') && formData.order_items.length === 0 && (
-                                            <div className="p-4 border-red-200 bg-red-50 border rounded-lg">
+                                            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                                                 <p className="text-sm text-red-600">At least one order item is required</p>
                                             </div>
                                         )}
@@ -537,7 +532,7 @@ export default function Edit({ order }: Props) {
                     <Collapsible open={openSections.financial} onOpenChange={() => toggleSection('financial')}>
                         <Card>
                             <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer hover:bg-gray-50 pb-4">
+                                <CardHeader className="cursor-pointer pb-4 hover:bg-gray-50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <DollarSign className="h-5 w-5 text-green-600" />
@@ -549,7 +544,7 @@ export default function Edit({ order }: Props) {
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                                 <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div className="space-y-4">
                                             <div>
                                                 <Label htmlFor="shipping_amount">Shipping Amount</Label>
@@ -558,7 +553,9 @@ export default function Edit({ order }: Props) {
                                                     type="number"
                                                     step="0.01"
                                                     value={formData.shipping_amount}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, shipping_amount: parseFloat(e.target.value) || 0 }))}
+                                                    onChange={(e) =>
+                                                        setFormData((prev) => ({ ...prev, shipping_amount: parseFloat(e.target.value) || 0 }))
+                                                    }
                                                 />
                                             </div>
                                             <div>
@@ -568,13 +565,15 @@ export default function Edit({ order }: Props) {
                                                     type="number"
                                                     step="0.01"
                                                     value={formData.tax_amount}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, tax_amount: parseFloat(e.target.value) || 0 }))}
+                                                    onChange={(e) =>
+                                                        setFormData((prev) => ({ ...prev, tax_amount: parseFloat(e.target.value) || 0 }))
+                                                    }
                                                 />
                                             </div>
                                         </div>
                                         <div>
-                                            <h3 className="font-medium mb-4">Order Summary</h3>
-                                            <div className="space-y-2 p-4 rounded-lg">
+                                            <h3 className="mb-4 font-medium">Order Summary</h3>
+                                            <div className="space-y-2 rounded-lg p-4">
                                                 <div className="flex justify-between text-sm">
                                                     <span>Subtotal:</span>
                                                     <span>{formatCurrency(formData.subtotal)}</span>
@@ -588,7 +587,7 @@ export default function Edit({ order }: Props) {
                                                     <span>{formatCurrency(formData.tax_amount)}</span>
                                                 </div>
                                                 <Separator />
-                                                <div className="flex justify-between font-medium text-lg">
+                                                <div className="flex justify-between text-lg font-medium">
                                                     <span>Total:</span>
                                                     <span>{formatCurrency(formData.total_amount)}</span>
                                                 </div>
@@ -604,7 +603,7 @@ export default function Edit({ order }: Props) {
                     <Collapsible open={openSections.addresses} onOpenChange={() => toggleSection('addresses')}>
                         <Card>
                             <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer hover:bg-gray-50 pb-4">
+                                <CardHeader className="cursor-pointer pb-4 hover:bg-gray-50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <MapPin className="h-5 w-5 text-red-600" />
@@ -618,9 +617,9 @@ export default function Edit({ order }: Props) {
                                 <CardContent className="space-y-6">
                                     {/* Billing Address */}
                                     <div>
-                                        <h3 className="font-medium mb-4">Billing Address</h3>
+                                        <h3 className="mb-4 font-medium">Billing Address</h3>
                                         {formData.billing_address && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                                 <div>
                                                     <Label htmlFor="billing_first_name">First Name</Label>
                                                     <Input
@@ -691,9 +690,9 @@ export default function Edit({ order }: Props) {
 
                                     {/* Shipping Address */}
                                     <div>
-                                        <h3 className="font-medium mb-4">Shipping Address</h3>
+                                        <h3 className="mb-4 font-medium">Shipping Address</h3>
                                         {formData.shipping_address && (
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                                 <div>
                                                     <Label htmlFor="shipping_first_name">First Name</Label>
                                                     <Input
@@ -767,7 +766,7 @@ export default function Edit({ order }: Props) {
                     </Collapsible>
 
                     {/* Save Button */}
-                    <div className="flex flex-col sm:flex-row sm:justify-end gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:justify-end">
                         <Button
                             type="button"
                             variant="outline"
@@ -776,16 +775,8 @@ export default function Edit({ order }: Props) {
                         >
                             Cancel
                         </Button>
-                        <Button 
-                            type="submit" 
-                            disabled={processing}
-                            className="flex items-center justify-center gap-2 order-1 sm:order-2"
-                        >
-                            {processing ? (
-                                <LoaderCircle className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <Save className="h-4 w-4" />
-                            )}
+                        <Button type="submit" disabled={processing} className="order-1 flex items-center justify-center gap-2 sm:order-2">
+                            {processing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                             <span>{processing ? 'Saving...' : 'Save Changes'}</span>
                         </Button>
                     </div>

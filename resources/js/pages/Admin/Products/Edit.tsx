@@ -1,17 +1,17 @@
-import { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
-import { route } from 'ziggy-js';
-import AdminLayout from '@/layouts/admin-layout';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronDown, Upload, X, Star, Package, DollarSign, Image as ImageIcon } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import AdminLayout from '@/layouts/admin-layout';
+import { Head, useForm } from '@inertiajs/react';
+import { ChevronDown, DollarSign, Image as ImageIcon, Package, Star, Upload, X } from 'lucide-react';
+import { useState } from 'react';
+import { route } from 'ziggy-js';
 
 interface Category {
     id: number;
@@ -67,18 +67,18 @@ export default function EditProduct({ product, categories, sizes }: Props) {
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         const newImages = [...data.images, ...files].slice(0, 10);
-        
+
         setData('images', newImages);
-        
+
         // Create preview URLs
-        const newPreviews = files.map(file => URL.createObjectURL(file));
-        setPreviewImages(prev => [...prev, ...newPreviews].slice(0, 10));
+        const newPreviews = files.map((file) => URL.createObjectURL(file));
+        setPreviewImages((prev) => [...prev, ...newPreviews].slice(0, 10));
     };
 
     const removeImage = (index: number) => {
         const newImages = data.images.filter((_, i) => i !== index);
         const newPreviews = previewImages.filter((_, i) => i !== index);
-        
+
         setData('images', newImages);
         setPreviewImages(newPreviews);
     };
@@ -91,10 +91,10 @@ export default function EditProduct({ product, categories, sizes }: Props) {
     return (
         <AdminLayout>
             <Head title={`Edit ${product.name}`} />
-            
-            <div className="p-4 sm:p-6 space-y-6">
+
+            <div className="space-y-6 p-4 sm:p-6">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-white">Edit Product</h1>
                         <p className="text-gray-500">Update product information</p>
@@ -109,12 +109,10 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                 <Package className="h-5 w-5 text-blue-600" />
                                 <CardTitle className="text-lg">Basic Information</CardTitle>
                             </div>
-                            <CardDescription>
-                                Essential product details and inventory management
-                            </CardDescription>
+                            <CardDescription>Essential product details and inventory management</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div className="md:col-span-2">
                                     <Label htmlFor="name">Product Name *</Label>
                                     <Input
@@ -124,7 +122,7 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                         placeholder="Enter product name"
                                         className={errors.name ? 'border-red-500' : ''}
                                     />
-                                    {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+                                    {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
                                 </div>
 
                                 <div>
@@ -141,7 +139,7 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {errors.category_id && <p className="text-sm text-red-500 mt-1">{errors.category_id}</p>}
+                                    {errors.category_id && <p className="mt-1 text-sm text-red-500">{errors.category_id}</p>}
                                 </div>
 
                                 <div>
@@ -158,13 +156,13 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {errors.size_id && <p className="text-sm text-red-500 mt-1">{errors.size_id}</p>}
+                                    {errors.size_id && <p className="mt-1 text-sm text-red-500">{errors.size_id}</p>}
                                 </div>
 
                                 <div>
                                     <Label htmlFor="price">Price *</Label>
                                     <div className="relative">
-                                        <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <DollarSign className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
                                         <Input
                                             id="price"
                                             type="number"
@@ -175,7 +173,7 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                             className={`pl-10 ${errors.price ? 'border-red-500' : ''}`}
                                         />
                                     </div>
-                                    {errors.price && <p className="text-sm text-red-500 mt-1">{errors.price}</p>}
+                                    {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price}</p>}
                                 </div>
 
                                 <div>
@@ -188,7 +186,7 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                         placeholder="0"
                                         className={errors.stock_quantity ? 'border-red-500' : ''}
                                     />
-                                    {errors.stock_quantity && <p className="text-sm text-red-500 mt-1">{errors.stock_quantity}</p>}
+                                    {errors.stock_quantity && <p className="mt-1 text-sm text-red-500">{errors.stock_quantity}</p>}
                                 </div>
 
                                 <div className="md:col-span-2">
@@ -201,7 +199,7 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                         rows={3}
                                         className={errors.description ? 'border-red-500' : ''}
                                     />
-                                    {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
+                                    {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
                                 </div>
 
                                 <div>
@@ -213,19 +211,19 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                         <SelectContent>
                                             <SelectItem value="active">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
                                                     Active
                                                 </div>
                                             </SelectItem>
                                             <SelectItem value="inactive">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                                                    <div className="h-2 w-2 rounded-full bg-gray-500"></div>
                                                     Inactive
                                                 </div>
                                             </SelectItem>
                                             <SelectItem value="draft">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                                    <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
                                                     Draft
                                                 </div>
                                             </SelectItem>
@@ -239,7 +237,7 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                         checked={data.featured}
                                         onCheckedChange={(checked) => setData('featured', Boolean(checked))}
                                     />
-                                    <Label htmlFor="featured" className="flex items-center gap-2 cursor-pointer">
+                                    <Label htmlFor="featured" className="flex cursor-pointer items-center gap-2">
                                         <Star className="h-4 w-4 text-yellow-500" />
                                         Featured Product
                                     </Label>
@@ -255,14 +253,12 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                 <ImageIcon className="h-5 w-5 text-purple-600" />
                                 <CardTitle className="text-lg">Product Images</CardTitle>
                             </div>
-                            <CardDescription>
-                                Upload up to 10 images (JPEG, PNG, GIF, WebP - max 2MB each)
-                            </CardDescription>
+                            <CardDescription>Upload up to 10 images (JPEG, PNG, GIF, WebP - max 2MB each)</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
                                 {/* Upload Area */}
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
                                     <input
                                         type="file"
                                         id="images"
@@ -274,44 +270,38 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                     />
                                     <label
                                         htmlFor="images"
-                                        className={`cursor-pointer ${data.images.length >= 10 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        className={`cursor-pointer ${data.images.length >= 10 ? 'cursor-not-allowed opacity-50' : ''}`}
                                     >
                                         <Upload className="mx-auto h-12 w-12 text-gray-400" />
                                         <p className="mt-2 text-sm text-gray-600">
                                             {data.images.length >= 10 ? 'Maximum 10 images reached' : 'Click to upload new images'}
                                         </p>
-                                        <p className="text-xs text-gray-500">
-                                            {data.images.length}/10 new images
-                                        </p>
+                                        <p className="text-xs text-gray-500">{data.images.length}/10 new images</p>
                                     </label>
                                 </div>
 
                                 {/* Current Images */}
                                 {previewImages.length > 0 && (
                                     <div>
-                                        <h4 className="text-sm font-medium text-gray-700 mb-3">Current Images</h4>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                        <h4 className="mb-3 text-sm font-medium text-gray-700">Current Images</h4>
+                                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                                             {previewImages.map((preview, index) => (
-                                                <div key={index} className="relative group">
-                                                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                                                <div key={index} className="group relative">
+                                                    <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
                                                         <img
                                                             src={preview.startsWith('blob:') ? preview : preview}
                                                             alt={`Product ${index + 1}`}
-                                                            className="w-full h-full object-cover"
+                                                            className="h-full w-full object-cover"
                                                         />
                                                     </div>
                                                     <button
                                                         type="button"
                                                         onClick={() => removeImage(index)}
-                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
                                                     >
                                                         <X className="h-4 w-4" />
                                                     </button>
-                                                    {index === 0 && (
-                                                        <Badge className="absolute bottom-2 left-2 bg-blue-500">
-                                                            Main
-                                                        </Badge>
-                                                    )}
+                                                    {index === 0 && <Badge className="absolute bottom-2 left-2 bg-blue-500">Main</Badge>}
                                                 </div>
                                             ))}
                                         </div>
@@ -327,7 +317,7 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                     <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
                         <Card>
                             <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                                <CardHeader className="cursor-pointer transition-colors hover:bg-gray-50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <DollarSign className="h-5 w-5 text-green-600" />
@@ -335,14 +325,12 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                         </div>
                                         <ChevronDown className={`h-4 w-4 transition-transform ${isAdvancedOpen ? 'rotate-180' : ''}`} />
                                     </div>
-                                    <CardDescription>
-                                        Optional settings for pricing and inventory management
-                                    </CardDescription>
+                                    <CardDescription>Optional settings for pricing and inventory management</CardDescription>
                                 </CardHeader>
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                                 <CardContent className="pt-0">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div>
                                             <Label htmlFor="sku">SKU</Label>
                                             <Input
@@ -352,13 +340,13 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                                 placeholder="Product SKU"
                                                 className={errors.sku ? 'border-red-500' : ''}
                                             />
-                                            {errors.sku && <p className="text-sm text-red-500 mt-1">{errors.sku}</p>}
+                                            {errors.sku && <p className="mt-1 text-sm text-red-500">{errors.sku}</p>}
                                         </div>
 
                                         <div>
                                             <Label htmlFor="compare_price">Compare Price</Label>
                                             <div className="relative">
-                                                <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                                <DollarSign className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
                                                 <Input
                                                     id="compare_price"
                                                     type="number"
@@ -369,10 +357,8 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                                     className={`pl-10 ${errors.compare_price ? 'border-red-500' : ''}`}
                                                 />
                                             </div>
-                                            {errors.compare_price && <p className="text-sm text-red-500 mt-1">{errors.compare_price}</p>}
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                Original price for discount display
-                                            </p>
+                                            {errors.compare_price && <p className="mt-1 text-sm text-red-500">{errors.compare_price}</p>}
+                                            <p className="mt-1 text-xs text-gray-500">Original price for discount display</p>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -381,19 +367,15 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                     </Collapsible>
 
                     {/* Submit Button */}
-                    <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                        <Button
-                            type="submit"
-                            disabled={processing}
-                            className="w-full sm:w-auto order-2 sm:order-1"
-                        >
+                    <div className="flex flex-col gap-3 pt-4 sm:flex-row">
+                        <Button type="submit" disabled={processing} className="order-2 w-full sm:order-1 sm:w-auto">
                             {processing ? 'Updating...' : 'Update Product'}
                         </Button>
                         <Button
                             type="button"
                             variant="destructive"
                             onClick={() => window.history.back()}
-                            className="w-full sm:w-auto order-1 sm:order-2"
+                            className="order-1 w-full sm:order-2 sm:w-auto"
                         >
                             Cancel
                         </Button>

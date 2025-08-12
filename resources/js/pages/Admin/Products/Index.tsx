@@ -1,40 +1,30 @@
-import { useState, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
-import AdminLayout from '@/layouts/admin-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { 
-    Search, 
-    Filter, 
-    Eye, 
-    Edit,
-    MoreHorizontal,
-    TrendingUp,
-    DollarSign,
-    Package,
+import AdminLayout from '@/layouts/admin-layout';
+import { Head, Link, router } from '@inertiajs/react';
+import {
     AlertTriangle,
     ChevronDown,
     ChevronUp,
-    Plus,
+    DollarSign,
+    Edit,
+    Eye,
+    Filter,
     Minus,
-    Zap,
+    MoreHorizontal,
+    Package,
+    Plus,
+    Search,
+    Tag,
     Trash2,
-    Tag
+    TrendingUp,
+    Zap,
 } from 'lucide-react';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-    Collapsible,
-    CollapsibleContent,
-    CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import { useEffect, useState } from 'react';
 
 interface Product {
     id: number;
@@ -131,16 +121,20 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
     // Instant filtering - apply filters immediately on change
     useEffect(() => {
         const timeoutId = setTimeout(() => {
-            router.get('/admin/products', {
-                search: search || undefined,
-                category: categoryFilter || undefined,
-                status: statusFilter || undefined,
-                stock_filter: stockFilter || undefined,
-            }, { 
-                preserveState: true,
-                preserveScroll: true,
-                replace: true
-            });
+            router.get(
+                '/admin/products',
+                {
+                    search: search || undefined,
+                    category: categoryFilter || undefined,
+                    status: statusFilter || undefined,
+                    stock_filter: stockFilter || undefined,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
         }, 300); // 300ms debounce for search
 
         return () => clearTimeout(timeoutId);
@@ -171,10 +165,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
 
     const getStatusBadge = (status: string) => {
         return (
-            <Badge
-                className={statusColors[status as keyof typeof statusColors]}
-                variant="secondary"
-            >
+            <Badge className={statusColors[status as keyof typeof statusColors]} variant="secondary">
                 {status.charAt(0).toUpperCase() + status.slice(1)}
             </Badge>
         );
@@ -182,21 +173,37 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
 
     const getStockBadge = (stock: number) => {
         if (stock === 0) {
-            return <Badge className="bg-red-100 text-red-800" variant="secondary">Out of Stock</Badge>;
+            return (
+                <Badge className="bg-red-100 text-red-800" variant="secondary">
+                    Out of Stock
+                </Badge>
+            );
         }
         if (stock < 10) {
-            return <Badge className="bg-orange-100 text-orange-800" variant="secondary">Low Stock</Badge>;
+            return (
+                <Badge className="bg-orange-100 text-orange-800" variant="secondary">
+                    Low Stock
+                </Badge>
+            );
         }
-        return <Badge className="bg-green-100 text-green-800" variant="secondary">In Stock</Badge>;
+        return (
+            <Badge className="bg-green-100 text-green-800" variant="secondary">
+                In Stock
+            </Badge>
+        );
     };
 
     const handleQuickStock = (productId: number, increment: boolean) => {
-        router.patch(`/admin/products/${productId}/quick-stock`, {
-            increment,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-        });
+        router.patch(
+            `/admin/products/${productId}/quick-stock`,
+            {
+                increment,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
     };
 
     return (
@@ -212,10 +219,8 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                 {/* Mobile-First Page Header */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Products</h1>
-                        <p className="text-sm md:text-base text-muted-foreground">
-                            Manage your product catalog
-                        </p>
+                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Products</h1>
+                        <p className="text-sm text-muted-foreground md:text-base">Manage your product catalog</p>
                     </div>
                     <Button asChild>
                         <Link href="/admin/products/create">
@@ -228,73 +233,57 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                 {/* Collapsible Stats Cards */}
                 <Collapsible open={isStatsOpen} onOpenChange={setIsStatsOpen}>
                     <CollapsibleTrigger asChild>
-                        <Button 
-                            variant="outline" 
-                            className="w-full justify-between"
-                            size="sm"
-                        >
+                        <Button variant="outline" className="w-full justify-between" size="sm">
                             <span className="flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4" />
                                 Quick Stats
                             </span>
-                            {isStatsOpen ? (
-                                <ChevronUp className="h-4 w-4" />
-                            ) : (
-                                <ChevronDown className="h-4 w-4" />
-                            )}
+                            {isStatsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 mt-4">
-                        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                    <CollapsibleContent className="mt-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                             <Card className="p-4">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="mb-2 flex items-center space-x-2">
                                     <Package className="h-4 w-4 text-blue-600" />
                                     <h3 className="text-xs font-medium">Total</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{stats.total_products}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {stats.active_products} active
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">{stats.active_products} active</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="mb-2 flex items-center space-x-2">
                                     <DollarSign className="h-4 w-4 text-green-600" />
                                     <h3 className="text-xs font-medium">Value</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{formatCurrency(stats.total_value)}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Inventory
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">Inventory</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="mb-2 flex items-center space-x-2">
                                     <AlertTriangle className="h-4 w-4 text-orange-600" />
                                     <h3 className="text-xs font-medium">Low Stock</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold text-orange-600">{stats.low_stock_count}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Need attention
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">Need attention</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="mb-2 flex items-center space-x-2">
                                     <Tag className="h-4 w-4 text-purple-600" />
                                     <h3 className="text-xs font-medium">Categories</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{categories.length}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Active
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">Active</p>
                                 </div>
                             </Card>
                         </div>
@@ -306,25 +295,18 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                     <div className="space-y-3">
                         {/* Search Bar */}
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search products..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-10"
-                            />
+                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                            <Input placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
                         </div>
-                        
+
                         {/* Filter Dropdowns */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                             <div>
-                                <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                                    Category
-                                </label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">Category</label>
                                 <select
                                     value={categoryFilter}
                                     onChange={(e) => setCategoryFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 >
                                     <option value="">All Categories</option>
                                     {categories.map((category) => (
@@ -334,15 +316,13 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                     ))}
                                 </select>
                             </div>
-                            
+
                             <div>
-                                <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                                    Status
-                                </label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">Status</label>
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 >
                                     <option value="">All Status</option>
                                     <option value="active">Active</option>
@@ -350,15 +330,13 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                     <option value="draft">Draft</option>
                                 </select>
                             </div>
-                            
+
                             <div>
-                                <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                                    Stock
-                                </label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">Stock</label>
                                 <select
                                     value={stockFilter}
                                     onChange={(e) => setStockFilter(e.target.value)}
-                                    className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 >
                                     <option value="">All Stock</option>
                                     <option value="in-stock">In Stock</option>
@@ -366,15 +344,10 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                     <option value="out-of-stock">Out of Stock</option>
                                 </select>
                             </div>
-                            
+
                             <div className="flex items-end">
                                 {(search || categoryFilter || statusFilter || stockFilter) && (
-                                    <Button 
-                                        onClick={clearFilters} 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="w-full"
-                                    >
+                                    <Button onClick={clearFilters} variant="outline" size="sm" className="w-full">
                                         Clear Filters
                                     </Button>
                                 )}
@@ -386,138 +359,136 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                 {/* Mobile-First Products Table */}
                 <Card>
                     {/* Desktop Table View */}
-                    <div className="hidden md:block overflow-x-auto">
+                    <div className="hidden overflow-x-auto md:block">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b">
-                                    <th className="text-left p-4 font-medium">Product</th>
-                                    <th className="text-left p-4 font-medium">Category</th>
-                                    <th className="text-left p-4 font-medium">Price</th>
-                                    <th className="text-left p-4 font-medium">Stock</th>
-                                    <th className="text-left p-4 font-medium">Status</th>
-                                    <th className="text-left p-4 font-medium">Date</th>
-                                    <th className="text-right p-4 font-medium">Actions</th>
+                                    <th className="p-4 text-left font-medium">Product</th>
+                                    <th className="p-4 text-left font-medium">Category</th>
+                                    <th className="p-4 text-left font-medium">Price</th>
+                                    <th className="p-4 text-left font-medium">Stock</th>
+                                    <th className="p-4 text-left font-medium">Status</th>
+                                    <th className="p-4 text-left font-medium">Date</th>
+                                    <th className="p-4 text-right font-medium">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {productsData.length > 0 ? productsData.map((product) => (
-                                    <tr key={product.id} className="border-b hover:bg-muted/50">
-                                        <td className="p-4">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                                    <img 
-                                                        src={product.main_image_url} 
-                                                        alt={product.name}
-                                                        className="w-full h-full object-cover"
-                                                        onError={(e) => {
-                                                            e.currentTarget.src = '/images/product.png';
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <Link
-                                                        href={`/admin/products/${product.id}`}
-                                                        className="font-medium text-primary hover:underline"
-                                                    >
-                                                        {product.name}
-                                                    </Link>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {product.sku || 'No SKU'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="text-sm">
-                                                {product.category?.name || 'No category'}
-                                            </span>
-                                        </td>
-                                        <td className="p-4">
-                                            <div>
-                                                <span className="font-medium">{formatCurrency(product.price)}</span>
-                                                {product.compare_price && product.compare_price > product.price && (
-                                                    <p className="text-xs text-muted-foreground line-through">
-                                                        {formatCurrency(product.compare_price)}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex items-center space-x-2">
-                                                <span className="font-medium">{product.stock_quantity}</span>
-                                                {getStockBadge(product.stock_quantity)}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="space-y-1">
-                                                {getStatusBadge(product.status)}
-                                                {product.featured && (
-                                                    <div>
-                                                        <Badge className="bg-yellow-100 text-yellow-800" variant="secondary">
-                                                            Featured
-                                                        </Badge>
+                                {productsData.length > 0 ? (
+                                    productsData.map((product) => (
+                                        <tr key={product.id} className="border-b hover:bg-muted/50">
+                                            <td className="p-4">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                                                        <img
+                                                            src={product.main_image_url}
+                                                            alt={product.name}
+                                                            className="h-full w-full object-cover"
+                                                            onError={(e) => {
+                                                                e.currentTarget.src = '/images/product.png';
+                                                            }}
+                                                        />
                                                     </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="text-sm">{formatDate(product.created_at)}</span>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <div className="flex items-center justify-end space-x-1">
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="outline" 
-                                                    onClick={() => handleQuickStock(product.id, false)}
-                                                    className="h-7 w-7 p-0"
-                                                >
-                                                    <Minus className="h-3 w-3" />
-                                                </Button>
-                                                <Button 
-                                                    size="sm" 
-                                                    variant="outline" 
-                                                    onClick={() => handleQuickStock(product.id, true)}
-                                                    className="h-7 w-7 p-0"
-                                                >
-                                                    <Plus className="h-3 w-3" />
-                                                </Button>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="sm">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem asChild>
-                                                            <Link href={`/admin/products/${product.id}`}>
-                                                                <Eye className="h-4 w-4 mr-2" />
-                                                                View Details
-                                                            </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem asChild>
-                                                            <Link href={`/admin/products/${product.id}/edit`}>
-                                                                <Edit className="h-4 w-4 mr-2" />
-                                                                Edit Product
-                                                            </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem>
-                                                            <Zap className="h-4 w-4 mr-2" />
-                                                            Flash Discount
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem className="text-red-600">
-                                                            <Trash2 className="h-4 w-4 mr-2" />
-                                                            Delete Product
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )) : (
+                                                    <div>
+                                                        <Link
+                                                            href={`/admin/products/${product.id}`}
+                                                            className="font-medium text-primary hover:underline"
+                                                        >
+                                                            {product.name}
+                                                        </Link>
+                                                        <p className="text-sm text-muted-foreground">{product.sku || 'No SKU'}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="text-sm">{product.category?.name || 'No category'}</span>
+                                            </td>
+                                            <td className="p-4">
+                                                <div>
+                                                    <span className="font-medium">{formatCurrency(product.price)}</span>
+                                                    {product.compare_price && product.compare_price > product.price && (
+                                                        <p className="text-xs text-muted-foreground line-through">
+                                                            {formatCurrency(product.compare_price)}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="font-medium">{product.stock_quantity}</span>
+                                                    {getStockBadge(product.stock_quantity)}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="space-y-1">
+                                                    {getStatusBadge(product.status)}
+                                                    {product.featured && (
+                                                        <div>
+                                                            <Badge className="bg-yellow-100 text-yellow-800" variant="secondary">
+                                                                Featured
+                                                            </Badge>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className="text-sm">{formatDate(product.created_at)}</span>
+                                            </td>
+                                            <td className="p-4 text-right">
+                                                <div className="flex items-center justify-end space-x-1">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleQuickStock(product.id, false)}
+                                                        className="h-7 w-7 p-0"
+                                                    >
+                                                        <Minus className="h-3 w-3" />
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() => handleQuickStock(product.id, true)}
+                                                        className="h-7 w-7 p-0"
+                                                    >
+                                                        <Plus className="h-3 w-3" />
+                                                    </Button>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="sm">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem asChild>
+                                                                <Link href={`/admin/products/${product.id}`}>
+                                                                    <Eye className="mr-2 h-4 w-4" />
+                                                                    View Details
+                                                                </Link>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem asChild>
+                                                                <Link href={`/admin/products/${product.id}/edit`}>
+                                                                    <Edit className="mr-2 h-4 w-4" />
+                                                                    Edit Product
+                                                                </Link>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem>
+                                                                <Zap className="mr-2 h-4 w-4" />
+                                                                Flash Discount
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem className="text-red-600">
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Delete Product
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
                                     <tr>
-                                        <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                                        <td colSpan={7} className="py-8 text-center text-muted-foreground">
                                             No products found
                                         </td>
                                     </tr>
@@ -527,144 +498,139 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                     </div>
 
                     {/* Mobile Card View */}
-                    <div className="md:hidden space-y-3 p-3">
-                        {productsData.length > 0 ? productsData.map((product) => (
-                            <Card key={product.id} className="p-4">
-                                <div className="flex items-start justify-between mb-3">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                                            <img 
-                                                src={product.main_image_url} 
-                                                alt={product.name}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    e.currentTarget.src = '/images/product.png';
-                                                }}
-                                            />
+                    <div className="space-y-3 p-3 md:hidden">
+                        {productsData.length > 0 ? (
+                            productsData.map((product) => (
+                                <Card key={product.id} className="p-4">
+                                    <div className="mb-3 flex items-start justify-between">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                                                <img
+                                                    src={product.main_image_url}
+                                                    alt={product.name}
+                                                    className="h-full w-full object-cover"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = '/images/product.png';
+                                                    }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Link href={`/admin/products/${product.id}`} className="font-medium text-primary hover:underline">
+                                                    {product.name}
+                                                </Link>
+                                                <p className="text-sm text-muted-foreground">{product.sku || 'No SKU'}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <Link
-                                                href={`/admin/products/${product.id}`}
-                                                className="font-medium text-primary hover:underline"
-                                            >
-                                                {product.name}
-                                            </Link>
-                                            <p className="text-sm text-muted-foreground">
-                                                {product.sku || 'No SKU'}
-                                            </p>
+                                        <div className="flex gap-2">
+                                            {getStatusBadge(product.status)}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="sm">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/admin/products/${product.id}`}>
+                                                            <Eye className="mr-2 h-4 w-4" />
+                                                            View Details
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/admin/products/${product.id}/edit`}>
+                                                            <Edit className="mr-2 h-4 w-4" />
+                                                            Edit Product
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem>
+                                                        <Zap className="mr-2 h-4 w-4" />
+                                                        Flash Discount
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem className="text-red-600">
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Delete Product
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                        {getStatusBadge(product.status)}
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="sm">
-                                                    <MoreHorizontal className="h-4 w-4" />
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-muted-foreground">Category:</span>
+                                            <span className="text-sm">{product.category?.name || 'No category'}</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-muted-foreground">Price:</span>
+                                            <div className="text-right">
+                                                <span className="font-bold">{formatCurrency(product.price)}</span>
+                                                {product.compare_price && product.compare_price > product.price && (
+                                                    <p className="text-xs text-muted-foreground line-through">
+                                                        {formatCurrency(product.compare_price)}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-muted-foreground">Stock:</span>
+                                            <div className="flex items-center space-x-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleQuickStock(product.id, false)}
+                                                    className="h-6 w-6 p-0"
+                                                >
+                                                    <Minus className="h-3 w-3" />
                                                 </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/admin/products/${product.id}`}>
-                                                        <Eye className="h-4 w-4 mr-2" />
-                                                        View Details
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/admin/products/${product.id}/edit`}>
-                                                        <Edit className="h-4 w-4 mr-2" />
-                                                        Edit Product
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem>
-                                                    <Zap className="h-4 w-4 mr-2" />
-                                                    Flash Discount
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem className="text-red-600">
-                                                    <Trash2 className="h-4 w-4 mr-2" />
-                                                    Delete Product
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </div>
-                                
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-muted-foreground">Category:</span>
-                                        <span className="text-sm">{product.category?.name || 'No category'}</span>
-                                    </div>
-                                    
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-muted-foreground">Price:</span>
-                                        <div className="text-right">
-                                            <span className="font-bold">{formatCurrency(product.price)}</span>
-                                            {product.compare_price && product.compare_price > product.price && (
-                                                <p className="text-xs text-muted-foreground line-through">
-                                                    {formatCurrency(product.compare_price)}
-                                                </p>
-                                            )}
+                                                <span className="text-sm font-bold">{product.stock_quantity}</span>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => handleQuickStock(product.id, true)}
+                                                    className="h-6 w-6 p-0"
+                                                >
+                                                    <Plus className="h-3 w-3" />
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-muted-foreground">Stock:</span>
-                                        <div className="flex items-center space-x-2">
-                                            <Button 
-                                                size="sm" 
-                                                variant="outline" 
-                                                onClick={() => handleQuickStock(product.id, false)}
-                                                className="h-6 w-6 p-0"
-                                            >
-                                                <Minus className="h-3 w-3" />
-                                            </Button>
-                                            <span className="font-bold text-sm">{product.stock_quantity}</span>
-                                            <Button 
-                                                size="sm" 
-                                                variant="outline" 
-                                                onClick={() => handleQuickStock(product.id, true)}
-                                                className="h-6 w-6 p-0"
-                                            >
-                                                <Plus className="h-3 w-3" />
-                                            </Button>
+
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-muted-foreground">Stock Status:</span>
+                                            {getStockBadge(product.stock_quantity)}
                                         </div>
+
+                                        {product.featured && (
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-muted-foreground">Featured:</span>
+                                                <Badge className="bg-yellow-100 text-yellow-800" variant="secondary">
+                                                    Featured
+                                                </Badge>
+                                            </div>
+                                        )}
                                     </div>
-                                    
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-muted-foreground">Stock Status:</span>
-                                        {getStockBadge(product.stock_quantity)}
-                                    </div>
-                                    
-                                    {product.featured && (
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-muted-foreground">Featured:</span>
-                                            <Badge className="bg-yellow-100 text-yellow-800" variant="secondary">
-                                                Featured
-                                            </Badge>
-                                        </div>
-                                    )}
-                                </div>
-                            </Card>
-                        )) : (
-                            <div className="text-center py-8 text-muted-foreground">
-                                No products found
-                            </div>
+                                </Card>
+                            ))
+                        ) : (
+                            <div className="py-8 text-center text-muted-foreground">No products found</div>
                         )}
                     </div>
 
                     {/* Mobile-First Pagination */}
                     {productsMeta.last_page > 1 && (
-                        <div className="px-4 py-4 border-t">
+                        <div className="border-t px-4 py-4">
                             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                <p className="text-sm text-muted-foreground text-center md:text-left">
+                                <p className="text-center text-sm text-muted-foreground md:text-left">
                                     Showing {productsMeta.from} to {productsMeta.to} of {productsMeta.total} results
                                 </p>
                                 <div className="flex items-center justify-center space-x-1 md:space-x-2">
                                     {productsLinks.map((link, index) => (
                                         <Button
                                             key={index}
-                                            variant={link.active ? "default" : "outline"}
+                                            variant={link.active ? 'default' : 'outline'}
                                             size="sm"
                                             onClick={() => link.url && router.get(link.url)}
                                             disabled={!link.url}
@@ -677,44 +643,29 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                         </div>
                     )}
                 </Card>
-                
+
                 {/* Mobile Bottom Navigation */}
-                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t p-4 safe-area-pb">
+                <div className="safe-area-pb fixed right-0 bottom-0 left-0 border-t bg-background p-4 md:hidden">
                     <div className="flex justify-center gap-4">
-                        <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setIsStatsOpen(!isStatsOpen)}
-                            className="flex-1"
-                        >
-                            <TrendingUp className="h-4 w-4 mr-2" />
+                        <Button variant="outline" size="sm" onClick={() => setIsStatsOpen(!isStatsOpen)} className="flex-1">
+                            <TrendingUp className="mr-2 h-4 w-4" />
                             Stats
                         </Button>
-                        <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                            className="flex-1"
-                        >
-                            <Filter className="h-4 w-4 mr-2" />
+                        <Button variant="outline" size="sm" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex-1">
+                            <Filter className="mr-2 h-4 w-4" />
                             Filters
                         </Button>
-                        <Button 
-                            variant="outline" 
-                            size="sm"
-                            asChild
-                            className="flex-1"
-                        >
+                        <Button variant="outline" size="sm" asChild className="flex-1">
                             <Link href="/admin/products/create">
-                                <Plus className="h-4 w-4 mr-2" />
+                                <Plus className="mr-2 h-4 w-4" />
                                 Add
                             </Link>
                         </Button>
                     </div>
                 </div>
-                
+
                 {/* Add bottom padding to account for fixed navigation */}
-                <div className="md:hidden h-20"></div>
+                <div className="h-20 md:hidden"></div>
             </div>
         </AdminLayout>
     );

@@ -3,26 +3,17 @@ import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import AppLayout from '@/layouts/app-layout';
-import { 
-    Settings, 
-    CreditCard, 
-    Truck, 
-    Receipt, 
-    Mail,
-    Save,
-    ChevronDown,
-    ChevronUp
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/contexts/ToastContext';
+import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
+import { ChevronDown, ChevronUp, CreditCard, Mail, Receipt, Save, Settings, Truck } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Admin', href: '/admin/dashboard' },
@@ -115,7 +106,7 @@ export default function AdminSettings({ settings }: Props) {
         shipping_calculation_method: settings.shipping_calculation_method,
         allow_international_shipping: settings.allow_international_shipping,
         processing_time_days: settings.processing_time_days,
-        shipping_zones: settings.shipping_zones,
+        shipping_zones: settings.shipping_zones as any,
     });
 
     const taxForm = useForm({
@@ -143,10 +134,11 @@ export default function AdminSettings({ settings }: Props) {
         e.preventDefault();
         generalForm.patch(route('admin.settings.update-general'), {
             preserveScroll: true,
-            onSuccess: () => addToast({
-                type: 'success',
-                title: 'General settings updated successfully'
-            }),
+            onSuccess: () =>
+                addToast({
+                    type: 'success',
+                    title: 'General settings updated successfully',
+                }),
         });
     };
 
@@ -154,10 +146,11 @@ export default function AdminSettings({ settings }: Props) {
         e.preventDefault();
         paymentForm.patch(route('admin.settings.update-payment'), {
             preserveScroll: true,
-            onSuccess: () => addToast({
-                type: 'success',
-                title: 'Payment settings updated successfully'
-            }),
+            onSuccess: () =>
+                addToast({
+                    type: 'success',
+                    title: 'Payment settings updated successfully',
+                }),
         });
     };
 
@@ -165,10 +158,11 @@ export default function AdminSettings({ settings }: Props) {
         e.preventDefault();
         shippingForm.patch(route('admin.settings.update-shipping'), {
             preserveScroll: true,
-            onSuccess: () => addToast({
-                type: 'success',
-                title: 'Shipping settings updated successfully'
-            }),
+            onSuccess: () =>
+                addToast({
+                    type: 'success',
+                    title: 'Shipping settings updated successfully',
+                }),
         });
     };
 
@@ -176,10 +170,11 @@ export default function AdminSettings({ settings }: Props) {
         e.preventDefault();
         taxForm.patch(route('admin.settings.update-tax'), {
             preserveScroll: true,
-            onSuccess: () => addToast({
-                type: 'success',
-                title: 'Tax settings updated successfully'
-            }),
+            onSuccess: () =>
+                addToast({
+                    type: 'success',
+                    title: 'Tax settings updated successfully',
+                }),
         });
     };
 
@@ -187,10 +182,11 @@ export default function AdminSettings({ settings }: Props) {
         e.preventDefault();
         emailForm.patch(route('admin.settings.update-email'), {
             preserveScroll: true,
-            onSuccess: () => addToast({
-                type: 'success',
-                title: 'Email settings updated successfully'
-            }),
+            onSuccess: () =>
+                addToast({
+                    type: 'success',
+                    title: 'Email settings updated successfully',
+                }),
         });
     };
 
@@ -198,49 +194,40 @@ export default function AdminSettings({ settings }: Props) {
         setExpandedSection(expandedSection === section ? '' : section);
     };
 
-    const SectionCard = ({ 
-        id, 
-        title, 
-        description, 
-        icon: Icon, 
-        children 
-    }: { 
-        id: string; 
+    const SectionCard = ({
+        id,
+        title,
+        description,
+        icon: Icon,
+        children,
+    }: {
+        id: string;
         title: string;
         description: string;
         icon: React.ElementType;
         children: React.ReactNode;
     }) => {
         const isExpanded = expandedSection === id;
-        
+
         return (
             <Card className="rounded-2xl shadow-sm">
-                <CardHeader 
-                    className="cursor-pointer p-4 md:p-6" 
-                    onClick={() => toggleSection(id)}
-                >
+                <CardHeader className="cursor-pointer p-4 md:p-6" onClick={() => toggleSection(id)}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Icon className="w-5 h-5 text-primary shrink-0" />
+                            <Icon className="h-5 w-5 shrink-0 text-primary" />
                             <div className="min-w-0">
                                 <CardTitle className="text-base md:text-lg">{title}</CardTitle>
-                                <CardDescription className="text-sm text-muted-foreground hidden sm:block">
-                                    {description}
-                                </CardDescription>
+                                <CardDescription className="hidden text-sm text-muted-foreground sm:block">{description}</CardDescription>
                             </div>
                         </div>
                         {isExpanded ? (
-                            <ChevronUp className="w-5 h-5 text-muted-foreground shrink-0" />
+                            <ChevronUp className="h-5 w-5 shrink-0 text-muted-foreground" />
                         ) : (
-                            <ChevronDown className="w-5 h-5 text-muted-foreground shrink-0" />
+                            <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground" />
                         )}
                     </div>
                 </CardHeader>
-                {isExpanded && (
-                    <CardContent className="px-4 pb-4 md:px-6 md:pb-6">
-                        {children}
-                    </CardContent>
-                )}
+                {isExpanded && <CardContent className="px-4 pb-4 md:px-6 md:pb-6">{children}</CardContent>}
             </Card>
         );
     };
@@ -249,12 +236,10 @@ export default function AdminSettings({ settings }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Settings" />
 
-            <div className="p-4 md:p-6 space-y-6">
+            <div className="space-y-6 p-4 md:p-6">
                 <div className="mb-6">
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Settings</h1>
-                    <p className="text-muted-foreground text-sm md:text-base">
-                        Manage your store configuration and preferences
-                    </p>
+                    <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Settings</h1>
+                    <p className="text-sm text-muted-foreground md:text-base">Manage your store configuration and preferences</p>
                 </div>
 
                 <div className="space-y-4">
@@ -275,9 +260,7 @@ export default function AdminSettings({ settings }: Props) {
                                         onChange={(e) => generalForm.setData('site_name', e.target.value)}
                                         className={cn(generalForm.errors.site_name && 'border-red-500')}
                                     />
-                                    {generalForm.errors.site_name && (
-                                        <p className="text-sm text-red-500">{generalForm.errors.site_name}</p>
-                                    )}
+                                    {generalForm.errors.site_name && <p className="text-sm text-red-500">{generalForm.errors.site_name}</p>}
                                 </div>
 
                                 <div className="space-y-2">
@@ -289,9 +272,7 @@ export default function AdminSettings({ settings }: Props) {
                                         onChange={(e) => generalForm.setData('contact_email', e.target.value)}
                                         className={cn(generalForm.errors.contact_email && 'border-red-500')}
                                     />
-                                    {generalForm.errors.contact_email && (
-                                        <p className="text-sm text-red-500">{generalForm.errors.contact_email}</p>
-                                    )}
+                                    {generalForm.errors.contact_email && <p className="text-sm text-red-500">{generalForm.errors.contact_email}</p>}
                                 </div>
                             </div>
 
@@ -346,7 +327,7 @@ export default function AdminSettings({ settings }: Props) {
 
                             <div className="flex justify-end pt-4">
                                 <Button type="submit" disabled={generalForm.processing}>
-                                    <Save className="w-4 h-4 mr-2" />
+                                    <Save className="mr-2 h-4 w-4" />
                                     Save General Settings
                                 </Button>
                             </div>
@@ -354,19 +335,12 @@ export default function AdminSettings({ settings }: Props) {
                     </SectionCard>
 
                     {/* Payment Settings */}
-                    <SectionCard
-                        id="payment"
-                        title="Payment Settings"
-                        description="Configure payment gateways and options"
-                        icon={CreditCard}
-                    >
+                    <SectionCard id="payment" title="Payment Settings" description="Configure payment gateways and options" icon={CreditCard}>
                         <form onSubmit={submitPayment} className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
                                     <Label htmlFor="stripe_enabled">Enable Stripe</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Allow customers to pay with credit cards via Stripe
-                                    </p>
+                                    <p className="text-sm text-muted-foreground">Allow customers to pay with credit cards via Stripe</p>
                                 </div>
                                 <Switch
                                     id="stripe_enabled"
@@ -410,9 +384,7 @@ export default function AdminSettings({ settings }: Props) {
                                             onChange={(e) => paymentForm.setData('stripe_webhook_secret', e.target.value)}
                                             placeholder="whsec_..."
                                         />
-                                        <p className="text-sm text-muted-foreground">
-                                            Required for webhook signature verification
-                                        </p>
+                                        <p className="text-sm text-muted-foreground">Required for webhook signature verification</p>
                                     </div>
                                 </>
                             )}
@@ -429,14 +401,12 @@ export default function AdminSettings({ settings }: Props) {
                                     value={paymentForm.data.minimum_order_amount}
                                     onChange={(e) => paymentForm.setData('minimum_order_amount', parseFloat(e.target.value) || 0)}
                                 />
-                                <p className="text-sm text-muted-foreground">
-                                    Set to 0 to disable minimum order requirement
-                                </p>
+                                <p className="text-sm text-muted-foreground">Set to 0 to disable minimum order requirement</p>
                             </div>
 
                             <div className="flex justify-end pt-4">
                                 <Button type="submit" disabled={paymentForm.processing}>
-                                    <Save className="w-4 h-4 mr-2" />
+                                    <Save className="mr-2 h-4 w-4" />
                                     Save Payment Settings
                                 </Button>
                             </div>
@@ -444,23 +414,16 @@ export default function AdminSettings({ settings }: Props) {
                     </SectionCard>
 
                     {/* Shipping Settings */}
-                    <SectionCard
-                        id="shipping"
-                        title="Shipping Settings"
-                        description="Configure shipping options and costs"
-                        icon={Truck}
-                    >
+                    <SectionCard id="shipping" title="Shipping Settings" description="Configure shipping options and costs" icon={Truck}>
                         <form onSubmit={submitShipping} className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
                                     <Label htmlFor="shipping_enabled">Enable Shipping</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Allow customers to have products shipped
-                                    </p>
+                                    <p className="text-sm text-muted-foreground">Allow customers to have products shipped</p>
                                 </div>
                                 <Switch
                                     id="shipping_enabled"
-                                    checked={shippingForm.data.shipping_enabled}
+                                    checked={shippingForm.data.shipping_enabled ?? false}
                                     onCheckedChange={(checked) => shippingForm.setData('shipping_enabled', checked)}
                                 />
                             </div>
@@ -468,7 +431,7 @@ export default function AdminSettings({ settings }: Props) {
                             {shippingForm.data.shipping_enabled && (
                                 <>
                                     <Separator />
-                                    
+
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div className="space-y-2">
                                             <Label htmlFor="default_shipping_cost">Default Shipping Cost</Label>
@@ -477,7 +440,7 @@ export default function AdminSettings({ settings }: Props) {
                                                 type="number"
                                                 step="0.01"
                                                 min="0"
-                                                value={shippingForm.data.default_shipping_cost}
+                                                value={shippingForm.data.default_shipping_cost ?? ''}
                                                 onChange={(e) => shippingForm.setData('default_shipping_cost', parseFloat(e.target.value) || 0)}
                                             />
                                         </div>
@@ -489,12 +452,10 @@ export default function AdminSettings({ settings }: Props) {
                                                 type="number"
                                                 step="0.01"
                                                 min="0"
-                                                value={shippingForm.data.free_shipping_threshold}
+                                                value={shippingForm.data.free_shipping_threshold ?? ''}
                                                 onChange={(e) => shippingForm.setData('free_shipping_threshold', parseFloat(e.target.value) || 0)}
                                             />
-                                            <p className="text-sm text-muted-foreground">
-                                                Set to 0 to disable free shipping
-                                            </p>
+                                            <p className="text-sm text-muted-foreground">Set to 0 to disable free shipping</p>
                                         </div>
                                     </div>
 
@@ -502,7 +463,7 @@ export default function AdminSettings({ settings }: Props) {
                                         <div className="space-y-2">
                                             <Label htmlFor="shipping_calculation_method">Calculation Method</Label>
                                             <Select
-                                                value={shippingForm.data.shipping_calculation_method}
+                                                value={shippingForm.data.shipping_calculation_method ?? ''}
                                                 onValueChange={(value) => shippingForm.setData('shipping_calculation_method', value)}
                                             >
                                                 <SelectTrigger>
@@ -523,7 +484,7 @@ export default function AdminSettings({ settings }: Props) {
                                                 type="number"
                                                 min="1"
                                                 max="30"
-                                                value={shippingForm.data.processing_time_days}
+                                                value={shippingForm.data.processing_time_days ?? ''}
                                                 onChange={(e) => shippingForm.setData('processing_time_days', parseInt(e.target.value) || 1)}
                                             />
                                         </div>
@@ -532,13 +493,11 @@ export default function AdminSettings({ settings }: Props) {
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <Label htmlFor="allow_international_shipping">International Shipping</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Allow shipping to international destinations
-                                            </p>
+                                            <p className="text-sm text-muted-foreground">Allow shipping to international destinations</p>
                                         </div>
                                         <Switch
                                             id="allow_international_shipping"
-                                            checked={shippingForm.data.allow_international_shipping}
+                                            checked={shippingForm.data.allow_international_shipping ?? false}
                                             onCheckedChange={(checked) => shippingForm.setData('allow_international_shipping', checked)}
                                         />
                                     </div>
@@ -547,7 +506,7 @@ export default function AdminSettings({ settings }: Props) {
 
                             <div className="flex justify-end pt-4">
                                 <Button type="submit" disabled={shippingForm.processing}>
-                                    <Save className="w-4 h-4 mr-2" />
+                                    <Save className="mr-2 h-4 w-4" />
                                     Save Shipping Settings
                                 </Button>
                             </div>
@@ -555,23 +514,16 @@ export default function AdminSettings({ settings }: Props) {
                     </SectionCard>
 
                     {/* Tax Settings */}
-                    <SectionCard
-                        id="tax"
-                        title="Tax Settings"
-                        description="Configure tax rates and calculation methods"
-                        icon={Receipt}
-                    >
+                    <SectionCard id="tax" title="Tax Settings" description="Configure tax rates and calculation methods" icon={Receipt}>
                         <form onSubmit={submitTax} className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
                                     <Label htmlFor="tax_enabled">Enable Tax Calculation</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Calculate and collect taxes on orders
-                                    </p>
+                                    <p className="text-sm text-muted-foreground">Calculate and collect taxes on orders</p>
                                 </div>
                                 <Switch
                                     id="tax_enabled"
-                                    checked={taxForm.data.tax_enabled}
+                                    checked={taxForm.data.tax_enabled ?? false}
                                     onCheckedChange={(checked) => taxForm.setData('tax_enabled', checked)}
                                 />
                             </div>
@@ -579,7 +531,7 @@ export default function AdminSettings({ settings }: Props) {
                             {taxForm.data.tax_enabled && (
                                 <>
                                     <Separator />
-                                    
+
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div className="space-y-2">
                                             <Label htmlFor="default_tax_rate">Default Tax Rate (%)</Label>
@@ -589,7 +541,7 @@ export default function AdminSettings({ settings }: Props) {
                                                 step="0.01"
                                                 min="0"
                                                 max="100"
-                                                value={taxForm.data.default_tax_rate}
+                                                value={taxForm.data.default_tax_rate ?? ''}
                                                 onChange={(e) => taxForm.setData('default_tax_rate', parseFloat(e.target.value) || 0)}
                                             />
                                         </div>
@@ -597,7 +549,7 @@ export default function AdminSettings({ settings }: Props) {
                                         <div className="space-y-2">
                                             <Label htmlFor="tax_calculation_method">Calculation Based On</Label>
                                             <Select
-                                                value={taxForm.data.tax_calculation_method}
+                                                value={taxForm.data.tax_calculation_method ?? ''}
                                                 onValueChange={(value) => taxForm.setData('tax_calculation_method', value)}
                                             >
                                                 <SelectTrigger>
@@ -615,7 +567,7 @@ export default function AdminSettings({ settings }: Props) {
                                         <Label htmlFor="tax_number">Tax Number / VAT ID</Label>
                                         <Input
                                             id="tax_number"
-                                            value={taxForm.data.tax_number}
+                                            value={taxForm.data.tax_number ?? ''}
                                             onChange={(e) => taxForm.setData('tax_number', e.target.value)}
                                             placeholder="IT12345678901"
                                         />
@@ -625,13 +577,11 @@ export default function AdminSettings({ settings }: Props) {
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-0.5">
                                                 <Label htmlFor="prices_include_tax">Prices Include Tax</Label>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Product prices already include tax
-                                                </p>
+                                                <p className="text-sm text-muted-foreground">Product prices already include tax</p>
                                             </div>
                                             <Switch
                                                 id="prices_include_tax"
-                                                checked={taxForm.data.prices_include_tax}
+                                                checked={taxForm.data.prices_include_tax ?? false}
                                                 onCheckedChange={(checked) => taxForm.setData('prices_include_tax', checked)}
                                             />
                                         </div>
@@ -639,13 +589,11 @@ export default function AdminSettings({ settings }: Props) {
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-0.5">
                                                 <Label htmlFor="collect_tax_for_digital_products">Tax Digital Products</Label>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Collect tax on digital products and services
-                                                </p>
+                                                <p className="text-sm text-muted-foreground">Collect tax on digital products and services</p>
                                             </div>
                                             <Switch
                                                 id="collect_tax_for_digital_products"
-                                                checked={taxForm.data.collect_tax_for_digital_products}
+                                                checked={taxForm.data.collect_tax_for_digital_products ?? false}
                                                 onCheckedChange={(checked) => taxForm.setData('collect_tax_for_digital_products', checked)}
                                             />
                                         </div>
@@ -655,7 +603,7 @@ export default function AdminSettings({ settings }: Props) {
 
                             <div className="flex justify-end pt-4">
                                 <Button type="submit" disabled={taxForm.processing}>
-                                    <Save className="w-4 h-4 mr-2" />
+                                    <Save className="mr-2 h-4 w-4" />
                                     Save Tax Settings
                                 </Button>
                             </div>
@@ -663,19 +611,12 @@ export default function AdminSettings({ settings }: Props) {
                     </SectionCard>
 
                     {/* Email Settings */}
-                    <SectionCard
-                        id="email"
-                        title="Email Settings"
-                        description="Configure email notifications and settings"
-                        icon={Mail}
-                    >
+                    <SectionCard id="email" title="Email Settings" description="Configure email notifications and settings" icon={Mail}>
                         <form onSubmit={submitEmail} className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
                                     <Label htmlFor="email_notifications_enabled">Enable Email Notifications</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Send automated email notifications to customers
-                                    </p>
+                                    <p className="text-sm text-muted-foreground">Send automated email notifications to customers</p>
                                 </div>
                                 <Switch
                                     id="email_notifications_enabled"
@@ -687,7 +628,7 @@ export default function AdminSettings({ settings }: Props) {
                             {emailForm.data.email_notifications_enabled && (
                                 <>
                                     <Separator />
-                                    
+
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div className="space-y-2">
                                             <Label htmlFor="from_email">From Email Address</Label>
@@ -718,23 +659,19 @@ export default function AdminSettings({ settings }: Props) {
                                             onChange={(e) => emailForm.setData('admin_notification_email', e.target.value)}
                                             placeholder="admin@yourstore.com"
                                         />
-                                        <p className="text-sm text-muted-foreground">
-                                            Email address to receive order notifications
-                                        </p>
+                                        <p className="text-sm text-muted-foreground">Email address to receive order notifications</p>
                                     </div>
 
                                     <Separator />
 
                                     <div className="space-y-4">
                                         <h4 className="text-sm font-medium">Customer Email Notifications</h4>
-                                        
+
                                         <div className="space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <div className="space-y-0.5">
                                                     <Label htmlFor="order_confirmation_enabled">Order Confirmation</Label>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Send confirmation when order is placed
-                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">Send confirmation when order is placed</p>
                                                 </div>
                                                 <Switch
                                                     id="order_confirmation_enabled"
@@ -746,9 +683,7 @@ export default function AdminSettings({ settings }: Props) {
                                             <div className="flex items-center justify-between">
                                                 <div className="space-y-0.5">
                                                     <Label htmlFor="order_shipped_enabled">Order Shipped</Label>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Send notification when order is shipped
-                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">Send notification when order is shipped</p>
                                                 </div>
                                                 <Switch
                                                     id="order_shipped_enabled"
@@ -760,9 +695,7 @@ export default function AdminSettings({ settings }: Props) {
                                             <div className="flex items-center justify-between">
                                                 <div className="space-y-0.5">
                                                     <Label htmlFor="order_delivered_enabled">Order Delivered</Label>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Send notification when order is delivered
-                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">Send notification when order is delivered</p>
                                                 </div>
                                                 <Switch
                                                     id="order_delivered_enabled"
@@ -774,9 +707,7 @@ export default function AdminSettings({ settings }: Props) {
                                             <div className="flex items-center justify-between">
                                                 <div className="space-y-0.5">
                                                     <Label htmlFor="order_cancelled_enabled">Order Cancelled</Label>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Send notification when order is cancelled
-                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">Send notification when order is cancelled</p>
                                                 </div>
                                                 <Switch
                                                     id="order_cancelled_enabled"
@@ -792,9 +723,7 @@ export default function AdminSettings({ settings }: Props) {
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <Label htmlFor="newsletter_enabled">Newsletter Subscriptions</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Allow customers to subscribe to marketing emails
-                                            </p>
+                                            <p className="text-sm text-muted-foreground">Allow customers to subscribe to marketing emails</p>
                                         </div>
                                         <Switch
                                             id="newsletter_enabled"
@@ -807,7 +736,7 @@ export default function AdminSettings({ settings }: Props) {
 
                             <div className="flex justify-end pt-4">
                                 <Button type="submit" disabled={emailForm.processing}>
-                                    <Save className="w-4 h-4 mr-2" />
+                                    <Save className="mr-2 h-4 w-4" />
                                     Save Email Settings
                                 </Button>
                             </div>

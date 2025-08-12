@@ -1,20 +1,14 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public-layout';
+import { Head, useForm, usePage } from '@inertiajs/react';
 
-
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-    Mail,
-    Clock,
-    CheckCircle,
-    AlertCircle,
-} from 'lucide-react';
-import { type SharedData } from '@/types';
 import useTranslation from '@/hooks/useTranslation';
+import { type SharedData } from '@/types';
+import { AlertCircle, CheckCircle, Clock, Mail } from 'lucide-react';
 
 interface ContactPageProps extends SharedData {
     errors: Record<string, string>;
@@ -25,7 +19,7 @@ interface ContactPageProps extends SharedData {
 export default function Contact() {
     const { errors, success, error } = usePage<ContactPageProps>().props;
     const { t } = useTranslation();
-    
+
     const { data, setData, post, processing, reset } = useForm({
         firstName: '',
         lastName: '',
@@ -46,112 +40,116 @@ export default function Contact() {
     return (
         <PublicLayout currentPage="contact">
             <Head title="Contact Us - Your Store" />
-            
+
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div className="text-center mb-16">
-                    <h1 className="text-4xl font-bold text-black mb-6">{t('contact.title')}</h1>
-                    <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                        {t('contact.subtitle')}
-                    </p>
+            <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+                <div className="mb-16 text-center">
+                    <h1 className="mb-6 text-4xl font-bold text-black">{t('contact.title')}</h1>
+                    <p className="mx-auto max-w-3xl text-xl text-gray-600">{t('contact.subtitle')}</p>
                 </div>
 
                 {/* Success/Error Messages */}
                 {success && (
-                    <div className="mb-8 max-w-2xl mx-auto">
+                    <div className="mx-auto mb-8 max-w-2xl">
                         <Alert className="border-green-200 bg-green-50">
                             <CheckCircle className="h-4 w-4 text-green-600" />
-                            <AlertDescription className="text-green-800">
-                                {success}
-                            </AlertDescription>
+                            <AlertDescription className="text-green-800">{success}</AlertDescription>
                         </Alert>
                     </div>
                 )}
 
                 {error && (
-                    <div className="mb-8 max-w-2xl mx-auto">
+                    <div className="mx-auto mb-8 max-w-2xl">
                         <Alert className="border-red-200 bg-red-50">
                             <AlertCircle className="h-4 w-4 text-red-600" />
-                            <AlertDescription className="text-red-800">
-                                {error}
-                            </AlertDescription>
+                            <AlertDescription className="text-red-800">{error}</AlertDescription>
                         </Alert>
                     </div>
                 )}
 
-                <div className="grid lg:grid-cols-2 gap-12">
+                <div className="grid gap-12 lg:grid-cols-2">
                     {/* Contact Form */}
                     <div>
-                        <Card className="border border-gray-200 shadow-sm pb-0">
+                        <Card className="border border-gray-200 pb-0 shadow-sm">
                             <CardHeader className="bg-black text-white">
                                 <CardTitle>{t('contact.send_message')}</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-6 p-6 bg-white">
+                            <CardContent className="space-y-6 bg-white p-6">
                                 <form onSubmit={handleSubmit} className="space-y-6">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <Label htmlFor="firstName" className="text-gray-900">{t('contact.first_name')} {t('contact.required_field')}</Label>
-                                            <Input 
-                                                id="firstName" 
+                                            <Label htmlFor="firstName" className="text-gray-900">
+                                                {t('contact.first_name')} {t('contact.required_field')}
+                                            </Label>
+                                            <Input
+                                                id="firstName"
                                                 value={data.firstName}
                                                 onChange={(e) => setData('firstName', e.target.value)}
-                                                placeholder="John" 
+                                                placeholder="John"
                                                 className={`border-gray-300 focus:border-black focus:ring-black ${errors.firstName ? 'border-red-500' : ''}`}
                                                 required
                                             />
-                                            {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
+                                            {errors.firstName && <p className="mt-1 text-sm text-red-500">{errors.firstName}</p>}
                                         </div>
                                         <div>
-                                            <Label htmlFor="lastName" className="text-gray-900">{t('contact.last_name')} {t('contact.required_field')}</Label>
-                                            <Input 
-                                                id="lastName" 
+                                            <Label htmlFor="lastName" className="text-gray-900">
+                                                {t('contact.last_name')} {t('contact.required_field')}
+                                            </Label>
+                                            <Input
+                                                id="lastName"
                                                 value={data.lastName}
                                                 onChange={(e) => setData('lastName', e.target.value)}
-                                                placeholder="Doe" 
+                                                placeholder="Doe"
                                                 className={`border-gray-300 focus:border-black focus:ring-black ${errors.lastName ? 'border-red-500' : ''}`}
                                                 required
                                             />
-                                            {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
+                                            {errors.lastName && <p className="mt-1 text-sm text-red-500">{errors.lastName}</p>}
                                         </div>
                                     </div>
                                     <div>
-                                        <Label htmlFor="email" className="text-gray-900">{t('contact.email')} {t('contact.required_field')}</Label>
-                                        <Input 
-                                            id="email" 
-                                            type="email" 
+                                        <Label htmlFor="email" className="text-gray-900">
+                                            {t('contact.email')} {t('contact.required_field')}
+                                        </Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
                                             value={data.email}
                                             onChange={(e) => setData('email', e.target.value)}
-                                            placeholder="john@example.com" 
+                                            placeholder="john@example.com"
                                             className={`border-gray-300 focus:border-black focus:ring-black ${errors.email ? 'border-red-500' : ''}`}
                                             required
                                         />
-                                        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                                        {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
                                     </div>
                                     <div>
-                                        <Label htmlFor="subject" className="text-gray-900">{t('contact.subject')} {t('contact.required_field')}</Label>
-                                        <Input 
-                                            id="subject" 
+                                        <Label htmlFor="subject" className="text-gray-900">
+                                            {t('contact.subject')} {t('contact.required_field')}
+                                        </Label>
+                                        <Input
+                                            id="subject"
                                             value={data.subject}
                                             onChange={(e) => setData('subject', e.target.value)}
-                                            placeholder="How can we help you?" 
+                                            placeholder="How can we help you?"
                                             className={`border-gray-300 focus:border-black focus:ring-black ${errors.subject ? 'border-red-500' : ''}`}
                                             required
                                         />
-                                        {errors.subject && <p className="text-red-500 text-sm mt-1">{errors.subject}</p>}
+                                        {errors.subject && <p className="mt-1 text-sm text-red-500">{errors.subject}</p>}
                                     </div>
                                     <div>
-                                        <Label htmlFor="message" className="text-gray-900">{t('contact.message')} {t('contact.required_field')}</Label>
-                                        <textarea 
+                                        <Label htmlFor="message" className="text-gray-900">
+                                            {t('contact.message')} {t('contact.required_field')}
+                                        </Label>
+                                        <textarea
                                             id="message"
                                             value={data.message}
                                             onChange={(e) => setData('message', e.target.value)}
-                                            className={`w-full min-h-[120px] px-3 py-2 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-black focus:border-black text-gray-900 ${errors.message ? 'border-red-500' : ''}`}
+                                            className={`min-h-[120px] w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-black focus:ring-2 focus:ring-black focus:outline-none ${errors.message ? 'border-red-500' : ''}`}
                                             placeholder="Tell us more about your inquiry..."
                                             required
                                         />
-                                        {errors.message && <p className="text-red-500 text-sm mt-1">{errors.message}</p>}
+                                        {errors.message && <p className="mt-1 text-sm text-red-500">{errors.message}</p>}
                                     </div>
-                                    <Button 
+                                    <Button
                                         type="submit"
                                         disabled={processing}
                                         className="w-full bg-black text-white hover:bg-gray-900 disabled:opacity-50"
@@ -165,28 +163,28 @@ export default function Contact() {
 
                     {/* Contact Information */}
                     <div className="space-y-8">
-                        <Card className="border border-gray-200 shadow-sm bg-white">
+                        <Card className="border border-gray-200 bg-white shadow-sm">
                             <CardContent className="p-6">
                                 <div className="flex items-start space-x-4">
-                                    <div className="bg-black text-white p-3 rounded-full">
-                                        <Mail className="w-5 h-5" />
+                                    <div className="rounded-full bg-black p-3 text-white">
+                                        <Mail className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-black mb-1">{t('contact.email_us')}</h3>
+                                        <h3 className="mb-1 font-semibold text-black">{t('contact.email_us')}</h3>
                                         <p className="text-gray-600">support@rsp-industries.com</p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className="border border-gray-200 shadow-sm bg-white">
+                        <Card className="border border-gray-200 bg-white shadow-sm">
                             <CardContent className="p-6">
                                 <div className="flex items-start space-x-4">
-                                    <div className="bg-black text-white p-3 rounded-full">
-                                        <Clock className="w-5 h-5" />
+                                    <div className="rounded-full bg-black p-3 text-white">
+                                        <Clock className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-black mb-1">{t('contact.business_hours')}</h3>
+                                        <h3 className="mb-1 font-semibold text-black">{t('contact.business_hours')}</h3>
                                         <p className="text-gray-600">{t('contact.monday_friday')}</p>
                                         <p className="text-gray-600">{t('contact.saturday')}</p>
                                         <p className="text-gray-600">{t('contact.sunday')}</p>

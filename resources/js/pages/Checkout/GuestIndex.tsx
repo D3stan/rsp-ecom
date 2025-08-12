@@ -1,6 +1,5 @@
+import { Head, useForm } from '@inertiajs/react';
 import React, { useState } from 'react';
-import { useForm } from '@inertiajs/react';
-import { Head } from '@inertiajs/react';
 
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -23,8 +22,6 @@ interface CartItem {
     price: number;
     total: number;
 }
-
-
 
 interface Totals {
     subtotal: number;
@@ -82,7 +79,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
         // Guest contact information
         guest_email: '',
         guest_phone: '',
-        
+
         // Billing address
         billing_address: {
             first_name: '',
@@ -94,7 +91,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
             postal_code: '',
             country: 'US',
         },
-        
+
         // Shipping address
         shipping_same_as_billing: true,
         shipping_address: {
@@ -107,19 +104,19 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
             postal_code: '',
             country: 'US',
         },
-        
+
         // Payment options
         payment_method_type: 'card',
         save_payment_info: false,
         promotion_code: '',
-        
+
         // Tax ID collection
         collect_tax_id: false,
         tax_id: '',
-        
+
         // Cart session
         cart_session_id: guestSessionId,
-        
+
         // Terms and conditions
         accept_terms: false,
         marketing_consent: false,
@@ -127,16 +124,16 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         post(route('checkout.guest.session'), {
-            onSuccess: (response: { props?: { checkout_url?: string } }) => {
+            onSuccess: (response: any) => {
                 if (response.props?.checkout_url) {
                     window.location.href = response.props.checkout_url;
                 }
             },
             onError: (errors) => {
                 console.error('Guest checkout failed:', errors);
-            }
+            },
         });
     };
 
@@ -166,19 +163,19 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
     return (
         <>
             <Head title={t('checkout.guest_checkout')} />
-            
+
             <LoadingOverlay isLoading={isLoading} className="min-h-screen bg-gray-50 py-12">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
                         {/* Checkout Form */}
-                        <div className="bg-white rounded-lg shadow-sm p-6">
-                            <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('checkout.guest_checkout')}</h1>
-                            
+                        <div className="rounded-lg bg-white p-6 shadow-sm">
+                            <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('checkout.guest_checkout')}</h1>
+
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 {/* Contact Information */}
                                 <div>
-                                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <h2 className="mb-4 text-lg font-semibold text-gray-900">Contact Information</h2>
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div>
                                             <label htmlFor="guest_email" className="block text-sm font-medium text-gray-700">
                                                 Email Address *
@@ -189,11 +186,9 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                                 required
                                                 value={data.guest_email}
                                                 onChange={(e) => setData('guest_email', e.target.value)}
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                             />
-                                            {errors.guest_email && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.guest_email}</p>
-                                            )}
+                                            {errors.guest_email && <p className="mt-1 text-sm text-red-600">{errors.guest_email}</p>}
                                         </div>
                                         <div>
                                             <label htmlFor="guest_phone" className="block text-sm font-medium text-gray-700">
@@ -204,19 +199,17 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                                 id="guest_phone"
                                                 value={data.guest_phone}
                                                 onChange={(e) => setData('guest_phone', e.target.value)}
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                             />
-                                            {errors.guest_phone && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.guest_phone}</p>
-                                            )}
+                                            {errors.guest_phone && <p className="mt-1 text-sm text-red-600">{errors.guest_phone}</p>}
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Billing Address */}
                                 <div>
-                                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Billing Address</h2>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <h2 className="mb-4 text-lg font-semibold text-gray-900">Billing Address</h2>
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div>
                                             <label htmlFor="billing_first_name" className="block text-sm font-medium text-gray-700">
                                                 First Name *
@@ -227,7 +220,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                                 required
                                                 value={data.billing_address.first_name}
                                                 onChange={(e) => updateBillingAddress('first_name', e.target.value)}
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                             />
                                         </div>
                                         <div>
@@ -240,7 +233,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                                 required
                                                 value={data.billing_address.last_name}
                                                 onChange={(e) => updateBillingAddress('last_name', e.target.value)}
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                             />
                                         </div>
                                         <div className="md:col-span-2">
@@ -253,7 +246,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                                 required
                                                 value={data.billing_address.address_line_1}
                                                 onChange={(e) => updateBillingAddress('address_line_1', e.target.value)}
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                             />
                                         </div>
                                         <div className="md:col-span-2">
@@ -265,7 +258,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                                 id="billing_address_2"
                                                 value={data.billing_address.address_line_2}
                                                 onChange={(e) => updateBillingAddress('address_line_2', e.target.value)}
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                             />
                                         </div>
                                         <div>
@@ -278,7 +271,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                                 required
                                                 value={data.billing_address.city}
                                                 onChange={(e) => updateBillingAddress('city', e.target.value)}
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                             />
                                         </div>
                                         <div>
@@ -291,7 +284,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                                 required
                                                 value={data.billing_address.state}
                                                 onChange={(e) => updateBillingAddress('state', e.target.value)}
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                             />
                                         </div>
                                         <div>
@@ -304,7 +297,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                                 required
                                                 value={data.billing_address.postal_code}
                                                 onChange={(e) => updateBillingAddress('postal_code', e.target.value)}
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                             />
                                         </div>
                                         <div>
@@ -316,7 +309,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                                 required
                                                 value={data.billing_address.country}
                                                 onChange={(e) => updateBillingAddress('country', e.target.value)}
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                             >
                                                 <option value="US">United States</option>
                                                 <option value="CA">Canada</option>
@@ -342,9 +335,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                             }}
                                             className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">
-                                            Shipping address is the same as billing address
-                                        </span>
+                                        <span className="ml-2 text-sm text-gray-700">Shipping address is the same as billing address</span>
                                     </label>
                                 </div>
 
@@ -360,9 +351,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                             }}
                                             className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">
-                                            Provide tax ID for business purchases
-                                        </span>
+                                        <span className="ml-2 text-sm text-gray-700">Provide tax ID for business purchases</span>
                                     </label>
 
                                     <label className="flex items-center">
@@ -375,9 +364,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                             }}
                                             className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">
-                                            I would like to receive marketing emails
-                                        </span>
+                                        <span className="ml-2 text-sm text-gray-700">I would like to receive marketing emails</span>
                                     </label>
 
                                     <label className="flex items-center">
@@ -389,19 +376,21 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                             className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
                                         />
                                         <span className="ml-2 text-sm text-gray-700">
-                                            I accept the <a href="#" className="text-blue-600 hover:text-blue-500">terms and conditions</a> *
+                                            I accept the{' '}
+                                            <a href="#" className="text-blue-600 hover:text-blue-500">
+                                                terms and conditions
+                                            </a>{' '}
+                                            *
                                         </span>
                                     </label>
-                                    {errors.accept_terms && (
-                                        <p className="text-sm text-red-600">{errors.accept_terms}</p>
-                                    )}
+                                    {errors.accept_terms && <p className="text-sm text-red-600">{errors.accept_terms}</p>}
                                 </div>
 
                                 {/* Submit Button */}
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="w-full bg-blue-600 border border-transparent rounded-md py-3 px-4 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full rounded-md border border-transparent bg-blue-600 px-4 py-3 text-base font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {processing ? 'Processing...' : 'Continue to Payment'}
                                 </button>
@@ -409,36 +398,26 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                         </div>
 
                         {/* Order Summary */}
-                        <div className="bg-white rounded-lg shadow-sm p-6 h-fit">
-                            <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
-                            
+                        <div className="h-fit rounded-lg bg-white p-6 shadow-sm">
+                            <h2 className="mb-4 text-lg font-semibold text-gray-900">Order Summary</h2>
+
                             {/* Cart Items */}
-                            <div className="space-y-4 mb-6">
+                            <div className="mb-6 space-y-4">
                                 {cartItems.map((item) => (
                                     <div key={item.id} className="flex items-start space-x-4">
-                                        <img
-                                            src={getImageSrc(item)}
-                                            alt={item.product.name}
-                                            className="w-16 h-16 object-cover rounded-md"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="text-sm font-medium text-gray-900">
-                                                {item.product.name}
-                                            </h3>
-                                            {item.size && (
-                                                <p className="text-sm text-gray-500">Size: {item.size.name}</p>
-                                            )}
+                                        <img src={getImageSrc(item)} alt={item.product.name} className="h-16 w-16 rounded-md object-cover" />
+                                        <div className="min-w-0 flex-1">
+                                            <h3 className="text-sm font-medium text-gray-900">{item.product.name}</h3>
+                                            {item.size && <p className="text-sm text-gray-500">Size: {item.size.name}</p>}
                                             <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                                         </div>
-                                        <div className="text-sm font-medium text-gray-900">
-                                            ${item.total.toFixed(2)}
-                                        </div>
+                                        <div className="text-sm font-medium text-gray-900">${item.total.toFixed(2)}</div>
                                     </div>
                                 ))}
                             </div>
 
                             {/* Totals */}
-                            <div className="border-t border-gray-200 pt-4 space-y-2">
+                            <div className="space-y-2 border-t border-gray-200 pt-4">
                                 <div className="flex justify-between text-sm text-gray-600">
                                     <span>Subtotal</span>
                                     <span>${totals.subtotal.toFixed(2)}</span>
@@ -451,7 +430,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                     <span>Tax</span>
                                     <span>${totals.tax_amount.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-base font-medium text-gray-900 border-t border-gray-200 pt-2">
+                                <div className="flex justify-between border-t border-gray-200 pt-2 text-base font-medium text-gray-900">
                                     <span>Total</span>
                                     <span>${totals.total.toFixed(2)}</span>
                                 </div>

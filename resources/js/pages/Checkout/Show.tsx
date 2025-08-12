@@ -1,11 +1,10 @@
-import React from 'react';
-import { Head, Link } from '@inertiajs/react';
 import Header from '@/components/header';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle, CreditCard, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { AlertCircle, CheckCircle, Clock, CreditCard, XCircle } from 'lucide-react';
 
 interface OrderItem {
     id: number;
@@ -97,235 +96,213 @@ export default function CheckoutShow({ session, order }: Props) {
         <>
             <Head title="Checkout Session" />
             <Header />
-            
+
             <div className="min-h-screen bg-white">
-                <div className="container mx-auto px-4 py-8 max-w-4xl">
+                <div className="container mx-auto max-w-4xl px-4 py-8">
                     {/* Header */}
                     <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Checkout Session</h1>
+                        <h1 className="mb-2 text-3xl font-bold text-gray-900">Checkout Session</h1>
                         <p className="text-gray-600">
                             Session ID: <span className="font-mono text-sm">{session.id}</span>
                         </p>
                     </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Session Details */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Session Status */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <CreditCard className="h-5 w-5" />
-                                    Session Status
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Session Status</span>
-                                        <div className="flex items-center gap-2">
-                                            {getStatusIcon(session.status)}
-                                            <Badge className={getStatusColor(session.status)}>
-                                                {session.status}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Payment Status</span>
-                                        <Badge className={getPaymentStatusColor(session.payment_status)}>
-                                            {session.payment_status}
-                                        </Badge>
-                                    </div>
-
-                                    {session.customer_email && (
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-gray-600">Customer Email</span>
-                                            <span className="text-sm">{session.customer_email}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Order Details (if available) */}
-                        {order && (
+                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                        {/* Session Details */}
+                        <div className="space-y-6 lg:col-span-2">
+                            {/* Session Status */}
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Order Details</CardTitle>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <CreditCard className="h-5 w-5" />
+                                        Session Status
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-gray-600">Order Number</span>
-                                            <span className="font-mono text-sm">#{order.id.toString().padStart(6, '0')}</span>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-gray-600">Session Status</span>
+                                            <div className="flex items-center gap-2">
+                                                {getStatusIcon(session.status)}
+                                                <Badge className={getStatusColor(session.status)}>{session.status}</Badge>
+                                            </div>
                                         </div>
 
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-gray-600">Order Status</span>
-                                            <Badge variant="secondary">{order.status}</Badge>
-                                        </div>
-
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex items-center justify-between">
                                             <span className="text-sm text-gray-600">Payment Status</span>
-                                            <Badge variant="secondary">{order.payment_status}</Badge>
+                                            <Badge className={getPaymentStatusColor(session.payment_status)}>{session.payment_status}</Badge>
                                         </div>
 
-                                        <Separator />
+                                        {session.customer_email && (
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-600">Customer Email</span>
+                                                <span className="text-sm">{session.customer_email}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
 
-                                        {/* Order Items */}
-                                        <div className="space-y-3">
-                                            <h4 className="font-medium">Items</h4>
-                                            {order.orderItems.map((item) => (
-                                                <div key={item.id} className="flex items-center space-x-3 py-2">
-                                                    <img
-                                                        src={getImageSrc(item)}
-                                                        alt={item.product.name}
-                                                        className="h-12 w-12 rounded object-cover"
-                                                    />
-                                                    <div className="flex-1">
-                                                        <h5 className="font-medium text-sm">{item.product.name}</h5>
-                                                        {item.size && (
-                                                            <p className="text-xs text-gray-600">Size: {item.size.name}</p>
-                                                        )}
-                                                        <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                            {/* Order Details (if available) */}
+                            {order && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Order Details</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-600">Order Number</span>
+                                                <span className="font-mono text-sm">#{order.id.toString().padStart(6, '0')}</span>
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-600">Order Status</span>
+                                                <Badge variant="secondary">{order.status}</Badge>
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm text-gray-600">Payment Status</span>
+                                                <Badge variant="secondary">{order.payment_status}</Badge>
+                                            </div>
+
+                                            <Separator />
+
+                                            {/* Order Items */}
+                                            <div className="space-y-3">
+                                                <h4 className="font-medium">Items</h4>
+                                                {order.orderItems.map((item) => (
+                                                    <div key={item.id} className="flex items-center space-x-3 py-2">
+                                                        <img
+                                                            src={getImageSrc(item)}
+                                                            alt={item.product.name}
+                                                            className="h-12 w-12 rounded object-cover"
+                                                        />
+                                                        <div className="flex-1">
+                                                            <h5 className="text-sm font-medium">{item.product.name}</h5>
+                                                            {item.size && <p className="text-xs text-gray-600">Size: {item.size.name}</p>}
+                                                            <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                                                        </div>
+                                                        <p className="font-medium">${item.total.toFixed(2)}</p>
                                                     </div>
-                                                    <p className="font-medium">${item.total.toFixed(2)}</p>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
 
-                        {/* Status-based Actions */}
-                        {session.status === 'open' && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Action Required</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        <p className="text-sm text-gray-600">
-                                            This checkout session is still open. You can complete your payment or cancel the session.
-                                        </p>
-                                        <div className="flex gap-4">
+                            {/* Status-based Actions */}
+                            {session.status === 'open' && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Action Required</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            <p className="text-sm text-gray-600">
+                                                This checkout session is still open. You can complete your payment or cancel the session.
+                                            </p>
+                                            <div className="flex gap-4">
+                                                <Button asChild>
+                                                    <Link href={route('checkout')}>Complete Payment</Link>
+                                                </Button>
+                                                <Button variant="outline" asChild>
+                                                    <Link href={route('checkout.cancel', { session_id: session.id })}>Cancel Session</Link>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {session.status === 'expired' && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Session Expired</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-4">
+                                            <p className="text-sm text-gray-600">
+                                                This checkout session has expired. You can start a new checkout process.
+                                            </p>
                                             <Button asChild>
-                                                <Link href={route('checkout')}>
-                                                    Complete Payment
-                                                </Link>
-                                            </Button>
-                                            <Button variant="outline" asChild>
-                                                <Link href={route('checkout.cancel', { session_id: session.id })}>
-                                                    Cancel Session
-                                                </Link>
+                                                <Link href={route('checkout')}>Start New Checkout</Link>
                                             </Button>
                                         </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
 
-                        {session.status === 'expired' && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Session Expired</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        <p className="text-sm text-gray-600">
-                                            This checkout session has expired. You can start a new checkout process.
-                                        </p>
-                                        <Button asChild>
-                                            <Link href={route('checkout')}>
-                                                Start New Checkout
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
+                        {/* Order Summary Sidebar (if order exists) */}
+                        {order && (
+                            <div>
+                                <Card className="sticky top-8">
+                                    <CardHeader>
+                                        <CardTitle>Order Summary</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between">
+                                                <span className="text-sm">Subtotal</span>
+                                                <span className="text-sm">${order.subtotal.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-sm">Shipping</span>
+                                                <span className="text-sm">
+                                                    {order.shipping_cost === 0 ? 'Free' : `$${order.shipping_cost.toFixed(2)}`}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-sm">Tax</span>
+                                                <span className="text-sm">${order.tax_amount.toFixed(2)}</span>
+                                            </div>
+                                            <Separator />
+                                            <div className="flex justify-between text-lg font-bold">
+                                                <span>Total</span>
+                                                <span>${order.total_amount.toFixed(2)}</span>
+                                            </div>
+                                        </div>
 
-                    {/* Order Summary Sidebar (if order exists) */}
-                    {order && (
-                        <div>
-                            <Card className="sticky top-8">
-                                <CardHeader>
-                                    <CardTitle>Order Summary</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-sm">Subtotal</span>
-                                            <span className="text-sm">${order.subtotal.toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-sm">Shipping</span>
-                                            <span className="text-sm">
-                                                {order.shipping_cost === 0 ? 'Free' : `$${order.shipping_cost.toFixed(2)}`}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-sm">Tax</span>
-                                            <span className="text-sm">${order.tax_amount.toFixed(2)}</span>
-                                        </div>
                                         <Separator />
-                                        <div className="flex justify-between font-bold text-lg">
-                                            <span>Total</span>
-                                            <span>${order.total_amount.toFixed(2)}</span>
+
+                                        <div className="space-y-3">
+                                            <Button variant="outline" asChild className="w-full">
+                                                <Link href={route('dashboard')}>View Orders</Link>
+                                            </Button>
+                                            <Button variant="ghost" asChild className="w-full">
+                                                <Link href={route('products')}>Continue Shopping</Link>
+                                            </Button>
                                         </div>
-                                    </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
 
-                                    <Separator />
-
-                                    <div className="space-y-3">
+                        {/* Navigation Sidebar (if no order) */}
+                        {!order && (
+                            <div>
+                                <Card className="sticky top-8">
+                                    <CardHeader>
+                                        <CardTitle>Navigation</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <Button asChild className="w-full">
+                                            <Link href={route('cart')}>View Cart</Link>
+                                        </Button>
                                         <Button variant="outline" asChild className="w-full">
-                                            <Link href={route('dashboard')}>
-                                                View Orders
-                                            </Link>
+                                            <Link href={route('products')}>Continue Shopping</Link>
                                         </Button>
                                         <Button variant="ghost" asChild className="w-full">
-                                            <Link href={route('products')}>
-                                                Continue Shopping
-                                            </Link>
+                                            <Link href={route('dashboard')}>Dashboard</Link>
                                         </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
-
-                    {/* Navigation Sidebar (if no order) */}
-                    {!order && (
-                        <div>
-                            <Card className="sticky top-8">
-                                <CardHeader>
-                                    <CardTitle>Navigation</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <Button asChild className="w-full">
-                                        <Link href={route('cart')}>
-                                            View Cart
-                                        </Link>
-                                    </Button>
-                                    <Button variant="outline" asChild className="w-full">
-                                        <Link href={route('products')}>
-                                            Continue Shopping
-                                        </Link>
-                                    </Button>
-                                    <Button variant="ghost" asChild className="w-full">
-                                        <Link href={route('dashboard')}>
-                                            Dashboard
-                                        </Link>
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
             </div>
         </>
     );

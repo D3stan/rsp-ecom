@@ -1,5 +1,6 @@
-import React from 'react';
 import { Head, Link } from '@inertiajs/react';
+import React from 'react';
+import AppLayout from '@/layouts/app-layout';
 
 // Simple currency formatter
 const formatCurrency = (amount: string | number) => {
@@ -34,27 +35,23 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
     const getStatusBadge = (status: string) => {
         const statusClasses = {
             active: 'bg-green-100 text-green-800',
-            canceled: 'bg-red-100 text-red-800', 
+            canceled: 'bg-red-100 text-red-800',
             past_due: 'bg-yellow-100 text-yellow-800',
             incomplete: 'bg-gray-100 text-gray-800',
             trialing: 'bg-blue-100 text-blue-800',
         };
 
         return (
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClasses[status as keyof typeof statusClasses] || 'bg-gray-100 text-gray-800'}`}>
+            <span
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClasses[status as keyof typeof statusClasses] || 'bg-gray-100 text-gray-800'}`}
+            >
                 {status}
             </span>
         );
     };
 
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    My Subscriptions
-                </h2>
-            }
-        >
+        <AppLayout>
             <Head title="My Subscriptions" />
 
             <div className="py-12">
@@ -62,7 +59,7 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
                             {subscriptions.length === 0 ? (
-                                <div className="text-center py-12">
+                                <div className="py-12 text-center">
                                     <svg
                                         className="mx-auto h-12 w-12 text-gray-400"
                                         fill="none"
@@ -78,13 +75,11 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
                                         />
                                     </svg>
                                     <h3 className="mt-2 text-sm font-medium text-gray-900">No subscriptions</h3>
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        You don't have any active subscriptions yet.
-                                    </p>
+                                    <p className="mt-1 text-sm text-gray-500">You don't have any active subscriptions yet.</p>
                                     <div className="mt-6">
                                         <Link
                                             href="/products"
-                                            className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                            className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                                         >
                                             Browse Products
                                         </Link>
@@ -96,7 +91,7 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
                                         <h3 className="text-lg font-medium text-gray-900">Your Subscriptions</h3>
                                         <Link
                                             href="/products"
-                                            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                                         >
                                             Browse More Products
                                         </Link>
@@ -104,25 +99,16 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
 
                                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                                         {subscriptions.map((subscription) => (
-                                            <div
-                                                key={subscription.id}
-                                                className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow"
-                                            >
+                                            <div key={subscription.id} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
                                                 <div className="p-6">
                                                     <div className="flex items-center justify-between">
-                                                        <h4 className="text-lg font-medium text-gray-900">
-                                                            {subscription.name}
-                                                        </h4>
+                                                        <h4 className="text-lg font-medium text-gray-900">{subscription.name}</h4>
                                                         {getStatusBadge(subscription.stripe_status)}
                                                     </div>
-                                                    
+
                                                     <div className="mt-4 space-y-2">
-                                                        <p className="text-sm text-gray-600">
-                                                            Price: {formatCurrency(subscription.stripe_price)}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600">
-                                                            Quantity: {subscription.quantity}
-                                                        </p>
+                                                        <p className="text-sm text-gray-600">Price: {formatCurrency(subscription.stripe_price)}</p>
+                                                        <p className="text-sm text-gray-600">Quantity: {subscription.quantity}</p>
                                                         <p className="text-sm text-gray-600">
                                                             Started: {new Date(subscription.created_at).toLocaleDateString()}
                                                         </p>
@@ -147,7 +133,7 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
                                                                         window.location.href = `/subscription/cancel?subscription_id=${subscription.id}`;
                                                                     }
                                                                 }}
-                                                                className="flex-1 rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                                                className="flex-1 rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-50 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none"
                                                             >
                                                                 Cancel
                                                             </button>
@@ -157,7 +143,7 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
                                                                 onClick={() => {
                                                                     window.location.href = `/subscription/resume?subscription_id=${subscription.id}`;
                                                                 }}
-                                                                className="flex-1 rounded-md border border-transparent bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                                                className="flex-1 rounded-md border border-transparent bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                                                             >
                                                                 Resume
                                                             </button>
@@ -173,7 +159,7 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </AppLayout>
     );
 };
 
