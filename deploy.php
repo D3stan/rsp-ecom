@@ -57,12 +57,16 @@ task('laravel:generate-sitemap', function () {
     run('cd {{release_path}} && php artisan generate:sitemap-index');
 });
 
+task('vite:build', function () {
+    run('cd {{release_path}} && npm install && npm run build');
+});
+
 after('deploy:shared', 'deploy:vendors');         // Install composer dependencies
 after('deploy:vendors', 'laravel:optimize');      // Run Laravel cache commands
 after('deploy:vendors', 'laravel:migrate');       // Run migrations (optional)
 after('deploy:unlock', 'laravel:restart');        // Restart app
 after('laravel:restart', 'laravel:generate-sitemap'); // Generate sitemap after deployment
-
+after('laravel:restart', 'vite:build'); // Build Vite assets after deployment
 
 // Laravel options
 
