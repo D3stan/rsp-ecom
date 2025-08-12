@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Package, Truck, CreditCard, User, Mail } from 'lucide-react';
 import useTranslation from '@/hooks/useTranslation';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 interface OrderItem {
     id: number | string;
@@ -63,6 +64,9 @@ interface Props {
 export default function CheckoutSuccess({ order, session, isGuest, user }: Props) {
     const { t } = useTranslation();
     
+    // Add loading state for when order is still being processed
+    const isLoading = order.id === 'pending';
+    
     // Image handling helper
     const getImageSrc = (item: OrderItem) => {
         return item.product.image_url || '/images/product.png';
@@ -73,7 +77,8 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
             <Head title="Order Confirmation" />
             <Header />
             
-            <div className="min-h-screen bg-white">
+            <LoadingOverlay isLoading={isLoading}>
+                <div className="min-h-screen bg-white">
                 <div className="container mx-auto px-4 py-8 max-w-4xl">
                     {/* Success Header */}
                     <div className="text-center mb-8">
@@ -152,8 +157,8 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                     {isGuest && (
                                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                             <p className="text-sm text-blue-800">
-                                                <strong>Guest Order:</strong> You can track this order using the order number above. 
-                                                Consider <Link href={route('register')} className="underline">creating an account</Link> for easier order management.
+                                                {t('checkout.success.guest_order_notice')} {' '}
+                                                <Link href={route('register')} className="underline">{t('checkout.success.creating_account')}</Link> for easier order management.
                                             </p>
                                         </div>
                                     )}
@@ -164,7 +169,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                         {/* Order Items */}
                         <Card className='bg-white shadow-sm'>
                             <CardHeader className='text-black'>
-                                <CardTitle>Items Ordered</CardTitle>
+                                <CardTitle>{t('checkout.success.items_ordered')}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4 text-black">
@@ -179,20 +184,20 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                                 <div className="flex-1">
                                                     <h4 className="font-medium">{item.product.name}</h4>
                                                     {item.size && (
-                                                        <p className="text-sm text-gray-600">Size: {item.size.name}</p>
+                                                        <p className="text-sm text-gray-600">{t('checkout.success.size')}: {item.size.name}</p>
                                                     )}
-                                                    <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                                                    <p className="text-sm text-gray-600">{t('checkout.success.qty')}: {item.quantity}</p>
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="font-medium">€{(item.quantity * item.price).toFixed(2)}</p>
-                                                    {item.quantity > 1 && <p className="text-sm text-gray-600">€{item.price.toFixed(2)} each</p>}
+                                                    {item.quantity > 1 && <p className="text-sm text-gray-600">€{item.price.toFixed(2)} {t('checkout.success.each')}</p>}
                                                 </div>
                                             </div>
                                         ))
                                     ) : (
                                         <div className="text-center py-8 text-gray-500">
                                             <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                                            <p>Order items are being processed...</p>
+                                            <p>{t('checkout.success.processing_items')}</p>
                                         </div>
                                     )}
                                 </div>
@@ -204,7 +209,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-black">
                                     <Truck className="h-5 w-5" />
-                                    What's Next?
+                                    {t('checkout.success.whats_next')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -214,9 +219,9 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                             <span className="text-xs font-medium text-blue-600">1</span>
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-700">Order Confirmation</p>
+                                            <p className="font-medium text-gray-700">{t('checkout.success.step_1_title')}</p>
                                             <p className="text-sm text-gray-600">
-                                                You'll receive a confirmation email shortly with your order details.
+                                                {t('checkout.success.step_1_desc')}
                                             </p>
                                         </div>
                                     </div>
@@ -225,9 +230,9 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                             <span className="text-xs font-medium text-gray-600">2</span>
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-700">Processing</p>
+                                            <p className="font-medium text-gray-700">{t('checkout.success.step_2_title')}</p>
                                             <p className="text-sm text-gray-600">
-                                                We'll prepare your order for shipment within 1-2 business days.
+                                                {t('checkout.success.step_2_desc')}
                                             </p>
                                         </div>
                                     </div>
@@ -236,9 +241,9 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                             <span className="text-xs font-medium text-gray-600">3</span>
                                         </div>
                                         <div>
-                                            <p className="font-medium text-gray-700">Shipping</p>
+                                            <p className="font-medium text-gray-700">{t('checkout.success.step_3_title')}</p>
                                             <p className="text-sm text-gray-600">
-                                                You'll receive tracking information once your order ships.
+                                                {t('checkout.success.step_3_desc')}
                                             </p>
                                         </div>
                                     </div>
@@ -253,25 +258,25 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <CreditCard className="h-5 w-5" />
-                                    Order Summary
+                                    {t('checkout.success.order_summary')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {/* Totals */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between">
-                                        <span className="text-sm">Subtotal</span>
+                                        <span className="text-sm">{t('checkout.success.subtotal')}</span>
                                         <span className="text-sm">€{((order.subtotal || 0) + (order.tax_amount || 0)).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-sm">Shipping</span>
+                                        <span className="text-sm">{t('checkout.success.shipping')}</span>
                                         <span className="text-sm">
-                                            {(order.shipping_cost || 0) === 0 ? 'Free' : `€${(order.shipping_cost || 0).toFixed(2)}`}
+                                            {(order.shipping_cost || 0) === 0 ? t('checkout.success.free') : `€${(order.shipping_cost || 0).toFixed(2)}`}
                                         </span>
                                     </div>
                                     <Separator />
                                     <div className="flex justify-between font-bold text-lg">
-                                        <span>Total</span>
+                                        <span>{t('checkout.success.total')}</span>
                                         <span>€{(order.total_amount || 0).toFixed(2)}</span>
                                     </div>
                                 </div>
@@ -282,7 +287,7 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                 <div className="space-y-3">
                                     <Button asChild className="w-full">
                                         <Link href={route('products')}>
-                                            Continue Shopping
+                                            {t('checkout.success.continue_shopping')}
                                         </Link>
                                     </Button>
                                     
@@ -290,13 +295,13 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                     {isGuest ? (
                                         <Button variant="outline" asChild className="w-full">
                                             <Link href={route('register')}>
-                                                Create Account
+                                                {t('checkout.success.create_account')}
                                             </Link>
                                         </Button>
                                     ) : (
                                         <Button variant="outline" asChild className="w-full">
                                             <Link href={route('dashboard')}>
-                                                View Order History
+                                                {t('checkout.success.view_order_history')}
                                             </Link>
                                         </Button>
                                     )}
@@ -305,11 +310,11 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                 {/* Support */}
                                 <div className="pt-4 border-t">
                                     <p className="text-xs text-gray-300 text-center">
-                                        Need help? <Link href={route('contact')} className="underline">Contact Support</Link>
+                                        {t('checkout.success.need_help')} <Link href={route('contact')} className="underline">Contact Support</Link>
                                     </p>
                                     {isGuest && (
                                         <p className="text-xs text-gray-400 text-center mt-2">
-                                            Save your order number for future reference
+                                            {t('checkout.success.save_order_number')}
                                         </p>
                                     )}
                                 </div>
@@ -317,8 +322,9 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                         </Card>
                     </div>
                 </div>
+                </div>
             </div>
-            </div>
+            </LoadingOverlay>
         </>
     );
 }
