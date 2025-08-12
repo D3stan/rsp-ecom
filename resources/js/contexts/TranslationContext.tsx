@@ -48,14 +48,14 @@ export function TranslationProvider({
         setTranslations(initialTranslations);
       }
     }
-  }, [initialTranslations, initialLocale]);
+  }, [initialTranslations, initialLocale, locale]);
 
   // Load translations when locale changes
   useEffect(() => {
     if (locale !== initialLocale || Object.keys(translations).length === 0) {
       loadTranslations(locale);
     }
-  }, [locale, initialLocale]);
+  }, [locale, initialLocale, translations]);
 
   const loadTranslations = async (newLocale: string) => {
     // Check cache first

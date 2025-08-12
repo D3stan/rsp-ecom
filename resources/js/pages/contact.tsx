@@ -1,7 +1,7 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public-layout';
-import Header from '@/components/header';
-import LoadingOverlay from '@/components/LoadingOverlay';
+
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
     Mail,
-    Phone,
     Clock,
     CheckCircle,
     AlertCircle,
@@ -25,7 +24,7 @@ interface ContactPageProps extends SharedData {
 
 export default function Contact() {
     const { errors, success, error } = usePage<ContactPageProps>().props;
-    const { t, isLoading } = useTranslation();
+    const { t } = useTranslation();
     
     const { data, setData, post, processing, reset } = useForm({
         firstName: '',

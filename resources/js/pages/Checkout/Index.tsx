@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import Header from '@/components/header';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
@@ -221,7 +221,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
                         <h1 className="text-3xl font-bold text-gray-900">{t('checkout.title')}</h1>
                         <p className="text-gray-600">{t('checkout.complete_your_order')}</p>
                     </div>
-
+                </div>
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Form */}
                     <div className="lg:col-span-2">

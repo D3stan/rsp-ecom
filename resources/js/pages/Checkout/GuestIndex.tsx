@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import { Head } from '@inertiajs/react';
-import Header from '@/components/header';
+
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { useTranslation } from '@/hooks/useTranslation';
 

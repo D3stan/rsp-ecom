@@ -12,7 +12,7 @@ import { ToastContainer } from './components/Toast';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 // Wrapper component to access Inertia props
-function AppWrapper({ Component, props }: { Component: React.ComponentType<any>, props: any }) {
+function AppWrapper({ Component, props }: { Component: React.ComponentType<Record<string, unknown>>, props: Record<string, unknown> }) {
     const translations = props.translations || {};
     const locale = props.locale || 'en';
     
