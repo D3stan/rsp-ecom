@@ -231,6 +231,9 @@ class GoogleAuthTest extends TestCase
         $user->refresh();
         $this->assertNull($user->google_id);
         $this->assertNull($user->avatar);
+        
+        // Test that has_password accessor works correctly
+        $this->assertTrue($user->has_password);
     }
 
     public function test_user_cannot_unlink_google_without_password(): void
@@ -248,6 +251,9 @@ class GoogleAuthTest extends TestCase
 
         $user->refresh();
         $this->assertNotNull($user->google_id);
+        
+        // Test that has_password accessor works correctly
+        $this->assertFalse($user->has_password);
     }
 
     public function test_guest_cannot_unlink_google_account(): void

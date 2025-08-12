@@ -55,6 +55,23 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
+    /**
+     * Get the attributes that should be appended to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = ['has_password'];
+
+    /**
+     * Determine if the user has a password set.
+     *
+     * @return bool
+     */
+    public function getHasPasswordAttribute(): bool
+    {
+        return !is_null($this->password);
+    }
+
     // Relationships
     public function addresses(): HasMany
     {

@@ -10,11 +10,11 @@ export default function GoogleAccountSettings() {
     const { auth } = usePage<SharedData>().props;
     const user = auth.user!;
     
-    const { delete: deleteRequest, processing } = useForm();
+    const { post, processing } = useForm();
 
     const handleUnlinkGoogle = () => {
         if (confirm('Are you sure you want to unlink your Google account? You will need to set a password to continue logging in.')) {
-            deleteRequest(route('auth.google.unlink'));
+            post(route('auth.google.unlink'));
         }
     };
 
@@ -62,7 +62,7 @@ export default function GoogleAccountSettings() {
                                 variant="outline" 
                                 size="sm"
                                 onClick={handleUnlinkGoogle}
-                                disabled={processing || !user.password}
+                                disabled={processing || !user.has_password}
                             >
                                 Unlink
                             </Button>
@@ -101,7 +101,7 @@ export default function GoogleAccountSettings() {
                         </div>
                     )}
                     
-                    {user.google_id && !user.password && (
+                    {user.google_id && !user.has_password && (
                         <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
                             <p className="text-sm text-amber-800">
                                 <strong>Note:</strong> You need to set a password before you can unlink your Google account.

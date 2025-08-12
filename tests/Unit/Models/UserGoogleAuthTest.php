@@ -68,4 +68,34 @@ class UserGoogleAuthTest extends TestCase
         $this->assertEquals('https://example.com/avatar.jpg', $user->avatar);
         $this->assertNull($user->password);
     }
+
+    public function test_has_password_accessor_returns_true_when_password_exists(): void
+    {
+        $user = User::factory()->create([
+            'password' => bcrypt('password'),
+        ]);
+
+        $this->assertTrue($user->has_password);
+    }
+
+    public function test_has_password_accessor_returns_false_when_password_is_null(): void
+    {
+        $user = User::factory()->create([
+            'password' => null,
+        ]);
+
+        $this->assertFalse($user->has_password);
+    }
+
+    public function test_has_password_accessor_is_appended_to_array(): void
+    {
+        $user = User::factory()->create([
+            'password' => bcrypt('password'),
+        ]);
+
+        $userArray = $user->toArray();
+        
+        $this->assertArrayHasKey('has_password', $userArray);
+        $this->assertTrue($userArray['has_password']);
+    }
 }

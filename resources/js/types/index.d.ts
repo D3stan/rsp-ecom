@@ -47,6 +47,7 @@ export interface User {
     updated_at: string;
     google_id?: string | null;
     password?: string | null;
+    has_password: boolean;
     role?: string;
     is_active?: boolean;
     [key: string]: unknown; // This allows for additional properties...
