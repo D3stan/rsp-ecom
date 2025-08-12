@@ -6,7 +6,7 @@ import { cartService } from '@/services/cartService';
 import { type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { Globe, Heart, HelpCircle, Menu, Package, ShoppingCart, User, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface HeaderProps {
     currentPage?: 'home' | 'products' | 'about' | 'contact';
@@ -40,11 +40,33 @@ export default function Header({ transparent = false }: HeaderProps) {
     useEffect(() => {
         if (!transparent) return;
 
+        let ticking = false;
+        let lastScrollY = window.scrollY;
+        
         const handleScroll = () => {
-            const scrollPosition = window.scrollY;
-            // Change to solid background after scrolling past the hero section (roughly 100vh - header height)
-            const heroHeight = window.innerHeight - 64;
-            setIsScrolled(scrollPosition > heroHeight);
+            const currentScrollY = window.scrollY;
+            
+            // Only process if scroll has changed significantly to reduce re-renders
+            if (Math.abs(currentScrollY - lastScrollY) < 5 && ticking) return;
+            
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    const scrollPosition = window.scrollY;
+                    const heroHeight = window.innerHeight - 64;
+                    const newIsScrolled = scrollPosition > heroHeight;
+                    
+                    // Only update state if it actually changed
+                    setIsScrolled(prev => {
+                        if (prev !== newIsScrolled) {
+                            lastScrollY = scrollPosition;
+                            return newIsScrolled;
+                        }
+                        return prev;
+                    });
+                    ticking = false;
+                });
+                ticking = true;
+            }
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
@@ -83,8 +105,10 @@ export default function Header({ transparent = false }: HeaderProps) {
         };
     }, []);
 
-    // Close menu when clicking outside
+    // Close menu when clicking outside - optimized to prevent scroll interference
     useEffect(() => {
+        if (!isMenuOpen) return;
+
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 // Don't close if clicking on the menu button
@@ -96,34 +120,47 @@ export default function Header({ transparent = false }: HeaderProps) {
             }
         };
 
-        if (isMenuOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-            // Prevent body scroll when menu is open on mobile
-            if (window.innerWidth < 768) {
-                document.body.style.overflow = 'hidden';
-            }
-        } else {
-            document.body.style.overflow = 'auto';
+        // Prevent body scroll when menu is open on mobile with optimized class
+        if (window.innerWidth < 768) {
+            document.body.classList.add('menu-open');
+            document.body.style.overflow = 'hidden';
         }
+
+        document.addEventListener('mousedown', handleClickOutside);
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+            document.body.classList.remove('menu-open');
             document.body.style.overflow = 'auto';
         };
     }, [isMenuOpen]);
 
-    const closeMenu = () => setIsMenuOpen(false);
+    const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
-    // Determine if header should use dark theme (transparent + not scrolled) or light theme
-    const isDarkTheme = transparent && !isScrolled;
-    const headerBg = transparent
-        ? isScrolled
-            ? 'bg-white/95 backdrop-blur-md border-gray-200'
-            : 'bg-transparent backdrop-blur-md border-white/20'
-        : 'bg-white/95 backdrop-blur-md border-gray-200';
+    // Memoize theme and style calculations to prevent unnecessary re-renders
+    const isDarkTheme = useMemo(() => transparent && !isScrolled, [transparent, isScrolled]);
+    
+    const headerBg = useMemo(() => {
+        return transparent
+            ? isScrolled
+                ? 'bg-white/95 backdrop-blur-md border-gray-200'
+                : 'bg-transparent backdrop-blur-md border-white/20'
+            : 'bg-white/95 backdrop-blur-md border-gray-200';
+    }, [transparent, isScrolled]);
 
-    // Cart button animation classes
-    const getCartButtonClasses = () => {
+    // Memoize menu classes to prevent animation glitches
+    const menuClasses = useMemo(() => {
+        const baseClasses = 'mobile-menu mobile-menu-transition fixed top-0 right-0 z-50 h-screen w-80 max-w-[85vw] overflow-hidden bg-white shadow-lg transition-transform duration-300 ease-in-out md:absolute md:top-full md:right-0 md:h-auto md:w-64 md:rounded-lg md:border md:border-gray-200 md:shadow-xl';
+        const transformClasses = isMenuOpen 
+            ? 'translate-x-0 translate-y-0' 
+            : 'translate-x-full md:translate-x-0 md:-translate-y-full';
+        const visibilityClasses = !isMenuOpen ? 'md:hidden' : 'md:block';
+        
+        return `${baseClasses} ${transformClasses} ${visibilityClasses}`;
+    }, [isMenuOpen]);
+
+    // Cart button animation classes - memoized to prevent re-renders
+    const cartButtonClasses = useMemo(() => {
         const baseClasses = `relative transition-all duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100 border-gray-200'}`;
 
         if (cartAnimation === 'success') {
@@ -133,7 +170,7 @@ export default function Header({ transparent = false }: HeaderProps) {
         }
 
         return baseClasses;
-    };
+    }, [isDarkTheme, cartAnimation]);
 
     return (
         <header className={`relative sticky top-0 z-50 border-b transition-all duration-300 ${headerBg}`}>
@@ -201,7 +238,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                         {/* User Actions */}
                         <div className="flex items-center space-x-3">
                             <Link href="/cart">
-                                <Button variant="ghost" size="icon" className={getCartButtonClasses()}>
+                                <Button variant="ghost" size="icon" className={cartButtonClasses}>
                                     <ShoppingCart className="h-5 w-5" />
                                     {cartCount > 0 && (
                                         <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center p-0 text-xs">
@@ -250,9 +287,7 @@ export default function Header({ transparent = false }: HeaderProps) {
             {/* Slide-out Menu */}
             <div
                 ref={menuRef}
-                className={`fixed top-0 right-0 z-50 h-screen w-80 max-w-[85vw] overflow-hidden bg-white shadow-lg transition-transform duration-300 ease-in-out md:absolute md:top-full md:right-0 md:h-auto md:w-64 md:rounded-lg md:border md:border-gray-200 md:shadow-xl ${
-                    isMenuOpen ? 'translate-x-0 translate-y-0' : 'translate-x-full md:translate-x-0 md:-translate-y-full'
-                } ${!isMenuOpen ? 'md:hidden' : 'md:block'} `}
+                className={menuClasses}
             >
                 {/* Menu Header */}
                 <div className="flex items-center justify-between border-b border-gray-200 p-4">
