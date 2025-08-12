@@ -75,7 +75,7 @@ export const LatestOrderCard = () => {
                                     </p>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-medium">{formatCurrency(latestOrder.total)}</div>
+                                    <div className="font-medium">{formatCurrency(latestOrder.total_amount || latestOrder.total)}</div>
                                     <Badge 
                                         variant="outline" 
                                         className={`${getOrderStatusColor(latestOrder.status)} flex items-center gap-1 mt-1`}
@@ -126,7 +126,7 @@ export const LatestOrderCard = () => {
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-sm font-medium">{formatCurrency(order.total)}</div>
+                                    <div className="text-sm font-medium">{formatCurrency(order.total_amount || order.total)}</div>
                                     <Badge 
                                         variant="outline" 
                                         className={`${getOrderStatusColor(order.status)} text-xs`}

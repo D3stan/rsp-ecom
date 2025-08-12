@@ -136,7 +136,74 @@ Route::middleware(['auth', 'verified'])->group(function () {
         if (auth()->user()->isAdmin()) {
             return redirect()->route('admin.dashboard');
         }
-        return Inertia::render('Dashboard/Dashboard');
+        
+        $user = auth()->user();
+        
+        // Get recent orders with items and products
+        $recentOrders = $user->orders()
+            ->with(['orderItems.product', 'orderItems.size'])
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($order) {
+                $orderData = $order->toArray();
+                $orderData['total'] = $order->total_amount; // Add alias for backward compatibility
+                $orderData['order_items'] = $order->orderItems->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'order_id' => $item->order_id,
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product_name,
+                        'quantity' => $item->quantity,
+                        'price' => (float) $item->price,
+                        'total' => (float) $item->total,
+                        'product' => $item->product ? [
+                            'id' => $item->product->id,
+                            'name' => $item->product->name,
+                            'slug' => $item->product->slug,
+                            'image_url' => $item->product->image_url,
+                        ] : null,
+                        'size' => $item->size,
+                    ];
+                })->toArray();
+                
+                return $orderData;
+            });
+        
+        // Calculate order statistics
+        $orderStats = [
+            'total' => $user->orders()->count(),
+            'pending' => $user->orders()->where('status', 'pending')->count(),
+            'completed' => $user->orders()->whereIn('status', ['completed', 'delivered'])->count(),
+        ];
+        
+        // Get wishlist count and items
+        $wishlistItems = $user->wishlist()
+            ->with('product')
+            ->limit(5)
+            ->get()
+            ->map(function ($wishlistItem) {
+                return [
+                    'id' => $wishlistItem->id,
+                    'product' => [
+                        'id' => $wishlistItem->product->id,
+                        'name' => $wishlistItem->product->name,
+                        'slug' => $wishlistItem->product->slug,
+                        'price' => (float) $wishlistItem->product->price,
+                        'image' => $wishlistItem->product->image_url,
+                        'rating' => $wishlistItem->product->rating ?? null,
+                    ],
+                ];
+            });
+        
+        $wishlistCount = $user->wishlist()->count();
+        
+        return Inertia::render('Dashboard/Dashboard', [
+            'recentOrders' => $recentOrders,
+            'orderStats' => $orderStats,
+            'wishlistItems' => $wishlistItems,
+            'wishlistCount' => $wishlistCount,
+        ]);
     })->name('dashboard');
     Route::get('dashboard/orders', [DashboardController::class, 'orders'])->name('orders.index');
     Route::get('dashboard/wishlist', [DashboardController::class, 'wishlist'])->name('wishlist.index');
