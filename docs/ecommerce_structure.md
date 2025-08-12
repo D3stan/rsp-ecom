@@ -67,6 +67,8 @@ resources/js/
 ├── Auth
 │   ├── Login (/login)
 │   ├── Register (/register)
+│   ├── Email Verification (/verification/pending)
+│   ├── Verify Email Link (/verification/verify/{token}/{email})
 │   └── Forgot Password (/forgot-password)
 └── Legal
     ├── Privacy Policy (/privacy)
@@ -80,6 +82,7 @@ resources/js/
 - **Trust signals** - customer reviews, secure payment badges
 - **Search functionality** - prominent search with filters
 - **Guest checkout option** - don't force registration
+- **Mandatory email verification** - all registered users must verify email before accessing protected features
 
 ## Admin Dashboard Sections
 
@@ -152,11 +155,11 @@ resources/js/
 
 ### Guest User Journey
 1. Browse products → Add to cart → Checkout (with guest option)
-2. Register during checkout for faster future purchases
+2. Register during checkout for faster future purchases (requires email verification)
 
 ### Registered User Journey
-1. Login → Browse → Add to cart → Quick checkout with saved info
-2. Access order history and tracking
+1. Register → **Verify email via link** → Login → Browse → Add to cart → Quick checkout with saved info
+2. Access order history and tracking (requires verified email)
 
 ### Mobile Experience
 - Hamburger menu for navigation
@@ -172,3 +175,6 @@ resources/js/
 - Image optimization and CDN usage
 - Webhook signature verification for Stripe events
 - Strong Customer Authentication (SCA) support for European customers
+- **Mandatory email verification** with secure token-based system
+- **Protected checkout routes** requiring verified email addresses
+- **Pending user verification system** preventing database pollution from unverified accounts

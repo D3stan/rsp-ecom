@@ -35,7 +35,7 @@ Route::get('/csrf-token', function () {
 })->name('csrf.token');
 
 // Cashier-based Checkout routes (authenticated users)
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     // Product checkout using Cashier methods
     Route::get('/checkout/product/{priceId}', [CheckoutController::class, 'productCheckout'])->name('checkout.product');
     Route::get('/checkout/product/{priceId}/promo', [CheckoutController::class, 'productCheckoutWithPromo'])->name('checkout.product.promo');
@@ -55,7 +55,7 @@ Route::get('/checkout', function (Request $request) {
 })->name('checkout');
 
 // Checkout details pages (new intermediate step)
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/checkout/details', [CheckoutController::class, 'showDetails'])->name('checkout.details');
     Route::get('/checkout/show', [CheckoutController::class, 'show'])->name('checkout.show');
 });
@@ -68,7 +68,7 @@ Route::get('/guest/checkout', function (Request $request) {
 })->name('guest.checkout.redirect');
 
 // Cart-based checkout routes (bridges cart workflow with Cashier)
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/checkout/cart', [CheckoutController::class, 'cartCheckout'])->name('checkout.cart');
     Route::post('/checkout/session', [CheckoutController::class, 'createSession'])->name('checkout.session');
 });

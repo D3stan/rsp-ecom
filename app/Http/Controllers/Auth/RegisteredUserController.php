@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\PendingUserVerification;
 use App\Models\User;
+use App\Notifications\PendingUserEmailVerification;
 use App\Services\EmailService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -33,24 +35,23 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class.'|unique:'.PendingUserVerification::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = User::create([
+        // Create pending verification record instead of user
+        $pendingUser = PendingUserVerification::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'verification_token' => PendingUserVerification::generateToken(),
+            'token_expires_at' => now()->addHours(24),
         ]);
 
-        event(new Registered($user));
+        // Send verification email
+        Notification::route('mail', $pendingUser->email)
+            ->notify(new PendingUserEmailVerification($pendingUser));
 
-        // Send welcome email
-        $emailService = app(EmailService::class);
-        $emailService->sendWelcomeEmail($user);
-
-        Auth::login($user);
-
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->route('verification.pending')->with('email', $pendingUser->email);
     }
 }

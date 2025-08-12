@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\PendingUserVerification;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -52,10 +53,34 @@ class GoogleAuthController extends Controller
                 $existingUser->update([
                     'google_id' => $googleUser->getId(),
                     'avatar' => $googleUser->getAvatar(),
+                    'email_verified_at' => now(), // Ensure Google accounts are verified
                 ]);
                 
                 Auth::login($existingUser);
                 return redirect()->intended('/dashboard');
+            }
+
+            // Check if there's a pending verification for this email
+            $pendingUser = PendingUserVerification::where('email', $googleUser->getEmail())->first();
+            
+            if ($pendingUser) {
+                // Create verified user from pending verification
+                $user = User::create([
+                    'name' => $googleUser->getName(),
+                    'email' => $googleUser->getEmail(),
+                    'google_id' => $googleUser->getId(),
+                    'avatar' => $googleUser->getAvatar(),
+                    'email_verified_at' => now(), // Google accounts are pre-verified
+                    'role' => 'customer',
+                    'is_active' => true,
+                    'password' => $pendingUser->password, // Keep the password they set during registration
+                ]);
+
+                // Delete the pending verification
+                $pendingUser->delete();
+
+                Auth::login($user);
+                return redirect()->intended('/dashboard')->with('success', 'Account verified via Google! Welcome to ' . config('app.name') . '!');
             }
             
             // Create new user

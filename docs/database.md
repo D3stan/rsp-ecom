@@ -3,27 +3,32 @@
 ## USERS
 Stores information about all system users including customers and administrators. Enhanced with Laravel Cashier (Stripe) billing capabilities.
 
-**Purpose**: Manages user authentication, authorization, basic profile information, and Stripe customer integration.
+**Purpose**: Manages user authentication, authorization, basic profile information, and Stripe customer integration. Users are only created after email verification to ensure valid email addresses.
 
 **Key Fields**:
 - `role`: Differentiates between customers and admins (ENUM: 'customer', 'admin', default 'customer')
-- `email_verified_at`: Ensures email validation before full access
+- `email_verified_at`: **MANDATORY** - Users are only created after email verification (NOT NULL for all users except Google auth)
 - `is_active`: Allows soft deactivation of accounts (TINYINT(1) NOT NULL DEFAULT '1')
 - `stripe_id`: Stripe customer ID for payment processing (indexed)
 - `pm_type`: Default payment method type
 - `pm_last_four`: Last four digits of default payment method (VARCHAR(4))
 - `trial_ends_at`: Trial period end date (reserved for future use)
 - `remember_token`: Laravel's "remember me" functionality (VARCHAR(100))
+- `google_id`: Google account ID for OAuth authentication (VARCHAR(255) NULL)
+- `avatar`: User avatar URL (VARCHAR(255) NULL)
 
 **Examples**:
-1. **Customer User**:
+1. **Customer User** (Verified via email):
    ```
    id: 1
    name: "John Smith"
    email: "john.smith@example.com"
+   email_verified_at: "2024-08-12 10:30:00"
    role: "customer"
    is_active: true
    phone: "+1234567890"
+   google_id: null
+   avatar: null
    stripe_id: "cus_1234567890"
    pm_type: "card"
    pm_last_four: "4242"
@@ -31,20 +36,104 @@ Stores information about all system users including customers and administrators
    remember_token: "1a2b3c4d5e6f7g8h9i0j"
    ```
 
-2. **Admin User**:
+2. **Google Auth User** (Auto-verified):
    ```
    id: 2
-   name: "Sarah Admin"
-   email: "admin@mystore.com"
-   role: "admin"
+   name: "Jane Doe"
+   email: "jane.doe@gmail.com"
+   email_verified_at: "2024-08-12 11:45:00"
+   role: "customer"
    is_active: true
-   phone: "+1987654321"
+   phone: null
+   google_id: "google_123456789"
+   avatar: "https://lh3.googleusercontent.com/..."
    stripe_id: null
    pm_type: null
    pm_last_four: null
    trial_ends_at: null
    remember_token: null
    ```
+
+3. **Admin User**:
+   ```
+   id: 3
+   name: "Sarah Admin"
+   email: "admin@mystore.com"
+   email_verified_at: "2024-08-12 09:00:00"
+   role: "admin"
+   is_active: true
+   phone: "+1987654321"
+   google_id: null
+   avatar: null
+   stripe_id: null
+   pm_type: null
+   pm_last_four: null
+   trial_ends_at: null
+   remember_token: null
+   ```
+
+---
+
+## PENDING_USER_VERIFICATIONS
+Temporary storage for user registration data before email verification. This table ensures users are not created in the main users table until they verify their email address.
+
+**Purpose**: Manages the email verification process during user registration, preventing database pollution from unverified accounts.
+
+**Key Fields**:
+- `name`: User's full name from registration
+- `email`: Email address to be verified (unique constraint)
+- `password`: Hashed password from registration
+- `verification_token`: Unique 64-character token for verification (unique constraint)
+- `token_expires_at`: Expiration timestamp (24 hours from creation)
+
+**Security Features**:
+- Tokens expire after 24 hours
+- Unique verification tokens prevent replay attacks
+- Automatic cleanup of expired records
+- Rate limiting on resend attempts
+
+**Workflow**:
+1. User submits registration form
+2. Record created in pending_user_verifications
+3. Verification email sent with signed URL
+4. User clicks verification link
+5. Verified user record created in users table
+6. Pending verification record deleted
+
+**Examples**:
+1. **Active Pending Verification**:
+   ```
+   id: 1
+   name: "John Smith"
+   email: "john.smith@example.com"
+   password: "$2y$12$..." (bcrypt hash)
+   verification_token: "abc123def456ghi789jkl012mno345pqr678stu901vwx234yzA567BCD"
+   token_expires_at: "2024-08-13 14:30:00"
+   created_at: "2024-08-12 14:30:00"
+   updated_at: "2024-08-12 14:30:00"
+   ```
+
+2. **Expired Pending Verification** (will be cleaned up):
+   ```
+   id: 2
+   name: "Jane Doe"
+   email: "jane.doe@example.com"
+   password: "$2y$12$..." (bcrypt hash)
+   verification_token: "def456ghi789jkl012mno345pqr678stu901vwx234yzA567BCDabc123"
+   token_expires_at: "2024-08-11 10:15:00" (expired)
+   created_at: "2024-08-10 10:15:00"
+   updated_at: "2024-08-10 10:15:00"
+   ```
+
+**Constraints**:
+- Unique constraint on email (prevents duplicate pending registrations)
+- Unique constraint on verification_token (ensures token uniqueness)
+- Foreign key constraints prevent conflicts with existing users
+
+**Maintenance**:
+- Daily automatic cleanup of expired records at 3:00 AM
+- Manual cleanup available via `php artisan auth:cleanup-pending`
+- Status monitoring via `php artisan auth:pending-status`
 
 ---
 
@@ -706,6 +795,19 @@ erDiagram
         string pm_type
         string pm_last_four
         timestamp trial_ends_at
+        string google_id
+        string avatar
+        timestamps created_at
+        timestamps updated_at
+    }
+
+    PENDING_USER_VERIFICATIONS {
+        int id PK
+        string name
+        string email UK
+        string password
+        string verification_token UK
+        timestamp token_expires_at
         timestamps created_at
         timestamps updated_at
     }

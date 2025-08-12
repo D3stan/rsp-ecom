@@ -7,7 +7,9 @@ use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\PendingUserVerificationController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\VerificationStatusController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +42,23 @@ Route::middleware('guest')->group(function () {
 
     Route::get('auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])
         ->name('auth.google.callback');
+
+    // Pending User Verification Routes
+    Route::get('verification/pending', [PendingUserVerificationController::class, 'show'])
+        ->name('verification.pending');
+
+    Route::get('verification/verify/{token}/{email}', [PendingUserVerificationController::class, 'verify'])
+        ->middleware(['signed'])
+        ->name('verification.verify.pending');
+
+    Route::post('verification/resend', [PendingUserVerificationController::class, 'resend'])
+        ->middleware('throttle:60,1')
+        ->name('verification.resend.pending');
+
+    // AJAX endpoint to check verification status (for auto-reload)
+    Route::get('verification/status', [VerificationStatusController::class, 'checkStatus'])
+        ->middleware('throttle:200,1')
+        ->name('verification.status');
 });
 
 Route::middleware('auth')->group(function () {
