@@ -5,4 +5,5 @@ return [
     App\Providers\MailServiceProvider::class,
     App\Providers\WebhookServiceProvider::class,
     App\Providers\CookiesServiceProvider::class,
+    App\Providers\SocialiteServiceProvider::class,
 ];

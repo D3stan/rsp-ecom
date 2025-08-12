@@ -26,7 +26,14 @@ class GoogleAuthController extends Controller
     public function handleGoogleCallback(): RedirectResponse
     {
         try {
-            $googleUser = Socialite::driver('google')->user();
+            // For local development, disable SSL verification to avoid certificate issues
+            if (config('app.env') === 'local') {
+                $googleUser = Socialite::driver('google')
+                    ->setHttpClient(new \GuzzleHttp\Client(['verify' => false]))
+                    ->user();
+            } else {
+                $googleUser = Socialite::driver('google')->user();
+            }
             
             // Check if user already exists with this Google ID
             $user = User::where('google_id', $googleUser->getId())->first();
@@ -67,6 +74,9 @@ class GoogleAuthController extends Controller
             return redirect()->intended('/dashboard');
             
         } catch (\Exception $e) {
+            \Log::error('Google OAuth callback error', [
+                'error' => $e->getMessage(),
+            ]);
             return redirect()->route('login')->with('error', 'Authentication failed. Please try again.');
         }
     }
