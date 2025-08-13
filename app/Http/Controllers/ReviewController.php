@@ -11,6 +11,23 @@ use Artesaos\SEOTools\Facades\SEOMeta;
 
 class ReviewController extends Controller
 {
+    public function index()
+    {
+        SEOMeta::setTitle('My Reviews – ' . config('app.name'));
+        SEOMeta::setDescription('View and manage your product reviews.');
+        
+        $user = Auth::user();
+        
+        $reviews = $user->reviews()
+            ->with(['product:id,name,slug,image_url,price'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(12);
+            
+        return Inertia::render('Reviews/Index', [
+            'reviews' => $reviews,
+        ]);
+    }
+    
     public function create(Product $product)
     {
         // Set noindex for review form

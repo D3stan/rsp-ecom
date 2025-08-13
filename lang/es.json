@@ -466,6 +466,8 @@
         "apply_filters": "Aplicar Filtros",
         "in_stock": "En Stock",
         "out_of_stock": "Agotado",
+        "low_stock": "Stock Bajo",
+        "discontinued": "Descontinuado",
         "price_ranges": {
             "all_prices": "Todos los Precios",
             "under_25": "Menos de $25",
@@ -576,7 +578,6 @@
         "get_support": "Obtener Soporte"
     },
     "logout": "Cerrar Sesión",
-    "reviews": "Reseñas",
     "support": "Soporte",
     "orders": {
         "title": "Mis Pedidos",
@@ -627,5 +628,24 @@
         "added": "Añadido",
         "more_items_in_wishlist": "más artículos en tu lista de deseos",
         "view_full_wishlist": "Ver Lista de Deseos Completa"
+    },
+    "reviews": {
+        "title": "Mis Reseñas",
+        "description": "Ver y gestionar las reseñas de productos",
+        "review": "reseña",
+        "reviews_plural": "reseñas",
+        "approved": "Aprobada",
+        "pending": "Revisión Pendiente",
+        "no_reviews_title": "Aún no hay reseñas",
+        "no_reviews_description": "Aún no has escrito reseñas. Escribe reseñas de los productos que hayas comprado para ayudar a otros clientes.",
+        "view_orders": "Ver Mis Pedidos",
+        "write_review": "Escribir Reseña",
+        "rating": "Calificación",
+        "comment": "Comentario",
+        "comment_placeholder": "Comparte tu experiencia con este producto (opcional)",
+        "submit_review": "Enviar Reseña",
+        "submitting": "Enviando...",
+        "edit_review": "Editar Reseña",
+        "delete_review": "Eliminar Reseña"
     }
 }

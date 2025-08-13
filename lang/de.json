@@ -7,6 +7,11 @@
     "view_deals": "Angebote Ansehen",
     "featured_products": "Ausgewählte Produkte",
     "featured_products_description": "Entdecke unsere beliebtesten und bestbewerteten Produkte",
+    "view_all_products": "Alle Produkte Anzeigen",
+    "shop_by_category": "Nach Kategorie Einkaufen",
+    "category_description": "Entdecke unser breites Spektrum an Produktkategorien",
+    "add_to_cart": "In den Warenkorb",
+    "explore_products": "Produkte Entdecken",
     "view_all_products": "Alle Produkte Ansehen",
     "shop_by_category": "Nach Kategorie Einkaufen",
     "category_description": "Erkunde unser breites Sortiment an Produktkategorien",
@@ -579,7 +584,6 @@
         "get_support": "Support erhalten"
     },
     "logout": "Abmelden",
-    "reviews": "Bewertungen",
     "support": "Support",
     "orders": {
         "title": "Meine Bestellungen",
@@ -630,5 +634,24 @@
         "added": "Hinzugefügt",
         "more_items_in_wishlist": "weitere Artikel in Ihrer Wunschliste",
         "view_full_wishlist": "Vollständige Wunschliste anzeigen"
+    },
+    "reviews": {
+        "title": "Meine Bewertungen",
+        "description": "Produktbewertungen anzeigen und verwalten",
+        "review": "Bewertung",
+        "reviews_plural": "Bewertungen",
+        "approved": "Genehmigt",
+        "pending": "Ausstehende Überprüfung",
+        "no_reviews_title": "Noch keine Bewertungen",
+        "no_reviews_description": "Sie haben noch keine Bewertungen geschrieben. Schreiben Sie Bewertungen für gekaufte Produkte, um anderen Kunden zu helfen.",
+        "view_orders": "Meine Bestellungen Anzeigen",
+        "write_review": "Bewertung Schreiben",
+        "rating": "Bewertung",
+        "comment": "Kommentar",
+        "comment_placeholder": "Teilen Sie Ihre Erfahrung mit diesem Produkt (optional)",
+        "submit_review": "Bewertung Senden",
+        "submitting": "Wird gesendet...",
+        "edit_review": "Bewertung Bearbeiten",
+        "delete_review": "Bewertung Löschen"
     }
 }

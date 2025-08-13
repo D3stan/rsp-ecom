@@ -28,8 +28,8 @@ export function AppSidebar() {
             icon: Heart,
         },
         {
-            title: t('reviews'),
-            href: '#',
+            title: t('reviews.title'),
+            href: route('reviews.index'),
             icon: Star,
         },
     ];

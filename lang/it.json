@@ -466,6 +466,8 @@
         "apply_filters": "Applica Filtri",
         "in_stock": "Disponibile",
         "out_of_stock": "Esaurito",
+        "low_stock": "Scorte Basse",
+        "discontinued": "Fuori Produzione",
         "price_ranges": {
             "all_prices": "Tutti i Prezzi",
             "under_25": "Meno di 25 €",
@@ -573,10 +575,9 @@
         "connected": "Connesso",
         "need_help": "Hai bisogno di aiuto?",
         "support_description": "Il nostro team di assistenza clienti è qui per aiutarti con qualsiasi domanda o preoccupazione.",
-        "get_support": "Ottieni Supporto"
+        "get_support": "Contattaci"
     },
     "logout": "Disconnettiti",
-    "reviews": "Recensioni",
     "support": "Supporto",
     "orders": {
         "title": "I Miei Ordini",
@@ -627,5 +628,24 @@
         "added": "Aggiunto",
         "more_items_in_wishlist": "articoli in più nei tuoi preferiti",
         "view_full_wishlist": "Visualizza tutti i preferiti"
+    },
+    "reviews": {
+        "title": "Le Mie Recensioni",
+        "description": "Visualizza e gestisci le tue recensioni sui prodotti",
+        "review": "recensione",
+        "reviews_plural": "recensioni",
+        "approved": "Approvata",
+        "pending": "In Attesa di Revisione",
+        "no_reviews_title": "Nessuna recensione ancora",
+        "no_reviews_description": "Non hai ancora scritto recensioni. Scrivi recensioni per i prodotti che hai acquistato per aiutare altri clienti.",
+        "view_orders": "Visualizza I Miei Ordini",
+        "write_review": "Scrivi Recensione",
+        "rating": "Valutazione",
+        "comment": "Commento",
+        "comment_placeholder": "Condividi la tua esperienza con questo prodotto (opzionale)",
+        "submit_review": "Invia Recensione",
+        "submitting": "Invio in corso...",
+        "edit_review": "Modifica Recensione",
+        "delete_review": "Elimina Recensione"
     }
 }

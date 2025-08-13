@@ -236,6 +236,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('wishlist/count', [WishlistController::class, 'count'])->name('wishlist.count');
     
     // Review routes
+    Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
     Route::get('reviews/create/{product}', [ReviewController::class, 'create'])->name('reviews.create');
     Route::post('reviews', [ReviewController::class, 'store'])->name('reviews.store');
 });

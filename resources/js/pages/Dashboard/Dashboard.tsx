@@ -57,12 +57,12 @@ export default function Dashboard({
         >
             <Head title={t('dashboard.title')} />
 
-            <div className="space-y-6 p-4 md:p-6">
+            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
                 {/* Welcome Section */}
                 <WelcomeCard user={user} />
 
                 {/* Quick Stats */}
-                <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">{t('dashboard.total_orders')}</CardTitle>
@@ -117,18 +117,18 @@ export default function Dashboard({
                 </div>
 
                 {/* Main Content Grid */}
-                <div className="grid gap-6 xl:grid-cols-3">
+                <div className="grid gap-6 lg:grid-cols-3">
                     {/* Orders and Wishlist */}
-                    <div className="xl:col-span-2 space-y-6">
+                    <div className="lg:col-span-2 space-y-6">
                         <LatestOrderCard />
-                        <div className="xl:hidden">
+                        <div className="lg:hidden">
                             <WishlistCard />
                         </div>
                     </div>
 
                     {/* Sidebar */}
                     <div className="space-y-6">
-                        <div className="hidden xl:block">
+                        <div className="hidden lg:block">
                             <WishlistCard />
                         </div>
 

@@ -466,6 +466,8 @@
         "apply_filters": "Appliquer les Filtres",
         "in_stock": "En Stock",
         "out_of_stock": "Rupture de Stock",
+        "low_stock": "Stock Faible",
+        "discontinued": "Arrêté",
         "price_ranges": {
             "all_prices": "Tous les Prix",
             "under_25": "Moins de 25 $",
@@ -576,7 +578,6 @@
         "get_support": "Obtenir de l'Aide"
     },
     "logout": "Déconnexion",
-    "reviews": "Avis",
     "support": "Support",
     "orders": {
         "title": "Mes Commandes",
@@ -627,5 +628,24 @@
         "added": "Ajouté",
         "more_items_in_wishlist": "articles de plus dans votre liste de souhaits",
         "view_full_wishlist": "Voir la Liste de Souhaits Complète"
+    },
+    "reviews": {
+        "title": "Mes Avis",
+        "description": "Voir et gérer vos avis sur les produits",
+        "review": "avis",
+        "reviews_plural": "avis",
+        "approved": "Approuvé",
+        "pending": "En Attente de Révision",
+        "no_reviews_title": "Aucun avis pour l'instant",
+        "no_reviews_description": "Vous n'avez pas encore écrit d'avis. Rédigez des avis sur les produits que vous avez achetés pour aider d'autres clients.",
+        "view_orders": "Voir Mes Commandes",
+        "write_review": "Écrire un Avis",
+        "rating": "Note",
+        "comment": "Commentaire",
+        "comment_placeholder": "Partagez votre expérience avec ce produit (optionnel)",
+        "submit_review": "Soumettre l'Avis",
+        "submitting": "Envoi en cours...",
+        "edit_review": "Modifier l'Avis",
+        "delete_review": "Supprimer l'Avis"
     }
 }

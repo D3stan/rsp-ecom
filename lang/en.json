@@ -579,7 +579,6 @@
         "get_support": "Get Support"
     },
     "logout": "Logout",
-    "reviews": "Reviews",
     "support": "Support",
     "orders": {
         "title": "My Orders",
@@ -630,5 +629,24 @@
         "added": "Added",
         "more_items_in_wishlist": "more items in your wishlist",
         "view_full_wishlist": "View Full Wishlist"
+    },
+    "reviews": {
+        "title": "My Reviews",
+        "description": "View and manage your product reviews",
+        "review": "review",
+        "reviews_plural": "reviews",
+        "approved": "Approved",
+        "pending": "Pending Review",
+        "no_reviews_title": "No reviews yet",
+        "no_reviews_description": "You haven't written any reviews yet. Write reviews for products you've purchased to help other customers.",
+        "view_orders": "View My Orders",
+        "write_review": "Write Review",
+        "rating": "Rating",
+        "comment": "Comment",
+        "comment_placeholder": "Share your experience with this product (optional)",
+        "submit_review": "Submit Review",
+        "submitting": "Submitting...",
+        "edit_review": "Edit Review",
+        "delete_review": "Delete Review"
     }
 }
