@@ -47,6 +47,8 @@ export interface RingMaskedImageProps {
   className?: string;        // wrapper container classes
   /** Force a square aspect (legacy). Default false */
   keepSquare?: boolean;
+  /** Performance strategy: auto (default), css (force CSS keyframe), js (force rAF attribute). */
+  performanceMode?: 'auto' | 'css' | 'js';
 }
 
 export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
@@ -68,6 +70,7 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
   respectReducedMotion = true,
   className = '',
   keepSquare = false,
+  performanceMode = 'auto',
 }) => {
   // Generate unique ID for this instance
   const maskId = useRef(`ringMask-${Math.random().toString(36).substr(2, 9)}`);
@@ -156,6 +159,7 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     turnsPerViewport,
     respectReducedMotion,
     setDashArray,
+  performanceMode,
   });
 
   // GSAP engine with dynamic import

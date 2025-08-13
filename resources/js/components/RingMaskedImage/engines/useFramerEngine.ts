@@ -15,6 +15,7 @@ interface UseFramerEngineProps {
   turnsPerViewport: number;
   respectReducedMotion: boolean;
   setDashArray: (value: string) => void;
+  performanceMode?: 'auto' | 'css' | 'js';
 }
 
 export const useFramerEngine = (props: UseFramerEngineProps) => {
@@ -33,6 +34,7 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
     turnsPerViewport,
     respectReducedMotion,
     setDashArray,
+  performanceMode = 'auto',
   } = props;
 
   const animationRef = useRef<number | null>(null);
@@ -171,8 +173,17 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
     // Force vanilla JS for SVG mask compatibility
     // Framer Motion's CSS transforms don't work well with SVG elements inside masks
     if (mode === 'continuous') {
-      console.log('FramerEngine: Using vanilla continuous rotation for SVG mask compatibility');
-      startVanillaContinuousRotation(sliceGroup);
+      // Decide best path: CSS vs JS rAF
+      const useCss = (performanceMode === 'css') || (
+        performanceMode === 'auto' && typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
+      );
+      if (useCss) {
+        console.log('FramerEngine: Using CSS keyframe rotation for performance');
+        startCssContinuousRotation(sliceGroup);
+      } else {
+        console.log('FramerEngine: Using vanilla continuous rotation for SVG mask compatibility');
+        startVanillaContinuousRotation(sliceGroup);
+      }
     } else if (mode === 'scroll') {
       console.log('FramerEngine: Using vanilla scroll rotation for SVG mask compatibility');
       startVanillaScrollRotation(sliceGroup);
@@ -340,6 +351,21 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
     
     animationRef.current = requestAnimationFrame(animate);
     console.log('FramerEngine: Continuous rotation animation started');
+  };
+
+  // GPU-friendly CSS keyframe rotation (no JS per-frame work)
+  const startCssContinuousRotation = (element: SVGGElement) => {
+    // Inject keyframes once per document
+    const doc = element.ownerDocument || document;
+    const sheetId = 'ring-rotation-keyframes';
+    if (!doc.getElementById(sheetId)) {
+      const styleEl = doc.createElement('style');
+      styleEl.id = sheetId;
+      styleEl.textContent = `@keyframes ring-rot-clockwise { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } @keyframes ring-rot-ccw { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }`;
+      doc.head.appendChild(styleEl);
+    }
+    const duration = `${secondsPerTurn}s`;
+    element.setAttribute('style', `animation: ${clockwise ? 'ring-rot-clockwise' : 'ring-rot-ccw'} ${duration} linear infinite; transform-origin: 50% 50%;`);
   };
 
   return {

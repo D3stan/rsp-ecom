@@ -205,7 +205,7 @@ export default function Home() {
                         />
                     </div>
 
-                    {/* Overlay for Text Readability - Temporarily disabled for debugging */}
+                    {/* Overlay for Text Readability */}
                     {<div className="absolute inset-0 z-5" style={{ background: 'linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2))' }} />}
 
                     {/* Hero Content */}
