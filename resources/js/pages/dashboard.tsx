@@ -4,6 +4,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import useTranslation from '@/hooks/useTranslation';
 import { 
     ShoppingBag, 
     User, 
@@ -16,13 +17,6 @@ import {
     Truck,
     Star
 } from 'lucide-react';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-];
 
 interface DashboardProps {
     recentOrders: Order[];
@@ -37,6 +31,14 @@ interface DashboardProps {
 export default function Dashboard({ recentOrders = [], orderStats = { total: 0, pending: 0, completed: 0 }, wishlistCount = 0 }: DashboardProps) {
     const { auth } = usePage<SharedData>().props;
     const user = auth.user!;
+    const { t } = useTranslation();
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: t('dashboard.title'),
+            href: '/dashboard',
+        },
+    ];
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', {
@@ -83,14 +85,14 @@ export default function Dashboard({ recentOrders = [], orderStats = { total: 0, 
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Dashboard" />
+            <Head title={t('dashboard.title')} />
             
             <div className="space-y-6 p-4 md:p-6">
                 {/* Welcome Section */}
                 <div className="space-y-2">
-                    <h1 className="text-2xl font-bold tracking-tight">Welcome back, {user.name}!</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">{t('dashboard.welcome_back', { name: user.name })}</h1>
                     <p className="text-muted-foreground">
-                        Here's an overview of your account and recent activity.
+                        {t('dashboard.account_overview')}
                     </p>
                 </div>
 
@@ -98,52 +100,52 @@ export default function Dashboard({ recentOrders = [], orderStats = { total: 0, 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                            <CardTitle className="text-sm font-medium">{t('dashboard.total_orders')}</CardTitle>
                             <ShoppingBag className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{orderStats.total}</div>
                             <p className="text-xs text-muted-foreground">
-                                All time purchases
+                                {t('dashboard.all_time_purchases')}
                             </p>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
+                            <CardTitle className="text-sm font-medium">{t('dashboard.pending_orders')}</CardTitle>
                             <Clock className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{orderStats.pending}</div>
                             <p className="text-xs text-muted-foreground">
-                                Awaiting processing
+                                {t('dashboard.awaiting_processing')}
                             </p>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Completed Orders</CardTitle>
+                            <CardTitle className="text-sm font-medium">{t('dashboard.completed_orders')}</CardTitle>
                             <TrendingUp className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{orderStats.completed}</div>
                             <p className="text-xs text-muted-foreground">
-                                Successfully delivered
+                                {t('dashboard.successfully_delivered')}
                             </p>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Wishlist Items</CardTitle>
+                            <CardTitle className="text-sm font-medium">{t('dashboard.wishlist_items')}</CardTitle>
                             <Heart className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{wishlistCount}</div>
                             <p className="text-xs text-muted-foreground">
-                                Saved for later
+                                {t('dashboard.saved_for_later')}
                             </p>
                         </CardContent>
                     </Card>
@@ -152,12 +154,13 @@ export default function Dashboard({ recentOrders = [], orderStats = { total: 0, 
                 {/* Quick Actions and Recent Orders Grid */}
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Recent Orders */}
+                    {/* Recent Orders */}
                     <div className="lg:col-span-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Recent Orders</CardTitle>
+                                <CardTitle>{t('dashboard.recent_orders')}</CardTitle>
                                 <CardDescription>
-                                    Your latest purchases and their status
+                                    {t('dashboard.recent_orders_description')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -171,10 +174,10 @@ export default function Dashboard({ recentOrders = [], orderStats = { total: 0, 
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <p className="text-sm font-medium text-gray-900">
-                                                            Order #{order.id}
+                                                            {t('dashboard.order_number', { id: order.id })}
                                                         </p>
                                                         <p className="text-sm text-muted-foreground">
-                                                            {formatDate(order.created_at)} • {order.order_items.length} items
+                                                            {formatDate(order.created_at)} • {order.order_items.length} {order.order_items.length === 1 ? t('dashboard.item') : t('dashboard.items')}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -183,7 +186,7 @@ export default function Dashboard({ recentOrders = [], orderStats = { total: 0, 
                                                         variant="outline" 
                                                         className={getOrderStatusColor(order.status)}
                                                     >
-                                                        {order.status}
+                                                        {t(`orders.status.${order.status.toLowerCase()}`)}
                                                     </Badge>
                                                     <div className="text-sm font-medium">
                                                         {formatCurrency(order.total)}
@@ -195,7 +198,7 @@ export default function Dashboard({ recentOrders = [], orderStats = { total: 0, 
                                         <div className="pt-4">
                                             <Button variant="outline" className="w-full" asChild>
                                                 <Link href={route('orders.index')}>
-                                                    View All Orders
+                                                    {t('dashboard.view_all_orders')}
                                                 </Link>
                                             </Button>
                                         </div>
@@ -203,14 +206,14 @@ export default function Dashboard({ recentOrders = [], orderStats = { total: 0, 
                                 ) : (
                                     <div className="text-center py-8">
                                         <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground" />
-                                        <h3 className="mt-2 text-sm font-medium">No orders yet</h3>
+                                        <h3 className="mt-2 text-sm font-medium">{t('dashboard.no_orders_yet')}</h3>
                                         <p className="mt-1 text-sm text-muted-foreground">
-                                            Start shopping to see your orders here.
+                                            {t('dashboard.no_orders_description')}
                                         </p>
                                         <div className="mt-6">
                                             <Button asChild>
                                                 <Link href={route('products')}>
-                                                    Browse Products
+                                                    {t('dashboard.browse_products')}
                                                 </Link>
                                             </Button>
                                         </div>
@@ -218,43 +221,41 @@ export default function Dashboard({ recentOrders = [], orderStats = { total: 0, 
                                 )}
                             </CardContent>
                         </Card>
-                    </div>
-
-                    {/* Quick Actions */}
+                    </div>                    {/* Quick Actions */}
                     <div className="space-y-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Quick Actions</CardTitle>
+                                <CardTitle>{t('dashboard.quick_actions')}</CardTitle>
                                 <CardDescription>
-                                    Manage your account and preferences
+                                    {t('dashboard.quick_actions_description')}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <Button variant="outline" className="w-full justify-start" asChild>
                                     <Link href={route('profile.edit')}>
                                         <User className="mr-2 h-4 w-4" />
-                                        Edit Profile
+                                        {t('dashboard.edit_profile')}
                                     </Link>
                                 </Button>
                                 
                                 <Button variant="outline" className="w-full justify-start" asChild>
                                     <Link href="#" onClick={(e) => e.preventDefault()}>
                                         <CreditCard className="mr-2 h-4 w-4" />
-                                        Payment Methods
+                                        {t('dashboard.payment_methods')}
                                     </Link>
                                 </Button>
                                 
                                 <Button variant="outline" className="w-full justify-start" asChild>
                                     <Link href={route('wishlist.index')}>
                                         <Heart className="mr-2 h-4 w-4" />
-                                        View Wishlist
+                                        {t('dashboard.view_wishlist')}
                                     </Link>
                                 </Button>
                                 
                                 <Button variant="outline" className="w-full justify-start" asChild>
                                     <Link href="#" onClick={(e) => e.preventDefault()}>
                                         <Star className="mr-2 h-4 w-4" />
-                                        Write Review
+                                        {t('dashboard.write_review')}
                                     </Link>
                                 </Button>
                             </CardContent>
@@ -263,27 +264,27 @@ export default function Dashboard({ recentOrders = [], orderStats = { total: 0, 
                         {/* Account Summary */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Account Summary</CardTitle>
+                                <CardTitle>{t('dashboard.account_summary')}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">Member since</span>
+                                    <span className="text-sm text-muted-foreground">{t('dashboard.member_since')}</span>
                                     <span className="text-sm font-medium">
                                         {formatDate(user.created_at)}
                                     </span>
                                 </div>
                                 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">Email status</span>
+                                    <span className="text-sm text-muted-foreground">{t('dashboard.email_status')}</span>
                                     <Badge variant={user.email_verified_at ? "outline" : "destructive"}>
-                                        {user.email_verified_at ? "Verified" : "Unverified"}
+                                        {user.email_verified_at ? t('dashboard.verified') : t('dashboard.unverified')}
                                     </Badge>
                                 </div>
                                 
                                 {user.google_id && (
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-muted-foreground">Google account</span>
-                                        <Badge variant="outline">Connected</Badge>
+                                        <span className="text-sm text-muted-foreground">{t('dashboard.google_account')}</span>
+                                        <Badge variant="outline">{t('dashboard.connected')}</Badge>
                                     </div>
                                 )}
                             </CardContent>

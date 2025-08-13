@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { WishlistCard } from '@/components/wishlist-card';
 import AppLayout from '@/layouts/app-layout';
+import useTranslation from '@/hooks/useTranslation';
 import { type BreadcrumbItem, type Wishlist } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { 
@@ -16,21 +17,22 @@ interface WishlistPageProps {
     wishlist: Wishlist[];
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: route('dashboard'),
-    },
-    {
-        title: 'My Wishlist',
-        href: route('wishlist.index'),
-    },
-];
-
 const WishlistPage: React.FC<WishlistPageProps> = ({ wishlist }) => {
+    const { t } = useTranslation();
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: t('dashboard.title'),
+            href: route('dashboard'),
+        },
+        {
+            title: t('wishlist.title'),
+            href: route('wishlist.index'),
+        },
+    ];
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="My Wishlist" />
+            <Head title={t('wishlist.page_title')} />
 
             <div className="space-y-6 p-4 md:p-6">
                 {/* Header */}
@@ -44,13 +46,16 @@ const WishlistPage: React.FC<WishlistPageProps> = ({ wishlist }) => {
                             </Button>
                             <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
                                 <Heart className="h-6 w-6" />
-                                My Wishlist
+                                {t('wishlist.title')}
                             </h1>
                         </div>
                         <p className="text-muted-foreground">
                             {wishlist.length === 0 
-                                ? 'Your wishlist is empty' 
-                                : `${wishlist.length} ${wishlist.length === 1 ? 'item' : 'items'} saved for later`
+                                ? t('wishlist.empty_title')
+                                : t('wishlist.items_saved', { 
+                                    count: wishlist.length, 
+                                    item_word: wishlist.length === 1 ? t('wishlist.item') : t('wishlist.items')
+                                })
                             }
                         </p>
                     </div>
@@ -60,7 +65,7 @@ const WishlistPage: React.FC<WishlistPageProps> = ({ wishlist }) => {
                             <Button variant="outline" asChild>
                                 <Link href={route('products')}>
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Add More Items
+                                    {t('wishlist.add_more_items')}
                                 </Link>
                             </Button>
                         </div>
@@ -73,15 +78,15 @@ const WishlistPage: React.FC<WishlistPageProps> = ({ wishlist }) => {
                         <CardContent className="pt-6">
                             <div className="text-center py-12">
                                 <Heart className="mx-auto h-16 w-16 text-muted-foreground" />
-                                <h3 className="mt-4 text-xl font-medium">Your wishlist is empty</h3>
+                                <h3 className="mt-4 text-xl font-medium">{t('wishlist.empty_title')}</h3>
                                 <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-                                    Save products you love for later. You can add items to your wishlist while browsing our store.
+                                    {t('wishlist.empty_description')}
                                 </p>
                                 <div className="mt-8">
                                     <Button size="lg" asChild>
                                         <Link href={route('products')}>
                                             <ShoppingCart className="h-4 w-4 mr-2" />
-                                            Start Shopping
+                                            {t('wishlist.start_shopping')}
                                         </Link>
                                     </Button>
                                 </div>
@@ -107,7 +112,7 @@ const WishlistPage: React.FC<WishlistPageProps> = ({ wishlist }) => {
                         <Button variant="outline" size="lg" asChild>
                             <Link href={route('products')}>
                                 <Plus className="h-4 w-4 mr-2" />
-                                Continue Shopping
+                                {t('wishlist.continue_shopping')}
                             </Link>
                         </Button>
                     </div>

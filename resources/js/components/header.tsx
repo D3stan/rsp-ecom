@@ -434,7 +434,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                                 className="flex items-center space-x-3 text-gray-700 transition-colors hover:text-blue-600"
                             >
                                 <Heart className="h-5 w-5" />
-                                <span>Wishlist</span>
+                                <span>{t('wishlist.title')}</span>
                             </Link>
                         )}
 
@@ -445,7 +445,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                                 className="flex items-center space-x-3 text-gray-700 transition-colors hover:text-blue-600"
                             >
                                 <Package className="h-5 w-5" />
-                                <span>{t('orders')}</span>
+                                <span>{t('orders_link')}</span>
                             </Link>
                         )}
                     </div>

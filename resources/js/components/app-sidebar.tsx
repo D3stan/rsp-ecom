@@ -2,30 +2,33 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import useTranslation from '@/hooks/useTranslation';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import { LayoutGrid, ShoppingBag, User, CreditCard, Heart, Settings, MessageSquare, Star } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
+    const { t } = useTranslation();
+    
     const mainNavItems: NavItem[] = [
         {
-            title: 'Dashboard',
+            title: t('dashboard.title'),
             href: route('dashboard'),
             icon: LayoutGrid,
         },
         {
-            title: 'Orders',
+            title: t('orders.title'),
             href: route('orders.index'),
             icon: ShoppingBag,
         },
         {
-            title: 'Wishlist',
+            title: t('wishlist.title'),
             href: route('wishlist.index'),
             icon: Heart,
         },
         {
-            title: 'Reviews',
+            title: t('reviews'),
             href: '#',
             icon: Star,
         },
@@ -33,7 +36,7 @@ export function AppSidebar() {
 
     const footerNavItems: NavItem[] = [
         {
-            title: 'Support',
+            title: t('support'),
             href: route('contact'),
             icon: MessageSquare,
         }
