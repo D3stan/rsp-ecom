@@ -1,8 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useFramerEngine } from './engines/useFramerEngine';
 // import { useGsapEngine } from './engines/useGsapEngine';
 
-type Engine = 'framer' | 'gsap';
+type Engine = 'framer' | 'gsap' | 'vanilla';
 type Mode = 'continuous' | 'scroll';
 
 export interface RingMaskedImageProps {
@@ -45,6 +45,8 @@ export interface RingMaskedImageProps {
 
   /** Styling */
   className?: string;        // wrapper container classes
+  /** Force a square aspect (legacy). Default false */
+  keepSquare?: boolean;
 }
 
 export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
@@ -65,7 +67,11 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
   sessionKey = 'ringIntroSeen',
   respectReducedMotion = true,
   className = '',
+  keepSquare = false,
 }) => {
+  // Generate unique ID for this instance
+  const maskId = useRef(`ringMask-${Math.random().toString(36).substr(2, 9)}`);
+  
   // Refs for animation targets
   const containerRef = useRef<HTMLDivElement>(null);
   const sliceGroupRef = useRef<SVGGElement>(null);
@@ -76,14 +82,28 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
   const validatedOuterRadius = Math.max(validatedInnerRadius + 1, Math.min(50, outerRadiusPct));
   const validatedSliceDegrees = Math.max(1, sliceDegrees);
 
-  // Calculate ring geometry
-  const radiusPx = (validatedInnerRadius + validatedOuterRadius) / 2;
-  const strokeWidth = validatedOuterRadius - validatedInnerRadius;
-  const circumference = 2 * Math.PI * radiusPx;
-  const sliceLength = circumference * (validatedSliceDegrees / 360);
+  // Calculate ring geometry (memoised)
+  const { radiusPx, strokeWidth, circumference, sliceLength, initialDashArray } = useMemo(() => {
+    const radius = (validatedInnerRadius + validatedOuterRadius) / 2;
+    const width = validatedOuterRadius - validatedInnerRadius;
+    const circ = 2 * Math.PI * radius;
+    const sliceLen = circ * (validatedSliceDegrees / 360);
+    return {
+      radiusPx: radius,
+      strokeWidth: width,
+      circumference: circ,
+      sliceLength: sliceLen,
+      initialDashArray: `${sliceLen} ${Math.max(circ - sliceLen, 0.0001)}` // ensure non-zero gap
+    };
+  }, [validatedInnerRadius, validatedOuterRadius, validatedSliceDegrees]);
 
-  // State for dash array animation (used in fill step)
-  const [dashArray, setDashArray] = useState(`0 ${circumference}`);
+  // State for dash array animation (used in fill step) – start with initial value immediately
+  const [dashArray, setDashArray] = useState(initialDashArray);
+
+  // Sync when geometry changes
+  useEffect(() => {
+    setDashArray(initialDashArray);
+  }, [initialDashArray]);
 
   // Session logic for intro
   const [shouldRunIntro, setShouldRunIntro] = useState(false);
@@ -174,18 +194,59 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     respectReducedMotion,
   ]);
 
-  // Calculate dash offset to start at 12 o'clock
-  const dashOffset = circumference * 0.25; // Start at top (12 o'clock position)
+  // Vanilla JS animation (fallback)
+  useEffect(() => {
+    if (engine === 'vanilla' && sliceGroupRef.current) {
+      console.log('RingMaskedImage: Using vanilla JS animation');
+      
+      const sliceGroup = sliceGroupRef.current;
+      const startTime = performance.now();
+      const rotationSpeed = (clockwise ? 360 : -360) / (secondsPerTurn * 1000);
+      let animationFrame: number;
+
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const rotation = (elapsed * rotationSpeed) % 360;
+        
+        // Use SVG transform instead of CSS transform for better SVG compatibility
+        sliceGroup.setAttribute('transform', `rotate(${rotation} 50 50)`);
+        
+        animationFrame = requestAnimationFrame(animate);
+      };
+
+      animationFrame = requestAnimationFrame(animate);
+      console.log('RingMaskedImage: Vanilla animation started');
+
+      return () => {
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+        }
+      };
+    }
+  }, [engine, secondsPerTurn, clockwise]);
+
+  // Calculate dash offset so the slice begins at 12 o'clock (0° in SVG is 3 o'clock)
+  const dashOffset = useMemo(() => circumference * 0.25, [circumference]);
+
+  // Debug geometry once
+  useEffect(() => {
+    console.log('RingMaskedImage geometry:', { engine, mode, radiusPx, strokeWidth, sliceLength, circumference, dashArray: initialDashArray });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <div ref={containerRef} className={`w-full aspect-square ${className}`}>
+    <div
+      ref={containerRef}
+      className={`relative ${keepSquare ? 'aspect-square' : 'h-full w-full'} ${className}`}
+    >
       <svg
         viewBox="0 0 100 100"
-        className="w-full h-auto"
+        className="w-full h-full"
         xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="xMidYMid slice"
       >
         <defs>
-          <mask id="ringMask">
+          <mask id={maskId.current} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" style={{ maskType: 'luminance' as any }}>
             {/* Base layer - dims the entire image */}
             <rect
               width="100"
@@ -195,7 +256,7 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
             />
             
             {/* Ring slice - highlights the visible area */}
-            <g ref={sliceGroupRef} style={{ transformOrigin: '50px 50px' }}>
+            <g ref={sliceGroupRef}>
               <circle
                 ref={circleRef}
                 cx="50"
@@ -208,14 +269,13 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
                 strokeLinecap="round"
                 strokeDasharray={dashArray}
                 strokeDashoffset={dashOffset}
-                pathLength="1"
               />
             </g>
           </mask>
         </defs>
 
         {/* Image with mask applied */}
-        <g mask="url(#ringMask)">
+        <g mask={`url(#${maskId.current})`}>
           <image
             href={src}
             x="0"

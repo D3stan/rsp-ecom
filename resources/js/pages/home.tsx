@@ -1,5 +1,7 @@
 import Header from '@/components/header';
 import LoadingOverlay from '@/components/LoadingOverlay';
+// import { VideoPlayer } from '@/components/VideoPlayer';
+import RingMaskedImage from '@/components/RingMaskedImage/RingMaskedImage';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useMobileInteractions } from '@/hooks/use-mobile-interactions';
@@ -101,7 +103,9 @@ export default function Home() {
     const productInteractions = useMobileInteractions<number>();
     const categoryInteractions = useMobileInteractions<number>();
 
-    // Preload the background image first
+    // Preload the background image first - Now using RingMaskedImage
+    // Commented out since we're using RingMaskedImage component instead
+    /*
     useEffect(() => {
         const img = new Image();
         img.onload = () => {
@@ -115,6 +119,7 @@ export default function Home() {
         img.loading = 'eager';
         img.src = '/images/homepage.png';
     }, []);
+    */
 
     const handleAddToCart = async (productId: number) => {
         if (addingToCartId === productId) return;
@@ -176,36 +181,32 @@ export default function Home() {
                 {/* Header */}
                 <Header currentPage="home" transparent={true} />
 
-                {/* Hero Section with Video Background */}
-                <section className="hero-section relative -mt-16 flex items-center justify-center overflow-hidden pt-16">
-                    {/* Background Media Container */}
-                    <div ref={parallaxRef} className="absolute inset-0 -top-16 scale-110 transform" style={{ willChange: 'transform' }}>
-                        {/* Fallback Background Image - Load first */}
-                        <div
-                            className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ${
-                                imageLoaded ? 'opacity-100' : 'opacity-0'
-                            }`}
-                            style={{ backgroundImage: 'url(/images/homepage.png)' }}
+                {/* Hero Section with Ring Masked Image */}
+                <section className="hero-section relative -mt-16 flex items-center justify-center overflow-hidden pt-16 min-h-screen">
+                    {/* Ring Masked Image Background */}
+                    <div className="absolute inset-0 z-0 flex items-center justify-center">
+                        <RingMaskedImage
+                            src="/images/angeleye.png"
+                            alt="Angel Eye - Discover Amazing Products"
+                            engine="framer"
+                            mode="continuous"
+                            innerRadiusPct={15}
+                            outerRadiusPct={21.6}
+                            sliceDegrees={40}
+                            baseOpacity={0.7}
+                            ringOpacity={1.0}
+                            secondsPerTurn={5}
+                            clockwise={true}
+                            introEnabled={false}
+                            introTTLSeconds={86400}
+                            sessionKey="heroRingIntroSeen"
+                            respectReducedMotion={false}
+                            className="w-full h-full min-h-screen mx-auto max-w-[1400px] bg-black"
                         />
-                        
-                        {/* Video Background - Load after image is loaded */}
-                        {imageLoaded && (
-                            <video
-                                autoPlay
-                                muted
-                                loop
-                                playsInline
-                                className={`h-full w-full object-cover transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
-                                onLoadedData={() => setVideoLoaded(true)}
-                                onError={() => setVideoLoaded(false)}
-                            >
-                                <source src="/videos/homepage.mp4" type="video/mp4" />
-                            </video>
-                        )}
                     </div>
 
-                    {/* Overlay for Text Readability */}
-                    <div className="absolute inset-0 z-5" style={{ background: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5))' }} />
+                    {/* Overlay for Text Readability - Temporarily disabled for debugging */}
+                    {<div className="absolute inset-0 z-5" style={{ background: 'linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2))' }} />}
 
                     {/* Hero Content */}
                     <div className="relative z-10 mx-auto max-w-5xl px-4 text-center text-white sm:px-6 lg:px-8">

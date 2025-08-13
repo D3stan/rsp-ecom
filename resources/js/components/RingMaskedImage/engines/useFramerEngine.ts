@@ -46,26 +46,43 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
 
   useEffect(() => {
     if (!enabled || !sliceGroupRef.current || prefersReducedMotion) {
+      console.log('FramerEngine: Skipping initialization', { 
+        enabled, 
+        hasSliceGroup: !!sliceGroupRef.current, 
+        prefersReducedMotion 
+      });
       return;
     }
+
+    console.log('FramerEngine: Starting initialization', {
+      mode,
+      shouldRunIntro,
+      secondsPerTurn,
+      clockwise
+    });
 
     // Try to use Framer Motion if available, fallback to vanilla JS
     const initializeFramer = async () => {
       try {
         const framerMotion = await import('framer-motion');
         framerMotionRef.current = framerMotion;
+        console.log('FramerEngine: Framer Motion loaded successfully');
         
         if (shouldRunIntro) {
+          console.log('FramerEngine: Running intro sequence');
           runFramerIntroSequence();
         } else {
+          console.log('FramerEngine: Starting selected mode');
           startFramerSelectedMode();
         }
       } catch (error) {
-        console.warn('Framer Motion not available, using fallback animation');
+        console.warn('Framer Motion not available, using fallback animation', error);
         // Fallback to vanilla JavaScript animation
         if (shouldRunIntro) {
+          console.log('FramerEngine: Running vanilla intro sequence');
           runVanillaIntroSequence();
         } else {
+          console.log('FramerEngine: Starting vanilla selected mode');
           startVanillaSelectedMode();
         }
       }
@@ -151,10 +168,14 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
     // Set initial dash array for slice visibility
     setDashArray(`${sliceLength} ${circumference - sliceLength}`);
 
+    // Force vanilla JS for SVG mask compatibility
+    // Framer Motion's CSS transforms don't work well with SVG elements inside masks
     if (mode === 'continuous') {
-      startFramerContinuousRotation(sliceGroup);
+      console.log('FramerEngine: Using vanilla continuous rotation for SVG mask compatibility');
+      startVanillaContinuousRotation(sliceGroup);
     } else if (mode === 'scroll') {
-      startFramerScrollRotation(sliceGroup);
+      console.log('FramerEngine: Using vanilla scroll rotation for SVG mask compatibility');
+      startVanillaScrollRotation(sliceGroup);
     }
   };
 
@@ -209,12 +230,16 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
 
     const sliceGroup = sliceGroupRef.current;
     
+    console.log('FramerEngine: Starting vanilla selected mode', { mode });
+    
     // Set initial dash array for slice visibility
     setDashArray(`${sliceLength} ${circumference - sliceLength}`);
 
     if (mode === 'continuous') {
+      console.log('FramerEngine: Starting vanilla continuous rotation');
       startVanillaContinuousRotation(sliceGroup);
     } else if (mode === 'scroll') {
+      console.log('FramerEngine: Starting vanilla scroll rotation');
       startVanillaScrollRotation(sliceGroup);
     }
   };
@@ -234,7 +259,8 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
       
       // Linear interpolation
       const currentAngle = startAngle + (endAngle - startAngle) * progress;
-      element.style.transform = `rotate(${currentAngle}deg)`;
+      // Use SVG transform instead of CSS transform for better mask compatibility
+      element.setAttribute('transform', `rotate(${currentAngle} 50 50)`);
       
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
@@ -285,7 +311,8 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
       const scrollProgress = scrollY / viewportHeight;
       const rotation = scrollProgress * 360 * turnsPerViewport;
       
-      element.style.transform = `rotate(${clockwise ? rotation : -rotation}deg)`;
+      // Use SVG transform instead of CSS transform for better mask compatibility
+      element.setAttribute('transform', `rotate(${clockwise ? rotation : -rotation} 50 50)`);
       
       scrollAnimationRef.current = requestAnimationFrame(updateScrollRotation);
     };
@@ -294,18 +321,25 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
   };
 
   const startVanillaContinuousRotation = (element: SVGGElement) => {
+    console.log('FramerEngine: Starting continuous rotation animation', {
+      secondsPerTurn,
+      clockwise
+    });
+    
     const startTime = performance.now();
     const rotationSpeed = (clockwise ? 360 : -360) / (secondsPerTurn * 1000); // degrees per millisecond
     
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const rotation = (elapsed * rotationSpeed) % 360;
-      element.style.transform = `rotate(${rotation}deg)`;
+      // Use SVG transform instead of CSS transform for better mask compatibility
+      element.setAttribute('transform', `rotate(${rotation} 50 50)`);
       
       animationRef.current = requestAnimationFrame(animate);
     };
     
     animationRef.current = requestAnimationFrame(animate);
+    console.log('FramerEngine: Continuous rotation animation started');
   };
 
   return {
