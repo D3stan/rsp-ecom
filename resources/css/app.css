@@ -202,6 +202,12 @@
 
     /* Improve touch interactions on mobile */
     @media (max-width: 768px) {
+        /* Fix password input dots size on mobile */
+        input[type="password"] {
+            font-size: 14px !important;
+            letter-spacing: 0.1em;
+        }
+
         /* Disable problematic hover effects on touch devices */
         .group:hover .group-hover\:scale-105 {
             transform: none;

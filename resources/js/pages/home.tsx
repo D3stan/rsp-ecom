@@ -92,6 +92,7 @@ const renderStars = (rating: number) => {
 export default function Home() {
     const parallaxRef = useRef<HTMLDivElement>(null);
     const [videoLoaded, setVideoLoaded] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(false);
     const [addingToCartId, setAddingToCartId] = useState<number | null>(null);
     const { t, isLoading } = useTranslation();
     const { featuredProducts, categories } = usePage<HomePageProps>().props;
@@ -99,6 +100,21 @@ export default function Home() {
     // Mobile interactions for products and categories
     const productInteractions = useMobileInteractions<number>();
     const categoryInteractions = useMobileInteractions<number>();
+
+    // Preload the background image first
+    useEffect(() => {
+        const img = new Image();
+        img.onload = () => {
+            setImageLoaded(true);
+        };
+        img.onerror = () => {
+            // Even if image fails to load, allow video to try loading
+            setImageLoaded(true);
+        };
+        // Use highest priority for the background image
+        img.loading = 'eager';
+        img.src = '/images/homepage.png';
+    }, []);
 
     const handleAddToCart = async (productId: number) => {
         if (addingToCartId === productId) return;
@@ -164,26 +180,28 @@ export default function Home() {
                 <section className="hero-section relative -mt-16 flex items-center justify-center overflow-hidden pt-16">
                     {/* Background Media Container */}
                     <div ref={parallaxRef} className="absolute inset-0 -top-16 scale-110 transform" style={{ willChange: 'transform' }}>
-                        {/* Video Background */}
-                        <video
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            className={`h-full w-full object-cover transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
-                            onLoadedData={() => setVideoLoaded(true)}
-                            onError={() => setVideoLoaded(false)}
-                        >
-                            <source src="/videos/homepage.mp4" type="video/mp4" />
-                        </video>
-
-                        {/* Fallback Background Image */}
+                        {/* Fallback Background Image - Load first */}
                         <div
                             className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ${
-                                videoLoaded ? 'opacity-0' : 'opacity-100'
+                                imageLoaded ? 'opacity-100' : 'opacity-0'
                             }`}
                             style={{ backgroundImage: 'url(/images/homepage.png)' }}
                         />
+                        
+                        {/* Video Background - Load after image is loaded */}
+                        {imageLoaded && (
+                            <video
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                                className={`h-full w-full object-cover transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                onLoadedData={() => setVideoLoaded(true)}
+                                onError={() => setVideoLoaded(false)}
+                            >
+                                <source src="/videos/homepage.mp4" type="video/mp4" />
+                            </video>
+                        )}
                     </div>
 
                     {/* Overlay for Text Readability */}
