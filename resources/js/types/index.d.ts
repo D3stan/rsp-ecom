@@ -5,6 +5,7 @@ export * from './category';
 export * from './order';
 export * from './product';
 export * from './size';
+export * from './wishlist';
 
 export interface Auth {
     user: User | null;

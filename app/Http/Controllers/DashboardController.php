@@ -64,7 +64,35 @@ class DashboardController extends Controller
         SEOMeta::setTitle('My Wishlist – ' . config('app.name'));
         
         $user = Auth::user();
-        $wishlist = $user->wishlist()->with('product.category')->get();
+        $wishlist = $user->wishlist()
+            ->with(['product.category'])
+            ->latest()
+            ->get()
+            ->map(function ($wishlistItem) {
+                return [
+                    'id' => $wishlistItem->id,
+                    'user_id' => $wishlistItem->user_id,
+                    'product_id' => $wishlistItem->product_id,
+                    'created_at' => $wishlistItem->created_at->toISOString(),
+                    'updated_at' => $wishlistItem->updated_at->toISOString(),
+                    'product' => [
+                        'id' => $wishlistItem->product->id,
+                        'name' => $wishlistItem->product->name,
+                        'slug' => $wishlistItem->product->slug,
+                        'price' => (float) $wishlistItem->product->price,
+                        'image_url' => $wishlistItem->product->image_url,
+                        'rating' => $wishlistItem->product->rating ?? null,
+                        'description' => $wishlistItem->product->description,
+                        'stock_quantity' => $wishlistItem->product->stock_quantity,
+                        'is_active' => $wishlistItem->product->is_active,
+                        'category' => $wishlistItem->product->category ? [
+                            'id' => $wishlistItem->product->category->id,
+                            'name' => $wishlistItem->product->category->name,
+                            'slug' => $wishlistItem->product->category->slug,
+                        ] : null,
+                    ],
+                ];
+            });
 
         return Inertia::render('Dashboard/Wishlist', [
             'wishlist' => $wishlist,

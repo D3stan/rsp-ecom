@@ -1,44 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link, usePage } from '@inertiajs/react';
-import { Heart, ShoppingCart, Star, ExternalLink } from 'lucide-react';
-import { type SharedData } from '@/types';
-
-interface WishlistItem {
-    id: number;
-    product: {
-        id: number;
-        name: string;
-        slug: string;
-        price: number;
-        image?: string;
-        rating?: number;
-    };
-}
+import { Heart, ShoppingCart } from 'lucide-react';
+import { type SharedData, type WishlistItem } from '@/types';
+import { WishlistCard as WishlistItemCard } from '@/components/wishlist-card';
 
 export const WishlistCard = () => {
     const { props } = usePage<SharedData & { wishlistItems?: WishlistItem[] }>();
     const wishlistItems = props.wishlistItems || [];
-
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'EUR',
-        }).format(amount);
-    };
-
-    const renderStars = (rating: number) => {
-        return Array.from({ length: 5 }, (_, i) => (
-            <Star
-                key={i}
-                className={`h-3 w-3 ${
-                    i < rating 
-                        ? 'fill-yellow-400 text-yellow-400' 
-                        : 'text-gray-300'
-                }`}
-            />
-        ));
-    };
 
     return (
         <Card>
@@ -51,46 +20,53 @@ export const WishlistCard = () => {
             <CardContent>
                 {wishlistItems.length > 0 ? (
                     <div className="space-y-4">
-                        {/* Wishlist Items */}
-                        {wishlistItems.slice(0, 3).map((item) => (
-                            <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                                <div className="flex-shrink-0">
-                                    {item.product.image ? (
-                                        <img 
-                                            src={item.product.image} 
-                                            alt={item.product.name}
-                                            className="h-12 w-12 rounded object-cover"
-                                        />
-                                    ) : (
-                                        <div className="h-12 w-12 rounded bg-muted flex items-center justify-center">
-                                            <ShoppingCart className="h-6 w-6 text-muted-foreground" />
-                                        </div>
-                                    )}
-                                </div>
-                                
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="text-sm font-medium truncate">
-                                        {item.product.name}
-                                    </h4>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-sm font-medium">
-                                            {formatCurrency(item.product.price)}
-                                        </span>
-                                        {item.product.rating && (
-                                            <div className="flex items-center gap-1">
-                                                {renderStars(item.product.rating)}
+                        {/* Wishlist Items - Show first 3 in compact mode */}
+                        <div className="space-y-3">
+                            {wishlistItems.slice(0, 3).map((item) => (
+                                <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                                    <div className="flex-shrink-0">
+                                        {item.product.image ? (
+                                            <img 
+                                                src={item.product.image} 
+                                                alt={item.product.name}
+                                                className="h-12 w-12 rounded object-cover"
+                                            />
+                                        ) : (
+                                            <div className="h-12 w-12 rounded bg-muted flex items-center justify-center">
+                                                <ShoppingCart className="h-6 w-6 text-muted-foreground" />
                                             </div>
                                         )}
                                     </div>
+                                    
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-sm font-medium truncate">
+                                            {item.product.name}
+                                        </h4>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-sm font-medium">
+                                                {new Intl.NumberFormat('en-US', {
+                                                    style: 'currency',
+                                                    currency: 'EUR',
+                                                }).format(item.product.price)}
+                                            </span>
+                                            {item.product.rating && (
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-xs text-muted-foreground">
+                                                        ★{item.product.rating.toFixed(1)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    <Button size="sm" variant="ghost" asChild>
+                                        <Link href={`/products/${item.product.slug}`}>
+                                            View
+                                        </Link>
+                                    </Button>
                                 </div>
-                                
-                                <Button size="sm" variant="ghost" asChild>
-                                    <Link href={`/products/${item.product.slug}`}>
-                                        <ExternalLink className="h-4 w-4" />
-                                    </Link>
-                                </Button>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
 
                         {/* Show more indicator */}
                         {wishlistItems.length > 3 && (

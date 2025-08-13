@@ -5,6 +5,7 @@ use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ContactController;
@@ -225,6 +226,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
     Route::get('dashboard/orders', [DashboardController::class, 'orders'])->name('orders.index');
     Route::get('dashboard/wishlist', [DashboardController::class, 'wishlist'])->name('wishlist.index');
+    Route::delete('dashboard/wishlist/{wishlist}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
     
     // Review routes
     Route::get('reviews/create/{product}', [ReviewController::class, 'create'])->name('reviews.create');
