@@ -25,30 +25,30 @@ export const WelcomeCard = ({ user }: { user: User }) => {
     };
 
     return (
-        <Card className="border-l-4 border-l-primary">
+        <Card className="border-l-4 border-l-primary w-full overflow-hidden">
             <CardHeader>
-                <CardTitle className="text-xl">
+                <CardTitle className="text-xl break-words">
                     {formatTime()}, {user.name}!
                 </CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <Avatar className="h-16 w-16">
+                    <Avatar className="h-16 w-16 flex-shrink-0">
                         <AvatarImage src={user.avatar} alt={user.name} />
                         <AvatarFallback className="text-lg font-semibold">
                             {getInitials(user.name)}
                         </AvatarFallback>
                     </Avatar>
                     
-                    <div className="flex-1 space-y-2">
-                        <p className="text-muted-foreground">
+                    <div className="flex-1 space-y-2 min-w-0">
+                        <p className="text-muted-foreground break-words">
                             {t('dashboard.welcome_description')}
                         </p>
                         
                         <div className="flex flex-wrap gap-2">
                             <Badge 
                                 variant={user.email_verified_at ? "outline" : "destructive"}
-                                className="flex items-center gap-1"
+                                className="flex items-center gap-1 flex-shrink-0"
                             >
                                 {user.email_verified_at ? (
                                     <>
@@ -64,7 +64,7 @@ export const WelcomeCard = ({ user }: { user: User }) => {
                             </Badge>
                             
                             {user.google_id && (
-                                <Badge variant="outline" className="flex items-center gap-1">
+                                <Badge variant="outline" className="flex items-center gap-1 flex-shrink-0">
                                     <svg className="h-3 w-3" viewBox="0 0 24 24">
                                         <path
                                             fill="currentColor"

@@ -12,20 +12,20 @@ export const WishlistCard = () => {
     const { t } = useTranslation();
 
     return (
-        <Card>
+        <Card className="w-full overflow-hidden">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <Heart className="h-5 w-5" />
-                    {t('wishlist.title')}
+                    <Heart className="h-5 w-5 flex-shrink-0" />
+                    <span className="truncate">{t('wishlist.title')}</span>
                 </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
                 {wishlistItems.length > 0 ? (
                     <div className="space-y-4">
                         {/* Wishlist Items - Show first 3 in compact mode */}
                         <div className="space-y-3">
                             {wishlistItems.slice(0, 3).map((item) => (
-                                <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                                <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg overflow-hidden">
                                     <div className="flex-shrink-0">
                                         {item.product.image ? (
                                             <img 
@@ -61,7 +61,7 @@ export const WishlistCard = () => {
                                         </div>
                                     </div>
                                     
-                                    <Button size="sm" variant="ghost" asChild>
+                                    <Button size="sm" variant="ghost" className="flex-shrink-0" asChild>
                                         <Link href={`/products/${item.product.slug}`}>
                                             {t('products.view_full_details')}
                                         </Link>

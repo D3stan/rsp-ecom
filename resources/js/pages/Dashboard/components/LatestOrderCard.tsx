@@ -57,26 +57,26 @@ export const LatestOrderCard = () => {
     const latestOrder = recentOrders[0];
 
     return (
-        <Card>
+        <Card className="w-full overflow-hidden">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <ShoppingBag className="h-5 w-5" />
-                    {t('dashboard.recent_orders')}
+                    <ShoppingBag className="h-5 w-5 flex-shrink-0" />
+                    <span className="truncate">{t('dashboard.recent_orders')}</span>
                 </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
                 {latestOrder ? (
                     <div className="space-y-4">
                         {/* Latest Order */}
-                        <div className="p-4 border rounded-lg bg-muted/20">
-                            <div className="flex items-center justify-between mb-3">
-                                <div>
-                                    <h4 className="font-medium">{t('dashboard.order_number', { id: latestOrder.id })}</h4>
-                                    <p className="text-sm text-muted-foreground">
+                        <div className="p-4 border rounded-lg bg-muted/20 overflow-hidden">
+                            <div className="flex items-center justify-between mb-3 gap-4">
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="font-medium truncate">{t('dashboard.order_number', { id: latestOrder.id })}</h4>
+                                    <p className="text-sm text-muted-foreground truncate">
                                         {formatDate(latestOrder.created_at)} • {latestOrder.order_items.length} {latestOrder.order_items.length === 1 ? t('dashboard.item') : t('dashboard.items')}
                                     </p>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right flex-shrink-0">
                                     <div className="font-medium">{formatCurrency(latestOrder.total_amount || latestOrder.total)}</div>
                                     <Badge 
                                         variant="outline" 
@@ -89,18 +89,18 @@ export const LatestOrderCard = () => {
                             </div>
                             
                             {/* Order Items Preview */}
-                            <div className="space-y-2">
+                            <div className="space-y-2 overflow-hidden">
                                 {latestOrder.order_items.slice(0, 2).map((item) => (
-                                    <div key={item.id} className="flex items-center justify-between text-sm">
-                                        <div className="flex-1">
-                                            <span className="font-medium">{item.product.name}</span>
+                                    <div key={item.id} className="flex items-center justify-between text-sm gap-4">
+                                        <div className="flex-1 min-w-0">
+                                            <span className="font-medium truncate block">{item.product.name}</span>
                                             {item.size && (
-                                                <span className="text-muted-foreground ml-2">
+                                                <span className="text-muted-foreground truncate block">
                                                     • {t('orders.size')}: {item.size.name}
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="text-muted-foreground">
+                                        <div className="text-muted-foreground flex-shrink-0">
                                             {item.quantity}x {formatCurrency(item.price)}
                                         </div>
                                     </div>
@@ -115,19 +115,19 @@ export const LatestOrderCard = () => {
 
                         {/* Additional Orders */}
                         {recentOrders.slice(1, 3).map((order) => (
-                            <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                <div className="flex items-center gap-3">
+                            <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg gap-4 overflow-hidden">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
                                     <div className="flex-shrink-0">
                                         {getOrderStatusIcon(order.status)}
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-medium">{t('dashboard.order_number', { id: order.id })}</p>
-                                        <p className="text-xs text-muted-foreground">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium truncate">{t('dashboard.order_number', { id: order.id })}</p>
+                                        <p className="text-xs text-muted-foreground truncate">
                                             {formatDate(order.created_at)}
                                         </p>
                                     </div>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right flex-shrink-0">
                                     <div className="text-sm font-medium">{formatCurrency(order.total_amount || order.total)}</div>
                                     <Badge 
                                         variant="outline" 

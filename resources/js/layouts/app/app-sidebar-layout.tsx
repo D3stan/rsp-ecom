@@ -14,9 +14,11 @@ export default function AppSidebarLayout({ children, breadcrumbs = [] }: PropsWi
     return (
         <AppShell variant="sidebar">
             {isAdminRoute ? <AdminSidebar /> : <AppSidebar />}
-            <AppContent variant="sidebar" className="overflow-x-hidden">
+            <AppContent variant="sidebar" className="overflow-x-hidden w-full max-w-full">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
-                {children}
+                <div className="w-full max-w-full overflow-x-hidden">
+                    {children}
+                </div>
             </AppContent>
         </AppShell>
     );

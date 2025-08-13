@@ -57,59 +57,59 @@ export default function Dashboard({
         >
             <Head title={t('dashboard.title')} />
 
-            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+            <div className="space-y-6 p-4 md:p-6 w-full max-w-7xl mx-auto overflow-x-hidden min-w-0">
                 {/* Welcome Section */}
                 <WelcomeCard user={user} />
 
                 {/* Quick Stats */}
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 w-full min-w-0">
+                    <Card className="w-full min-w-0">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{t('dashboard.total_orders')}</CardTitle>
-                            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-sm font-medium truncate pr-2 min-w-0">{t('dashboard.total_orders')}</CardTitle>
+                            <ShoppingBag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{orderStats.total}</div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground truncate">
                                 {t('dashboard.all_time_purchases')}
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="w-full min-w-0">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{t('dashboard.pending_orders')}</CardTitle>
-                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-sm font-medium truncate pr-2 min-w-0">{t('dashboard.pending_orders')}</CardTitle>
+                            <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{orderStats.pending}</div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground truncate">
                                 {t('dashboard.awaiting_processing')}
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="w-full min-w-0">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{t('dashboard.completed_orders')}</CardTitle>
-                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-sm font-medium truncate pr-2 min-w-0">{t('dashboard.completed_orders')}</CardTitle>
+                            <TrendingUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{orderStats.completed}</div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground truncate">
                                 {t('dashboard.successfully_delivered')}
                             </p>
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="w-full min-w-0">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{t('dashboard.wishlist_items')}</CardTitle>
-                            <Heart className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-sm font-medium truncate pr-2 min-w-0">{t('dashboard.wishlist_items')}</CardTitle>
+                            <Heart className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{wishlistCount}</div>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground truncate">
                                 {t('dashboard.saved_for_later')}
                             </p>
                         </CardContent>
@@ -117,9 +117,9 @@ export default function Dashboard({
                 </div>
 
                 {/* Main Content Grid */}
-                <div className="grid gap-6 lg:grid-cols-3">
+                <div className="grid gap-6 lg:grid-cols-3 w-full min-w-0">
                     {/* Orders and Wishlist */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="lg:col-span-2 space-y-6 min-w-0 w-full overflow-hidden">
                         <LatestOrderCard />
                         <div className="lg:hidden">
                             <WishlistCard />
@@ -127,7 +127,7 @@ export default function Dashboard({
                     </div>
 
                     {/* Sidebar */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 min-w-0 w-full overflow-hidden">
                         <div className="hidden lg:block">
                             <WishlistCard />
                         </div>
@@ -189,12 +189,12 @@ export default function Dashboard({
                 </div>
 
                 {/* Support Button */}
-                <Card>
+                <Card className="w-full overflow-hidden">
                     <CardContent className="pt-6">
                         <div className="text-center">
                             <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                             <h3 className="text-lg font-medium mb-2">{t('dashboard.need_help')}</h3>
-                            <p className="text-muted-foreground mb-4">
+                            <p className="text-muted-foreground mb-4 break-words">
                                 {t('dashboard.support_description')}
                             </p>
                             <Button className="w-full md:w-auto">{t('dashboard.get_support')}</Button>
