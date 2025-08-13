@@ -12,9 +12,9 @@ return [
         'defaults'       => [
             'title'        => false, // Don't set a default title to avoid duplication
             'titleBefore'  => false, // Put defaults.title before page title, like 'E-commerce Store - Dashboard'
-            'description'  => 'Quality products with fast shipping and excellent customer service. Browse our wide selection of electronics, clothing, home goods and more.', // set false to total remove
+            'description'  => 'Quality motorcycle LED lighting products with fast shipping and excellent customer service. Angel eye headlights, LED lights for motard and lighting accessories.', // set false to total remove
             'separator'    => ' – ',
-            'keywords'     => ['ecommerce', 'online shopping', 'quality products', 'fast shipping'],
+            'keywords'     => ['led headlights', 'angel eye', 'motard', 'motorcycle led lights', 'motorcycle lights', 'motorcycle lighting', 'front headlights', 'angel eyes led', 'motard accessories', 'bike lights', 'led motorcycle'],
             'canonical'    => 'full', // Set to null or 'full' to use Url::full(), set to 'current' to use Url::current(), set false to total remove
             'robots'       => 'index,follow', // Set to 'all', 'none' or any combination of index/noindex and follow/nofollow
         ],
@@ -38,7 +38,7 @@ return [
          */
         'defaults' => [
             'title'       => false, // Don't set default to avoid duplication
-            'description' => 'Quality products with fast shipping and excellent customer service. Browse our wide selection of electronics, clothing, home goods and more.', // set false to total remove
+            'description' => 'Quality motorcycle LED lighting products with fast shipping and excellent customer service. Angel eye headlights, LED lights for motard and lighting accessories.', // set false to total remove
             'url'         => null, // Set null for using Url::current(), set false to total remove
             'type'        => 'website',
             'site_name'   => env('APP_NAME', 'Laravel'),

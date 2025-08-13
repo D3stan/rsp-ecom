@@ -11,6 +11,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SharedData } from '@/types';
+import { Page } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowLeft, Calculator, ChevronDown, ChevronUp, CreditCard, FileText, Tag, Truck } from 'lucide-react';
 import { useState } from 'react';
@@ -217,7 +218,7 @@ export default function CheckoutDetails() {
         if (auth?.user) {
             // User is authenticated, proceed to cart checkout using Cashier
             router.post('/checkout/cart', checkoutData, {
-                onSuccess: (page: { props: { url?: string } }) => {
+                onSuccess: (page: Page<{ url?: string }>) => {
                     // Redirect to Stripe checkout will be handled by the backend
                     if (page.props?.url) {
                         window.location.href = page.props.url;
@@ -239,7 +240,7 @@ export default function CheckoutDetails() {
         } else {
             // User is not authenticated, redirect to guest cart checkout
             router.post('/guest/checkout/cart', checkoutData, {
-                onSuccess: (page: { props: { url?: string } }) => {
+                onSuccess: (page: Page<{ url?: string }>) => {
                     // Redirect to Stripe checkout will be handled by the backend
                     if (page.props?.url) {
                         window.location.href = page.props.url;

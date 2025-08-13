@@ -23,13 +23,16 @@ const availableLocales = ['en', 'es', 'fr', 'de', 'it'];
 // Detect browser language
 function detectBrowserLanguage(): string | null {
     if (typeof window === 'undefined') return null;
-    
-    const browserLang = navigator.language || (navigator as any).userLanguage;
+
+    // Cast navigator to a type that includes the non-standard userLanguage property
+    const nav = navigator as Navigator & { userLanguage?: string };
+    const browserLang = nav.language || nav.userLanguage;
+
     if (!browserLang) return null;
-    
+
     // Extract the language code (e.g., 'it-IT' -> 'it')
     const langCode = browserLang.toLowerCase().split('-')[0];
-    
+
     // Check if the detected language is supported
     return availableLocales.includes(langCode) ? langCode : null;
 }
@@ -84,7 +87,7 @@ export function TranslationProvider({ children, initialTranslations = {}, initia
             // Update translations if we have cached ones that are different
             setTranslations(globalTranslationCache[locale]);
         }
-    }, [locale, initialLocale]);
+    }, [locale, initialLocale, translations]);
 
     const loadTranslations = async (newLocale: string) => {
         // Check cache first

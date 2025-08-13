@@ -11,15 +11,15 @@ import { initializeTheme } from './hooks/use-appearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-// Wrapper component to access Inertia props
-function AppWrapper({ Component, props }: { Component: React.ComponentType<Record<string, unknown>>; props: Record<string, unknown> }) {
-    const translations = props.translations as Record<string, string>;
-    const locale = props.locale as string;
+// Wrapper component to provide context to all pages
+function AppWrapper({ children, pageProps }: { children: React.ReactNode; pageProps: Record<string, unknown> }) {
+    const translations = pageProps.translations as Record<string, string>;
+    const locale = pageProps.locale as string;
 
     return (
         <TranslationProvider initialTranslations={translations} initialLocale={locale}>
             <ToastProvider>
-                <Component {...props} />
+                {children}
                 <ToastContainer />
             </ToastProvider>
         </TranslationProvider>
@@ -32,7 +32,11 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
 
-        root.render(React.createElement(AppWrapper, { Component: App, props: props }));
+        root.render(
+            <AppWrapper pageProps={props}>
+                <App {...props} />
+            </AppWrapper>
+        );
     },
     progress: {
         color: '#4B5563',

@@ -14,6 +14,7 @@ import React, { useState } from 'react';
 import { useToast } from '@/contexts/ToastContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { AlertCircle, CreditCard, ShoppingBag, Truck } from 'lucide-react';
+import { Page } from '@inertiajs/core';
 
 interface CartItem {
     id: number;
@@ -45,8 +46,8 @@ interface Address {
     country: string;
 }
 
-interface CheckoutFormData {
-    [key: string]: unknown;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface CheckoutFormData extends Record<string, any> {
     billing_address: Address;
     shipping_address: Address;
     shipping_same_as_billing: boolean;
@@ -138,7 +139,7 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
         setIsProcessing(true);
 
         post(route('checkout.session'), {
-            onSuccess: (response: { props: { sessionId?: string; url?: string } }) => {
+            onSuccess: (response: Page<{ sessionId?: string; url?: string }>) => {
                 if (response.props?.sessionId && response.props?.url) {
                     // Redirect to Stripe Checkout
                     window.location.href = response.props.url;

@@ -20,21 +20,27 @@ class HomeController extends Controller
      */
     public function index(): Response
     {
-        // Set SEO for homepage
+        // Set SEO for homepage based on current locale
         $appName = config('app.name');
-        SEOMeta::setTitle($appName . ' - Quality Products Online');
-        SEOMeta::setDescription('Discover our wide range of quality products. Shop electronics, clothing, home & garden, sports, and more with fast shipping and excellent customer service.');
+        $locale = app()->getLocale();
+        
+        // Language-specific SEO content
+        $seoContent = $this->getSeoContentByLocale($locale);
+        
+        SEOMeta::setTitle($appName . ' - ' . $seoContent['title']);
+        SEOMeta::setDescription($seoContent['description']);
+        SEOMeta::setKeywords($seoContent['keywords']);
         SEOMeta::setCanonical(url('/'));
         
         OpenGraph::setType('website');
         OpenGraph::setUrl(url('/'));
-        OpenGraph::setTitle($appName . ' - Quality Products Online');
-        OpenGraph::setDescription('Discover our wide range of quality products. Shop electronics, clothing, home & garden, sports, and more with fast shipping and excellent customer service.');
+        OpenGraph::setTitle($appName . ' - ' . $seoContent['title']);
+        OpenGraph::setDescription($seoContent['description']);
         OpenGraph::setSiteName($appName);
         
         TwitterCard::setType('summary_large_image');
-        TwitterCard::setTitle($appName . ' - Quality Products Online');
-        TwitterCard::setDescription('Discover our wide range of quality products. Shop electronics, clothing, home & garden, sports, and more.');
+        TwitterCard::setTitle($appName . ' - ' . $seoContent['twitter_title']);
+        TwitterCard::setDescription($seoContent['twitter_description']);
         
         // Add default social image if available
         $socialImagePath = 'images/rsplogo.png';
@@ -48,6 +54,7 @@ class HomeController extends Controller
         $websiteJsonLd = Schema::webSite()
             ->url(config('app.url'))
             ->name($appName)
+            ->description($seoContent['schema_description'])
             ->potentialAction(
                 Schema::searchAction()
                     ->target(url('/products') . '?search={search_term_string}')
@@ -189,5 +196,57 @@ class HomeController extends Controller
         // For other paths, check if the public file exists
         $publicPath = public_path($imageUrl);
         return file_exists($publicPath);
+    }
+
+    /**
+     * Get SEO content based on locale
+     */
+    private function getSeoContentByLocale(string $locale): array
+    {
+        $seoContent = [
+            'it' => [
+                'title' => 'Fari LED Angel Eye per Motard | Accessori Moto',
+                'description' => 'Scopri la nostra collezione di fari LED angel eye per motard, luci LED moto, fari anteriori e accessori illuminazione per moto. Qualità professionale e spedizione veloce.',
+                'twitter_title' => 'Fari LED Angel Eye per Motard',
+                'twitter_description' => 'Fari LED angel eye per motard, luci LED moto e accessori illuminazione. Qualità professionale e spedizione veloce.',
+                'schema_description' => 'Fari LED angel eye per motard, luci LED moto e accessori illuminazione. Specializzati in prodotti di qualità per motociclette.',
+                'keywords' => ['fari led', 'angel eye', 'motard', 'luci led moto', 'fari moto', 'illuminazione moto', 'fari anteriori', 'angel eyes led', 'motard accessories', 'motorcycle lights', 'led headlights'],
+            ],
+            'en' => [
+                'title' => 'LED Angel Eye Headlights for Motard | Motorcycle Accessories',
+                'description' => 'Discover our collection of LED angel eye headlights for motard, motorcycle LED lights, front headlights and motorcycle lighting accessories. Professional quality and fast shipping.',
+                'twitter_title' => 'LED Angel Eye Headlights for Motard',
+                'twitter_description' => 'LED angel eye headlights for motard, motorcycle LED lights and lighting accessories. Professional quality and fast shipping.',
+                'schema_description' => 'LED angel eye headlights for motard, motorcycle LED lights and lighting accessories. Specialized in quality motorcycle products.',
+                'keywords' => ['led headlights', 'angel eye', 'motard', 'motorcycle led lights', 'motorcycle lights', 'motorcycle lighting', 'front headlights', 'angel eyes led', 'motard accessories', 'bike lights', 'led motorcycle'],
+            ],
+            'es' => [
+                'title' => 'Faros LED Angel Eye para Motard | Accesorios Moto',
+                'description' => 'Descubre nuestra colección de faros LED angel eye para motard, luces LED para moto, faros delanteros y accesorios de iluminación para moto. Calidad profesional y envío rápido.',
+                'twitter_title' => 'Faros LED Angel Eye para Motard',
+                'twitter_description' => 'Faros LED angel eye para motard, luces LED para moto y accesorios de iluminación. Calidad profesional y envío rápido.',
+                'schema_description' => 'Faros LED angel eye para motard, luces LED para moto y accesorios de iluminación. Especializados en productos de calidad para motocicletas.',
+                'keywords' => ['faros led', 'angel eye', 'motard', 'luces led moto', 'faros moto', 'iluminación moto', 'faros delanteros', 'angel eyes led', 'accesorios motard', 'luces motocicleta', 'led moto'],
+            ],
+            'fr' => [
+                'title' => 'Phares LED Angel Eye pour Motard | Accessoires Moto',
+                'description' => 'Découvrez notre collection de phares LED angel eye pour motard, éclairages LED moto, phares avant et accessoires d\'éclairage pour moto. Qualité professionnelle et expédition rapide.',
+                'twitter_title' => 'Phares LED Angel Eye pour Motard',
+                'twitter_description' => 'Phares LED angel eye pour motard, éclairages LED moto et accessoires d\'éclairage. Qualité professionnelle et expédition rapide.',
+                'schema_description' => 'Phares LED angel eye pour motard, éclairages LED moto et accessoires d\'éclairage. Spécialisés en produits de qualité pour motos.',
+                'keywords' => ['phares led', 'angel eye', 'motard', 'éclairages led moto', 'phares moto', 'éclairage moto', 'phares avant', 'angel eyes led', 'accessoires motard', 'éclairages moto', 'led moto'],
+            ],
+            'de' => [
+                'title' => 'LED Angel Eye Scheinwerfer für Motard | Motorrad Zubehör',
+                'description' => 'Entdecken Sie unsere Kollektion von LED Angel Eye Scheinwerfern für Motard, Motorrad LED-Beleuchtung, Frontscheinwerfer und Motorrad-Beleuchtungszubehör. Professionelle Qualität und schneller Versand.',
+                'twitter_title' => 'LED Angel Eye Scheinwerfer für Motard',
+                'twitter_description' => 'LED Angel Eye Scheinwerfer für Motard, Motorrad LED-Beleuchtung und Beleuchtungszubehör. Professionelle Qualität und schneller Versand.',
+                'schema_description' => 'LED Angel Eye Scheinwerfer für Motard, Motorrad LED-Beleuchtung und Beleuchtungszubehör. Spezialisiert auf Qualitätsprodukte für Motorräder.',
+                'keywords' => ['led scheinwerfer', 'angel eye', 'motard', 'motorrad led beleuchtung', 'motorrad scheinwerfer', 'motorrad beleuchtung', 'frontscheinwerfer', 'angel eyes led', 'motard zubehör', 'motorrad lichter', 'led motorrad'],
+            ],
+        ];
+
+        // Return content for the specified locale, fallback to English if not found
+        return $seoContent[$locale] ?? $seoContent['en'];
     }
 }

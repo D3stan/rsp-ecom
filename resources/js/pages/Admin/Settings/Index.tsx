@@ -106,7 +106,6 @@ export default function AdminSettings({ settings }: Props) {
         shipping_calculation_method: settings.shipping_calculation_method,
         allow_international_shipping: settings.allow_international_shipping,
         processing_time_days: settings.processing_time_days,
-        shipping_zones: settings.shipping_zones,
     });
 
     const taxForm = useForm({
@@ -423,7 +422,7 @@ export default function AdminSettings({ settings }: Props) {
                                 </div>
                                 <Switch
                                     id="shipping_enabled"
-                                    checked={shippingForm.data.shipping_enabled ?? false}
+                                    checked={shippingForm.data.shipping_enabled as boolean}
                                     onCheckedChange={(checked) => shippingForm.setData('shipping_enabled', checked)}
                                 />
                             </div>
@@ -440,7 +439,7 @@ export default function AdminSettings({ settings }: Props) {
                                                 type="number"
                                                 step="0.01"
                                                 min="0"
-                                                value={shippingForm.data.default_shipping_cost ?? ''}
+                                                value={shippingForm.data.default_shipping_cost as number}
                                                 onChange={(e) => shippingForm.setData('default_shipping_cost', parseFloat(e.target.value) || 0)}
                                             />
                                         </div>
@@ -452,7 +451,7 @@ export default function AdminSettings({ settings }: Props) {
                                                 type="number"
                                                 step="0.01"
                                                 min="0"
-                                                value={shippingForm.data.free_shipping_threshold ?? ''}
+                                                value={shippingForm.data.free_shipping_threshold as number}
                                                 onChange={(e) => shippingForm.setData('free_shipping_threshold', parseFloat(e.target.value) || 0)}
                                             />
                                             <p className="text-sm text-muted-foreground">Set to 0 to disable free shipping</p>
@@ -463,7 +462,7 @@ export default function AdminSettings({ settings }: Props) {
                                         <div className="space-y-2">
                                             <Label htmlFor="shipping_calculation_method">Calculation Method</Label>
                                             <Select
-                                                value={shippingForm.data.shipping_calculation_method ?? ''}
+                                                value={shippingForm.data.shipping_calculation_method as string}
                                                 onValueChange={(value) => shippingForm.setData('shipping_calculation_method', value)}
                                             >
                                                 <SelectTrigger>
@@ -484,7 +483,7 @@ export default function AdminSettings({ settings }: Props) {
                                                 type="number"
                                                 min="1"
                                                 max="30"
-                                                value={shippingForm.data.processing_time_days ?? ''}
+                                                value={shippingForm.data.processing_time_days as number}
                                                 onChange={(e) => shippingForm.setData('processing_time_days', parseInt(e.target.value) || 1)}
                                             />
                                         </div>
@@ -497,7 +496,7 @@ export default function AdminSettings({ settings }: Props) {
                                         </div>
                                         <Switch
                                             id="allow_international_shipping"
-                                            checked={shippingForm.data.allow_international_shipping ?? false}
+                                            checked={shippingForm.data.allow_international_shipping as boolean}
                                             onCheckedChange={(checked) => shippingForm.setData('allow_international_shipping', checked)}
                                         />
                                     </div>
@@ -523,7 +522,7 @@ export default function AdminSettings({ settings }: Props) {
                                 </div>
                                 <Switch
                                     id="tax_enabled"
-                                    checked={taxForm.data.tax_enabled ?? false}
+                                    checked={taxForm.data.tax_enabled as boolean}
                                     onCheckedChange={(checked) => taxForm.setData('tax_enabled', checked)}
                                 />
                             </div>
@@ -541,7 +540,7 @@ export default function AdminSettings({ settings }: Props) {
                                                 step="0.01"
                                                 min="0"
                                                 max="100"
-                                                value={taxForm.data.default_tax_rate ?? ''}
+                                                value={taxForm.data.default_tax_rate as number}
                                                 onChange={(e) => taxForm.setData('default_tax_rate', parseFloat(e.target.value) || 0)}
                                             />
                                         </div>
@@ -549,7 +548,7 @@ export default function AdminSettings({ settings }: Props) {
                                         <div className="space-y-2">
                                             <Label htmlFor="tax_calculation_method">Calculation Based On</Label>
                                             <Select
-                                                value={taxForm.data.tax_calculation_method ?? ''}
+                                                value={taxForm.data.tax_calculation_method as string}
                                                 onValueChange={(value) => taxForm.setData('tax_calculation_method', value)}
                                             >
                                                 <SelectTrigger>
@@ -567,7 +566,7 @@ export default function AdminSettings({ settings }: Props) {
                                         <Label htmlFor="tax_number">Tax Number / VAT ID</Label>
                                         <Input
                                             id="tax_number"
-                                            value={taxForm.data.tax_number ?? ''}
+                                            value={taxForm.data.tax_number as string}
                                             onChange={(e) => taxForm.setData('tax_number', e.target.value)}
                                             placeholder="IT12345678901"
                                         />
@@ -581,7 +580,7 @@ export default function AdminSettings({ settings }: Props) {
                                             </div>
                                             <Switch
                                                 id="prices_include_tax"
-                                                checked={taxForm.data.prices_include_tax ?? false}
+                                                checked={taxForm.data.prices_include_tax as boolean}
                                                 onCheckedChange={(checked) => taxForm.setData('prices_include_tax', checked)}
                                             />
                                         </div>
@@ -593,7 +592,7 @@ export default function AdminSettings({ settings }: Props) {
                                             </div>
                                             <Switch
                                                 id="collect_tax_for_digital_products"
-                                                checked={taxForm.data.collect_tax_for_digital_products ?? false}
+                                                checked={taxForm.data.collect_tax_for_digital_products as boolean}
                                                 onCheckedChange={(checked) => taxForm.setData('collect_tax_for_digital_products', checked)}
                                             />
                                         </div>

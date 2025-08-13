@@ -154,6 +154,9 @@ export default function Home() {
             <Head title="Home" />
 
             <LoadingOverlay isLoading={isLoading} className="min-h-screen bg-white">
+                {/* SEO H1 - Hidden from view but visible to search engines */}
+                <h1 className="sr-only">{t('seo_h1_title')}</h1>
+                
                 {/* Header */}
                 <Header currentPage="home" transparent={true} />
 
@@ -188,9 +191,9 @@ export default function Home() {
 
                     {/* Hero Content */}
                     <div className="relative z-10 mx-auto max-w-5xl px-4 text-center text-white sm:px-6 lg:px-8">
-                        <h1 className="mb-6 text-4xl leading-tight font-bold drop-shadow-lg sm:text-5xl md:text-6xl lg:text-7xl">
+                        <h2 className="mb-6 text-4xl leading-tight font-bold drop-shadow-lg sm:text-5xl md:text-6xl lg:text-7xl">
                             {t('discover_amazing_products')}
-                        </h1>
+                        </h2>
                         <p className="mx-auto mb-8 max-w-3xl text-lg leading-relaxed opacity-90 drop-shadow-md sm:text-xl md:text-2xl">
                             {t('find_perfect_tech')}
                         </p>

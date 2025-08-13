@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { useTranslation } from '@/hooks/useTranslation';
+import { Page } from '@inertiajs/core';
 
 interface CartItem {
     id: string;
@@ -126,7 +127,7 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
         e.preventDefault();
 
         post(route('checkout.guest.session'), {
-            onSuccess: (response: { props: { checkout_url?: string } }) => {
+            onSuccess: (response: Page<{ checkout_url?: string }>) => {
                 if (response.props?.checkout_url) {
                     window.location.href = response.props.checkout_url;
                 }
