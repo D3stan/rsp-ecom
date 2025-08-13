@@ -7,6 +7,9 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\Api\PromotionController;
+use App\Http\Controllers\ReviewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
@@ -95,8 +98,8 @@ Route::get('/guest/checkout/{priceId}/promo/{promoCode}', [CheckoutController::c
 
 Route::get('/about', [PageController::class, 'about'])->name('about');
 
-Route::get('/contact', [App\Http\Controllers\ContactController::class, 'index'])->name('contact');
-Route::post('/contact', [App\Http\Controllers\ContactController::class, 'store'])->name('contact.store');
+Route::get('/contact', [ContactController::class, 'index'])->name('contact');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
 Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
 
@@ -108,7 +111,7 @@ Route::get('/faq', [PageController::class, 'faq'])->name('faq');
 
 // API routes for AJAX calls
 Route::prefix('api')->group(function () {
-    Route::post('/promotion/validate', [App\Http\Controllers\Api\PromotionController::class, 'validate'])->name('api.promotion.validate');
+    Route::post('/promotion/validate', [PromotionController::class, 'validate'])->name('api.promotion.validate');
 });
 
 Route::get('/api/translations/{locale}', function ($locale) {
@@ -224,8 +227,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard/wishlist', [DashboardController::class, 'wishlist'])->name('wishlist.index');
     
     // Review routes
-    Route::get('reviews/create/{product}', [App\Http\Controllers\ReviewController::class, 'create'])->name('reviews.create');
-    Route::post('reviews', [App\Http\Controllers\ReviewController::class, 'store'])->name('reviews.store');
+    Route::get('reviews/create/{product}', [ReviewController::class, 'create'])->name('reviews.create');
+    Route::post('reviews', [ReviewController::class, 'store'])->name('reviews.store');
 });
 
 require __DIR__.'/settings.php';

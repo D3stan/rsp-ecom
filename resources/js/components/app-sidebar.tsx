@@ -20,38 +20,23 @@ export function AppSidebar() {
             icon: ShoppingBag,
         },
         {
-            title: 'Profile',
-            href: route('profile.edit'),
-            icon: User,
-        },
-        {
-            title: 'Payment Methods',
-            href: '#',
-            icon: CreditCard,
-        },
-        {
             title: 'Wishlist',
             href: route('wishlist.index'),
             icon: Heart,
-        },
-        {
-            title: 'Account Settings',
-            href: '#',
-            icon: Settings,
         },
         {
             title: 'Reviews',
             href: '#',
             icon: Star,
         },
-        {
-            title: 'Support',
-            href: '#',
-            icon: MessageSquare,
-        },
     ];
 
     const footerNavItems: NavItem[] = [
+        {
+            title: 'Support',
+            href: route('contact'),
+            icon: MessageSquare,
+        }
     ];
 
     return (
