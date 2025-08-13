@@ -15,7 +15,6 @@ import {
     Menu,
     LayoutDashboard,
     CreditCard,
-    Bell,
     HelpCircle,
     ChevronRight
 } from 'lucide-react';

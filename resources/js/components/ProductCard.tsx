@@ -9,7 +9,7 @@ import type { Product } from '@/pages/products';
 import { cartService, type AddToCartData } from '@/services/cartService';
 import { type SharedData } from '@/types';
 import { router, usePage } from '@inertiajs/react';
-import { Eye, Heart, Minus, Plus, ShoppingCart, Star } from 'lucide-react';
+import { Eye, Minus, Plus, ShoppingCart, Star } from 'lucide-react';
 import { useState } from 'react';
 
 const renderStars = (rating: number) => {

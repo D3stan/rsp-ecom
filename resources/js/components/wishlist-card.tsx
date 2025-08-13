@@ -3,14 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from '@inertiajs/react';
 import { 
-    Heart, 
     ShoppingCart, 
     Star, 
     ExternalLink,
     Trash2,
     Eye,
-    Package,
-    Plus
+    Package
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWishlist } from '@/hooks/useWishlist';

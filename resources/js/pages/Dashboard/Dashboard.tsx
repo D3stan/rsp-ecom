@@ -11,9 +11,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { 
     ShoppingBag, 
     User, 
-    CreditCard, 
     Heart, 
-    Settings,
     MessageSquare,
     TrendingUp,
     Clock,

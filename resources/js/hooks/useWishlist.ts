@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { router } from '@inertiajs/react';
 
 interface UseWishlistOptions {
@@ -26,7 +26,7 @@ export const useWishlist = ({
         return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     };
 
-    const makeApiCall = async (endpoint: string, data: any) => {
+    const makeApiCall = async (endpoint: string, data: { product_id: number }) => {
         const response = await fetch(`/wishlist/${endpoint}`, {
             method: 'POST',
             headers: {
@@ -54,7 +54,7 @@ export const useWishlist = ({
         
         try {
             return JSON.parse(text);
-        } catch (e) {
+        } catch {
             console.error('Invalid JSON response:', text);
             throw new Error('Invalid response from server');
         }
@@ -145,7 +145,7 @@ export const useWishlist = ({
                 if (window.location.pathname.includes('dashboard')) {
                     router.reload({ only: ['wishlistItems', 'wishlistCount'] });
                 }
-            } catch (e) {
+            } catch {
                 console.error('Invalid JSON response:', text);
                 throw new Error('Invalid response from server');
             }

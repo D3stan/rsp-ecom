@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Link, usePage } from '@inertiajs/react';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { type SharedData, type WishlistItem } from '@/types';
-import { WishlistCard as WishlistItemCard } from '@/components/wishlist-card';
 import { useTranslation } from '@/hooks/useTranslation';
 
 export const WishlistCard = () => {
