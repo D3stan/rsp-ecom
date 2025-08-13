@@ -228,6 +228,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard/wishlist', [DashboardController::class, 'wishlist'])->name('wishlist.index');
     Route::delete('dashboard/wishlist/{wishlist}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
     
+    // Wishlist API-like routes for AJAX calls with CSRF protection
+    Route::post('wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+    Route::post('wishlist/add', [WishlistController::class, 'store'])->name('wishlist.store');
+    Route::delete('wishlist/remove', [WishlistController::class, 'destroyByProduct'])->name('wishlist.remove');
+    Route::post('wishlist/check', [WishlistController::class, 'check'])->name('wishlist.check');
+    Route::get('wishlist/count', [WishlistController::class, 'count'])->name('wishlist.count');
+    
     // Review routes
     Route::get('reviews/create/{product}', [ReviewController::class, 'create'])->name('reviews.create');
     Route::post('reviews', [ReviewController::class, 'store'])->name('reviews.store');

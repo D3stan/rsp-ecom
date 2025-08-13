@@ -63,7 +63,7 @@ export const WishlistCard: React.FC<WishlistCardProps> = ({
     };
 
     const getStockStatus = () => {
-        if (!item.product.is_active) {
+        if (item.product.status !== 'active') {
             return { status: 'discontinued', color: 'bg-red-100 text-red-800 border-red-200' };
         }
         if (item.product.stock_quantity === 0) {
@@ -228,10 +228,10 @@ export const WishlistCard: React.FC<WishlistCardProps> = ({
                             <Button 
                                 size="sm" 
                                 className="w-full"
-                                disabled={!item.product.is_active || item.product.stock_quantity === 0}
-                                asChild={item.product.is_active && item.product.stock_quantity !== 0}
+                                disabled={item.product.status !== 'active' || item.product.stock_quantity === 0}
+                                asChild={item.product.status === 'active' && item.product.stock_quantity !== 0}
                             >
-                                {item.product.is_active && item.product.stock_quantity !== 0 ? (
+                                {item.product.status === 'active' && item.product.stock_quantity !== 0 ? (
                                     <Link href={`/products/${item.product.slug}`}>
                                         <ShoppingCart className="h-4 w-4 mr-2" />
                                         Add to Cart
@@ -239,7 +239,7 @@ export const WishlistCard: React.FC<WishlistCardProps> = ({
                                 ) : (
                                     <>
                                         <ShoppingCart className="h-4 w-4 mr-2" />
-                                        {!item.product.is_active ? 'Discontinued' : 'Out of Stock'}
+                                        {item.product.status !== 'active' ? 'Discontinued' : 'Out of Stock'}
                                     </>
                                 )}
                             </Button>

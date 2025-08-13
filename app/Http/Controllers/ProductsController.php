@@ -132,6 +132,12 @@ class ProductsController extends Controller
                 }
             }
             
+            // Check if product is in user's wishlist (for authenticated users)
+            $inWishlist = false;
+            if (auth()->check()) {
+                $inWishlist = auth()->user()->hasInWishlist($product);
+            }
+            
             return [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -144,6 +150,7 @@ class ProductsController extends Controller
                 'badge' => $this->getProductBadge($product),
                 'inStock' => $product->stock_quantity > 0,
                 'stockQuantity' => $product->stock_quantity,
+                'inWishlist' => $inWishlist,
                 'category' => $product->category ? [
                     'id' => $product->category->id,
                     'name' => $product->category->name,
@@ -329,6 +336,7 @@ class ProductsController extends Controller
             'badge' => $this->getProductBadge($product),
             'inStock' => $product->stock_quantity > 0,
             'stockQuantity' => $product->stock_quantity,
+            'inWishlist' => auth()->check() ? auth()->user()->hasInWishlist($product) : false,
             'specifications' => null, // Field doesn't exist in current schema
             'category' => $product->category ? [
                 'id' => $product->category->id,

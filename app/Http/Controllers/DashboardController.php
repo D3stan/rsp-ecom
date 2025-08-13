@@ -84,7 +84,7 @@ class DashboardController extends Controller
                         'rating' => $wishlistItem->product->rating ?? null,
                         'description' => $wishlistItem->product->description,
                         'stock_quantity' => $wishlistItem->product->stock_quantity,
-                        'is_active' => $wishlistItem->product->is_active,
+                        'status' => $wishlistItem->product->status,
                         'category' => $wishlistItem->product->category ? [
                             'id' => $wishlistItem->product->category->id,
                             'name' => $wishlistItem->product->category->name,

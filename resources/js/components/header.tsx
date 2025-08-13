@@ -18,6 +18,7 @@ export default function Header({ transparent = false }: HeaderProps) {
     const { t, locale, changeLocale, isLoading } = useTranslation();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [cartCount, setCartCount] = useState(0);
+    const [wishlistCount, setWishlistCount] = useState(0);
     const [isScrolled, setIsScrolled] = useState(false);
     const [cartAnimation, setCartAnimation] = useState<'none' | 'success' | 'error'>('none');
     const menuRef = useRef<HTMLDivElement>(null);
@@ -33,8 +34,29 @@ export default function Header({ transparent = false }: HeaderProps) {
             }
         };
 
+        const loadWishlistCount = async () => {
+            if (!auth.user) return;
+            
+            try {
+                const response = await fetch('/wishlist/count', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    setWishlistCount(data.count || 0);
+                }
+            } catch (error) {
+                console.error('Failed to load wishlist count:', error);
+            }
+        };
+
         loadCartCount();
-    }, []);
+        loadWishlistCount();
+    }, [auth.user]);
 
     // Handle scroll to change header appearance on transparent pages
     useEffect(() => {
@@ -75,7 +97,7 @@ export default function Header({ transparent = false }: HeaderProps) {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [transparent]);
 
-    // Listen for cart updates
+    // Listen for cart and wishlist updates
     useEffect(() => {
         const handleCartUpdate = async () => {
             try {
@@ -83,6 +105,26 @@ export default function Header({ transparent = false }: HeaderProps) {
                 setCartCount(count);
             } catch (error) {
                 console.error('Failed to refresh cart count:', error);
+            }
+        };
+
+        const handleWishlistUpdate = async () => {
+            if (!auth.user) return;
+            
+            try {
+                const response = await fetch('/wishlist/count', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    setWishlistCount(data.count || 0);
+                }
+            } catch (error) {
+                console.error('Failed to refresh wishlist count:', error);
             }
         };
 
@@ -97,13 +139,15 @@ export default function Header({ transparent = false }: HeaderProps) {
         };
 
         window.addEventListener('cartUpdated', handleCartUpdate);
+        window.addEventListener('wishlistUpdated', handleWishlistUpdate);
         window.addEventListener('cartAnimation', handleCartAnimation as EventListener);
 
         return () => {
             window.removeEventListener('cartUpdated', handleCartUpdate);
+            window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
             window.removeEventListener('cartAnimation', handleCartAnimation as EventListener);
         };
-    }, []);
+    }, [auth.user]);
 
     // Close menu when clicking outside - optimized to prevent scroll interference
     useEffect(() => {
@@ -248,13 +292,20 @@ export default function Header({ transparent = false }: HeaderProps) {
                                 </Button>
                             </Link>
                             {auth.user && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className={`transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100'}`}
-                                >
-                                    <Heart className="h-5 w-5" />
-                                </Button>
+                                <Link href={route('wishlist.index')}>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className={`relative transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100'}`}
+                                    >
+                                        <Heart className="h-5 w-5" />
+                                        {wishlistCount > 0 && (
+                                            <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center p-0 text-xs">
+                                                {wishlistCount > 99 ? '99+' : wishlistCount}
+                                            </Badge>
+                                        )}
+                                    </Button>
+                                </Link>
                             )}
                             <Link href={auth.user ? route('dashboard') : route('login')}>
                                 <Button
@@ -375,6 +426,17 @@ export default function Header({ transparent = false }: HeaderProps) {
                             <ShoppingCart className="h-5 w-5" />
                             <span>{t('cart_link')}</span>
                         </Link>
+
+                        {auth.user && (
+                            <Link
+                                href={route('wishlist.index')}
+                                onClick={closeMenu}
+                                className="flex items-center space-x-3 text-gray-700 transition-colors hover:text-blue-600"
+                            >
+                                <Heart className="h-5 w-5" />
+                                <span>Wishlist</span>
+                            </Link>
+                        )}
 
                         {auth.user && (
                             <Link

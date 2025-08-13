@@ -3,10 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { WishlistButton } from '@/components/wishlist-button';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { Product } from '@/pages/products';
 import { cartService, type AddToCartData } from '@/services/cartService';
-import { router } from '@inertiajs/react';
+import { type SharedData } from '@/types';
+import { router, usePage } from '@inertiajs/react';
 import { Eye, Heart, Minus, Plus, ShoppingCart, Star } from 'lucide-react';
 import { useState } from 'react';
 
@@ -131,10 +133,13 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                                 {t('products.view_full_details')}
                             </Button>
 
-                            <Button variant="outline" size="sm" className="w-full">
-                                <Heart className="mr-2 h-4 w-4" />
-                                {t('products.add_to_wishlist')}
-                            </Button>
+                            <WishlistButton 
+                                productId={product.id}
+                                initialInWishlist={product.inWishlist || false}
+                                showText={true}
+                                className="w-full"
+                                variant="outline"
+                            />
                         </div>
                     </div>
                 </div>
@@ -153,6 +158,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
     const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
     const [quantity] = useState(1);
     const [isAddingToCart, setIsAddingToCart] = useState(false);
+    const { auth } = usePage<SharedData>().props;
     const { t } = useTranslation();
     // Use a more reliable fallback strategy
     const defaultImage = '/images/product.png';
@@ -258,10 +264,14 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                                     <ShoppingCart className="mr-2 h-5 w-5 text-white" />
                                     {product.inStock ? t('products.add_to_cart') : t('products.out_of_stock')}
                                 </Button>
-                                <Button variant="outline" size="lg" className="w-full" onClick={(e) => e.stopPropagation()}>
-                                    <Heart className="mr-2 h-5 w-5" />
-                                    {t('products.add_to_wishlist')}
-                                </Button>
+                                <WishlistButton
+                                    productId={product.id}
+                                    initialInWishlist={product.inWishlist || false}
+                                    showText={true}
+                                    size="lg"
+                                    variant="outline"
+                                    className="w-full"
+                                />
                             </div>
                         </div>
                     </CardContent>
@@ -290,6 +300,20 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                         {product.badge}
                     </Badge>
                 )}
+                
+                {/* Wishlist Button - Only show for authenticated users */}
+                {auth.user && (
+                    <div className="absolute top-4 right-4 z-10">
+                        <WishlistButton
+                            productId={product.id}
+                            initialInWishlist={product.inWishlist || false}
+                            size="sm"
+                            variant="outline"
+                            className="bg-white/90 hover:bg-white shadow-sm"
+                        />
+                    </div>
+                )}
+                
                 <div className="relative aspect-square overflow-hidden bg-gray-50">
                     <img
                         src={imageSrc}

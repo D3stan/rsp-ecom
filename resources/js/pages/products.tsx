@@ -23,6 +23,7 @@ export interface Product {
     badge?: string;
     inStock: boolean;
     stockQuantity: number;
+    inWishlist?: boolean;
     category?: {
         id: number;
         name: string;

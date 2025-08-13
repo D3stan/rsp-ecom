@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { WishlistButton } from '@/components/wishlist-button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { cartService, type AddToCartData } from '@/services/cartService';
@@ -26,6 +27,7 @@ interface Product {
     badge?: string;
     inStock: boolean;
     stockQuantity: number;
+    inWishlist?: boolean;
     specifications?: Record<string, string>;
     category?: {
         id: number;
@@ -75,7 +77,7 @@ const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
 };
 
 export default function Product() {
-    const { product, reviews, relatedProducts, breadcrumb } = usePage<ProductPageProps>().props;
+    const { product, reviews, relatedProducts, breadcrumb, auth } = usePage<ProductPageProps>().props;
     const isMobile = useIsMobile();
     const { t } = useTranslation();
 
@@ -141,11 +143,6 @@ export default function Product() {
         } finally {
             setIsAddingToCart(false);
         }
-    };
-
-    const handleAddToWishlist = () => {
-        // TODO: Implement add to wishlist functionality
-        console.log('Adding to wishlist:', product.id);
     };
 
     const currentPrice = selectedSize
@@ -321,10 +318,22 @@ export default function Product() {
                                 </Button>
 
                                 <div className="grid grid-cols-2 gap-3">
-                                    <Button variant="outline" onClick={handleAddToWishlist} className="h-12">
-                                        <Heart className="mr-2 h-5 w-5" />
-                                        {t('product.wishlist')}
-                                    </Button>
+                                    {auth.user ? (
+                                        <WishlistButton
+                                            productId={product.id}
+                                            initialInWishlist={product.inWishlist || false}
+                                            showText={true}
+                                            variant="outline"
+                                            className="h-12"
+                                        />
+                                    ) : (
+                                        <Button variant="outline" className="h-12" asChild>
+                                            <Link href={route('login')}>
+                                                <Heart className="mr-2 h-5 w-5" />
+                                                {t('product.wishlist')}
+                                            </Link>
+                                        </Button>
+                                    )}
 
                                     <Button variant="outline" className="h-12">
                                         <Share2 className="mr-2 h-5 w-5" />

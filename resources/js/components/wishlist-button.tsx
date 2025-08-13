@@ -2,6 +2,8 @@ import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWishlist } from '@/hooks/useWishlist';
+import { usePage, Link } from '@inertiajs/react';
+import { type SharedData } from '@/types';
 
 interface WishlistButtonProps {
     productId: number;
@@ -22,10 +24,36 @@ export const WishlistButton: React.FC<WishlistButtonProps> = ({
     showText = false,
     disabled = false,
 }) => {
+    const { auth } = usePage<SharedData>().props;
     const { inWishlist, isLoading, toggleWishlist } = useWishlist({
         productId,
         initialInWishlist,
     });
+
+    // If user is not authenticated, show login link
+    if (!auth.user) {
+        return (
+            <Button
+                variant={variant}
+                size={size}
+                disabled={disabled}
+                className={cn(
+                    'transition-all duration-200',
+                    className
+                )}
+                asChild
+            >
+                <Link href={route('login')}>
+                    <Heart className="h-4 w-4 text-current" />
+                    {showText && (
+                        <span className="ml-2">
+                            Add to Wishlist
+                        </span>
+                    )}
+                </Link>
+            </Button>
+        );
+    }
 
     const handleClick = () => {
         if (disabled || isLoading) return;

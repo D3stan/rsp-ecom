@@ -27,20 +27,37 @@ export const useWishlist = ({
     };
 
     const makeApiCall = async (endpoint: string, data: any) => {
-        const response = await fetch(`/api/wishlist/${endpoint}`, {
+        const response = await fetch(`/wishlist/${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': getCsrfToken(),
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
             },
             body: JSON.stringify(data),
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to ${endpoint} wishlist`);
+            const text = await response.text();
+            console.error(`API Error (${response.status}):`, text);
+            
+            // If we get HTML back, it's likely an authentication issue
+            if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                throw new Error('Authentication required. Please login and try again.');
+            }
+            
+            throw new Error(`Failed to ${endpoint} wishlist: ${response.status}`);
         }
 
-        return response.json();
+        const text = await response.text();
+        
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('Invalid JSON response:', text);
+            throw new Error('Invalid response from server');
+        }
     };
 
     const toggleWishlist = async () => {
@@ -51,6 +68,9 @@ export const useWishlist = ({
         try {
             const result = await makeApiCall('toggle', { product_id: productId });
             setInWishlist(result.in_wishlist);
+            
+            // Dispatch wishlist update event for header count
+            window.dispatchEvent(new CustomEvent('wishlistUpdated'));
             
             // Refresh wishlist data on dashboard pages
             if (window.location.pathname.includes('dashboard')) {
@@ -69,8 +89,11 @@ export const useWishlist = ({
         setIsLoading(true);
         
         try {
-            const result = await makeApiCall('', { product_id: productId });
+            const result = await makeApiCall('add', { product_id: productId });
             setInWishlist(result.in_wishlist);
+            
+            // Dispatch wishlist update event for header count
+            window.dispatchEvent(new CustomEvent('wishlistUpdated'));
             
             if (window.location.pathname.includes('dashboard')) {
                 router.reload({ only: ['wishlistItems', 'wishlistCount'] });
@@ -88,24 +111,43 @@ export const useWishlist = ({
         setIsLoading(true);
         
         try {
-            const response = await fetch('/api/wishlist/product', {
+            const response = await fetch('/wishlist/remove', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 body: JSON.stringify({ product_id: productId }),
             });
 
             if (!response.ok) {
-                throw new Error('Failed to remove from wishlist');
+                const text = await response.text();
+                console.error(`API Error (${response.status}):`, text);
+                
+                if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                    throw new Error('Authentication required. Please login and try again.');
+                }
+                
+                throw new Error(`Failed to remove from wishlist: ${response.status}`);
             }
 
-            const result = await response.json();
-            setInWishlist(result.in_wishlist);
+            const text = await response.text();
             
-            if (window.location.pathname.includes('dashboard')) {
-                router.reload({ only: ['wishlistItems', 'wishlistCount'] });
+            try {
+                const result = JSON.parse(text);
+                setInWishlist(result.in_wishlist);
+                
+                // Dispatch wishlist update event for header count
+                window.dispatchEvent(new CustomEvent('wishlistUpdated'));
+                
+                if (window.location.pathname.includes('dashboard')) {
+                    router.reload({ only: ['wishlistItems', 'wishlistCount'] });
+                }
+            } catch (e) {
+                console.error('Invalid JSON response:', text);
+                throw new Error('Invalid response from server');
             }
         } catch (error) {
             console.error('Error removing from wishlist:', error);
