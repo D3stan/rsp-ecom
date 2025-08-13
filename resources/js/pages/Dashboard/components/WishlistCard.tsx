@@ -4,17 +4,19 @@ import { Link, usePage } from '@inertiajs/react';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { type SharedData, type WishlistItem } from '@/types';
 import { WishlistCard as WishlistItemCard } from '@/components/wishlist-card';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const WishlistCard = () => {
     const { props } = usePage<SharedData & { wishlistItems?: WishlistItem[] }>();
     const wishlistItems = props.wishlistItems || [];
+    const { t } = useTranslation();
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Heart className="h-5 w-5" />
-                    Wishlist
+                    {t('wishlist.title')}
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -61,7 +63,7 @@ export const WishlistCard = () => {
                                     
                                     <Button size="sm" variant="ghost" asChild>
                                         <Link href={`/products/${item.product.slug}`}>
-                                            View
+                                            {t('products.view_full_details')}
                                         </Link>
                                     </Button>
                                 </div>
@@ -71,28 +73,28 @@ export const WishlistCard = () => {
                         {/* Show more indicator */}
                         {wishlistItems.length > 3 && (
                             <div className="text-center text-sm text-muted-foreground py-2">
-                                +{wishlistItems.length - 3} more items in your wishlist
+                                +{wishlistItems.length - 3} {t('wishlist.more_items_in_wishlist')}
                             </div>
                         )}
 
                         {/* View All Button */}
                         <Button variant="outline" className="w-full" asChild>
                             <Link href={route('wishlist.index')}>
-                                View Full Wishlist ({wishlistItems.length} items)
+                                {t('wishlist.view_full_wishlist')} ({wishlistItems.length} {wishlistItems.length === 1 ? t('wishlist.item') : t('wishlist.items')})
                             </Link>
                         </Button>
                     </div>
                 ) : (
                     <div className="text-center py-8">
                         <Heart className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <h3 className="mt-2 text-sm font-medium">No items in wishlist</h3>
+                        <h3 className="mt-2 text-sm font-medium">{t('wishlist.empty_title')}</h3>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Save products you love for later.
+                            {t('wishlist.empty_description')}
                         </p>
                         <div className="mt-6">
                             <Button variant="outline" asChild>
                                 <Link href={route('products')}>
-                                    Browse Products
+                                    {t('wishlist.start_shopping')}
                                 </Link>
                             </Button>
                         </div>

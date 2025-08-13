@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Link, usePage } from '@inertiajs/react';
 import { type Order, type SharedData } from '@/types';
 import { ShoppingBag, Package, Clock, CheckCircle, Truck } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const LatestOrderCard = () => {
     const { props } = usePage<SharedData & { recentOrders?: Order[] }>();
     const recentOrders = props.recentOrders || [];
+    const { t } = useTranslation();
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', {
@@ -59,7 +61,7 @@ export const LatestOrderCard = () => {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <ShoppingBag className="h-5 w-5" />
-                    Recent Orders
+                    {t('dashboard.recent_orders')}
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -69,9 +71,9 @@ export const LatestOrderCard = () => {
                         <div className="p-4 border rounded-lg bg-muted/20">
                             <div className="flex items-center justify-between mb-3">
                                 <div>
-                                    <h4 className="font-medium">Order #{latestOrder.id}</h4>
+                                    <h4 className="font-medium">{t('dashboard.order_number', { id: latestOrder.id })}</h4>
                                     <p className="text-sm text-muted-foreground">
-                                        {formatDate(latestOrder.created_at)} • {latestOrder.order_items.length} items
+                                        {formatDate(latestOrder.created_at)} • {latestOrder.order_items.length} {latestOrder.order_items.length === 1 ? t('dashboard.item') : t('dashboard.items')}
                                     </p>
                                 </div>
                                 <div className="text-right">
@@ -81,7 +83,7 @@ export const LatestOrderCard = () => {
                                         className={`${getOrderStatusColor(latestOrder.status)} flex items-center gap-1 mt-1`}
                                     >
                                         {getOrderStatusIcon(latestOrder.status)}
-                                        {latestOrder.status}
+                                        {t(`orders.status.${latestOrder.status}`, { fallback: latestOrder.status })}
                                     </Badge>
                                 </div>
                             </div>
@@ -94,7 +96,7 @@ export const LatestOrderCard = () => {
                                             <span className="font-medium">{item.product.name}</span>
                                             {item.size && (
                                                 <span className="text-muted-foreground ml-2">
-                                                    • Size: {item.size.name}
+                                                    • {t('orders.size')}: {item.size.name}
                                                 </span>
                                             )}
                                         </div>
@@ -105,7 +107,7 @@ export const LatestOrderCard = () => {
                                 ))}
                                 {latestOrder.order_items.length > 2 && (
                                     <div className="text-sm text-muted-foreground">
-                                        +{latestOrder.order_items.length - 2} more items
+                                        +{latestOrder.order_items.length - 2} {t('dashboard.more_items')}
                                     </div>
                                 )}
                             </div>
@@ -119,7 +121,7 @@ export const LatestOrderCard = () => {
                                         {getOrderStatusIcon(order.status)}
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium">Order #{order.id}</p>
+                                        <p className="text-sm font-medium">{t('dashboard.order_number', { id: order.id })}</p>
                                         <p className="text-xs text-muted-foreground">
                                             {formatDate(order.created_at)}
                                         </p>
@@ -131,7 +133,7 @@ export const LatestOrderCard = () => {
                                         variant="outline" 
                                         className={`${getOrderStatusColor(order.status)} text-xs`}
                                     >
-                                        {order.status}
+                                        {t(`orders.status.${order.status}`, { fallback: order.status })}
                                     </Badge>
                                 </div>
                             </div>
@@ -139,21 +141,21 @@ export const LatestOrderCard = () => {
 
                         <Button variant="outline" className="w-full" asChild>
                             <Link href={route('orders.index')}>
-                                View All Orders
+                                {t('dashboard.view_all_orders')}
                             </Link>
                         </Button>
                     </div>
                 ) : (
                     <div className="text-center py-8">
                         <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <h3 className="mt-2 text-sm font-medium">No orders yet</h3>
+                        <h3 className="mt-2 text-sm font-medium">{t('dashboard.no_orders_yet')}</h3>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Start shopping to see your orders here.
+                            {t('dashboard.no_orders_description')}
                         </p>
                         <div className="mt-6">
                             <Button asChild>
                                 <Link href={route('products')}>
-                                    Browse Products
+                                    {t('dashboard.browse_products')}
                                 </Link>
                             </Button>
                         </div>

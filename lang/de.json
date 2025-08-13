@@ -466,6 +466,8 @@
         "apply_filters": "Filter Anwenden",
         "in_stock": "Auf Lager",
         "out_of_stock": "Nicht Verfügbar",
+        "low_stock": "Wenig Vorrätig",
+        "discontinued": "Eingestellt",
         "price_ranges": {
             "all_prices": "Alle Preise",
             "under_25": "Unter 25 $",
@@ -533,7 +535,14 @@
         "title": "Dashboard",
         "welcome_back": "Willkommen zurück, {name}!",
         "account_overview": "Hier ist eine Übersicht über Ihr Konto und Ihre letzten Aktivitäten.",
-        "total_orders": "Bestellungen insgesamt",
+        "good_morning": "Guten Morgen",
+        "good_afternoon": "Guten Tag",
+        "good_evening": "Guten Abend",
+        "welcome_description": "Willkommen zu Ihrem persönlichen Dashboard. Hier können Sie Ihre Bestellungen verfolgen, Ihre Wunschliste verwalten und Ihr Profil aktualisieren.",
+        "email_verified": "E-Mail Bestätigt",
+        "email_unverified": "E-Mail Nicht Bestätigt",
+        "google_connected": "Google Verbunden",
+        "total_orders": "Gesamtbestellungen",
         "pending_orders": "Ausstehende Bestellungen",
         "completed_orders": "Abgeschlossene Bestellungen", 
         "wishlist_items": "Wunschliste",
@@ -543,6 +552,7 @@
         "saved_for_later": "Für später gespeichert",
         "recent_orders": "Letzte Bestellungen",
         "recent_orders_description": "Ihre neuesten Käufe und deren Status",
+        "more_items": "weitere Artikel",
         "order_number": "Bestellung #{id}",
         "items": "Artikel",
         "item": "Artikel",
@@ -554,6 +564,7 @@
         "quick_actions_description": "Verwalten Sie Ihr Konto und Ihre Einstellungen",
         "edit_profile": "Profil bearbeiten",
         "payment_methods": "Zahlungsmethoden",
+        "account_settings": "Kontoeinstellungen",
         "view_wishlist": "Wunschliste anzeigen",
         "write_review": "Bewertung schreiben",
         "account_summary": "Kontoübersicht",
@@ -562,8 +573,12 @@
         "verified": "Verifiziert",
         "unverified": "Nicht verifiziert",
         "google_account": "Google-Konto",
-        "connected": "Verbunden"
+        "connected": "Verbunden",
+        "need_help": "Brauchen Sie Hilfe?",
+        "support_description": "Unser Kundensupport-Team ist hier, um Ihnen bei Fragen oder Problemen zu helfen.",
+        "get_support": "Support erhalten"
     },
+    "logout": "Abmelden",
     "reviews": "Bewertungen",
     "support": "Support",
     "orders": {
@@ -611,6 +626,9 @@
         "continue_shopping": "Weiter einkaufen",
         "items_saved": "{count} {item_word} für später gespeichert",
         "item": "Artikel",
-        "items": "Artikel"
+        "items": "Artikel",
+        "added": "Hinzugefügt",
+        "more_items_in_wishlist": "weitere Artikel in Ihrer Wunschliste",
+        "view_full_wishlist": "Vollständige Wunschliste anzeigen"
     }
 }

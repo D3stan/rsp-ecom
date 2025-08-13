@@ -466,6 +466,8 @@
         "apply_filters": "Apply Filters",
         "in_stock": "In Stock",
         "out_of_stock": "Out of Stock",
+        "low_stock": "Low Stock",
+        "discontinued": "Discontinued",
         "price_ranges": {
             "all_prices": "All Prices",
             "under_25": "Under $25",
@@ -533,6 +535,13 @@
         "title": "Dashboard",
         "welcome_back": "Welcome back, {name}!",
         "account_overview": "Here's an overview of your account and recent activity.",
+        "good_morning": "Good morning",
+        "good_afternoon": "Good afternoon", 
+        "good_evening": "Good evening",
+        "welcome_description": "Welcome to your personal dashboard. Here you can track your orders, manage your wishlist, and update your profile.",
+        "email_verified": "Email Verified",
+        "email_unverified": "Email Unverified",
+        "google_connected": "Google Connected",
         "total_orders": "Total Orders",
         "pending_orders": "Pending Orders",
         "completed_orders": "Completed Orders", 
@@ -543,6 +552,7 @@
         "saved_for_later": "Saved for later",
         "recent_orders": "Recent Orders",
         "recent_orders_description": "Your latest purchases and their status",
+        "more_items": "more items",
         "order_number": "Order #{id}",
         "items": "items",
         "item": "item",
@@ -554,6 +564,7 @@
         "quick_actions_description": "Manage your account and preferences",
         "edit_profile": "Edit Profile",
         "payment_methods": "Payment Methods",
+        "account_settings": "Account Settings",
         "view_wishlist": "View Wishlist",
         "write_review": "Write Review",
         "account_summary": "Account Summary",
@@ -562,8 +573,12 @@
         "verified": "Verified",
         "unverified": "Unverified",
         "google_account": "Google account",
-        "connected": "Connected"
+        "connected": "Connected",
+        "need_help": "Need Help?",
+        "support_description": "Our customer support team is here to assist you with any questions or concerns.",
+        "get_support": "Get Support"
     },
+    "logout": "Logout",
     "reviews": "Reviews",
     "support": "Support",
     "orders": {
@@ -611,6 +626,9 @@
         "continue_shopping": "Continue Shopping",
         "items_saved": "{count} {item_word} saved for later",
         "item": "item",
-        "items": "items"
+        "items": "items",
+        "added": "Added",
+        "more_items_in_wishlist": "more items in your wishlist",
+        "view_full_wishlist": "View Full Wishlist"
     }
 }

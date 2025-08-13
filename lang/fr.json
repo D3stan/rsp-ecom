@@ -533,6 +533,13 @@
         "title": "Tableau de Bord",
         "welcome_back": "Bon retour, {name} !",
         "account_overview": "Voici un aperçu de votre compte et de votre activité récente.",
+        "good_morning": "Bonjour",
+        "good_afternoon": "Bon après-midi",
+        "good_evening": "Bonsoir",
+        "welcome_description": "Bienvenue sur votre tableau de bord personnel. Ici vous pouvez suivre vos commandes, gérer votre liste de souhaits et mettre à jour votre profil.",
+        "email_verified": "Email Vérifié",
+        "email_unverified": "Email Non Vérifié",
+        "google_connected": "Google Connecté",
         "total_orders": "Commandes Totales",
         "pending_orders": "Commandes en Attente",
         "completed_orders": "Commandes Terminées", 
@@ -543,6 +550,7 @@
         "saved_for_later": "Sauvegardé pour plus tard",
         "recent_orders": "Commandes Récentes",
         "recent_orders_description": "Vos derniers achats et leur statut",
+        "more_items": "articles de plus",
         "order_number": "Commande #{id}",
         "items": "articles",
         "item": "article",
@@ -562,8 +570,12 @@
         "verified": "Vérifié",
         "unverified": "Non vérifié",
         "google_account": "Compte Google",
-        "connected": "Connecté"
+        "connected": "Connecté",
+        "need_help": "Besoin d'Aide ?",
+        "support_description": "Notre équipe de support client est là pour vous aider avec toutes vos questions ou préoccupations.",
+        "get_support": "Obtenir de l'Aide"
     },
+    "logout": "Déconnexion",
     "reviews": "Avis",
     "support": "Support",
     "orders": {
@@ -611,6 +623,9 @@
         "continue_shopping": "Continuer les Achats",
         "items_saved": "{count} {item_word} sauvegardés pour plus tard",
         "item": "article",
-        "items": "articles"
+        "items": "articles",
+        "added": "Ajouté",
+        "more_items_in_wishlist": "articles de plus dans votre liste de souhaits",
+        "view_full_wishlist": "Voir la Liste de Souhaits Complète"
     }
 }

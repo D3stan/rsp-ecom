@@ -3,13 +3,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { type User } from '@/types';
 import { CheckCircle, AlertCircle } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export const WelcomeCard = ({ user }: { user: User }) => {
+    const { t } = useTranslation();
+    
     const formatTime = () => {
         const hour = new Date().getHours();
-        if (hour < 12) return 'Good morning';
-        if (hour < 17) return 'Good afternoon';
-        return 'Good evening';
+        if (hour < 12) return t('dashboard.good_morning');
+        if (hour < 17) return t('dashboard.good_afternoon');
+        return t('dashboard.good_evening');
     };
 
     const getInitials = (name: string) => {
@@ -39,7 +42,7 @@ export const WelcomeCard = ({ user }: { user: User }) => {
                     
                     <div className="flex-1 space-y-2">
                         <p className="text-muted-foreground">
-                            Welcome to your personal dashboard. Here you can track your orders, manage your wishlist, and update your profile.
+                            {t('dashboard.welcome_description')}
                         </p>
                         
                         <div className="flex flex-wrap gap-2">
@@ -50,12 +53,12 @@ export const WelcomeCard = ({ user }: { user: User }) => {
                                 {user.email_verified_at ? (
                                     <>
                                         <CheckCircle className="h-3 w-3" />
-                                        Email Verified
+                                        {t('dashboard.email_verified')}
                                     </>
                                 ) : (
                                     <>
                                         <AlertCircle className="h-3 w-3" />
-                                        Email Unverified
+                                        {t('dashboard.email_unverified')}
                                     </>
                                 )}
                             </Badge>
@@ -80,7 +83,7 @@ export const WelcomeCard = ({ user }: { user: User }) => {
                                             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                                         />
                                     </svg>
-                                    Google Connected
+                                    {t('dashboard.google_connected')}
                                 </Badge>
                             )}
                         </div>

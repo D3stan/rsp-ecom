@@ -533,7 +533,14 @@
         "title": "Panel de Control",
         "welcome_back": "¡Bienvenido de vuelta, {name}!",
         "account_overview": "Aquí tienes una visión general de tu cuenta y actividad reciente.",
-        "total_orders": "Pedidos Totales",
+        "good_morning": "Buenos días",
+        "good_afternoon": "Buenas tardes",
+        "good_evening": "Buenas noches",
+        "welcome_description": "Bienvenido a tu panel personal. Aquí puedes rastrear tus pedidos, gestionar tu lista de deseos y actualizar tu perfil.",
+        "email_verified": "Email Verificado",
+        "email_unverified": "Email No Verificado",
+        "google_connected": "Google Conectado",
+        "total_orders": "Total de Pedidos",
         "pending_orders": "Pedidos Pendientes",
         "completed_orders": "Pedidos Completados", 
         "wishlist_items": "Lista de Deseos",
@@ -543,6 +550,7 @@
         "saved_for_later": "Guardado para después",
         "recent_orders": "Pedidos Recientes",
         "recent_orders_description": "Tus últimas compras y su estado",
+        "more_items": "artículos más",
         "order_number": "Pedido #{id}",
         "items": "artículos",
         "item": "artículo",
@@ -562,8 +570,12 @@
         "verified": "Verificado",
         "unverified": "No verificado",
         "google_account": "Cuenta de Google",
-        "connected": "Conectado"
+        "connected": "Conectado",
+        "need_help": "¿Necesitas Ayuda?",
+        "support_description": "Nuestro equipo de atención al cliente está aquí para ayudarte con cualquier pregunta o inquietud.",
+        "get_support": "Obtener Soporte"
     },
+    "logout": "Cerrar Sesión",
     "reviews": "Reseñas",
     "support": "Soporte",
     "orders": {
@@ -611,6 +623,9 @@
         "continue_shopping": "Continuar Comprando",
         "items_saved": "{count} {item_word} guardados para después",
         "item": "artículo",
-        "items": "artículos"
+        "items": "artículos",
+        "added": "Añadido",
+        "more_items_in_wishlist": "más artículos en tu lista de deseos",
+        "view_full_wishlist": "Ver Lista de Deseos Completa"
     }
 }

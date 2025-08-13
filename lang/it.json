@@ -9,7 +9,7 @@
     "featured_products_description": "Scopri i nostri prodotti più popolari e meglio recensiti",
     "view_all_products": "Visualizza Tutti i Prodotti",
     "shop_by_category": "Acquista per Categoria",
-    "category_description": "Esplora la nostra vasta gamma di categorie di prodotti",
+    "category_description": "Esplora la nostra ampia gamma di categorie di prodotti",
     "add_to_cart": "Aggiungi al Carrello",
     "explore_products": "Esplora Prodotti",
     "help": "Aiuto",
@@ -533,6 +533,13 @@
         "title": "Dashboard",
         "welcome_back": "Bentornato, {name}!",
         "account_overview": "Ecco una panoramica del tuo account e delle attività recenti.",
+        "good_morning": "Buongiorno",
+        "good_afternoon": "Buon pomeriggio",
+        "good_evening": "Buonasera",
+        "welcome_description": "Benvenuto nel tuo dashboard personale. Qui puoi tracciare i tuoi ordini, gestire la tua lista dei desideri e aggiornare il tuo profilo.",
+        "email_verified": "Email Verificata",
+        "email_unverified": "Email Non Verificata",
+        "google_connected": "Google Connesso",
         "total_orders": "Ordini Totali",
         "pending_orders": "Ordini in Sospeso",
         "completed_orders": "Ordini Completati", 
@@ -543,6 +550,7 @@
         "saved_for_later": "Salvato per dopo",
         "recent_orders": "Ordini Recenti",
         "recent_orders_description": "I tuoi ultimi acquisti e il loro stato",
+        "more_items": "articoli in più",
         "order_number": "Ordine #{id}",
         "items": "articoli",
         "item": "articolo",
@@ -562,8 +570,12 @@
         "verified": "Verificato",
         "unverified": "Non verificato",
         "google_account": "Account Google",
-        "connected": "Connesso"
+        "connected": "Connesso",
+        "need_help": "Hai bisogno di aiuto?",
+        "support_description": "Il nostro team di assistenza clienti è qui per aiutarti con qualsiasi domanda o preoccupazione.",
+        "get_support": "Ottieni Supporto"
     },
+    "logout": "Disconnettiti",
     "reviews": "Recensioni",
     "support": "Supporto",
     "orders": {
@@ -602,15 +614,18 @@
         "tracking": "Tracciamento"
     },
     "wishlist": {
-        "title": "La Mia Lista dei Desideri",
-        "page_title": "La Mia Lista dei Desideri", 
-        "empty_title": "La tua lista dei desideri è vuota",
-        "empty_description": "Salva i prodotti che ami per dopo. Puoi aggiungere articoli alla tua lista dei desideri mentre navighi nel nostro negozio.",
+        "title": "I Miei Preferiti",
+        "page_title": "I Miei Preferiti",
+        "empty_title": "I tuoi preferiti sono vuoti",
+        "empty_description": "Salva i prodotti che ami per dopo. Puoi aggiungere articoli ai tuoi preferiti mentre navighi nel nostro negozio.",
         "start_shopping": "Inizia a Fare Acquisti",
         "add_more_items": "Aggiungi Altri Articoli",
         "continue_shopping": "Continua a Fare Acquisti",
         "items_saved": "{count} {item_word} salvati per dopo",
         "item": "articolo",
-        "items": "articoli"
+        "items": "articoli",
+        "added": "Aggiunto",
+        "more_items_in_wishlist": "articoli in più nei tuoi preferiti",
+        "view_full_wishlist": "Visualizza tutti i preferiti"
     }
 }
