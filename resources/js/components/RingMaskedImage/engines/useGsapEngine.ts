@@ -187,7 +187,7 @@ export const useGsapEngine = (props: UseGsapEngineProps) => {
     setDashArray(`${sliceLength} ${circumference - sliceLength}`);
 
     if (mode === 'continuous') {
-      let startTime = performance.now();
+      const startTime = performance.now();
       const rotationSpeed = (clockwise ? 360 : -360) / (secondsPerTurn * 1000);
       
       const animate = (currentTime: number) => {

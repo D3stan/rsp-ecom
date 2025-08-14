@@ -183,8 +183,22 @@ export default function Home() {
 
                 {/* Hero Section with Ring Masked Image */}
                 <section className="hero-section relative -mt-16 flex items-center justify-center overflow-hidden pt-16 min-h-screen">
-                    {/* Ring Masked Image Background */}
-                    <div className="absolute inset-0 z-0 flex items-center justify-center">
+                    {/* Background Image Layer */}
+                    <div className="absolute inset-0 z-0">
+                        <img
+                            src="/images/rsplogo.png"
+                            alt="RSP Background"
+                            className="w-full h-full object-cover object-center"
+                            style={{
+                                minWidth: '100%',
+                                minHeight: '100%',
+                                transform: 'scale(1.1)', // Slight zoom to ensure no gaps on mobile
+                            }}
+                        />
+                    </div>
+
+                    {/* Ring Masked Image Layer */}
+                    <div className="absolute inset-0 z-5 flex items-center justify-center">
                         <RingMaskedImage
                             src="/images/angeleye.png"
                             alt="Angel Eye - Discover Amazing Products"
@@ -203,15 +217,15 @@ export default function Home() {
                             respectReducedMotion={false}
                             disableResponsiveConstraints={true}
                             preserveAspectRatio="xMidYMid meet"
-                            className="w-full h-full min-h-screen mx-auto max-w-[1400px] bg-black"
+                            className="w-full h-full min-h-screen mx-auto max-w-[1400px]"
                         />
                     </div>
 
                     {/* Overlay for Text Readability */}
-                    {<div className="absolute inset-0 z-5" style={{ background: 'linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2))' }} />}
+                    <div className="absolute inset-0 z-10" style={{ background: 'linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2))' }} />
 
                     {/* Hero Content */}
-                    <div className="relative z-10 mx-auto max-w-5xl px-4 text-center text-white sm:px-6 lg:px-8">
+                    <div className="relative z-20 mx-auto max-w-5xl px-4 text-center text-white sm:px-6 lg:px-8">
                         <h2 className="mb-6 text-4xl leading-tight font-bold drop-shadow-lg sm:text-5xl md:text-6xl lg:text-7xl">
                             {t('discover_amazing_products')}
                         </h2>
@@ -235,7 +249,7 @@ export default function Home() {
                     </div>
 
                     {/* Scroll Indicator */}
-                    <div className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 transform sm:bottom-8">
+                    <div className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 transform sm:bottom-8">
                         <div className="animate-bounce">
                             <div className="flex h-8 w-5 justify-center rounded-full border-2 border-white sm:h-10 sm:w-6">
                                 <div className="mt-1.5 h-2 w-1 animate-pulse rounded-full bg-white sm:mt-2 sm:h-3" />
