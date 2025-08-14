@@ -213,6 +213,18 @@ The component uses inline SVG with `<mask>` elements for precise control:
 - Minimal DOM manipulation
 - Efficient scroll event handling with `requestAnimationFrame`
 
+### iOS WebKit Optimizations
+
+The component includes specific optimizations for iOS/macOS Safari to achieve 60 FPS performance:
+
+- **Alpha masks** instead of luminance masks for better WebKit compatibility
+- **iOS-specific dashoffset animation** replaces rotation after intro sequence
+- **CSS transforms** used everywhere instead of SVG attribute transforms
+- **Composited layers** for the rotating group with `will-change: transform`
+- **Mobile-optimized sizing** to reduce composite area
+
+These optimizations automatically activate on iOS/macOS devices while maintaining full compatibility with other browsers.
+
 ## Troubleshooting
 
 ### Dependencies Not Found

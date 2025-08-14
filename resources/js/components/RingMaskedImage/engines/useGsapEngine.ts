@@ -15,6 +15,7 @@ interface UseGsapEngineProps {
   turnsPerViewport: number;
   respectReducedMotion: boolean;
   setDashArray: (value: string) => void;
+  isIOSWebKit?: boolean;
 }
 
 export const useGsapEngine = (props: UseGsapEngineProps) => {
@@ -33,6 +34,7 @@ export const useGsapEngine = (props: UseGsapEngineProps) => {
     turnsPerViewport,
     respectReducedMotion,
     setDashArray,
+    isIOSWebKit = false,
   } = props;
 
   const timelineRef = useRef<any>(null);
@@ -191,7 +193,10 @@ export const useGsapEngine = (props: UseGsapEngineProps) => {
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTime;
         const rotation = (elapsed * rotationSpeed) % 360;
+        // Fix 3: Use CSS transform instead of SVG attribute transform
         sliceGroup.style.transform = `rotate(${rotation}deg)`;
+        sliceGroup.style.transformOrigin = '50% 50%';
+        sliceGroup.style.transformBox = 'fill-box';
         requestAnimationFrame(animate);
       };
       
@@ -203,7 +208,10 @@ export const useGsapEngine = (props: UseGsapEngineProps) => {
         const scrollProgress = scrollY / viewportHeight;
         const rotation = scrollProgress * 360 * turnsPerViewport;
         
+        // Fix 3: Use CSS transform instead of SVG attribute transform
         sliceGroup.style.transform = `rotate(${clockwise ? rotation : -rotation}deg)`;
+        sliceGroup.style.transformOrigin = '50% 50%';
+        sliceGroup.style.transformBox = 'fill-box';
         requestAnimationFrame(updateScrollRotation);
       };
       

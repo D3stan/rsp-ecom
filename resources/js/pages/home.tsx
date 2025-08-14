@@ -201,6 +201,8 @@ export default function Home() {
                             introTTLSeconds={86400}
                             sessionKey="heroRingIntroSeen"
                             respectReducedMotion={false}
+                            disableResponsiveConstraints={true}
+                            preserveAspectRatio="xMidYMid meet"
                             className="w-full h-full min-h-screen mx-auto max-w-[1400px] bg-black"
                         />
                     </div>

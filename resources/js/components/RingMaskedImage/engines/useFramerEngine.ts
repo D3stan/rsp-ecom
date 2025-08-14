@@ -16,6 +16,7 @@ interface UseFramerEngineProps {
   respectReducedMotion: boolean;
   setDashArray: (value: string) => void;
   performanceMode?: 'auto' | 'css' | 'js';
+  isIOSWebKit?: boolean;
 }
 
 export const useFramerEngine = (props: UseFramerEngineProps) => {
@@ -34,7 +35,8 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
     turnsPerViewport,
     respectReducedMotion,
     setDashArray,
-  performanceMode = 'auto',
+    performanceMode = 'auto',
+    isIOSWebKit = false,
   } = props;
 
   const animationRef = useRef<number | null>(null);
@@ -166,12 +168,24 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
     }
 
     const sliceGroup = sliceGroupRef.current;
+    const circle = circleRef.current;
     
     // Set initial dash array for slice visibility
     setDashArray(`${sliceLength} ${circumference - sliceLength}`);
 
-    // Force vanilla JS for SVG mask compatibility
-    // Framer Motion's CSS transforms don't work well with SVG elements inside masks
+    // Fix 2: iOS-specific strategy - use stroke-dashoffset instead of rotation after intro
+    if (performanceMode === 'auto' && isIOSWebKit && !shouldRunIntro) {
+      console.log('FramerEngine: Using iOS-optimized dashoffset animation');
+      if (mode === 'continuous' && circle) {
+        startIOSDashOffsetContinuous(circle);
+        return;
+      } else if (mode === 'scroll' && circle) {
+        startIOSDashOffsetScroll(circle);
+        return;
+      }
+    }
+
+    // Force vanilla JS for SVG mask compatibility on non-iOS or during intro
     if (mode === 'continuous') {
       // Decide best path: CSS vs JS rAF
       const useCss = (performanceMode === 'css') || (
@@ -270,8 +284,10 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
       
       // Linear interpolation
       const currentAngle = startAngle + (endAngle - startAngle) * progress;
-      // Use SVG transform instead of CSS transform for better mask compatibility
-      element.setAttribute('transform', `rotate(${currentAngle} 50 50)`);
+      // Fix 3: Use CSS transform instead of SVG attribute transform
+      element.style.transform = `rotate(${currentAngle}deg)`;
+      element.style.transformOrigin = '50% 50%';
+      element.style.transformBox = 'fill-box';
       
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate);
@@ -322,8 +338,10 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
       const scrollProgress = scrollY / viewportHeight;
       const rotation = scrollProgress * 360 * turnsPerViewport;
       
-      // Use SVG transform instead of CSS transform for better mask compatibility
-      element.setAttribute('transform', `rotate(${clockwise ? rotation : -rotation} 50 50)`);
+      // Fix 3: Use CSS transform instead of SVG attribute transform
+      element.style.transform = `rotate(${clockwise ? rotation : -rotation}deg)`;
+      element.style.transformOrigin = '50% 50%';
+      element.style.transformBox = 'fill-box';
       
       scrollAnimationRef.current = requestAnimationFrame(updateScrollRotation);
     };
@@ -343,8 +361,10 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const rotation = (elapsed * rotationSpeed) % 360;
-      // Use SVG transform instead of CSS transform for better mask compatibility
-      element.setAttribute('transform', `rotate(${rotation} 50 50)`);
+      // Fix 3: Use CSS transform instead of SVG attribute transform
+      element.style.transform = `rotate(${rotation}deg)`;
+      element.style.transformOrigin = '50% 50%';
+      element.style.transformBox = 'fill-box';
       
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -366,6 +386,51 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
     }
     const duration = `${secondsPerTurn}s`;
     element.setAttribute('style', `animation: ${clockwise ? 'ring-rot-clockwise' : 'ring-rot-ccw'} ${duration} linear infinite; transform-origin: 50% 50%;`);
+  };
+
+  // Fix 2: iOS-optimized continuous rotation using stroke-dashoffset
+  const startIOSDashOffsetContinuous = (circle: SVGCircleElement) => {
+    console.log('FramerEngine: Starting iOS dashoffset continuous animation');
+    const startTime = performance.now();
+    
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = (elapsed / (secondsPerTurn * 1000)) % 1;
+      
+      // Calculate dashoffset to simulate rotation
+      const dashOffsetProgress = clockwise ? progress : (1 - progress);
+      const newDashOffset = circumference * (0.25 - dashOffsetProgress);
+      
+      circle.setAttribute('stroke-dashoffset', newDashOffset.toString());
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    
+    animationRef.current = requestAnimationFrame(animate);
+  };
+
+  // Fix 2: iOS-optimized scroll rotation using stroke-dashoffset
+  const startIOSDashOffsetScroll = (circle: SVGCircleElement) => {
+    console.log('FramerEngine: Starting iOS dashoffset scroll animation');
+    
+    const updateScrollDashOffset = () => {
+      if (!containerRef.current) {
+        scrollAnimationRef.current = requestAnimationFrame(updateScrollDashOffset);
+        return;
+      }
+
+      const scrollY = window.scrollY;
+      const viewportHeight = window.innerHeight;
+      const scrollProgress = (scrollY / viewportHeight) % 1;
+      
+      // Calculate dashoffset based on scroll progress
+      const dashOffsetProgress = clockwise ? scrollProgress * turnsPerViewport : (1 - scrollProgress * turnsPerViewport);
+      const newDashOffset = circumference * (0.25 - dashOffsetProgress);
+      
+      circle.setAttribute('stroke-dashoffset', newDashOffset.toString());
+      scrollAnimationRef.current = requestAnimationFrame(updateScrollDashOffset);
+    };
+    
+    scrollAnimationRef.current = requestAnimationFrame(updateScrollDashOffset);
   };
 
   return {

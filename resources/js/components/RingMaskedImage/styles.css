@@ -12,6 +12,29 @@
   display: block;
 }
 
+/* Fix 1: Promote rotating group to composited layer for iOS WebKit performance */
+.sliceGroup {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+/* Fix 4 & 6: Mobile performance optimizations */
+@media (max-width: 768px) {
+  .sliceGroup {
+    /* Reduce stroke width slightly on mobile for better performance */
+    stroke-width: 0.95;
+  }
+}
+
+/* Fix 6: Optimize for lower-end devices */
+@media (max-width: 480px) and (max-resolution: 2dppx) {
+  .ring-masked-image-svg {
+    /* Cap rendering quality on low-res devices */
+    shape-rendering: optimizeSpeed;
+  }
+}
+
 /* Accessibility: Respect reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .ring-masked-image-container * {

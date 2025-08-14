@@ -9,6 +9,9 @@ export interface RingMaskedImageProps {
   /** Image source and alt text */
   src: string;
   alt?: string;
+  /** Optional srcset for responsive images (Fix 4) */
+  srcSet?: string;
+  sizes?: string;
 
   /** Engine selection (default: 'framer') */
   engine?: Engine;
@@ -49,11 +52,17 @@ export interface RingMaskedImageProps {
   keepSquare?: boolean;
   /** Performance strategy: auto (default), css (force CSS keyframe), js (force rAF attribute). */
   performanceMode?: 'auto' | 'css' | 'js';
+  /** Disable mobile responsive sizing constraints for full-screen usage */
+  disableResponsiveConstraints?: boolean;
+  /** SVG preserveAspectRatio setting (default: 'xMidYMid slice') */
+  preserveAspectRatio?: string;
 }
 
 export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
   src,
   alt = '',
+  srcSet,
+  sizes,
   engine = 'framer',
   mode = 'continuous',
   innerRadiusPct,
@@ -71,6 +80,8 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
   className = '',
   keepSquare = false,
   performanceMode = 'auto',
+  disableResponsiveConstraints = false,
+  preserveAspectRatio = 'xMidYMid slice',
 }) => {
   // Generate unique ID for this instance
   const maskId = useRef(`ringMask-${Math.random().toString(36).substr(2, 9)}`);
@@ -80,6 +91,15 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
   const sliceGroupRef = useRef<SVGGElement>(null);
   const circleRef = useRef<SVGCircleElement>(null);
 
+  // iOS/WebKit detection for Fix 2
+  const isIOSWebKit = useMemo(() => {
+    if (typeof navigator === 'undefined') return false;
+    return (
+      /iP(hone|ad|od)/.test(navigator.platform || '') ||
+      (/Mac/.test(navigator.platform || '') && typeof document !== 'undefined' && 'ontouchend' in document)
+    );
+  }, []);
+
   // Validate props
   const validatedInnerRadius = Math.max(0, Math.min(50, innerRadiusPct));
   const validatedOuterRadius = Math.max(validatedInnerRadius + 1, Math.min(50, outerRadiusPct));
@@ -88,9 +108,22 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
   // Calculate ring geometry (memoised)
   const { radiusPx, strokeWidth, circumference, sliceLength, initialDashArray } = useMemo(() => {
     const radius = (validatedInnerRadius + validatedOuterRadius) / 2;
-    const width = validatedOuterRadius - validatedInnerRadius;
+    let width = validatedOuterRadius - validatedInnerRadius;
+    
+    // Fix 6: Slightly reduce stroke width on mobile for performance
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      width = width * 0.95;
+    }
+    
     const circ = 2 * Math.PI * radius;
-    const sliceLen = circ * (validatedSliceDegrees / 360);
+    
+    // Fix 6: Slightly increase slice degrees to hide cap artifacts
+    let adjustedSliceDegrees = validatedSliceDegrees;
+    if (typeof window !== 'undefined' && window.innerWidth <= 480) {
+      adjustedSliceDegrees = validatedSliceDegrees + 3;
+    }
+    
+    const sliceLen = circ * (adjustedSliceDegrees / 360);
     return {
       radiusPx: radius,
       strokeWidth: width,
@@ -159,7 +192,8 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     turnsPerViewport,
     respectReducedMotion,
     setDashArray,
-  performanceMode,
+    performanceMode,
+    isIOSWebKit,
   });
 
   // GSAP engine with dynamic import
@@ -181,6 +215,7 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
           turnsPerViewport,
           respectReducedMotion,
           setDashArray,
+          isIOSWebKit,
         });
       }).catch(() => {
         console.warn('GSAP engine not available');
@@ -196,6 +231,7 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     clockwise,
     turnsPerViewport,
     respectReducedMotion,
+    isIOSWebKit,
   ]);
 
   // Vanilla JS animation (fallback)
@@ -212,8 +248,10 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
         const elapsed = currentTime - startTime;
         const rotation = (elapsed * rotationSpeed) % 360;
         
-        // Use SVG transform instead of CSS transform for better SVG compatibility
-        sliceGroup.setAttribute('transform', `rotate(${rotation} 50 50)`);
+        // Fix 3: Use CSS transform instead of SVG attribute transform
+        sliceGroup.style.transform = `rotate(${rotation}deg)`;
+        sliceGroup.style.transformOrigin = '50% 50%';
+        sliceGroup.style.transformBox = 'fill-box';
         
         animationFrame = requestAnimationFrame(animate);
       };
@@ -242,15 +280,21 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     <div
       ref={containerRef}
       className={`relative ${keepSquare ? 'aspect-square' : 'h-full w-full'} ${className}`}
+      style={disableResponsiveConstraints ? undefined : { 
+        // Fix 4: Constrain component size for mobile performance (unless disabled)
+        width: 'clamp(220px, 60vmin, 420px)',
+        maxWidth: '100%',
+        margin: '0 auto'
+      }}
     >
       <svg
         viewBox="0 0 100 100"
-        className="w-full h-full"
+        className="w-full h-full ring-masked-image-svg"
         xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio={preserveAspectRatio}
       >
         <defs>
-          <mask id={maskId.current} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" style={{ maskType: 'luminance' as any }}>
+          <mask id={maskId.current} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" style={{ maskType: 'alpha' as any }}>
             {/* Base layer - dims the entire image */}
             <rect
               width="100"
@@ -260,7 +304,7 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
             />
             
             {/* Ring slice - highlights the visible area */}
-            <g ref={sliceGroupRef}>
+            <g ref={sliceGroupRef} className="sliceGroup">
               <circle
                 ref={circleRef}
                 cx="50"
@@ -286,7 +330,9 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
             y="0"
             width="100"
             height="100"
-            preserveAspectRatio="xMidYMid slice"
+            preserveAspectRatio={preserveAspectRatio}
+            {...(srcSet && { 'data-srcset': srcSet })}
+            {...(sizes && { 'data-sizes': sizes })}
           />
         </g>
       </svg>
