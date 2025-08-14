@@ -166,16 +166,28 @@ export default function Header({ transparent = false }: HeaderProps) {
 
         // Prevent body scroll when menu is open on mobile with optimized class
         if (window.innerWidth < 768) {
-            document.body.classList.add('menu-open');
-            document.body.style.overflow = 'hidden';
+            // Store current scroll position
+            const scrollY = window.scrollY;
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${scrollY}px`;
+            document.body.style.width = '100%';
+            document.body.style.overflowY = 'scroll'; // Maintain scrollbar width
         }
 
         document.addEventListener('mousedown', handleClickOutside);
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
-            document.body.classList.remove('menu-open');
-            document.body.style.overflow = 'auto';
+            
+            // Restore scroll position when closing menu
+            if (window.innerWidth < 768) {
+                const scrollY = document.body.style.top;
+                document.body.style.position = '';
+                document.body.style.top = '';
+                document.body.style.width = '';
+                document.body.style.overflowY = '';
+                window.scrollTo(0, parseInt(scrollY || '0') * -1);
+            }
         };
     }, [isMenuOpen]);
 
@@ -194,13 +206,12 @@ export default function Header({ transparent = false }: HeaderProps) {
 
     // Memoize menu classes to prevent animation glitches
     const menuClasses = useMemo(() => {
-        const baseClasses = 'mobile-menu mobile-menu-transition fixed top-0 right-0 z-50 h-screen w-80 max-w-[85vw] overflow-hidden bg-white shadow-lg transition-transform duration-300 ease-in-out md:absolute md:top-full md:right-0 md:h-auto md:w-64 md:rounded-lg md:border md:border-gray-200 md:shadow-xl';
+        const baseClasses = 'mobile-menu fixed top-0 right-0 z-50 h-screen w-80 max-w-[85vw] bg-white shadow-xl transition-transform duration-300 ease-out md:absolute md:top-full md:right-0 md:h-auto md:w-64 md:rounded-lg md:border md:border-gray-200 md:shadow-xl';
         const transformClasses = isMenuOpen 
-            ? 'translate-x-0 translate-y-0' 
-            : 'translate-x-full md:translate-x-0 md:-translate-y-full';
-        const visibilityClasses = !isMenuOpen ? 'md:hidden' : 'md:block';
+            ? 'transform translate-x-0' 
+            : 'transform translate-x-full md:translate-x-0 md:-translate-y-2 md:opacity-0 md:pointer-events-none';
         
-        return `${baseClasses} ${transformClasses} ${visibilityClasses}`;
+        return `${baseClasses} ${transformClasses}`;
     }, [isMenuOpen]);
 
     // Cart button animation classes - memoized to prevent re-renders
@@ -333,7 +344,12 @@ export default function Header({ transparent = false }: HeaderProps) {
             </div>
 
             {/* Overlay for mobile */}
-            {isMenuOpen && <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={closeMenu} />}
+            {isMenuOpen && (
+                <div 
+                    className="fixed inset-0 z-40 bg-black/50 opacity-100 transition-opacity duration-300 md:hidden" 
+                    onClick={closeMenu} 
+                />
+            )}
 
             {/* Slide-out Menu */}
             <div
@@ -349,105 +365,107 @@ export default function Header({ transparent = false }: HeaderProps) {
                 </div>
 
                 {/* Menu Content */}
-                <div className="space-y-6 overflow-y-auto p-4">
-                    {/* Language Selector */}
-                    <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-700">Language</h4>
-                        <div className="flex items-center space-x-2">
-                            <Globe className="h-4 w-4 text-gray-600" />
-                            <Select
-                                value={locale}
-                                onValueChange={(value) => {
-                                    changeLocale(value);
-                                    closeMenu();
-                                }}
-                                disabled={isLoading}
-                            >
-                                <SelectTrigger className="h-8 w-full border border-gray-300 text-black">
-                                    {isLoading ? (
-                                        <div className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
-                                    ) : (
-                                        <SelectValue />
-                                    )}
-                                </SelectTrigger>
-                                <SelectContent
-                                    className="z-[9999] max-w-[200px] border border-gray-200 bg-white"
-                                    position="popper"
-                                    side="bottom"
-                                    align="end"
-                                    avoidCollisions={true}
-                                    collisionPadding={8}
+                <div className="h-full overflow-y-auto overscroll-contain p-4" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                    <div className="space-y-6">
+                        {/* Language Selector */}
+                        <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-gray-700">Language</h4>
+                            <div className="flex items-center space-x-2">
+                                <Globe className="h-4 w-4 text-gray-600" />
+                                <Select
+                                    value={locale}
+                                    onValueChange={(value) => {
+                                        changeLocale(value);
+                                        closeMenu();
+                                    }}
+                                    disabled={isLoading}
                                 >
-                                    <SelectItem value="en" className="text-gray-900 hover:bg-gray-100">
-                                        English
-                                    </SelectItem>
-                                    <SelectItem value="es" className="text-gray-900 hover:bg-gray-100">
-                                        Español
-                                    </SelectItem>
-                                    <SelectItem value="fr" className="text-gray-900 hover:bg-gray-100">
-                                        Français
-                                    </SelectItem>
-                                    <SelectItem value="de" className="text-gray-900 hover:bg-gray-100">
-                                        Deutsch
-                                    </SelectItem>
-                                    <SelectItem value="it" className="text-gray-900 hover:bg-gray-100">
-                                        Italiano
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
+                                    <SelectTrigger className="h-8 w-full border border-gray-300 text-black">
+                                        {isLoading ? (
+                                            <div className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
+                                        ) : (
+                                            <SelectValue />
+                                        )}
+                                    </SelectTrigger>
+                                    <SelectContent
+                                        className="z-[9999] max-w-[200px] border border-gray-200 bg-white"
+                                        position="popper"
+                                        side="bottom"
+                                        align="end"
+                                        avoidCollisions={true}
+                                        collisionPadding={8}
+                                    >
+                                        <SelectItem value="en" className="text-gray-900 hover:bg-gray-100">
+                                            English
+                                        </SelectItem>
+                                        <SelectItem value="es" className="text-gray-900 hover:bg-gray-100">
+                                            Español
+                                        </SelectItem>
+                                        <SelectItem value="fr" className="text-gray-900 hover:bg-gray-100">
+                                            Français
+                                        </SelectItem>
+                                        <SelectItem value="de" className="text-gray-900 hover:bg-gray-100">
+                                            Deutsch
+                                        </SelectItem>
+                                        <SelectItem value="it" className="text-gray-900 hover:bg-gray-100">
+                                            Italiano
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Explore Products */}
-                    <div className="space-y-2">
-                        <Link href="/products" onClick={closeMenu}>
-                            <h4 className="cursor-pointer text-base font-medium text-gray-900 transition-colors hover:text-blue-600">
-                                {t('explore_products')}
-                            </h4>
-                        </Link>
-                    </div>
+                        {/* Explore Products */}
+                        <div className="space-y-2">
+                            <Link href="/products" onClick={closeMenu}>
+                                <h4 className="cursor-pointer text-base font-medium text-gray-900 transition-colors hover:text-blue-600">
+                                    {t('explore_products')}
+                                </h4>
+                            </Link>
+                        </div>
 
-                    {/* Bottom Actions */}
-                    <div className="space-y-3 border-t border-gray-200 pt-4">
-                        <Link
-                            href="/help"
-                            onClick={closeMenu}
-                            className="flex items-center space-x-3 text-gray-700 transition-colors hover:text-blue-600"
-                        >
-                            <HelpCircle className="h-5 w-5" />
-                            <span>{t('help')}</span>
-                        </Link>
-
-                        <Link
-                            href="/cart"
-                            onClick={closeMenu}
-                            className="flex items-center space-x-3 text-gray-700 transition-colors hover:text-blue-600"
-                        >
-                            <ShoppingCart className="h-5 w-5" />
-                            <span>{t('cart_link')}</span>
-                        </Link>
-
-                        {auth.user && (
+                        {/* Bottom Actions */}
+                        <div className="space-y-3 border-t border-gray-200 pt-4">
                             <Link
-                                href={route('wishlist.index')}
+                                href="/help"
                                 onClick={closeMenu}
                                 className="flex items-center space-x-3 text-gray-700 transition-colors hover:text-blue-600"
                             >
-                                <Heart className="h-5 w-5" />
-                                <span>{t('wishlist.title')}</span>
+                                <HelpCircle className="h-5 w-5" />
+                                <span>{t('help')}</span>
                             </Link>
-                        )}
 
-                        {auth.user && (
                             <Link
-                                href="/orders"
+                                href="/cart"
                                 onClick={closeMenu}
                                 className="flex items-center space-x-3 text-gray-700 transition-colors hover:text-blue-600"
                             >
-                                <Package className="h-5 w-5" />
-                                <span>{t('orders_link')}</span>
+                                <ShoppingCart className="h-5 w-5" />
+                                <span>{t('cart_link')}</span>
                             </Link>
-                        )}
+
+                            {auth.user && (
+                                <Link
+                                    href={route('wishlist.index')}
+                                    onClick={closeMenu}
+                                    className="flex items-center space-x-3 text-gray-700 transition-colors hover:text-blue-600"
+                                >
+                                    <Heart className="h-5 w-5" />
+                                    <span>{t('wishlist.title')}</span>
+                                </Link>
+                            )}
+
+                            {auth.user && (
+                                <Link
+                                    href="/orders"
+                                    onClick={closeMenu}
+                                    className="flex items-center space-x-3 text-gray-700 transition-colors hover:text-blue-600"
+                                >
+                                    <Package className="h-5 w-5" />
+                                    <span>{t('orders_link')}</span>
+                                </Link>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -96,6 +96,7 @@ export default function Home() {
     // const [videoLoaded, setVideoLoaded] = useState(false);
     // const [imageLoaded, setImageLoaded] = useState(false);
     const [addingToCartId, setAddingToCartId] = useState<number | null>(null);
+    const [backgroundBlur, setBackgroundBlur] = useState(3); // Tunable blur amount (0-10)
     const { t, isLoading } = useTranslation();
     const { featuredProducts, categories } = usePage<HomePageProps>().props;
 
@@ -182,9 +183,9 @@ export default function Home() {
                 <Header currentPage="home" transparent={true} />
 
                 {/* Hero Section with Ring Masked Image */}
-                <section className="hero-section relative -mt-16 flex items-center justify-center overflow-hidden pt-16 min-h-screen">
+                <section className="hero-section relative -mt-16 flex overflow-hidden pt-16" style={{ height: '100vh' }}>
                     {/* Background Image Layer */}
-                    <div className="absolute inset-0 z-0">
+                    <div className="absolute inset-0 z-0" style={{ transform: 'scale(1.05)' }}>
                         <img
                             src="/images/angels.png"
                             alt="RSP Background"
@@ -192,7 +193,8 @@ export default function Home() {
                             style={{
                                 minWidth: '100%',
                                 minHeight: '100%',
-                                transform: 'scale(1.1)', // Slight zoom to ensure no gaps on mobile
+                                filter: `blur(${backgroundBlur}px)`,
+                                transform: 'scale(1.02)', // Slight scale to prevent edge artifacts
                             }}
                         />
                     </div>
@@ -200,7 +202,7 @@ export default function Home() {
                     {/* Ring Masked Image Layer */}
                     <div className="absolute inset-0 z-5 flex items-center justify-center">
                         <RingMaskedImage
-                            src="/images/angele-ye.png"
+                            src="/images/angel-eye.png"
                             alt="Angel Eye - Discover Amazing Products"
                             engine="framer"
                             mode="continuous"
@@ -217,21 +219,30 @@ export default function Home() {
                             respectReducedMotion={false}
                             disableResponsiveConstraints={true}
                             preserveAspectRatio="xMidYMid meet"
-                            className="w-full h-full min-h-screen mx-auto max-w-[1400px]"
+                            className="w-full h-full mx-auto max-w-[1400px]"
+                        />
+                    </div>
+
+                    {/* Black Angel Eye Image Layer */}
+                    <div className="absolute inset-0 z-4 flex items-center justify-center">
+                        <img
+                            src="/images/angel-eye.png"
+                            alt="Angel Eye Black"
+                            className="w-full h-full mx-auto max-w-[1400px]"
+                            style={{
+                                filter: 'brightness(0.2) saturate(100%)',
+                                objectFit: 'contain',
+                                objectPosition: 'center',
+                                height: '100vh'
+                            }}
                         />
                     </div>
 
                     {/* Overlay for Text Readability */}
-                    <div className="absolute inset-0 z-10" style={{ background: 'linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2))' }} />
+                    <div className="absolute inset-0 z-4" style={{ background: 'linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2))' }} />
 
-                    {/* Hero Content */}
-                    <div className="relative z-20 mx-auto max-w-5xl px-4 text-center text-white sm:px-6 lg:px-8">
-                        <h2 className="mb-6 text-4xl leading-tight font-bold drop-shadow-lg sm:text-5xl md:text-6xl lg:text-7xl">
-                            {t('discover_amazing_products')}
-                        </h2>
-                        <p className="mx-auto mb-8 max-w-3xl text-lg leading-relaxed opacity-90 drop-shadow-md sm:text-xl md:text-2xl">
-                            {t('find_perfect_tech')}
-                        </p>
+                    {/* Hero Content - Positioned in the lower part */}
+                    <div className="absolute left-0 right-0 z-20 mx-auto max-w-5xl px-4 text-center text-white sm:px-6 lg:px-8" style={{ bottom: '20%' }}>
                         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                             <Link href={route('products')}>
                                 <Button
