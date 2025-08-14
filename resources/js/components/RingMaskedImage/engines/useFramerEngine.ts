@@ -41,6 +41,7 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
 
   const animationRef = useRef<number | null>(null);
   const scrollAnimationRef = useRef<number | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const framerMotionRef = useRef<any>(null);
 
   // Check for reduced motion preference
@@ -102,6 +103,7 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
         cancelAnimationFrame(scrollAnimationRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, shouldRunIntro, mode, prefersReducedMotion]);
 
   const runFramerIntroSequence = () => {
@@ -140,6 +142,11 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
 
   const animateFramerFill = () => {
     return new Promise<void>((resolve) => {
+      if (!framerMotionRef.current) {
+        resolve();
+        return;
+      }
+      
       const { animate } = framerMotionRef.current;
       const progress = { value: 0 };
       
@@ -148,6 +155,7 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
         { 
           duration: secondsPerTurn, 
           ease: 'linear',
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onUpdate: (latest: any) => {
             const currentLength = sliceLength * latest.value;
             const remainingLength = circumference - currentLength;
@@ -202,27 +210,6 @@ export const useFramerEngine = (props: UseFramerEngineProps) => {
       console.log('FramerEngine: Using vanilla scroll rotation for SVG mask compatibility');
       startVanillaScrollRotation(sliceGroup);
     }
-  };
-
-  const startFramerContinuousRotation = (element: SVGGElement) => {
-    const { animate } = framerMotionRef.current;
-    const rotation = clockwise ? 360 : -360;
-    
-    animate(element, 
-      { rotate: [0, rotation] }, 
-      { 
-        duration: secondsPerTurn, 
-        ease: 'linear',
-        repeat: Infinity,
-        repeatType: 'loop'
-      }
-    );
-  };
-
-  const startFramerScrollRotation = (element: SVGGElement) => {
-    // For scroll-based animation, we'll use vanilla JS with requestAnimationFrame
-    // as Framer Motion's useScroll requires component-level integration
-    startVanillaScrollRotation(element);
   };
 
   // Vanilla JavaScript fallback methods

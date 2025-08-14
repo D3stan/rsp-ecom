@@ -60,7 +60,7 @@ function testFPS(duration = 5000) {
   
   let frameCount = 0;
   let startTime = performance.now();
-  let lastTime = startTime;
+  // let lastTime = startTime;
   
   function countFrame() {
     const now = performance.now();

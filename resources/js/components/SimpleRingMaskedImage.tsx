@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 export interface SimpleRingMaskedImageProps {
   src: string;
@@ -13,18 +13,18 @@ export interface SimpleRingMaskedImageProps {
   className?: string;
 }
 
-export const SimpleRingMaskedImage: React.FC<SimpleRingMaskedImageProps> = ({
-  src,
-  alt = '',
+export default function SimpleRingMaskedImage({ 
+  src, 
+  // alt,
   innerRadiusPct,
   outerRadiusPct,
-  sliceDegrees = 60,
-  baseOpacity = 0.35,
+  sliceDegrees = 90,
+  baseOpacity = 0.3,
   ringOpacity = 1.0,
-  secondsPerTurn = 2,
+  secondsPerTurn = 10,
   clockwise = true,
-  className = '',
-}) => {
+  className = ""
+}: SimpleRingMaskedImageProps) {
   // Generate unique ID for this instance
   const maskId = useRef(`ringMask-${Math.random().toString(36).substr(2, 9)}`);
   const sliceGroupRef = useRef<SVGGElement>(null);
@@ -80,7 +80,7 @@ export const SimpleRingMaskedImage: React.FC<SimpleRingMaskedImageProps> = ({
         console.log('SimpleRingMaskedImage: Animation cleaned up');
       }
     };
-  }, [secondsPerTurn, clockwise]);
+  }, [secondsPerTurn, clockwise, circumference, radiusPx, sliceLength]);
 
   return (
     <div className={`w-full aspect-square ${className}`}>
@@ -132,5 +132,3 @@ export const SimpleRingMaskedImage: React.FC<SimpleRingMaskedImageProps> = ({
     </div>
   );
 };
-
-export default SimpleRingMaskedImage;

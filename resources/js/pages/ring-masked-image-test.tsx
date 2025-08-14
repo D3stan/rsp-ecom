@@ -1,10 +1,9 @@
 import Header from '@/components/header';
 import { RingMaskedImageDemo } from '@/components/RingMaskedImageDemo';
-import { type SharedData } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 
 export default function RingMaskedImageTest() {
-    const { auth } = usePage<SharedData>().props;
+    // const { auth } = usePage<SharedData>().props;
 
     return (
         <>

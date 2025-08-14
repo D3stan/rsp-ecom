@@ -93,8 +93,8 @@ const renderStars = (rating: number) => {
 
 export default function Home() {
     const parallaxRef = useRef<HTMLDivElement>(null);
-    const [videoLoaded, setVideoLoaded] = useState(false);
-    const [imageLoaded, setImageLoaded] = useState(false);
+    // const [videoLoaded, setVideoLoaded] = useState(false);
+    // const [imageLoaded, setImageLoaded] = useState(false);
     const [addingToCartId, setAddingToCartId] = useState<number | null>(null);
     const { t, isLoading } = useTranslation();
     const { featuredProducts, categories } = usePage<HomePageProps>().props;
@@ -186,7 +186,7 @@ export default function Home() {
                     {/* Background Image Layer */}
                     <div className="absolute inset-0 z-0">
                         <img
-                            src="/images/rsplogo.png"
+                            src="/images/angels.png"
                             alt="RSP Background"
                             className="w-full h-full object-cover object-center"
                             style={{
@@ -200,7 +200,7 @@ export default function Home() {
                     {/* Ring Masked Image Layer */}
                     <div className="absolute inset-0 z-5 flex items-center justify-center">
                         <RingMaskedImage
-                            src="/images/angeleye.png"
+                            src="/images/angele-ye.png"
                             alt="Angel Eye - Discover Amazing Products"
                             engine="framer"
                             mode="continuous"

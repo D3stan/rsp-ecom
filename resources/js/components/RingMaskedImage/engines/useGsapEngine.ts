@@ -34,10 +34,12 @@ export const useGsapEngine = (props: UseGsapEngineProps) => {
     turnsPerViewport,
     respectReducedMotion,
     setDashArray,
-    isIOSWebKit = false,
+    // isIOSWebKit = false,
   } = props;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const timelineRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const scrollTriggerRef = useRef<any>(null);
 
   // Check for reduced motion preference
@@ -64,7 +66,7 @@ export const useGsapEngine = (props: UseGsapEngineProps) => {
         } else {
           startSelectedMode(gsap, ScrollTrigger);
         }
-      } catch (error) {
+      } catch {
         console.warn('GSAP not available, falling back to basic animation');
         // Fallback to basic JavaScript animation
         runBasicAnimation();
@@ -82,8 +84,10 @@ export const useGsapEngine = (props: UseGsapEngineProps) => {
         scrollTriggerRef.current.kill();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, shouldRunIntro, mode, prefersReducedMotion]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const runIntroSequence = (gsap: any) => {
     if (!sliceGroupRef.current) return;
 
@@ -130,6 +134,7 @@ export const useGsapEngine = (props: UseGsapEngineProps) => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const startSelectedMode = (gsap: any, ScrollTrigger: any) => {
     if (!sliceGroupRef.current) return;
 
@@ -145,6 +150,7 @@ export const useGsapEngine = (props: UseGsapEngineProps) => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const startContinuousRotation = (gsap: any, element: SVGGElement) => {
     const rotation = clockwise ? 360 : -360;
     
@@ -157,6 +163,7 @@ export const useGsapEngine = (props: UseGsapEngineProps) => {
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const startScrollRotation = (gsap: any, ScrollTrigger: any, element: SVGGElement) => {
     if (!containerRef.current) return;
 
@@ -167,6 +174,7 @@ export const useGsapEngine = (props: UseGsapEngineProps) => {
       start: 'top bottom',
       end: '+=100%',
       scrub: true,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onUpdate: (self: any) => {
         const progress = self.progress;
         gsap.set(element, {
