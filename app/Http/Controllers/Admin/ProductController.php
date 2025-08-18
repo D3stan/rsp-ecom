@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Size;
+use App\Services\FileUploadConfigService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -109,6 +110,10 @@ class ProductController extends Controller
         return Inertia::render('Admin/Products/Create', [
             'categories' => Category::where('is_active', true)->get(),
             'sizes' => Size::all(),
+            'uploadLimits' => [
+                'maxFileSize' => FileUploadConfigService::getMaxFileUploadSizeFormatted(),
+                'maxFiles' => FileUploadConfigService::getMaxFileUploads(),
+            ],
         ]);
     }
 
@@ -130,8 +135,8 @@ class ProductController extends Controller
             'featured' => 'boolean',
             'category_id' => 'required|exists:categories,id',
             'size_id' => 'required|exists:sizes,id',
-            'images' => 'nullable|array|max:10',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'images' => 'nullable|array|max:' . FileUploadConfigService::getMaxFileUploads(),
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule(),
         ]);
         
         \Log::info('Validation passed', ['validated_data' => $validated]);
@@ -208,6 +213,10 @@ class ProductController extends Controller
             'product' => $product,
             'categories' => Category::where('is_active', true)->get(),
             'sizes' => Size::all(),
+            'uploadLimits' => [
+                'maxFileSize' => FileUploadConfigService::getMaxFileUploadSizeFormatted(),
+                'maxFiles' => FileUploadConfigService::getMaxFileUploads(),
+            ],
         ]);
     }
 
@@ -216,23 +225,54 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
+        // Debug what we're actually receiving
+        \Log::info('===== DEBUGGING PRODUCT UPDATE =====');
+        \Log::info('All request data:', ['data' => $request->all()]);
+        \Log::info('Request input name:', ['name' => $request->input('name')]);
+        \Log::info('Request has files:', ['has_files' => $request->hasFile('new_images')]);
+        \Log::info('Request files count:', ['files' => $request->file('new_images') ? count($request->file('new_images')) : 0]);
+        
+        // Check if this is the issue - no data is being received
+        if (empty($request->all())) {
+            \Log::error('No request data received!');
+            return response()->json(['error' => 'No data received'], 422);
+        }
+
+        // Simplified validation for debugging
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'compare_price' => 'nullable|numeric|min:0',
-            'stock_quantity' => 'required|integer|min:0',
+            'price' => 'required|string', // Temporarily accept as string
+            'compare_price' => 'nullable|string',
+            'stock_quantity' => 'required|string', // Temporarily accept as string
             'sku' => 'required|string|unique:products,sku,' . $product->id,
             'status' => 'required|in:active,inactive,draft',
-            'featured' => 'boolean',
-            'category_id' => 'required|exists:categories,id',
-            'size_id' => 'required|exists:sizes,id',
-            'new_images' => 'nullable|array|max:10',
-            'new_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'featured' => 'nullable',
+            'category_id' => 'required|string', // Temporarily accept as string
+            'size_id' => 'required|string', // Temporarily accept as string
+            'new_images' => 'nullable|array|max:' . FileUploadConfigService::getMaxFileUploads(),
+            'new_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule(),
             'remove_images' => 'nullable|array',
         ]);
 
+        // Convert string values to proper types
+        $validated['price'] = (float) $validated['price'];
+        $validated['stock_quantity'] = (int) $validated['stock_quantity'];
+        $validated['category_id'] = (int) $validated['category_id'];
+        $validated['size_id'] = (int) $validated['size_id'];
+        
+        if (isset($validated['compare_price']) && $validated['compare_price'] !== '') {
+            $validated['compare_price'] = (float) $validated['compare_price'];
+        } else {
+            $validated['compare_price'] = null;
+        }
+
+        // Handle featured field explicitly
+        $validated['featured'] = $request->has('featured') ? (bool)$request->input('featured') : false;
+
         $validated['slug'] = Str::slug($validated['name']);
+
+        \Log::info('Validated data:', ['validated' => $validated]);
 
         // Update product
         $product->update($validated);

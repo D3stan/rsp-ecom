@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { WishlistButton } from '@/components/wishlist-button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCurrency } from '@/lib/utils';
 import { cartService, type AddToCartData } from '@/services/cartService';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
@@ -243,9 +244,9 @@ export default function Product() {
 
                                 {/* Price */}
                                 <div className="mb-6 flex items-center space-x-3">
-                                    <span className="text-3xl font-bold text-gray-900">${currentPrice.toFixed(2)}</span>
+                                    <span className="text-3xl font-bold text-gray-900">{formatCurrency(currentPrice)}</span>
                                     {product.originalPrice && (
-                                        <span className="text-xl text-gray-500 line-through">${Number(product.originalPrice).toFixed(2)}</span>
+                                        <span className="text-xl text-gray-500 line-through">{formatCurrency(Number(product.originalPrice))}</span>
                                     )}
                                 </div>
                             </div>
@@ -264,7 +265,7 @@ export default function Product() {
                                                     {size.name}
                                                     {size.price_adjustment !== 0 && (
                                                         <span className="ml-2 text-gray-500">
-                                                            ({size.price_adjustment > 0 ? '+' : ''}${size.price_adjustment})
+                                                            ({size.price_adjustment > 0 ? '+' : ''}{formatCurrency(size.price_adjustment)})
                                                         </span>
                                                     )}
                                                 </SelectItem>
@@ -363,7 +364,7 @@ export default function Product() {
                                     />
                                 </CollapsibleTrigger>
                                 <CollapsibleContent className="mt-2 rounded-lg p-4 text-black">
-                                    <div className="prose prose-gray max-w-none" dangerouslySetInnerHTML={{ __html: product.description }} />
+                                    <div className="prose prose-gray max-w-none whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: product.description }} />
                                 </CollapsibleContent>
                             </Collapsible>
                         )}
@@ -434,7 +435,7 @@ export default function Product() {
                                             />
                                         </div>
                                         <h3 className="mb-1 line-clamp-2 font-medium text-gray-900">{relatedProduct.name}</h3>
-                                        <p className="text-lg font-bold text-gray-900">${Number(relatedProduct.price).toFixed(2)}</p>
+                                        <p className="text-lg font-bold text-gray-900">{formatCurrency(Number(relatedProduct.price))}</p>
                                     </Link>
                                 ))}
                             </div>
@@ -447,9 +448,9 @@ export default function Product() {
                     <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-200 bg-white p-4 shadow-lg">
                         <div className="flex items-center justify-between space-x-4">
                             <div>
-                                <p className="text-lg font-bold text-gray-900">${currentPrice.toFixed(2)}</p>
+                                <p className="text-lg font-bold text-gray-900">{formatCurrency(currentPrice)}</p>
                                 {product.originalPrice && (
-                                    <p className="text-sm text-gray-500 line-through">${Number(product.originalPrice).toFixed(2)}</p>
+                                    <p className="text-sm text-gray-500 line-through">{formatCurrency(Number(product.originalPrice))}</p>
                                 )}
                             </div>
                             <Button

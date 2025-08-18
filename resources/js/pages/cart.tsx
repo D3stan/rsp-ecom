@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCurrency } from '@/lib/utils';
 import { cartService } from '@/services/cartService';
 import { type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -246,9 +247,9 @@ export default function Cart() {
                                     {/* Bottom Section: Price and Delete Button */}
                                     <div className="flex items-center justify-between border-t border-gray-100 pt-4">
                                         <div>
-                                            <p className="text-lg font-semibold text-gray-900">${item.total.toFixed(2)}</p>
+                                            <p className="text-lg font-semibold text-gray-900">{formatCurrency(item.total)}</p>
                                             <p className="text-sm text-gray-500">
-                                                ${item.price.toFixed(2)} {t('cart.each')}
+                                                {formatCurrency(item.price)} {t('cart.each')}
                                             </p>
                                         </div>
                                         <Button
@@ -271,16 +272,16 @@ export default function Cart() {
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-gray-700">
                                         <span>{t('cart.subtotal')}</span>
-                                        <span>${subtotal.toFixed(2)}</span>
+                                        <span>{formatCurrency(subtotal)}</span>
                                     </div>
                                     <div className="flex justify-between text-gray-700">
                                         <span>{t('cart.shipping')}</span>
-                                        <span>{shippingCost > 0 ? `$${shippingCost.toFixed(2)}` : t('cart.calculated_at_checkout')}</span>
+                                        <span>{shippingCost > 0 ? formatCurrency(shippingCost) : t('cart.calculated_at_checkout')}</span>
                                     </div>
                                     <div className="border-t border-gray-200 pt-3">
                                         <div className="flex justify-between text-lg font-semibold text-gray-900">
                                             <span>{t('cart.total')}</span>
-                                            <span>${total.toFixed(2)}</span>
+                                            <span>{formatCurrency(total)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -322,7 +323,7 @@ export default function Cart() {
                     <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-200 bg-white p-4">
                         <div className="flex items-center justify-between space-x-4">
                             <div>
-                                <p className="text-lg font-bold text-gray-900">${total.toFixed(2)}</p>
+                                <p className="text-lg font-bold text-gray-900">{formatCurrency(total)}</p>
                                 <p className="text-sm text-gray-500">
                                     {totalItems} {t('cart.items')}
                                 </p>

@@ -13,6 +13,7 @@ interface OrderItem {
         name: string;
         price: number;
         image_url?: string;
+        images?: string[];
     };
     size?: {
         id: number;
@@ -50,6 +51,17 @@ interface Props {
 export default function CheckoutShow({ session, order }: Props) {
     // Image handling helper
     const getImageSrc = (item: OrderItem) => {
+        // Try to get the first image from the images array
+        if (item.product.images && Array.isArray(item.product.images) && item.product.images.length > 0) {
+            const firstImage = item.product.images[0];
+            // If it's already a full URL, return as is
+            if (firstImage.startsWith('http')) {
+                return firstImage;
+            }
+            // Otherwise, construct the storage URL
+            return `/storage/products/${item.product.id}/${firstImage}`;
+        }
+        // Fallback to image_url if available
         return item.product.image_url || '/images/product.png';
     };
 

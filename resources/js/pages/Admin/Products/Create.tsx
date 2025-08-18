@@ -26,9 +26,13 @@ interface Size {
 interface Props {
     categories: Category[];
     sizes: Size[];
+    uploadLimits: {
+        maxFileSize: string;
+        maxFiles: number;
+    };
 }
 
-export default function CreateProduct({ categories, sizes }: Props) {
+export default function CreateProduct({ categories, sizes, uploadLimits }: Props) {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const [previewImages, setPreviewImages] = useState<string[]>([]);
 
@@ -271,7 +275,7 @@ export default function CreateProduct({ categories, sizes }: Props) {
                                 <ImageIcon className="h-5 w-5 text-purple-600" />
                                 <CardTitle className="text-lg">Product Images</CardTitle>
                             </div>
-                            <CardDescription>Upload up to 10 images (JPEG, PNG, GIF, WebP - max 4MB each)</CardDescription>
+                            <CardDescription>Upload up to {uploadLimits.maxFiles} images (JPEG, PNG, GIF, WebP - max {uploadLimits.maxFileSize} each)</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
@@ -284,17 +288,17 @@ export default function CreateProduct({ categories, sizes }: Props) {
                                         accept="image/*"
                                         onChange={handleImageChange}
                                         className="hidden"
-                                        disabled={data.images.length >= 10}
+                                        disabled={data.images.length >= uploadLimits.maxFiles}
                                     />
                                     <label
                                         htmlFor="images"
-                                        className={`cursor-pointer ${data.images.length >= 10 ? 'cursor-not-allowed opacity-50' : ''}`}
+                                        className={`cursor-pointer ${data.images.length >= uploadLimits.maxFiles ? 'cursor-not-allowed opacity-50' : ''}`}
                                     >
                                         <Upload className="mx-auto h-12 w-12 text-gray-400" />
                                         <p className="mt-2 text-sm text-gray-600">
-                                            {data.images.length >= 10 ? 'Maximum 10 images reached' : 'Click to upload images'}
+                                            {data.images.length >= uploadLimits.maxFiles ? `Maximum ${uploadLimits.maxFiles} images reached` : 'Click to upload images'}
                                         </p>
-                                        <p className="text-xs text-gray-500">{data.images.length}/10 images uploaded</p>
+                                        <p className="text-xs text-gray-500">{data.images.length}/{uploadLimits.maxFiles} images uploaded</p>
                                     </label>
                                 </div>
 

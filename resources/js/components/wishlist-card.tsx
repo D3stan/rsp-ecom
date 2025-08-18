@@ -218,7 +218,7 @@ export const WishlistCard: React.FC<WishlistCardProps> = ({
                     <div className="space-y-3">
                         {/* Description Preview */}
                         {item.product.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
+                            <p className="text-sm text-muted-foreground line-clamp-2 whitespace-pre-wrap">
                                 {item.product.description}
                             </p>
                         )}

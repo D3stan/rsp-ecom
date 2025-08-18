@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { ChevronDown, DollarSign, Image as ImageIcon, Package, Star, Upload, X } from 'lucide-react';
 import { useState } from 'react';
 import { route } from 'ziggy-js';
@@ -44,9 +44,13 @@ interface Props {
     product: Product;
     categories: Category[];
     sizes: Size[];
+    uploadLimits: {
+        maxFileSize: string;
+        maxFiles: number;
+    };
 }
 
-export default function EditProduct({ product, categories, sizes }: Props) {
+export default function EditProduct({ product, categories, sizes, uploadLimits }: Props) {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const [previewImages, setPreviewImages] = useState<string[]>(product.image_urls || []);
 
@@ -58,17 +62,17 @@ export default function EditProduct({ product, categories, sizes }: Props) {
         stock_quantity: product.stock_quantity.toString(),
         sku: product.sku,
         status: product.status,
-        featured: product.featured as boolean,
+        featured: Boolean(product.featured),
         category_id: product.category_id.toString(),
         size_id: product.size_id.toString(),
-        images: [] as File[],
+        new_images: [] as File[],
     });
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        const newImages = [...data.images, ...files].slice(0, 10);
+        const newImages = [...data.new_images, ...files].slice(0, 10);
 
-        setData('images', newImages);
+        setData('new_images', newImages);
 
         // Create preview URLs
         const newPreviews = files.map((file) => URL.createObjectURL(file));
@@ -76,16 +80,31 @@ export default function EditProduct({ product, categories, sizes }: Props) {
     };
 
     const removeImage = (index: number) => {
-        const newImages = data.images.filter((_, i) => i !== index);
+        const newImages = data.new_images.filter((_, i) => i !== index);
         const newPreviews = previewImages.filter((_, i) => i !== index);
 
-        setData('images', newImages);
+        setData('new_images', newImages);
         setPreviewImages(newPreviews);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(route('admin.products.update', product.id));
+        
+        console.log('Form data being sent:', data);
+        
+        // Use POST method with _method field for file uploads (Laravel hack)
+        router.post(route('admin.products.update', product.id), {
+            ...data,
+            _method: 'PUT',
+        }, {
+            preserveScroll: true,
+            onError: (errors: any) => {
+                console.error('Validation errors:', errors);
+            },
+            onSuccess: () => {
+                console.log('Product updated successfully');
+            },
+        });
     };
 
     return (
@@ -253,7 +272,7 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                 <ImageIcon className="h-5 w-5 text-purple-600" />
                                 <CardTitle className="text-lg">Product Images</CardTitle>
                             </div>
-                            <CardDescription>Upload up to 10 images (JPEG, PNG, GIF, WebP - max 4MB each)</CardDescription>
+                            <CardDescription>Upload up to {uploadLimits.maxFiles} images (JPEG, PNG, GIF, WebP - max {uploadLimits.maxFileSize} each)</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
@@ -266,17 +285,17 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                         accept="image/*"
                                         onChange={handleImageChange}
                                         className="hidden"
-                                        disabled={data.images.length >= 10}
+                                        disabled={data.new_images.length >= 10}
                                     />
                                     <label
                                         htmlFor="images"
-                                        className={`cursor-pointer ${data.images.length >= 10 ? 'cursor-not-allowed opacity-50' : ''}`}
+                                        className={`cursor-pointer ${data.new_images.length >= 10 ? 'cursor-not-allowed opacity-50' : ''}`}
                                     >
                                         <Upload className="mx-auto h-12 w-12 text-gray-400" />
                                         <p className="mt-2 text-sm text-gray-600">
-                                            {data.images.length >= 10 ? 'Maximum 10 images reached' : 'Click to upload new images'}
+                                            {data.new_images.length >= 10 ? 'Maximum 10 images reached' : 'Click to upload new images'}
                                         </p>
-                                        <p className="text-xs text-gray-500">{data.images.length}/10 new images</p>
+                                        <p className="text-xs text-gray-500">{data.new_images.length}/10 new images</p>
                                     </label>
                                 </div>
 
@@ -308,7 +327,7 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                     </div>
                                 )}
 
-                                {errors.images && <p className="text-sm text-red-500">{errors.images}</p>}
+                                {errors.new_images && <p className="text-sm text-red-500">{errors.new_images}</p>}
                             </div>
                         </CardContent>
                     </Card>

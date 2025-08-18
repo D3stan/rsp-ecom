@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Size;
+use App\Services\FileUploadConfigService;
 use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -30,8 +31,8 @@ class ProductControllerV2 extends Controller
             'featured' => 'boolean',
             'category_id' => 'required|exists:categories,id',
             'size_id' => 'required|exists:sizes,id',
-            'images' => 'nullable|array|max:10',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'images' => 'nullable|array|max:' . FileUploadConfigService::getMaxFileUploads(),
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule(),
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
@@ -68,8 +69,8 @@ class ProductControllerV2 extends Controller
             'featured' => 'boolean',
             'category_id' => 'required|exists:categories,id',
             'size_id' => 'required|exists:sizes,id',
-            'new_images' => 'nullable|array|max:10',
-            'new_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'new_images' => 'nullable|array|max:' . FileUploadConfigService::getMaxFileUploads(),
+            'new_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule(),
             'remove_images' => 'nullable|array',
         ]);
 

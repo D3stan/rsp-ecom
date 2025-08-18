@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { WishlistButton } from '@/components/wishlist-button';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCurrency } from '@/lib/utils';
 import type { Product } from '@/pages/products';
 import { cartService, type AddToCartData } from '@/services/cartService';
 import { type SharedData } from '@/types';
@@ -91,8 +92,8 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                         </div>
 
                         <div className="flex items-center space-x-3">
-                            <span className="text-3xl font-bold text-gray-900">${product.price}</span>
-                            {product.originalPrice && <span className="text-xl text-gray-500 line-through">${product.originalPrice}</span>}
+                            <span className="text-3xl font-bold text-gray-900">{formatCurrency(product.price)}</span>
+                            {product.originalPrice && <span className="text-xl text-gray-500 line-through">{formatCurrency(product.originalPrice)}</span>}
                         </div>
 
                         <div className="flex items-center space-x-4">
@@ -235,8 +236,8 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                                     </span>
                                 </div>
                                 <div className="flex items-center space-x-3">
-                                    <span className="text-3xl font-bold text-gray-900">${product.price}</span>
-                                    {product.originalPrice && <span className="text-xl text-gray-500 line-through">${product.originalPrice}</span>}
+                                    <span className="text-3xl font-bold text-gray-900">{formatCurrency(product.price)}</span>
+                                    {product.originalPrice && <span className="text-xl text-gray-500 line-through">{formatCurrency(product.originalPrice)}</span>}
                                 </div>
                             </div>
                             <div className="ml-8 flex flex-col space-y-3">
@@ -351,8 +352,8 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                     </div>
                     <div className="mb-4 flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                            <span className="text-xl font-bold text-gray-900">${product.price}</span>
-                            {product.originalPrice && <span className="text-base text-gray-500 line-through">${product.originalPrice}</span>}
+                            <span className="text-xl font-bold text-gray-900">{formatCurrency(product.price)}</span>
+                            {product.originalPrice && <span className="text-base text-gray-500 line-through">{formatCurrency(product.originalPrice)}</span>}
                         </div>
                     </div>
                 </div>

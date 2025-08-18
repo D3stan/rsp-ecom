@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/contexts/ToastContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatCurrency } from '@/lib/utils';
 import { SharedData } from '@/types';
 import { Page } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -590,28 +591,28 @@ export default function CheckoutDetails() {
                                     <CardContent className="space-y-3">
                                         <div className="flex justify-between text-gray-600">
                                             <span>{t('cart.subtotal')}</span>
-                                            <span className="font-medium text-black">${subtotal.toFixed(2)}</span>
+                                            <span className="font-medium text-black">{formatCurrency(subtotal)}</span>
                                         </div>
                                         <div className="flex justify-between text-gray-600">
                                             <span>{t('cart.shipping')}</span>
                                             <span className="font-medium text-black">
-                                                {shippingCost > 0 ? `$${shippingCost.toFixed(2)}` : t('cart.free')}
+                                                {shippingCost > 0 ? formatCurrency(shippingCost) : t('cart.free')}
                                             </span>
                                         </div>
                                         <div className="flex justify-between text-gray-600">
                                             <span>{t('cart.tax')}</span>
-                                            <span className="font-medium text-black">${taxAmount.toFixed(2)}</span>
+                                            <span className="font-medium text-black">{formatCurrency(taxAmount)}</span>
                                         </div>
                                         {discountAmount > 0 && (
                                             <div className="flex justify-between text-green-600">
                                                 <span>{t('cart.discount')}</span>
-                                                <span className="font-medium">-${discountAmount.toFixed(2)}</span>
+                                                <span className="font-medium">-{formatCurrency(discountAmount)}</span>
                                             </div>
                                         )}
                                         <div className="border-t border-gray-200 pt-3">
                                             <div className="flex justify-between text-lg font-semibold text-black">
                                                 <span>{t('cart.total')}</span>
-                                                <span>${total.toFixed(2)}</span>
+                                                <span>{formatCurrency(total)}</span>
                                             </div>
                                         </div>
                                     </CardContent>
