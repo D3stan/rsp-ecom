@@ -253,7 +253,7 @@ export default function EditProduct({ product, categories, sizes }: Props) {
                                 <ImageIcon className="h-5 w-5 text-purple-600" />
                                 <CardTitle className="text-lg">Product Images</CardTitle>
                             </div>
-                            <CardDescription>Upload up to 10 images (JPEG, PNG, GIF, WebP - max 2MB each)</CardDescription>
+                            <CardDescription>Upload up to 10 images (JPEG, PNG, GIF, WebP - max 4MB each)</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">

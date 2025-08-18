@@ -31,7 +31,7 @@ class ProductControllerV2 extends Controller
             'category_id' => 'required|exists:categories,id',
             'size_id' => 'required|exists:sizes,id',
             'images' => 'nullable|array|max:10',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
@@ -69,7 +69,7 @@ class ProductControllerV2 extends Controller
             'category_id' => 'required|exists:categories,id',
             'size_id' => 'required|exists:sizes,id',
             'new_images' => 'nullable|array|max:10',
-            'new_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'new_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
             'remove_images' => 'nullable|array',
         ]);
 

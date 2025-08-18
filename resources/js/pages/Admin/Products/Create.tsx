@@ -67,7 +67,43 @@ export default function CreateProduct({ categories, sizes }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(route('admin.products.store'));
+        
+        // Validate required fields before submission
+        if (!data.name.trim()) {
+            console.log('Name is required');
+            return;
+        }
+        if (!data.price.trim()) {
+            console.log('Price is required');
+            return;
+        }
+        if (!data.stock_quantity.trim()) {
+            console.log('Stock quantity is required');
+            return;
+        }
+        if (!data.category_id) {
+            console.log('Category is required');
+            return;
+        }
+        if (!data.size_id) {
+            console.log('Size is required');
+            return;
+        }
+        
+        console.log('Form submitted with data:', data);
+        console.log('Route being called:', route('admin.products.store'));
+        
+        post(route('admin.products.store'), {
+            onSuccess: () => {
+                console.log('Product created successfully');
+            },
+            onError: (errors) => {
+                console.log('Validation errors:', errors);
+            },
+            onFinish: () => {
+                console.log('Request finished');
+            }
+        });
     };
 
     return (
@@ -235,7 +271,7 @@ export default function CreateProduct({ categories, sizes }: Props) {
                                 <ImageIcon className="h-5 w-5 text-purple-600" />
                                 <CardTitle className="text-lg">Product Images</CardTitle>
                             </div>
-                            <CardDescription>Upload up to 10 images (JPEG, PNG, GIF, WebP - max 2MB each)</CardDescription>
+                            <CardDescription>Upload up to 10 images (JPEG, PNG, GIF, WebP - max 4MB each)</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">

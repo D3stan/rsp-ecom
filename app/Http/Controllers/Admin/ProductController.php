@@ -117,6 +117,8 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+        \Log::info('Product creation started', ['request_data' => $request->all()]);
+        
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -129,8 +131,10 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'size_id' => 'required|exists:sizes,id',
             'images' => 'nullable|array|max:10',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
+        
+        \Log::info('Validation passed', ['validated_data' => $validated]);
 
         $validated['slug'] = Str::slug($validated['name']);
         
@@ -139,17 +143,24 @@ class ProductController extends Controller
             $validated['sku'] = $this->generateSKU($validated['name']);
         }
 
+        \Log::info('Before creating product', ['validated_data_with_slug' => $validated]);
+
         // Remove images from validated data to avoid array to string conversion
         $imageFiles = $validated['images'] ?? null;
         unset($validated['images']);
 
         // Create the product first
         $product = Product::create($validated);
+        
+        \Log::info('Product created', ['product_id' => $product->id]);
 
         // Handle image uploads
         if ($request->hasFile('images')) {
+            \Log::info('Processing image uploads', ['image_count' => count($request->file('images'))]);
             $this->handleImageUploads($product, $request->file('images'));
         }
+
+        \Log::info('Product creation completed');
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Product created successfully.');
@@ -217,7 +228,7 @@ class ProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'size_id' => 'required|exists:sizes,id',
             'new_images' => 'nullable|array|max:10',
-            'new_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'new_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:4096',
             'remove_images' => 'nullable|array',
         ]);
 

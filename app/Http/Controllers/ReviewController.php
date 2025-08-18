@@ -19,7 +19,7 @@ class ReviewController extends Controller
         $user = Auth::user();
         
         $reviews = $user->reviews()
-            ->with(['product:id,name,slug,price'])
+            ->with(['product:id,name,slug,price,images'])
             ->orderBy('created_at', 'desc')
             ->paginate(12);
             
