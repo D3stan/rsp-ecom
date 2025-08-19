@@ -14,8 +14,18 @@ class FileUploadConfigService
         $postMaxSize = self::convertToBytes(ini_get('post_max_size'));
         $memoryLimit = self::convertToBytes(ini_get('memory_limit'));
         
-        // Return the minimum of the three limits (most restrictive)
-        return min($uploadMaxFilesize, $postMaxSize, $memoryLimit);
+        // Filter out invalid values (0 or negative)
+        $validSizes = array_filter([$uploadMaxFilesize, $postMaxSize, $memoryLimit], function($size) {
+            return $size > 0;
+        });
+        
+        // If no valid sizes found, return a reasonable default (2MB)
+        if (empty($validSizes)) {
+            return 2 * 1024 * 1024; // 2MB default
+        }
+        
+        // Return the minimum of the valid limits (most restrictive)
+        return min($validSizes);
     }
     
     /**
@@ -41,21 +51,37 @@ class FileUploadConfigService
     private static function convertToBytes(string $value): int
     {
         $value = trim($value);
+        
+        // Handle special cases
+        if (empty($value) || $value === '0') {
+            return 0;
+        }
+        
+        // Handle unlimited memory (-1)
+        if ($value === '-1') {
+            return PHP_INT_MAX; // Return maximum possible value for unlimited
+        }
+        
         $last = strtolower($value[strlen($value) - 1]);
-        $value = (int) $value;
+        $numericValue = (int) $value;
+        
+        // Handle negative values (except -1 which is handled above)
+        if ($numericValue < 0) {
+            return 0;
+        }
         
         switch ($last) {
             case 'g':
-                $value *= 1024;
+                $numericValue *= 1024;
                 // no break
             case 'm':
-                $value *= 1024;
+                $numericValue *= 1024;
                 // no break
             case 'k':
-                $value *= 1024;
+                $numericValue *= 1024;
         }
         
-        return $value;
+        return $numericValue;
     }
     
     /**
@@ -79,8 +105,22 @@ class FileUploadConfigService
     public static function getFileValidationRule(): string
     {
         $maxSize = self::getMaxFileUploadSize();
+        
         // Convert to kilobytes for Laravel validation
         $maxSizeKb = ceil($maxSize / 1024);
+        
+        // Ensure minimum reasonable size (at least 100KB)
+        $maxSizeKb = max($maxSizeKb, 100);
+        
+        // Log the configuration for debugging
+        \Log::info('File upload configuration', [
+            'max_size_bytes' => $maxSize,
+            'max_size_kb' => $maxSizeKb,
+            'upload_max_filesize' => ini_get('upload_max_filesize'),
+            'post_max_size' => ini_get('post_max_size'),
+            'memory_limit' => ini_get('memory_limit'),
+            'max_file_uploads' => ini_get('max_file_uploads')
+        ]);
         
         return "max:{$maxSizeKb}";
     }

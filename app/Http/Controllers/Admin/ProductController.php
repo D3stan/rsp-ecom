@@ -128,7 +128,15 @@ class ProductController extends Controller
             // Check storage setup before proceeding
             $this->checkStorageSetup();
             
-            $validated = $request->validate([
+            // Check if file uploads are enabled on this server
+            $fileUploadsEnabled = ini_get('file_uploads') && FileUploadConfigService::getMaxFileUploadSize() > 0;
+            \Log::info('File uploads status', [
+                'file_uploads_enabled' => $fileUploadsEnabled,
+                'max_upload_size' => FileUploadConfigService::getMaxFileUploadSize(),
+                'validation_rule' => FileUploadConfigService::getFileValidationRule()
+            ]);
+            
+            $validationRules = [
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'price' => 'required|numeric|min:0',
@@ -139,9 +147,19 @@ class ProductController extends Controller
                 'featured' => 'boolean',
                 'category_id' => 'required|exists:categories,id',
                 'size_id' => 'required|exists:sizes,id',
-                'images' => 'nullable|array|max:' . FileUploadConfigService::getMaxFileUploads(),
-                'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule(),
-            ]);
+            ];
+            
+            // Only add image validation if file uploads are enabled
+            if ($fileUploadsEnabled) {
+                $validationRules['images'] = 'nullable|array|max:' . FileUploadConfigService::getMaxFileUploads();
+                $validationRules['images.*'] = 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule();
+            } else {
+                \Log::warning('File uploads disabled on server, skipping image validation');
+                // Remove images from request if file uploads are disabled
+                $request->request->remove('images');
+            }
+            
+            $validated = $request->validate($validationRules);
             
             \Log::info('Validation passed', ['validated_data' => array_merge($validated, ['images_count' => $request->hasFile('images') ? count($request->file('images')) : 0])]);
 
@@ -155,7 +173,7 @@ class ProductController extends Controller
             \Log::info('Before creating product', ['validated_data_with_slug' => array_merge($validated, ['sku' => $validated['sku']])]);
 
             // Remove images from validated data to avoid array to string conversion
-            $imageFiles = $request->hasFile('images') ? $request->file('images') : null;
+            $imageFiles = ($fileUploadsEnabled && $request->hasFile('images')) ? $request->file('images') : null;
             unset($validated['images']);
 
             // Create the product first
@@ -163,11 +181,17 @@ class ProductController extends Controller
             
             \Log::info('Product created successfully', ['product_id' => $product->id]);
 
-            // Handle image uploads
-            if ($imageFiles && is_array($imageFiles)) {
+            // Handle image uploads only if enabled and files present
+            if ($fileUploadsEnabled && $imageFiles && is_array($imageFiles)) {
                 \Log::info('Processing image uploads', ['image_count' => count($imageFiles)]);
                 $this->handleImageUploads($product, $imageFiles);
                 \Log::info('Image uploads completed successfully');
+            } elseif (!$fileUploadsEnabled && $request->hasFile('images')) {
+                \Log::warning('Images were uploaded but file uploads are disabled on server', [
+                    'product_id' => $product->id
+                ]);
+                return redirect()->route('admin.products.index')
+                    ->with('warning', 'Product created successfully, but images could not be uploaded due to server configuration.');
             }
 
             \Log::info('Product creation completed successfully');
@@ -213,9 +237,14 @@ class ProductController extends Controller
             throw new \Exception('Storage directory is not writable. Please fix permissions for: ' . $storagePublicPath);
         }
         
-        // Check if storage link exists
-        if (!file_exists($publicStoragePath)) {
-            throw new \Exception('Storage link does not exist. Please run: php artisan storage:link');
+        // Check if storage link exists (only if file uploads are enabled)
+        if (ini_get('file_uploads') && !file_exists($publicStoragePath)) {
+            \Log::warning('Storage link does not exist, but file uploads are enabled', [
+                'public_storage_path' => $publicStoragePath,
+                'storage_public_path' => $storagePublicPath
+            ]);
+            // Don't throw an exception here, just log the warning
+            // The system can still work without the symlink for image display
         }
         
         // Ensure products directory exists
