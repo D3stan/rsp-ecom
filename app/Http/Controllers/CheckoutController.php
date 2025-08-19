@@ -16,6 +16,7 @@ use App\Models\Cart;
 use App\Models\User;
 use Artesaos\SEOTools\Facades\SEOMeta;
 use App\Services\CheckoutService;
+use App\Services\StripeService;
 
 class CheckoutController extends Controller
 {
@@ -171,7 +172,12 @@ class CheckoutController extends Controller
 
         try {
             // Initialize Stripe client
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
+            $stripe = StripeService::getClient();
+            
+            if (!$stripe) {
+                Log::error('Stripe secret key not configured for checkout success');
+                return redirect()->route('home')->with('error', 'Payment system not configured. Please contact support.');
+            }
             
             // Retrieve checkout session from Stripe (works for both user and guest sessions)
             $checkoutSession = $stripe->checkout->sessions->retrieve($sessionId);
@@ -524,7 +530,13 @@ class CheckoutController extends Controller
     private function createOrderItemsFromSession(Order $order, object $checkoutSession): void
     {
         try {
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
+            $stripe = StripeService::getClient();
+            
+            if (!$stripe) {
+                Log::error('Stripe secret key not configured for order items creation');
+                return;
+            }
+            
             $lineItems = $stripe->checkout->sessions->allLineItems($checkoutSession->id);
             
             foreach ($lineItems->data as $item) {
@@ -555,7 +567,13 @@ class CheckoutController extends Controller
     private function extractLineItemsFromSession(object $checkoutSession): array
     {
         try {
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
+            $stripe = StripeService::getClient();
+            
+            if (!$stripe) {
+                Log::error('Stripe secret key not configured for line items extraction');
+                return [];
+            }
+            
             $lineItems = $stripe->checkout->sessions->allLineItems($checkoutSession->id);
             
             $items = [];
@@ -620,7 +638,12 @@ class CheckoutController extends Controller
 
         try {
             // Initialize Stripe client
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
+            $stripe = StripeService::getClient();
+            
+            if (!$stripe) {
+                Log::error('Stripe secret key not configured for checkout cancel');
+                return redirect()->route('home')->with('error', 'Payment system not configured. Please contact support.');
+            }
             
             // Retrieve the checkout session
             $session = $stripe->checkout->sessions->retrieve($sessionId);
@@ -1073,6 +1096,17 @@ class CheckoutController extends Controller
      */
     public function guestCartCheckout(Request $request): RedirectResponse|HttpResponse
     {
+        // Check if Stripe is properly configured
+        if (!StripeService::isConfigured()) {
+            Log::error('Stripe not properly configured for guest checkout', [
+                'secret_key_exists' => !empty(StripeService::getSecretKey()),
+                'public_key_exists' => !empty(StripeService::getPublicKey()),
+                'env_secret' => !empty(env('STRIPE_SECRET')),
+                'env_public' => !empty(env('STRIPE_KEY')),
+            ]);
+            return redirect()->back()->with('error', 'Payment system not configured. Please contact support.');
+        }
+        
         try {
             // Validate the checkout details
             $validated = $request->validate([
@@ -1128,7 +1162,12 @@ class CheckoutController extends Controller
 
             // For guest checkout, we need to create a temporary price in Stripe
             // or use Stripe's direct API since Cashier's guest checkout expects a price ID
-            $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
+            $stripe = StripeService::getClient();
+            
+            if (!$stripe) {
+                Log::error('Stripe secret key not configured for guest checkout');
+                return redirect()->back()->with('error', 'Payment system not configured. Please contact support.');
+            }
             
             $checkoutSession = $stripe->checkout->sessions->create([
                 'line_items' => [[

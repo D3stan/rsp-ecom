@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Cart;
 use App\Models\Address;
 use App\Services\EmailService;
+use App\Services\StripeService;
 use Illuminate\Support\Facades\Log;
 
 class StripeWebhookListener
@@ -91,7 +92,12 @@ class StripeWebhookListener
 
             // Retrieve session from Stripe if not provided
             if (!$session) {
-                $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
+                $stripe = StripeService::getClient();
+                
+                if (!$stripe) {
+                    Log::error('Stripe secret key not configured for webhook processing');
+                    return;
+                }
                 $session = $stripe->checkout->sessions->retrieve($sessionId);
             }
 

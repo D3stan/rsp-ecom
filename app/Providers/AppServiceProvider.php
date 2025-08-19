@@ -9,6 +9,8 @@ use App\Console\Commands\ClearSitemaps;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use Laravel\Cashier\Cashier;
+use App\Services\StripeService;
+use Stripe\Stripe;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,6 +38,12 @@ class AppServiceProvider extends ServiceProvider
         // Force HTTPS when APP_URL is HTTPS or when behind a proxy with HTTPS
         if (str_starts_with(config('app.url'), 'https://') || request()->header('X-Forwarded-Proto') === 'https') {
             URL::forceScheme('https');
+        }
+
+        // Initialize Stripe API key globally
+        $stripeSecret = StripeService::getSecretKey();
+        if ($stripeSecret) {
+            Stripe::setApiKey($stripeSecret);
         }
 
         // Configure Cashier

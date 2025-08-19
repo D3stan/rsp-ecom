@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Log;
 use Stripe\Checkout\Session;
 use Stripe\Price;
 use Stripe\Product;
+use Stripe\Stripe;
 use Stripe\Exception\ApiErrorException;
+use App\Services\StripeService;
 
 class CheckoutService
 {
