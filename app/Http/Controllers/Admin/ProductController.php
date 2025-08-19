@@ -122,53 +122,108 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        \Log::info('Product creation started', ['request_data' => $request->all()]);
+        \Log::info('Product creation started', ['request_data' => $request->except(['images'])]);
         
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'compare_price' => 'nullable|numeric|min:0',
-            'stock_quantity' => 'required|integer|min:0',
-            'sku' => 'nullable|string|unique:products',
-            'status' => 'required|in:active,inactive,draft',
-            'featured' => 'boolean',
-            'category_id' => 'required|exists:categories,id',
-            'size_id' => 'required|exists:sizes,id',
-            'images' => 'nullable|array|max:' . FileUploadConfigService::getMaxFileUploads(),
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule(),
-        ]);
-        
-        \Log::info('Validation passed', ['validated_data' => $validated]);
+        try {
+            // Check storage setup before proceeding
+            $this->checkStorageSetup();
+            
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'price' => 'required|numeric|min:0',
+                'compare_price' => 'nullable|numeric|min:0',
+                'stock_quantity' => 'required|integer|min:0',
+                'sku' => 'nullable|string|unique:products',
+                'status' => 'required|in:active,inactive,draft',
+                'featured' => 'boolean',
+                'category_id' => 'required|exists:categories,id',
+                'size_id' => 'required|exists:sizes,id',
+                'images' => 'nullable|array|max:' . FileUploadConfigService::getMaxFileUploads(),
+                'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule(),
+            ]);
+            
+            \Log::info('Validation passed', ['validated_data' => array_merge($validated, ['images_count' => $request->hasFile('images') ? count($request->file('images')) : 0])]);
 
-        $validated['slug'] = Str::slug($validated['name']);
-        
-        // Auto-generate SKU if not provided
-        if (empty($validated['sku'])) {
-            $validated['sku'] = $this->generateSKU($validated['name']);
+            $validated['slug'] = Str::slug($validated['name']);
+            
+            // Auto-generate SKU if not provided
+            if (empty($validated['sku'])) {
+                $validated['sku'] = $this->generateSKU($validated['name']);
+            }
+
+            \Log::info('Before creating product', ['validated_data_with_slug' => array_merge($validated, ['sku' => $validated['sku']])]);
+
+            // Remove images from validated data to avoid array to string conversion
+            $imageFiles = $request->hasFile('images') ? $request->file('images') : null;
+            unset($validated['images']);
+
+            // Create the product first
+            $product = Product::create($validated);
+            
+            \Log::info('Product created successfully', ['product_id' => $product->id]);
+
+            // Handle image uploads
+            if ($imageFiles && is_array($imageFiles)) {
+                \Log::info('Processing image uploads', ['image_count' => count($imageFiles)]);
+                $this->handleImageUploads($product, $imageFiles);
+                \Log::info('Image uploads completed successfully');
+            }
+
+            \Log::info('Product creation completed successfully');
+
+            return redirect()->route('admin.products.index')
+                ->with('success', 'Product created successfully.');
+                
+        } catch (\Exception $e) {
+            \Log::error('Product creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // If a product was created but image upload failed, we should clean it up
+            if (isset($product)) {
+                \Log::info('Cleaning up partially created product', ['product_id' => $product->id]);
+                try {
+                    $product->clearImages();
+                    $product->delete();
+                } catch (\Exception $cleanupError) {
+                    \Log::error('Failed to clean up product', ['error' => $cleanupError->getMessage()]);
+                }
+            }
+            
+            return back()->withInput()->withErrors(['error' => 'Failed to create product: ' . $e->getMessage()]);
         }
+    }
 
-        \Log::info('Before creating product', ['validated_data_with_slug' => $validated]);
-
-        // Remove images from validated data to avoid array to string conversion
-        $imageFiles = $validated['images'] ?? null;
-        unset($validated['images']);
-
-        // Create the product first
-        $product = Product::create($validated);
+    /**
+     * Check if storage is properly configured
+     */
+    private function checkStorageSetup(): void
+    {
+        $storagePublicPath = storage_path('app/public');
+        $publicStoragePath = public_path('storage');
         
-        \Log::info('Product created', ['product_id' => $product->id]);
-
-        // Handle image uploads
-        if ($request->hasFile('images')) {
-            \Log::info('Processing image uploads', ['image_count' => count($request->file('images'))]);
-            $this->handleImageUploads($product, $request->file('images'));
+        // Check if storage/app/public directory exists and is writable
+        if (!is_dir($storagePublicPath)) {
+            throw new \Exception('Storage directory does not exist. Please create: ' . $storagePublicPath);
         }
-
-        \Log::info('Product creation completed');
-
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product created successfully.');
+        
+        if (!is_writable($storagePublicPath)) {
+            throw new \Exception('Storage directory is not writable. Please fix permissions for: ' . $storagePublicPath);
+        }
+        
+        // Check if storage link exists
+        if (!file_exists($publicStoragePath)) {
+            throw new \Exception('Storage link does not exist. Please run: php artisan storage:link');
+        }
+        
+        // Ensure products directory exists
+        $productStoragePath = storage_path('app/public/products');
+        if (!is_dir($productStoragePath)) {
+            mkdir($productStoragePath, 0755, true);
+            \Log::info('Created products directory', ['path' => $productStoragePath]);
+        }
     }
 
     /**
@@ -315,14 +370,70 @@ class ProductController extends Controller
      */
     private function handleImageUploads(Product $product, array $images): void
     {
-        foreach ($images as $image) {
-            $filename = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
+        try {
+            \Log::info('Starting image upload process', [
+                'product_id' => $product->id,
+                'image_count' => count($images),
+                'storage_path' => storage_path('app/public'),
+                'is_writable' => is_writable(storage_path('app/public'))
+            ]);
+
+            foreach ($images as $index => $image) {
+                \Log::info("Processing image {$index}", [
+                    'original_name' => $image->getClientOriginalName(),
+                    'mime_type' => $image->getMimeType(),
+                    'size' => $image->getSize(),
+                    'extension' => $image->getClientOriginalExtension()
+                ]);
+                
+                // Generate unique filename
+                $filename = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
+                
+                // Ensure the directory exists
+                $directory = "products/{$product->id}";
+                $fullPath = storage_path("app/public/{$directory}");
+                
+                if (!Storage::disk('public')->exists($directory)) {
+                    Storage::disk('public')->makeDirectory($directory);
+                    \Log::info("Created directory", ['directory' => $directory, 'full_path' => $fullPath]);
+                }
+                
+                // Check if directory is writable
+                if (!is_writable($fullPath)) {
+                    \Log::error("Directory not writable", ['directory' => $fullPath]);
+                    throw new \Exception("Directory not writable: {$fullPath}");
+                }
+                
+                // Store the image
+                $path = $image->storeAs($directory, $filename, 'public');
+                
+                if ($path) {
+                    // Verify file was actually created
+                    $storedFilePath = storage_path("app/public/{$path}");
+                    if (file_exists($storedFilePath)) {
+                        \Log::info("File verified on disk", ['path' => $storedFilePath]);
+                        
+                        // Add to product's images array
+                        $product->addImage($filename);
+                        \Log::info("Image stored successfully", ['filename' => $filename, 'path' => $path]);
+                    } else {
+                        \Log::error("File not found on disk after storage", ['expected_path' => $storedFilePath]);
+                        throw new \Exception("File was not properly stored: {$filename}");
+                    }
+                } else {
+                    \Log::error("Failed to store image", ['filename' => $filename]);
+                    throw new \Exception("Failed to store image: {$filename}");
+                }
+            }
             
-            // Store in products/{product_id}/ directory
-            $image->storeAs("products/{$product->id}", $filename, 'public');
-            
-            // Add to product's images array
-            $product->addImage($filename);
+            \Log::info('Image upload process completed successfully');
+        } catch (\Exception $e) {
+            \Log::error('Image upload failed', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
         }
     }
 

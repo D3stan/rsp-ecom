@@ -138,9 +138,19 @@ class Product extends Model
 
     public function addImage(string $filename): void
     {
-        $images = $this->images ?? [];
-        $images[] = $filename;
-        $this->update(['images' => $images]);
+        try {
+            $images = $this->images ?? [];
+            $images[] = $filename;
+            $this->update(['images' => $images]);
+            \Log::info('Image added to product', ['product_id' => $this->id, 'filename' => $filename, 'total_images' => count($images)]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to add image to product', [
+                'product_id' => $this->id,
+                'filename' => $filename,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
     }
 
     public function removeImage(string $filename): void

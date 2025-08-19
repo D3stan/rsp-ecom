@@ -206,6 +206,20 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
         );
     };
 
+    const handleDeleteProduct = (productId: number, productName: string) => {
+        if (window.confirm(`Are you sure you want to delete "${productName}"? This action cannot be undone.`)) {
+            router.delete(`/admin/products/${productId}`, {
+                preserveState: true,
+                onSuccess: () => {
+                    // Optional: Show success message or refresh data
+                },
+                onError: (errors) => {
+                    console.error('Error deleting product:', errors);
+                }
+            });
+        }
+    };
+
     return (
         <AdminLayout
             breadcrumbs={[
@@ -476,7 +490,10 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                                 Flash Discount
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuItem className="text-red-600">
+                                                            <DropdownMenuItem 
+                                                                className="text-red-600"
+                                                                onClick={() => handleDeleteProduct(product.id, product.name)}
+                                                            >
                                                                 <Trash2 className="mr-2 h-4 w-4" />
                                                                 Delete Product
                                                             </DropdownMenuItem>
@@ -548,7 +565,10 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                         Flash Discount
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem className="text-red-600">
+                                                    <DropdownMenuItem 
+                                                        className="text-red-600"
+                                                        onClick={() => handleDeleteProduct(product.id, product.name)}
+                                                    >
                                                         <Trash2 className="mr-2 h-4 w-4" />
                                                         Delete Product
                                                     </DropdownMenuItem>
