@@ -28,7 +28,10 @@ class StripeService
      */
     public static function getSecretKey(): ?string
     {
-        $stripeSecret = env('STRIPE_SECRET') ?: Setting::get('stripe_secret_key', '');
+        $envSecret = env('STRIPE_SECRET');
+        $dbSecret = Setting::get('stripe_secret_key', '');
+        
+        $stripeSecret = $envSecret ?: $dbSecret;
         
         return !empty($stripeSecret) ? $stripeSecret : null;
     }
@@ -38,7 +41,10 @@ class StripeService
      */
     public static function getPublicKey(): ?string
     {
-        $stripePublic = env('STRIPE_KEY') ?: Setting::get('stripe_public_key', '');
+        $envPublic = env('STRIPE_KEY');
+        $dbPublic = Setting::get('stripe_public_key', '');
+        
+        $stripePublic = $envPublic ?: $dbPublic;
         
         return !empty($stripePublic) ? $stripePublic : null;
     }

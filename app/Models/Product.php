@@ -43,7 +43,7 @@ class Product extends Model
     public function getImageUrlAttribute(): string
     {
         if ($this->images && count($this->images) > 0) {
-            return asset('storage/' . $this->images[0]);
+            return asset('storage/products/' . $this->id . '/' . $this->images[0]);
         }
 
         // Return a default placeholder image if no images are set

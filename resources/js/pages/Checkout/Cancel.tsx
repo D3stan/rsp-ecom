@@ -76,14 +76,12 @@ export default function CheckoutCancel({ message }: Props) {
 
                     {/* Action Buttons */}
                     <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <Button variant="outline" asChild size="lg" className="w-full">
                                 <Link href={route('checkout')} className="flex items-center gap-2">
                                     <ShoppingCart className="h-4 w-4" />
                                     Try Again
                                 </Link>
                             </Button>
-                        </div>
 
                         <Button variant="ghost" asChild className="w-full border-2 border-gray-300">
                             <Link href={route('products')} className="text-gray-600">

@@ -48,16 +48,8 @@ export default function Cart() {
 
     const [isUpdating, setIsUpdating] = useState<number | null>(null);
 
-    // Image handling helper
-    const getImageSrc = (item: CartItem) => {
-        const defaultImage = '/images/product.png';
-        if (!item.product.image || item.product.image === '' || item.product.image === 'product.png') {
-            return defaultImage;
-        }
-        return item.product.image;
-    };
-
     const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+        console.error("product image not found", 404)
         const target = e.target as HTMLImageElement;
         if (!target.src.includes('product.png')) {
             target.src = '/images/product.png';
@@ -188,7 +180,7 @@ export default function Cart() {
                                         <Link href={`/products/${item.product.slug}`} className="flex-shrink-0">
                                             <div className="h-20 w-20 overflow-hidden rounded-lg bg-gray-100 sm:h-24 sm:w-24">
                                                 <img
-                                                    src={getImageSrc(item)}
+                                                    src={item.product.image}
                                                     alt={item.product.name}
                                                     onError={handleImageError}
                                                     className="h-full w-full object-cover transition-opacity hover:opacity-80"
