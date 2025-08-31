@@ -12,7 +12,7 @@ import { cartService, type AddToCartData } from '@/services/cartService';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronLeft, ChevronRight, Heart, Minus, Plus, Share2, ShoppingCart, Star } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Product {
     id: number;
@@ -89,6 +89,13 @@ export default function Product() {
 
     // Handle empty images array
     const displayImages = product.images.length > 0 ? product.images : ['/images/product.png'];
+
+    // Auto-select first available size when component mounts
+    useEffect(() => {
+        if (product.sizes.length > 0 && !selectedSize) {
+            setSelectedSize(product.sizes[0].id.toString());
+        }
+    }, [product.sizes, selectedSize]);
 
     // State for collapsibles
     const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
