@@ -309,8 +309,47 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
               fillOpacity={baseOpacity}
             />
             
-            {/* Ring slice - highlights the visible area */}
+            {/* Ring slice with ultra-smooth painterly gradient blend */}
             <g ref={sliceGroupRef} className="sliceGroup">
+              {/* Create many thin overlapping segments for ultra-smooth gradient */}
+              {Array.from({ length: 40 }, (_, i) => {
+                const progress = i / 39; // 0 to 1
+                // Enhanced sine wave with smoother transitions
+                const segmentOpacity = Math.pow(Math.sin(progress * Math.PI), 0.8) * ringOpacity;
+                // Make the slice longer by extending the length
+                const extendedSliceLength = sliceLength * 1.6; // 60% longer
+                const segmentLength = extendedSliceLength / 40;
+                const segmentOffset = dashOffset + (segmentLength * i * 0.9); // Slight overlap
+                
+                return (
+                  <circle
+                    key={i}
+                    cx="50"
+                    cy="50"
+                    r={radiusPx}
+                    fill="none"
+                    stroke="white"
+                    strokeOpacity={segmentOpacity}
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={`${segmentLength * 1.5} ${circumference - segmentLength * 1.5}`}
+                    strokeDashoffset={segmentOffset}
+                  />
+                );
+              })}
+              
+              {/* Enhanced soft outer glow layers for ultra-realistic LED */}
+              <circle
+                cx="50"
+                cy="50"
+                r={radiusPx}
+                fill="none"
+                stroke="white"
+                strokeOpacity={ringOpacity * 0.08}
+                strokeWidth={strokeWidth * 2.5}
+                strokeDasharray={`${sliceLength * 1.8} ${circumference - sliceLength * 1.8}`}
+                strokeDashoffset={dashOffset}
+                style={{ filter: 'blur(2px)' }}
+              />
               <circle
                 ref={circleRef}
                 cx="50"
@@ -318,11 +357,11 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
                 r={radiusPx}
                 fill="none"
                 stroke="white"
-                strokeOpacity={ringOpacity}
-                strokeWidth={strokeWidth}
-                strokeLinecap="round"
-                strokeDasharray={dashArray}
+                strokeOpacity={ringOpacity * 0.04}
+                strokeWidth={strokeWidth * 3.5}
+                strokeDasharray={`${sliceLength * 2} ${circumference - sliceLength * 2}`}
                 strokeDashoffset={dashOffset}
+                style={{ filter: 'blur(3px)' }}
               />
             </g>
           </mask>
