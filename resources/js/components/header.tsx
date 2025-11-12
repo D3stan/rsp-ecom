@@ -216,7 +216,7 @@ export default function Header({ transparent = false }: HeaderProps) {
 
     // Cart button animation classes - memoized to prevent re-renders
     const cartButtonClasses = useMemo(() => {
-        const baseClasses = `relative transition-all duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100 border-gray-200'}`;
+        const baseClasses = `relative transition-all duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10 hover:text-white' : 'text-black hover:bg-gray-100 hover:text-black border-gray-200'}`;
 
         if (cartAnimation === 'success') {
             return `${baseClasses} bg-green-600 text-white scale-110 shadow-lg`;
@@ -307,7 +307,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className={`relative transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100'}`}
+                                        className={`relative transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10 hover:text-white' : 'text-black hover:bg-gray-100 hover:text-black'}`}
                                     >
                                         <Heart className="h-5 w-5" />
                                         {wishlistCount > 0 && (
@@ -322,7 +322,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className={`transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100'}`}
+                                    className={`transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10 hover:text-white' : 'text-black hover:bg-gray-100 hover:text-black'}`}
                                 >
                                     <User className="h-5 w-5" />
                                 </Button>
@@ -332,7 +332,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className={`transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10' : 'text-black hover:bg-gray-100'}`}
+                                className={`transition-colors duration-300 ${isDarkTheme ? 'text-white hover:bg-white/10 hover:text-white' : 'text-black hover:bg-gray-100 hover:text-black'}`}
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                                 data-menu-button
                             >
