@@ -689,6 +689,14 @@ class CheckoutController extends Controller
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
+            // Fix any cart items that have shipping cost incorrectly added to price
+            foreach ($cart->cartItems as $item) {
+                if ($item->price != $item->product->price) {
+                    $item->update(['price' => $item->product->price]);
+                }
+            }
+            $cart->load(['cartItems.product', 'cartItems.size']); // Reload cart items with corrected prices and relationships
+
             // Calculate totals (cart prices are tax-inclusive)
             $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
@@ -738,6 +746,14 @@ class CheckoutController extends Controller
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
+            // Fix any cart items that have shipping cost incorrectly added to price
+            foreach ($cart->cartItems as $item) {
+                if ($item->price != $item->product->price) {
+                    $item->update(['price' => $item->product->price]);
+                }
+            }
+            $cart->load(['cartItems.product', 'cartItems.size']); // Reload cart items with corrected prices and relationships
+
             // Calculate totals (cart prices are tax-inclusive)
             $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
@@ -752,7 +768,7 @@ class CheckoutController extends Controller
             $shippingCost = $taxInclusiveSubtotal >= 100 ? 0 : $baseShippingCost;
             
             $discountAmount = 0; // TODO: Implement discount logic
-            $total = $subtotal + $taxAmount + $shippingCost - $discountAmount;
+            $total = $taxInclusiveSubtotal + $shippingCost - $discountAmount;
             $totalItems = $cart->cartItems->sum('quantity');
 
             return Inertia::render('Checkout/Details', [
@@ -1030,6 +1046,14 @@ class CheckoutController extends Controller
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
+            // Fix any cart items that have shipping cost incorrectly added to price
+            foreach ($cart->cartItems as $item) {
+                if ($item->price != $item->product->price) {
+                    $item->update(['price' => $item->product->price]);
+                }
+            }
+            $cart->load(['cartItems.product', 'cartItems.size']); // Reload cart items with corrected prices and relationships
+
             // Calculate total amount for the entire cart (prices are tax-inclusive)
             $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
@@ -1130,6 +1154,14 @@ class CheckoutController extends Controller
             if (!$cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
+
+            // Fix any cart items that have shipping cost incorrectly added to price
+            foreach ($cart->cartItems as $item) {
+                if ($item->price != $item->product->price) {
+                    $item->update(['price' => $item->product->price]);
+                }
+            }
+            $cart->load(['cartItems.product', 'cartItems.size']); // Reload cart items with corrected prices and relationships
 
             // Calculate total amount from cart items (prices are tax-inclusive)
             $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {

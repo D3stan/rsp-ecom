@@ -347,6 +347,7 @@ class ProductsController extends Controller
                 'id' => $product->size->id,
                 'name' => $product->size->name,
                 'price_adjustment' => 0, // No price adjustment for single size
+                'shipping_cost' => $product->size->shipping_cost ?? 0,
             ]] : [],
         ];
 

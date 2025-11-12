@@ -37,7 +37,31 @@ class CartController extends Controller
             ]);
         }
 
-        $cartItems = $cart->cartItems()->with(['product.category', 'size'])->get();
+        $cartItems = $cart->cartItems()->with(['product.category', 'product.size', 'size'])->get();
+        
+        // Fix any cart items that have shipping cost incorrectly added to price
+        // Also fix cart items missing size_id when product has a size
+        foreach ($cartItems as $item) {
+            $updated = false;
+            
+            if ($item->price != $item->product->price) {
+                $item->price = $item->product->price;
+                $updated = true;
+            }
+            
+            // If cart item doesn't have a size but product does, assign it
+            if (!$item->size_id && $item->product->size_id) {
+                $item->size_id = $item->product->size_id;
+                $updated = true;
+            }
+            
+            if ($updated) {
+                $item->save();
+            }
+        }
+        
+        // Reload to get updated size relationship
+        $cart->load(['cartItems.size']);
         
         return Inertia::render('cart', [
             'cart' => $cart,
@@ -93,14 +117,8 @@ class CartController extends Controller
 
         $cart = $this->getOrCreateCart();
         
-        // Calculate price (base price + size adjustment if applicable)
+        // Use product price as-is (shipping cost is calculated separately by Cart model)
         $price = $product->price;
-        if ($request->size_id) {
-            $size = Size::find($request->size_id);
-            if ($size) {
-                $price += $size->shipping_cost; // For now, use shipping_cost as price adjustment
-            }
-        }
 
         // Check if item already exists in cart (including size)
         $existingItem = $cart->cartItems()

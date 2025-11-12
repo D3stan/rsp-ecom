@@ -44,7 +44,7 @@ class Cart extends Model
         // Calculate shipping based on cart items' sizes
         return $this->cartItems->sum(function ($item) {
             // Use the size from the cart item, not from the product
-            return $item->size->shipping_cost ?? 0;
+            return $item->size ? $item->size->shipping_cost : 0;
         });
     }
 
