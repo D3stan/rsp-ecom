@@ -14,6 +14,7 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Illuminate\Validation\ValidationException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -84,6 +85,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Handle general exceptions (non-HTTP exceptions)
         $exceptions->render(function (\Throwable $e, $request) {
+            // Don't intercept ValidationException - let Laravel handle it
+            if ($e instanceof ValidationException) {
+                return null;
+            }
+            
             if (!$request->expectsJson()) {
                 $isTestRoute = str_contains($request->path(), 'test-');
                 $shouldShowCustomPage = $isTestRoute || !config('app.debug') || !app()->environment('local');
