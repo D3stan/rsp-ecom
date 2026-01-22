@@ -649,5 +649,24 @@
         "submitting": "Invio in corso...",
         "edit_review": "Modifica Recensione",
         "delete_review": "Elimina Recensione"
+    },
+    "auth": {
+        "login_title": "Accedi al tuo account",
+        "login_description": "Inserisci la tua email e password qui sotto per accedere",
+        "continue_with_google": "Continua con Google",
+        "or_continue_with": "Oppure continua con",
+        "email_address": "Indirizzo email",
+        "email_placeholder": "email@esempio.it",
+        "password": "Password",
+        "password_placeholder": "Password",
+        "forgot_password": "Password dimenticata?",
+        "remember_me": "Ricordami",
+        "log_in": "Accedi",
+        "log_in_title": "Accedi",
+        "dont_have_account": "Non hai un account?",
+        "sign_up": "Registrati",
+        "failed": "Queste credenziali non corrispondono ai nostri record.",
+        "password_incorrect": "La password fornita non è corretta.",
+        "throttle": "Troppi tentativi di accesso. Riprova tra {seconds} secondi."
     }
 }

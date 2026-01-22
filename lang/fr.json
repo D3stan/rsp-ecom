@@ -649,5 +649,24 @@
         "submitting": "Envoi en cours...",
         "edit_review": "Modifier l'Avis",
         "delete_review": "Supprimer l'Avis"
+    },
+    "auth": {
+        "login_title": "Connectez-vous à votre compte",
+        "login_description": "Entrez votre adresse e-mail et votre mot de passe ci-dessous pour vous connecter",
+        "continue_with_google": "Continuer avec Google",
+        "or_continue_with": "Ou continuer avec",
+        "email_address": "Adresse e-mail",
+        "email_placeholder": "email@exemple.fr",
+        "password": "Mot de passe",
+        "password_placeholder": "Mot de passe",
+        "forgot_password": "Mot de passe oublié ?",
+        "remember_me": "Se souvenir de moi",
+        "log_in": "Se connecter",
+        "log_in_title": "Se connecter",
+        "dont_have_account": "Vous n'avez pas de compte ?",
+        "sign_up": "S'inscrire",
+        "failed": "Ces identifiants ne correspondent pas à nos enregistrements.",
+        "password_incorrect": "Le mot de passe fourni est incorrect.",
+        "throttle": "Trop de tentatives de connexion. Veuillez réessayer dans {seconds} secondes."
     }
 }

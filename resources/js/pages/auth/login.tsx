@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/hooks/useTranslation';
 import AuthLayout from '@/layouts/auth-layout';
 
 type LoginForm = {
@@ -24,6 +25,7 @@ interface LoginProps {
 }
 
 export default function Login({ status, canResetPassword, error }: LoginProps) {
+    const { t } = useTranslation();
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
         email: '',
         password: '',
@@ -38,8 +40,8 @@ export default function Login({ status, canResetPassword, error }: LoginProps) {
     };
 
     return (
-        <AuthLayout title="Log in to your account" description="Enter your email and password below to log in">
-            <Head title="Log in" />
+        <AuthLayout title={t('auth.login_title')} description={t('auth.login_description')}>
+            <Head title={t('auth.log_in_title')} />
 
             {error && (
                 <div className="mb-4 p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
@@ -49,7 +51,7 @@ export default function Login({ status, canResetPassword, error }: LoginProps) {
 
             <div className="flex flex-col gap-4">
                 <GoogleButton disabled={processing}>
-                    Continue with Google
+                    {t('auth.continue_with_google')}
                 </GoogleButton>
 
                 <div className="relative">
@@ -57,7 +59,7 @@ export default function Login({ status, canResetPassword, error }: LoginProps) {
                         <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                        <span className="bg-background px-2 text-muted-foreground">{t('auth.or_continue_with')}</span>
                     </div>
                 </div>
             </div>
@@ -65,7 +67,7 @@ export default function Login({ status, canResetPassword, error }: LoginProps) {
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email address</Label>
+                        <Label htmlFor="email">{t('auth.email_address')}</Label>
                         <Input
                             id="email"
                             type="email"
@@ -75,17 +77,17 @@ export default function Login({ status, canResetPassword, error }: LoginProps) {
                             autoComplete="email"
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
-                            placeholder="email@example.com"
+                            placeholder={t('auth.email_placeholder')}
                         />
                         <InputError message={errors.email} />
                     </div>
 
                     <div className="grid gap-2">
                         <div className="flex items-center">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password">{t('auth.password')}</Label>
                             {canResetPassword && (
                                 <TextLink href={route('password.request')} className="ml-auto text-sm" tabIndex={5}>
-                                    Forgot password?
+                                    {t('auth.forgot_password')}
                                 </TextLink>
                             )}
                         </div>
@@ -97,7 +99,7 @@ export default function Login({ status, canResetPassword, error }: LoginProps) {
                             autoComplete="current-password"
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
-                            placeholder="Password"
+                            placeholder={t('auth.password_placeholder')}
                         />
                         <InputError message={errors.password} />
                     </div>
@@ -110,19 +112,19 @@ export default function Login({ status, canResetPassword, error }: LoginProps) {
                             onClick={() => setData('remember', !data.remember)}
                             tabIndex={3}
                         />
-                        <Label htmlFor="remember">Remember me</Label>
+                        <Label htmlFor="remember">{t('auth.remember_me')}</Label>
                     </div>
 
                     <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing}>
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        Log in
+                        {t('auth.log_in')}
                     </Button>
                 </div>
 
                 <div className="text-center text-sm text-muted-foreground">
-                    Don't have an account?{' '}
+                    {t('auth.dont_have_account')}{' '}
                     <TextLink href={route('register')} tabIndex={5}>
-                        Sign up
+                        {t('auth.sign_up')}
                     </TextLink>
                 </div>
             </form>

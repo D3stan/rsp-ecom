@@ -650,5 +650,24 @@
         "submitting": "Wird gesendet...",
         "edit_review": "Bewertung Bearbeiten",
         "delete_review": "Bewertung Löschen"
+    },
+    "auth": {
+        "login_title": "Melden Sie sich bei Ihrem Konto an",
+        "login_description": "Geben Sie unten Ihre E-Mail-Adresse und Ihr Passwort ein, um sich anzumelden",
+        "continue_with_google": "Mit Google fortfahren",
+        "or_continue_with": "Oder fortfahren mit",
+        "email_address": "E-Mail-Adresse",
+        "email_placeholder": "email@beispiel.de",
+        "password": "Passwort",
+        "password_placeholder": "Passwort",
+        "forgot_password": "Passwort vergessen?",
+        "remember_me": "Angemeldet bleiben",
+        "log_in": "Anmelden",
+        "log_in_title": "Anmelden",
+        "dont_have_account": "Sie haben noch kein Konto?",
+        "sign_up": "Registrieren",
+        "failed": "Diese Anmeldedaten stimmen nicht mit unseren Aufzeichnungen überein.",
+        "password_incorrect": "Das angegebene Passwort ist falsch.",
+        "throttle": "Zu viele Anmeldeversuche. Bitte versuchen Sie es in {seconds} Sekunden erneut."
     }
 }

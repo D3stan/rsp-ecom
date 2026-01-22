@@ -649,5 +649,24 @@
         "submitting": "Enviando...",
         "edit_review": "Editar Reseña",
         "delete_review": "Eliminar Reseña"
+    },
+    "auth": {
+        "login_title": "Inicia sesión en tu cuenta",
+        "login_description": "Ingresa tu correo electrónico y contraseña a continuación para iniciar sesión",
+        "continue_with_google": "Continuar con Google",
+        "or_continue_with": "O continuar con",
+        "email_address": "Dirección de correo electrónico",
+        "email_placeholder": "correo@ejemplo.com",
+        "password": "Contraseña",
+        "password_placeholder": "Contraseña",
+        "forgot_password": "¿Olvidaste tu contraseña?",
+        "remember_me": "Recuérdame",
+        "log_in": "Iniciar sesión",
+        "log_in_title": "Iniciar sesión",
+        "dont_have_account": "¿No tienes una cuenta?",
+        "sign_up": "Regístrate",
+        "failed": "Estas credenciales no coinciden con nuestros registros.",
+        "password_incorrect": "La contraseña proporcionada es incorrecta.",
+        "throttle": "Demasiados intentos de inicio de sesión. Por favor, inténtalo de nuevo en {seconds} segundos."
     }
 }

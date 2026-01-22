@@ -44,8 +44,14 @@ class LoginRequest extends FormRequest
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
+            // Get translation from JSON file
+            $locale = app()->getLocale();
+            $translationPath = lang_path("{$locale}.json");
+            $translations = json_decode(file_get_contents($translationPath), true);
+            $errorMessage = $translations['auth']['failed'] ?? 'These credentials do not match our records.';
+
             throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
+                'email' => $errorMessage,
             ]);
         }
 
@@ -67,11 +73,15 @@ class LoginRequest extends FormRequest
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
+        // Get translation from JSON file
+        $locale = app()->getLocale();
+        $translationPath = lang_path("{$locale}.json");
+        $translations = json_decode(file_get_contents($translationPath), true);
+        $errorMessage = $translations['auth']['throttle'] ?? 'Too many login attempts. Please try again in {seconds} seconds.';
+        $errorMessage = str_replace('{seconds}', $seconds, $errorMessage);
+
         throw ValidationException::withMessages([
-            'email' => __('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'email' => $errorMessage,
         ]);
     }
 
