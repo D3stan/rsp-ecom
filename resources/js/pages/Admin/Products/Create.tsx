@@ -28,6 +28,9 @@ interface Props {
     sizes: Size[];
     uploadLimits: {
         maxFileSize: string;
+        maxFileSizeBytes: number;
+        maxRequestSize: string;
+        maxRequestSizeBytes: number;
         maxFiles: number;
     };
 }
@@ -35,6 +38,7 @@ interface Props {
 export default function CreateProduct({ categories, sizes, uploadLimits }: Props) {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const [previewImages, setPreviewImages] = useState<string[]>([]);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     const { data, setData, post, processing, errors } = useForm({
         name: '',
@@ -52,13 +56,21 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        const newImages = [...data.images, ...files].slice(0, 10);
+        const newImages = [...data.images, ...files].slice(0, uploadLimits.maxFiles);
+        const totalBytes = newImages.reduce((sum, file) => sum + file.size, 0);
+
+        if (uploadLimits.maxRequestSizeBytes > 0 && totalBytes > uploadLimits.maxRequestSizeBytes) {
+            setUploadError(`Peso totale immagini troppo alto (max ${uploadLimits.maxRequestSize}).`);
+            return;
+        }
+
+        setUploadError(null);
 
         setData('images', newImages);
 
         // Create preview URLs
         const newPreviews = files.map((file) => URL.createObjectURL(file));
-        setPreviewImages((prev) => [...prev, ...newPreviews].slice(0, 10));
+        setPreviewImages((prev) => [...prev, ...newPreviews].slice(0, uploadLimits.maxFiles));
     };
 
     const removeImage = (index: number) => {
@@ -67,6 +79,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
 
         setData('images', newImages);
         setPreviewImages(newPreviews);
+        setUploadError(null);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -93,6 +106,14 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
             console.log('Size is required');
             return;
         }
+
+        const totalBytes = data.images.reduce((sum, file) => sum + file.size, 0);
+        if (uploadLimits.maxRequestSizeBytes > 0 && totalBytes > uploadLimits.maxRequestSizeBytes) {
+            setUploadError(`Peso totale immagini troppo alto (max ${uploadLimits.maxRequestSize}).`);
+            return;
+        }
+
+        setUploadError(null);
         
         console.log('Form submitted with data:', data);
         console.log('Route being called:', route('admin.products.store'));
@@ -275,7 +296,9 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                 <ImageIcon className="h-5 w-5 text-purple-600" />
                                 <CardTitle className="text-lg">Product Images</CardTitle>
                             </div>
-                            <CardDescription>Upload up to {uploadLimits.maxFiles} images (JPEG, PNG, GIF, WebP - max {uploadLimits.maxFileSize} each)</CardDescription>
+                            <CardDescription>
+                                Upload up to {uploadLimits.maxFiles} images (JPEG, PNG, GIF, WebP - max {uploadLimits.maxFileSize} each, total max {uploadLimits.maxRequestSize})
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
@@ -323,6 +346,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                     </div>
                                 )}
 
+                                {uploadError && <p className="text-sm text-red-500">{uploadError}</p>}
                                 {errors.images && <p className="text-sm text-red-500">{errors.images}</p>}
                             </div>
                         </CardContent>

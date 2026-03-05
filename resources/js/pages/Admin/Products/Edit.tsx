@@ -46,6 +46,9 @@ interface Props {
     sizes: Size[];
     uploadLimits: {
         maxFileSize: string;
+        maxFileSizeBytes: number;
+        maxRequestSize: string;
+        maxRequestSizeBytes: number;
         maxFiles: number;
     };
 }
@@ -70,13 +73,13 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        const newImages = [...data.new_images, ...files].slice(0, 10);
+        const newImages = [...data.new_images, ...files].slice(0, uploadLimits.maxFiles);
 
         setData('new_images', newImages);
 
         // Create preview URLs
         const newPreviews = files.map((file) => URL.createObjectURL(file));
-        setPreviewImages((prev) => [...prev, ...newPreviews].slice(0, 10));
+        setPreviewImages((prev) => [...prev, ...newPreviews].slice(0, uploadLimits.maxFiles));
     };
 
     const removeImage = (index: number) => {
@@ -272,7 +275,9 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
                                 <ImageIcon className="h-5 w-5 text-purple-600" />
                                 <CardTitle className="text-lg">Product Images</CardTitle>
                             </div>
-                            <CardDescription>Upload up to {uploadLimits.maxFiles} images (JPEG, PNG, GIF, WebP - max {uploadLimits.maxFileSize} each)</CardDescription>
+                            <CardDescription>
+                                Upload up to {uploadLimits.maxFiles} images (JPEG, PNG, GIF, WebP - max {uploadLimits.maxFileSize} each, total max {uploadLimits.maxRequestSize})
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
@@ -285,17 +290,17 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
                                         accept="image/*"
                                         onChange={handleImageChange}
                                         className="hidden"
-                                        disabled={data.new_images.length >= 10}
+                                        disabled={data.new_images.length >= uploadLimits.maxFiles}
                                     />
                                     <label
                                         htmlFor="images"
-                                        className={`cursor-pointer ${data.new_images.length >= 10 ? 'cursor-not-allowed opacity-50' : ''}`}
+                                        className={`cursor-pointer ${data.new_images.length >= uploadLimits.maxFiles ? 'cursor-not-allowed opacity-50' : ''}`}
                                     >
                                         <Upload className="mx-auto h-12 w-12 text-gray-400" />
                                         <p className="mt-2 text-sm text-gray-600">
-                                            {data.new_images.length >= 10 ? 'Maximum 10 images reached' : 'Click to upload new images'}
+                                            {data.new_images.length >= uploadLimits.maxFiles ? `Maximum ${uploadLimits.maxFiles} images reached` : 'Click to upload new images'}
                                         </p>
-                                        <p className="text-xs text-gray-500">{data.new_images.length}/10 new images</p>
+                                        <p className="text-xs text-gray-500">{data.new_images.length}/{uploadLimits.maxFiles} new images</p>
                                     </label>
                                 </div>
 

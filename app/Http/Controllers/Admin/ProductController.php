@@ -112,6 +112,9 @@ class ProductController extends Controller
             'sizes' => Size::all(),
             'uploadLimits' => [
                 'maxFileSize' => FileUploadConfigService::getMaxFileUploadSizeFormatted(),
+                'maxFileSizeBytes' => FileUploadConfigService::getMaxFileUploadSize(),
+                'maxRequestSize' => FileUploadConfigService::getMaxRequestSizeFormatted(),
+                'maxRequestSizeBytes' => FileUploadConfigService::getMaxRequestSize(),
                 'maxFiles' => FileUploadConfigService::getMaxFileUploads(),
             ],
         ]);
@@ -299,6 +302,9 @@ class ProductController extends Controller
             'sizes' => Size::all(),
             'uploadLimits' => [
                 'maxFileSize' => FileUploadConfigService::getMaxFileUploadSizeFormatted(),
+                'maxFileSizeBytes' => FileUploadConfigService::getMaxFileUploadSize(),
+                'maxRequestSize' => FileUploadConfigService::getMaxRequestSizeFormatted(),
+                'maxRequestSizeBytes' => FileUploadConfigService::getMaxRequestSize(),
                 'maxFiles' => FileUploadConfigService::getMaxFileUploads(),
             ],
         ]);

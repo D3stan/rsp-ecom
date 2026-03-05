@@ -36,6 +36,34 @@ class FileUploadConfigService
         $bytes = self::getMaxFileUploadSize();
         return self::formatBytes($bytes);
     }
+
+    /**
+     * Get the maximum total request size allowed for multipart/form-data
+     * Returns the size in bytes
+     */
+    public static function getMaxRequestSize(): int
+    {
+        $postMaxSize = self::convertToBytes(ini_get('post_max_size'));
+        $memoryLimit = self::convertToBytes(ini_get('memory_limit'));
+
+        $validSizes = array_filter([$postMaxSize, $memoryLimit], function ($size) {
+            return $size > 0;
+        });
+
+        if (empty($validSizes)) {
+            return 8 * 1024 * 1024; // 8MB default
+        }
+
+        return min($validSizes);
+    }
+
+    /**
+     * Get the maximum total request size in human readable format
+     */
+    public static function getMaxRequestSizeFormatted(): string
+    {
+        return self::formatBytes(self::getMaxRequestSize());
+    }
     
     /**
      * Get the maximum number of files that can be uploaded
