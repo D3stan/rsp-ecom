@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCurrency } from '@/lib/utils';
 import { cartService, type AddToCartData } from '@/services/cartService';
+import { useToast } from '@/contexts/ToastContext';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronLeft, ChevronRight, Heart, Minus, Plus, Share2, ShoppingCart, Star } from 'lucide-react';
@@ -79,6 +80,7 @@ const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
 
 export default function Product() {
     const { product, reviews, relatedProducts, breadcrumb, auth } = usePage<ProductPageProps>().props;
+    const { addToast } = useToast();
     const isMobile = useIsMobile();
     const { t } = useTranslation();
 
@@ -156,6 +158,55 @@ export default function Product() {
     const currentPrice = selectedSize
         ? Number(product.price) + (product.sizes.find((s) => s.id.toString() === selectedSize)?.price_adjustment || 0)
         : Number(product.price);
+
+    const handleShare = async () => {
+        const shareUrl = window.location.href;
+
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: product.name,
+                    text: product.shortDescription || product.name,
+                    url: shareUrl,
+                });
+                return;
+            }
+        } catch (error) {
+            if (error instanceof Error && error.name === 'AbortError') {
+                return;
+            }
+        }
+
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(shareUrl);
+                addToast({
+                    type: 'success',
+                    title: 'Link copied',
+                    description: 'Product link copied to clipboard.',
+                });
+                return;
+            }
+        } catch {
+            // Fallback below
+        }
+
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+
+        addToast({
+            type: 'success',
+            title: 'Link copied',
+            description: 'Product link copied to clipboard.',
+        });
+    };
 
     return (
         <>
@@ -343,7 +394,7 @@ export default function Product() {
                                         </Button>
                                     )}
 
-                                    <Button variant="outline" className="h-12">
+                                    <Button variant="outline" className="h-12" onClick={handleShare}>
                                         <Share2 className="mr-2 h-5 w-5" />
                                         {t('product.share')}
                                     </Button>
