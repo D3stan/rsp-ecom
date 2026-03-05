@@ -27,9 +27,15 @@ after('deploy:failed', 'deploy:unlock');
 
 // Tasks
 
+task('build:local', function () {
+    runLocally('npm ci');
+    runLocally('npm run build');
+});
+
 task('upload:build', function () {
     upload('public/build', '{{release_path}}/public');
 });
+before('upload:build', 'build:local');
 before('deploy:symlink', 'upload:build');
 
 task('laravel:restart', function () {
