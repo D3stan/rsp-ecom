@@ -10,7 +10,7 @@ set('repository', 'https://github.com/D3stan/rsp-ecom.git');
 set('git_tty', true);
 
 add('shared_files', ['.env']);
-add('shared_dirs', ['storage', 'public/build']);
+add('shared_dirs', ['storage']);
 add('writable_dirs', ['storage', 'bootstrap/cache']);
 
 // Hosts
@@ -56,10 +56,6 @@ task('laravel:generate-sitemap', function () {
     run('cd {{release_path}} && php artisan generate:sitemap-index');
 });
 
-task('vite:build', function () {
-    run('cd {{release_path}} && npm install && npm run build');
-});
-
 task('laravel:clear', function () {
     run('cd {{release_path}} && php artisan app:clear-all-cache');
 });
@@ -69,8 +65,7 @@ after('deploy:vendors', 'laravel:optimize');      // Run Laravel cache commands
 after('deploy:vendors', 'laravel:migrate');       // Run migrations (optional)
 after('deploy:unlock', 'laravel:restart');        // Restart app
 after('laravel:restart', 'laravel:generate-sitemap'); // Generate sitemap after deployment
-after('laravel:restart', 'vite:build'); // Build Vite assets after deployment
-after('vite:build', 'laravel:clear'); // Clear Laravel cache after Vite build
+after('laravel:restart', 'laravel:clear'); // Clear Laravel cache after deployment
 
 // Laravel options
 
