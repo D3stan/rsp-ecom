@@ -7,9 +7,6 @@
         "laravel",
         "framework"
     ],
-    "platform": {
-        "php": "8.3.6"
-    },
     "license": "MIT",
     "require": {
         "php": "^8.2",
@@ -82,6 +79,9 @@
         }
     },
     "config": {
+        "platform": {
+            "php": "8.3.6"
+        },
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,
