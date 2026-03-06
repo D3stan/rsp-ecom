@@ -35,8 +35,7 @@ class Product extends Model
     protected $casts = [
         'images' => 'array',
         'price' => 'decimal:2',
-        'compare_at_price' => 'decimal:2',
-        'is_published' => 'boolean',
+        'compare_price' => 'decimal:2',
         'featured' => 'boolean',
     ];
 
