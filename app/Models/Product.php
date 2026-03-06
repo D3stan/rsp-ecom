@@ -113,39 +113,6 @@ class Product extends Model
     }
 
     // Image handling methods
-    public function getImageUrlsAttribute(): array
-    {
-        if (empty($this->images)) {
-            return ['/images/product.png'];
-        }
-
-        return collect($this->images)->map(function ($image) {
-            // If it's already a full URL (from cloud storage), return as is
-            if (filter_var($image, FILTER_VALIDATE_URL)) {
-                return $image;
-            }
-            
-            // Otherwise, generate URL from storage
-            return Storage::url("products/{$this->id}/{$image}");
-        })->toArray();
-    }
-
-    public function getMainImageUrlAttribute(): ?string
-    {
-        if (empty($this->images)) {
-            return '/images/product.png';
-        }
-        
-        $firstImage = $this->images[0];
-        
-        // If it's already a full URL, return as is
-        if (filter_var($firstImage, FILTER_VALIDATE_URL)) {
-            return $firstImage;
-        }
-        
-        return Storage::url("products/{$this->id}/{$firstImage}");
-    }
-
     public function getImageUrl(string $filename): string
     {
         // If it's already a full URL, return as is
@@ -223,15 +190,6 @@ class Product extends Model
     public function getReviewCountAttribute(): int
     {
         return $this->approvedReviews()->count();
-    }
-
-    public function getDiscountPercentageAttribute(): ?float
-    {
-        if (!$this->compare_price || $this->compare_price <= $this->price) {
-            return null;
-        }
-
-        return round((($this->compare_price - $this->price) / $this->compare_price) * 100, 2);
     }
 
     public function isInStock(): bool
