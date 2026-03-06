@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan migrate:status)",
+      "Bash(php artisan migrate)",
+      "Bash(php artisan test)",
+      "Bash(git checkout -b feature/product-variants)",
+      "Bash(git add -A)",
+      "Bash(git commit -m \"chore: verify environment before product variants implementation\")"
+    ]
+  }
+}
