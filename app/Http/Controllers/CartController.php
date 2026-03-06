@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Size;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,44 +38,54 @@ class CartController extends Controller
             ]);
         }
 
-        $cartItems = $cart->cartItems()->with(['product.category', 'product.size', 'size'])->get();
-        
+        $cartItems = $cart->cartItems()->with(['product.category', 'product.size', 'size', 'productVariant'])->get();
+
         // Fix any cart items that have shipping cost incorrectly added to price
         // Also fix cart items missing size_id when product has a size
         foreach ($cartItems as $item) {
             $updated = false;
-            
+
             if ($item->price != $item->product->price) {
                 $item->price = $item->product->price;
                 $updated = true;
             }
-            
+
             // If cart item doesn't have a size but product does, assign it
             if (!$item->size_id && $item->product->size_id) {
                 $item->size_id = $item->product->size_id;
                 $updated = true;
             }
-            
+
             if ($updated) {
                 $item->save();
             }
         }
-        
+
         // Reload to get updated size relationship
-        $cart->load(['cartItems.size']);
-        
+        $cart->load(['cartItems.size', 'cartItems.productVariant']);
+
         return Inertia::render('cart', [
             'cart' => $cart,
             'cartItems' => $cartItems->map(function ($item) {
+                $variant = $item->productVariant;
+                $product = $item->product;
+
                 return [
                     'id' => $item->id,
                     'product' => [
-                        'id' => $item->product->id,
-                        'name' => $item->product->name,
-                        'slug' => $item->product->slug,
-                        'image' => $item->product->image_url,
-                        'category' => $item->product->category?->name,
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'slug' => $product->slug,
+                        'image' => $variant?->main_image_url ?? $product->image_url,
+                        'category' => $product->category?->name,
                     ],
+                    'variant' => $variant ? [
+                        'id' => $variant->id,
+                        'name' => $variant->name,
+                        'price' => (float) $variant->price,
+                        'image' => $variant->main_image_url,
+                        'max_quantity' => $variant->stock_quantity,
+                    ] : null,
                     'quantity' => $item->quantity,
                     'price' => (float) $item->price,
                     'total' => (float) $item->total,
@@ -93,68 +104,54 @@ class CartController extends Controller
      */
     public function add(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
+            'product_variant_id' => 'required|exists:product_variants,id',
             'quantity' => 'required|integer|min:1',
-            'size_id' => 'nullable|exists:sizes,id',
         ]);
 
-        $product = Product::findOrFail($request->product_id);
-        
-        // Check stock availability
-        if (!$product->isInStock() || $product->stock_quantity < $request->quantity) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Product is out of stock or insufficient quantity available.'
-                ], 400);
-            }
-            
-            return back()->withErrors([
-                'message' => 'Product is out of stock or insufficient quantity available.'
-            ]);
+        $variant = ProductVariant::findOrFail($validated['product_variant_id']);
+
+        // Verify variant belongs to product
+        if ($variant->product_id != $validated['product_id']) {
+            return response()->json(['error' => 'Invalid variant for product'], 422);
         }
 
-        $cart = $this->getOrCreateCart();
-        
-        // Use product price as-is (shipping cost is calculated separately by Cart model)
-        $price = $product->price;
+        // Check stock
+        if (!$variant->canAddToCart($validated['quantity'])) {
+            return response()->json([
+                'error' => 'Not enough stock',
+                'available' => $variant->stock_quantity,
+            ], 422);
+        }
 
-        // Check if item already exists in cart (including size)
-        $existingItem = $cart->cartItems()
-            ->where('product_id', $request->product_id)
-            ->where('size_id', $request->size_id)
+        // Get or create cart
+        $cart = $this->getOrCreateCart();
+
+        // Check if item already in cart
+        $cartItem = $cart->cartItems()
+            ->where('product_id', $validated['product_id'])
+            ->where('product_variant_id', $validated['product_variant_id'])
             ->first();
 
-        if ($existingItem) {
+        if ($cartItem) {
             // Update quantity
-            $newQuantity = $existingItem->quantity + $request->quantity;
-            
-            // Check if new quantity exceeds stock
-            if ($newQuantity > $product->stock_quantity) {
-                if ($request->expectsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Cannot add more items. Stock limit exceeded.'
-                    ], 400);
-                }
-                
-                return back()->withErrors([
-                    'message' => 'Cannot add more items. Stock limit exceeded.'
-                ]);
+            $newQuantity = $cartItem->quantity + $validated['quantity'];
+            if (!$variant->canAddToCart($newQuantity)) {
+                return response()->json([
+                    'error' => 'Not enough stock for total quantity',
+                    'available' => $variant->stock_quantity,
+                ], 422);
             }
-            
-            $existingItem->update([
-                'quantity' => $newQuantity,
-                'price' => $price, // Update price in case it changed
-            ]);
+            $cartItem->update(['quantity' => $newQuantity]);
         } else {
             // Create new cart item
             $cart->cartItems()->create([
-                'product_id' => $request->product_id,
-                'size_id' => $request->size_id,
-                'quantity' => $request->quantity,
-                'price' => $price,
+                'product_id' => $validated['product_id'],
+                'product_variant_id' => $validated['product_variant_id'],
+                'quantity' => $validated['quantity'],
+                'price' => $variant->price,
+                'size_id' => $variant->product->size_id,
             ]);
         }
 
