@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Category;
 use App\Models\Size;
 use App\Services\FileUploadConfigService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -113,9 +115,7 @@ class ProductController extends Controller
             'uploadLimits' => [
                 'maxFileSize' => FileUploadConfigService::getMaxFileUploadSizeFormatted(),
                 'maxFileSizeBytes' => FileUploadConfigService::getMaxFileUploadSize(),
-                'maxRequestSize' => FileUploadConfigService::getMaxRequestSizeFormatted(),
-                'maxRequestSizeBytes' => FileUploadConfigService::getMaxRequestSize(),
-                'maxFiles' => FileUploadConfigService::getMaxFileUploads(),
+                'maxFilesPerVariant' => 10,
             ],
         ]);
     }
@@ -125,101 +125,91 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        \Log::info('Product creation started', ['request_data' => $request->except(['images'])]);
-        
+        Log::info('Product creation with variants started');
+
         try {
-            // Check storage setup before proceeding
             $this->checkStorageSetup();
-            
-            // Check if file uploads are enabled on this server
+
             $fileUploadsEnabled = ini_get('file_uploads') && FileUploadConfigService::getMaxFileUploadSize() > 0;
-            \Log::info('File uploads status', [
-                'file_uploads_enabled' => $fileUploadsEnabled,
-                'max_upload_size' => FileUploadConfigService::getMaxFileUploadSize(),
-                'validation_rule' => FileUploadConfigService::getFileValidationRule()
-            ]);
-            
+
             $validationRules = [
                 'name' => 'required|string|max:255',
-                'description' => 'nullable|string',
-                'price' => 'required|numeric|min:0',
-                'compare_price' => 'nullable|numeric|min:0',
-                'stock_quantity' => 'required|integer|min:0',
-                'sku' => 'nullable|string|unique:products',
-                'status' => 'required|in:active,inactive,draft',
-                'featured' => 'boolean',
                 'category_id' => 'required|exists:categories,id',
                 'size_id' => 'required|exists:sizes,id',
+                'status' => 'required|in:active,inactive,draft',
+                'featured' => 'boolean',
+                'base_sku' => 'nullable|string|max:255',
+                'seo_title' => 'nullable|string|max:255',
+                'seo_description' => 'nullable|string|max:500',
+                'variants' => 'required|array|min:1',
+                'variants.*.name' => 'required|string|max:255',
+                'variants.*.sku_suffix' => 'nullable|string|max:50',
+                'variants.*.price' => 'required|numeric|min:0',
+                'variants.*.stock_quantity' => 'required|integer|min:0',
+                'variants.*.description' => 'nullable|string',
+                'variants.*.is_default' => 'boolean',
+                'variants.*.sort_order' => 'integer',
             ];
-            
-            // Only add image validation if file uploads are enabled
+
             if ($fileUploadsEnabled) {
-                $validationRules['images'] = 'nullable|array|max:' . FileUploadConfigService::getMaxFileUploads();
-                $validationRules['images.*'] = 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule();
-            } else {
-                \Log::warning('File uploads disabled on server, skipping image validation');
-                // Remove images from request if file uploads are disabled
-                $request->request->remove('images');
+                $validationRules['variants.*.images'] = 'nullable|array|max:10';
+                $validationRules['variants.*.images.*'] = 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule();
             }
-            
+
             $validated = $request->validate($validationRules);
-            
-            \Log::info('Validation passed', ['validated_data' => array_merge($validated, ['images_count' => $request->hasFile('images') ? count($request->file('images')) : 0])]);
 
-            $validated['slug'] = Str::slug($validated['name']);
-            
-            // Auto-generate SKU if not provided
-            if (empty($validated['sku'])) {
-                $validated['sku'] = $this->generateSKU($validated['name']);
-            }
+            DB::beginTransaction();
 
-            \Log::info('Before creating product', ['validated_data_with_slug' => array_merge($validated, ['sku' => $validated['sku']])]);
+            $productData = [
+                'name' => $validated['name'],
+                'slug' => Str::slug($validated['name']),
+                'category_id' => $validated['category_id'],
+                'size_id' => $validated['size_id'],
+                'status' => $validated['status'],
+                'featured' => $validated['featured'] ?? false,
+                'base_sku' => $validated['base_sku'] ?: $this->generateSku($validated['name']),
+                'seo_title' => $validated['seo_title'] ?? null,
+                'seo_description' => $validated['seo_description'] ?? null,
+            ];
 
-            // Remove images from validated data to avoid array to string conversion
-            $imageFiles = ($fileUploadsEnabled && $request->hasFile('images')) ? $request->file('images') : null;
-            unset($validated['images']);
+            $product = Product::create($productData);
 
-            // Create the product first
-            $product = Product::create($validated);
-            
-            \Log::info('Product created successfully', ['product_id' => $product->id]);
+            // Create variants
+            $hasDefault = false;
+            foreach ($validated['variants'] as $index => $variantData) {
+                $isDefault = !$hasDefault && ($variantData['is_default'] ?? $index === 0);
+                if ($isDefault) $hasDefault = true;
 
-            // Handle image uploads only if enabled and files present
-            if ($fileUploadsEnabled && $imageFiles && is_array($imageFiles)) {
-                \Log::info('Processing image uploads', ['image_count' => count($imageFiles)]);
-                $this->handleImageUploads($product, $imageFiles);
-                \Log::info('Image uploads completed successfully');
-            } elseif (!$fileUploadsEnabled && $request->hasFile('images')) {
-                \Log::warning('Images were uploaded but file uploads are disabled on server', [
-                    'product_id' => $product->id
+                $variant = ProductVariant::create([
+                    'product_id' => $product->id,
+                    'name' => $variantData['name'],
+                    'sku_suffix' => $variantData['sku_suffix'] ?? '',
+                    'price' => $variantData['price'],
+                    'stock_quantity' => $variantData['stock_quantity'],
+                    'description' => $variantData['description'] ?? null,
+                    'is_default' => $isDefault,
+                    'sort_order' => $variantData['sort_order'] ?? $index,
+                    'status' => 'active',
+                    'images' => [],
                 ]);
-                return redirect()->route('admin.products.index')
-                    ->with('warning', 'Product created successfully, but images could not be uploaded due to server configuration.');
-            }
 
-            \Log::info('Product creation completed successfully');
-
-            return redirect()->route('admin.products.index')
-                ->with('success', 'Product created successfully.');
-                
-        } catch (\Exception $e) {
-            \Log::error('Product creation failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            // If a product was created but image upload failed, we should clean it up
-            if (isset($product)) {
-                \Log::info('Cleaning up partially created product', ['product_id' => $product->id]);
-                try {
-                    $product->clearImages();
-                    $product->delete();
-                } catch (\Exception $cleanupError) {
-                    \Log::error('Failed to clean up product', ['error' => $cleanupError->getMessage()]);
+                // Handle images
+                $imageKey = "variant_images_{$index}";
+                if ($fileUploadsEnabled && $request->hasFile($imageKey)) {
+                    $this->handleVariantImageUploads($variant, $request->file($imageKey));
                 }
             }
-            
-            return back()->withInput()->withErrors(['error' => 'Failed to create product: ' . $e->getMessage()]);
+
+            DB::commit();
+
+            return redirect()->route('admin.products.index')
+                ->with('success', 'Product created with ' . count($validated['variants']) . ' variant(s).');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Product creation failed', ['error' => $e->getMessage()]);
+            if (isset($product)) $product->delete();
+            return back()->withInput()->withErrors(['error' => 'Failed: ' . $e->getMessage()]);
         }
     }
 
@@ -261,28 +251,29 @@ class ProductController extends Controller
     /**
      * Generate a unique SKU based on product name
      */
-    private function generateSKU(string $productName): string
+    private function generateSku(string $productName): string
     {
-        // Create base SKU from product name
-        $baseSku = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $productName), 0, 6));
-        
-        // If base SKU is too short, pad with random characters
-        if (strlen($baseSku) < 3) {
-            $baseSku = 'PROD' . $baseSku;
+        $base = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $productName), 0, 6));
+        if (strlen($base) < 3) $base = 'PROD' . $base;
+        return $base . '-' . time();
+    }
+
+    /**
+     * Handle image uploads for a product variant
+     */
+    private function handleVariantImageUploads(ProductVariant $variant, array $images): void
+    {
+        $directory = "products/{$variant->product_id}/variants/{$variant->id}";
+        Storage::disk('public')->makeDirectory($directory);
+
+        $uploadedImages = [];
+        foreach ($images as $image) {
+            $filename = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
+            $path = $image->storeAs($directory, $filename, 'public');
+            if ($path) $uploadedImages[] = $filename;
         }
-        
-        // Add timestamp suffix to ensure uniqueness
-        $sku = $baseSku . '-' . time();
-        
-        // Check if SKU already exists and add suffix if needed
-        $counter = 1;
-        $originalSku = $sku;
-        while (Product::where('sku', $sku)->exists()) {
-            $sku = $originalSku . '-' . $counter;
-            $counter++;
-        }
-        
-        return $sku;
+
+        $variant->update(['images' => $uploadedImages]);
     }
 
     /**
@@ -290,11 +281,7 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        $product->load(['category', 'size']);
-        
-        // Add the computed image URLs
-        $product->image_urls = $product->image_urls;
-        $product->main_image_url = $product->main_image_url;
+        $product->load(['variants', 'category', 'size']);
 
         return Inertia::render('Admin/Products/Edit', [
             'product' => $product,
@@ -303,9 +290,7 @@ class ProductController extends Controller
             'uploadLimits' => [
                 'maxFileSize' => FileUploadConfigService::getMaxFileUploadSizeFormatted(),
                 'maxFileSizeBytes' => FileUploadConfigService::getMaxFileUploadSize(),
-                'maxRequestSize' => FileUploadConfigService::getMaxRequestSizeFormatted(),
-                'maxRequestSizeBytes' => FileUploadConfigService::getMaxRequestSize(),
-                'maxFiles' => FileUploadConfigService::getMaxFileUploads(),
+                'maxFilesPerVariant' => 10,
             ],
         ]);
     }
