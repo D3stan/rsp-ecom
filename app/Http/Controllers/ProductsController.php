@@ -212,7 +212,7 @@ class ProductsController extends Controller
      */
     public function show(string $slug): Response
     {
-        $product = Product::with(['category', 'approvedReviews.user', 'size'])
+        $product = Product::with(['category', 'approvedReviews.user', 'size', 'activeVariants', 'defaultVariant'])
             ->where('slug', $slug)
             ->where('status', 'active')
             ->firstOrFail();
@@ -220,7 +220,7 @@ class ProductsController extends Controller
         // Set SEO meta tags for product page
         $pageTitle = $product->seo_title ?: $product->name;
         $metaDescription = $product->seo_description ?: strip_tags($product->description);
-        
+
         SEOMeta::setTitle($pageTitle . ' – ' . config('app.name'));
         SEOMeta::setDescription(Str::limit($metaDescription, 160));
         SEOMeta::setCanonical(route('products.show', $product));
@@ -230,13 +230,13 @@ class ProductsController extends Controller
         OpenGraph::setUrl(route('products.show', $product));
         OpenGraph::setTitle($pageTitle . ' – ' . config('app.name'));
         OpenGraph::setDescription(Str::limit($metaDescription, 300));
-        
+
         // Get the main product image for social sharing
         $socialImageUrl = $product->social_image_url ?: $product->main_image_url;
         if ($socialImageUrl && !filter_var($socialImageUrl, FILTER_VALIDATE_URL)) {
             $socialImageUrl = url($socialImageUrl);
         }
-        
+
         if ($socialImageUrl) {
             OpenGraph::addImage($socialImageUrl);
             TwitterCard::setImage($socialImageUrl);
@@ -252,7 +252,7 @@ class ProductsController extends Controller
         JsonLd::addValue('name', $product->name);
         JsonLd::addValue('description', Str::limit($metaDescription, 300));
         JsonLd::addValue('sku', $product->sku);
-        
+
         // Add product images
         $productImages = [];
         if (!empty($product->images)) {
@@ -281,8 +281,8 @@ class ProductsController extends Controller
             '@type' => 'Offer',
             'price' => (string) $product->price,
             'priceCurrency' => 'EUR',
-            'availability' => $product->stock_quantity > 0 
-                ? 'https://schema.org/InStock' 
+            'availability' => $product->stock_quantity > 0
+                ? 'https://schema.org/InStock'
                 : 'https://schema.org/OutOfStock',
             'url' => route('products.show', $product),
             'seller' => [
@@ -302,54 +302,28 @@ class ProductsController extends Controller
             ]);
         }
 
-        // Handle empty image arrays - use default image
-        $imageUrl = '/images/product.png';
-        $images = [$imageUrl]; // Start with default image
-        
-        if (!empty($product->images)) {
-            $mainImage = $product->main_image_url;
-            if ($mainImage && $this->imageExists($mainImage)) {
-                $imageUrl = $mainImage;
-                $images = [$imageUrl]; // Replace default with actual image
-                
-                // Get additional images if available
-                foreach ($product->images as $imagePath) {
-                    $fullImagePath = $this->getFullImagePath($imagePath, $product->id);
-                    if ($fullImagePath !== $imageUrl && $this->imageExists($fullImagePath)) {
-                        $images[] = $fullImagePath;
-                    }
-                }
-            }
-        }
-
-        // Transform product for frontend
+        // Format product for frontend with variants
         $productData = [
             'id' => $product->id,
             'name' => $product->name,
             'slug' => $product->slug,
-            'description' => $product->description,
-            'shortDescription' => null, // Field doesn't exist in current schema
-            'price' => $product->price,
-            'originalPrice' => $product->compare_price,
-            'rating' => round($product->average_rating, 1),
-            'reviews' => $product->review_count,
-            'images' => $images,
-            'badge' => $this->getProductBadge($product),
-            'inStock' => $product->stock_quantity > 0,
-            'stockQuantity' => $product->stock_quantity,
-            'inWishlist' => auth()->check() ? auth()->user()->hasInWishlist($product) : false,
-            'specifications' => null, // Field doesn't exist in current schema
             'category' => $product->category ? [
                 'id' => $product->category->id,
                 'name' => $product->category->name,
                 'slug' => $product->category->slug,
             ] : null,
-            'sizes' => $product->size ? [[
-                'id' => $product->size->id,
-                'name' => $product->size->name,
-                'price_adjustment' => 0, // No price adjustment for single size
-                'shipping_cost' => $product->size->shipping_cost ?? 0,
-            ]] : [],
+            'variants' => $product->activeVariants->map(fn($v) => [
+                'id' => $v->id,
+                'name' => $v->name,
+                'price' => $v->price,
+                'stock_quantity' => $v->stock_quantity,
+                'images' => $v->image_urls,
+                'description' => $v->description,
+                'is_default' => $v->is_default,
+            ]),
+            'shipping' => [
+                'size' => $product->size?->name,
+            ],
         ];
 
         // Get reviews with user information
@@ -359,36 +333,24 @@ class ProductsController extends Controller
                 'user' => $review->user ? $review->user->name : 'Anonymous',
                 'rating' => $review->rating,
                 'comment' => $review->comment,
-                'date' => $review->created_at->toISOString(),
+                'date' => $review->created_at->toDateString(),
             ];
         });
 
-        // Get related products (same category, different product)
-        $relatedProducts = Product::with(['category', 'approvedReviews'])
+        // Get related products (using default variant for pricing)
+        $relatedProducts = Product::with('defaultVariant')
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
-            ->active()
-            ->inStock()
+            ->where('status', 'active')
             ->limit(4)
             ->get()
-            ->map(function (Product $relatedProduct) {
-                // Handle empty image arrays for related products
-                $relatedImageUrl = '/images/product.png';
-                if (!empty($relatedProduct->images)) {
-                    $mainImage = $relatedProduct->main_image_url;
-                    if ($mainImage && $this->imageExists($mainImage)) {
-                        $relatedImageUrl = $mainImage;
-                    }
-                }
-
-                return [
-                    'id' => $relatedProduct->id,
-                    'name' => $relatedProduct->name,
-                    'slug' => $relatedProduct->slug,
-                    'price' => $relatedProduct->price,
-                    'image' => $relatedImageUrl,
-                ];
-            });
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'slug' => $p->slug,
+                'price' => $p->defaultVariant?->price ?? 0,
+                'image' => $p->defaultVariant?->main_image_url ?? '/images/product.png',
+            ]);
 
         // Generate breadcrumb
         $breadcrumb = ['Home', 'Products'];
