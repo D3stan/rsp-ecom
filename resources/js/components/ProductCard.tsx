@@ -339,11 +339,11 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
             </div>
 
             {/* Separator line above the button */}
-            <div className="my-4 border-t border-black" />
+            <div className="my-1 border-t border-black" />
             <CardContent className="flex h-full flex-col bg-white px-6 pb-6 pt-3" onClick={handleNavigateToProduct}>
                 <div className="flex-1">
                     {product.category && <p className="mb-2 text-sm font-medium text-gray-600">{product.category.name}</p>}
-                    <h3 className="mb-3 line-clamp-2 text-sm leading-tight font-bold text-gray-900 sm:text-lg">{product.name}</h3>
+                    <h3 className="mb-3 line-clamp-3 text-sm leading-tight font-bold text-gray-900 sm:text-lg">{product.name}</h3>
                     {product.reviews >= 1 && (
                         <div className="mb-4 flex items-center space-x-2">
                             <div className="flex">{renderStars(product.rating)}</div>
