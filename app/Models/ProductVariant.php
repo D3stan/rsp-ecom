@@ -30,6 +30,7 @@ class ProductVariant extends Model
         'is_default' => 'boolean',
         'sort_order' => 'integer',
         'stock_quantity' => 'integer',
+        'status' => 'string',
     ];
 
     public function product(): BelongsTo
@@ -71,13 +72,24 @@ class ProductVariant extends Model
 
     public function removeImage(string $filename): void
     {
+        // Sanitize filename to prevent path traversal
+        $filename = basename($filename);
+
         $images = collect($this->images ?? [])
             ->filter(fn($img) => $img !== $filename)
             ->values()
             ->toArray();
 
         $this->update(['images' => $images]);
-        Storage::delete("products/{$this->product_id}/variants/{$this->id}/{$filename}");
+
+        $deleted = Storage::delete("products/{$this->product_id}/variants/{$this->id}/{$filename}");
+
+        if (!$deleted) {
+            \Log::warning('Failed to delete variant image', [
+                'variant_id' => $this->id,
+                'filename' => $filename,
+            ]);
+        }
     }
 
     public function clearImages(): void
@@ -85,7 +97,15 @@ class ProductVariant extends Model
         if (!empty($this->images)) {
             foreach ($this->images as $image) {
                 if (!filter_var($image, FILTER_VALIDATE_URL)) {
-                    Storage::delete("products/{$this->product_id}/variants/{$this->id}/{$image}");
+                    $filename = basename($image); // Sanitize
+                    $deleted = Storage::delete("products/{$this->product_id}/variants/{$this->id}/{$filename}");
+
+                    if (!$deleted) {
+                        \Log::warning('Failed to delete variant image during clear', [
+                            'variant_id' => $this->id,
+                            'filename' => $filename,
+                        ]);
+                    }
                 }
             }
         }
