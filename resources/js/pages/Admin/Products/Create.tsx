@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+import { VariantManager } from '@/components/admin/VariantManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -9,9 +9,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, useForm } from '@inertiajs/react';
-import { ChevronDown, DollarSign, Image as ImageIcon, Package, Star, Upload, X } from 'lucide-react';
+import { ChevronDown, Package, Settings, Star } from 'lucide-react';
 import { useState } from 'react';
 import { route } from 'ziggy-js';
+
+interface FormData {
+    name: string;
+    category_id: string;
+    size_id: string;
+    status: string;
+    featured: boolean;
+    base_sku: string;
+    seo_title: string;
+    seo_description: string;
+    variants: Array<{
+        name: string;
+        sku_suffix: string;
+        price: string;
+        stock_quantity: string;
+        description: string;
+        is_default: boolean;
+        sort_order: number;
+        images: File[];
+    }>;
+}
 
 interface Category {
     id: number;
@@ -32,102 +53,81 @@ interface Props {
         maxRequestSize: string;
         maxRequestSizeBytes: number;
         maxFiles: number;
+        maxFilesPerVariant: number;
     };
 }
 
 export default function CreateProduct({ categories, sizes, uploadLimits }: Props) {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
-    const [previewImages, setPreviewImages] = useState<string[]>([]);
-    const [uploadError, setUploadError] = useState<string | null>(null);
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm<FormData>({
         name: '',
-        description: '',
-        price: '',
-        compare_price: '',
-        stock_quantity: '',
-        sku: '',
-        status: 'active',
-        featured: false as boolean,
         category_id: '',
         size_id: '',
-        images: [] as File[],
+        status: 'active',
+        featured: false,
+        base_sku: '',
+        seo_title: '',
+        seo_description: '',
+        variants: [
+            {
+                name: 'Standard',
+                sku_suffix: '',
+                price: '',
+                stock_quantity: '',
+                description: '',
+                is_default: true,
+                sort_order: 0,
+                images: [],
+            },
+        ],
     });
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        const newImages = [...data.images, ...files].slice(0, uploadLimits.maxFiles);
-        const totalBytes = newImages.reduce((sum, file) => sum + file.size, 0);
-
-        if (uploadLimits.maxRequestSizeBytes > 0 && totalBytes > uploadLimits.maxRequestSizeBytes) {
-            setUploadError(`Peso totale immagini troppo alto (max ${uploadLimits.maxRequestSize}).`);
-            return;
-        }
-
-        setUploadError(null);
-
-        setData('images', newImages);
-
-        // Create preview URLs
-        const newPreviews = files.map((file) => URL.createObjectURL(file));
-        setPreviewImages((prev) => [...prev, ...newPreviews].slice(0, uploadLimits.maxFiles));
-    };
-
-    const removeImage = (index: number) => {
-        const newImages = data.images.filter((_, i) => i !== index);
-        const newPreviews = previewImages.filter((_, i) => i !== index);
-
-        setData('images', newImages);
-        setPreviewImages(newPreviews);
-        setUploadError(null);
-    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
-        // Validate required fields before submission
-        if (!data.name.trim()) {
-            console.log('Name is required');
-            return;
-        }
-        if (!data.price.trim()) {
-            console.log('Price is required');
-            return;
-        }
-        if (!data.stock_quantity.trim()) {
-            console.log('Stock quantity is required');
-            return;
-        }
-        if (!data.category_id) {
-            console.log('Category is required');
-            return;
-        }
-        if (!data.size_id) {
-            console.log('Size is required');
+
+        // Validation
+        if (!data.name.trim()) return;
+        if (!data.category_id) return;
+        if (!data.size_id) return;
+        if (data.variants.some((v) => !v.name || !v.price || !v.stock_quantity)) {
+            alert('Tutte le varianti devono avere nome, prezzo e quantità');
             return;
         }
 
-        const totalBytes = data.images.reduce((sum, file) => sum + file.size, 0);
-        if (uploadLimits.maxRequestSizeBytes > 0 && totalBytes > uploadLimits.maxRequestSizeBytes) {
-            setUploadError(`Peso totale immagini troppo alto (max ${uploadLimits.maxRequestSize}).`);
-            return;
-        }
+        // Create FormData for file uploads
+        const formData = new FormData();
+        formData.append('name', data.name);
+        formData.append('category_id', data.category_id);
+        formData.append('size_id', data.size_id);
+        formData.append('status', data.status);
+        formData.append('featured', data.featured ? '1' : '0');
+        formData.append('base_sku', data.base_sku);
+        formData.append('seo_title', data.seo_title);
+        formData.append('seo_description', data.seo_description);
 
-        setUploadError(null);
-        
-        console.log('Form submitted with data:', data);
-        console.log('Route being called:', route('admin.products.store'));
-        
+        // Add variants as JSON (without images)
+        const variantsForJson = data.variants.map((v, index) => ({
+            name: v.name,
+            sku_suffix: v.sku_suffix,
+            price: v.price,
+            stock_quantity: v.stock_quantity,
+            description: v.description,
+            is_default: v.is_default,
+            sort_order: v.sort_order,
+        }));
+        formData.append('variants', JSON.stringify(variantsForJson));
+
+        // Add images separately
+        data.variants.forEach((variant, index) => {
+            variant.images.forEach((file) => {
+                formData.append(`variant_images_${index}[]`, file);
+            });
+        });
+
         post(route('admin.products.store'), {
-            onSuccess: () => {
-                console.log('Product created successfully');
-            },
-            onError: (errors) => {
-                console.log('Validation errors:', errors);
-            },
-            onFinish: () => {
-                console.log('Request finished');
-            }
+            data: formData,
+            forceFormData: true,
         });
     };
 
@@ -202,47 +202,17 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                     {errors.size_id && <p className="mt-1 text-sm text-red-500">{errors.size_id}</p>}
                                 </div>
 
-                                <div>
-                                    <Label htmlFor="price">Price *</Label>
-                                    <div className="relative">
-                                        <DollarSign className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="price"
-                                            type="number"
-                                            step="0.01"
-                                            value={data.price}
-                                            onChange={(e) => setData('price', e.target.value)}
-                                            placeholder="0.00"
-                                            className={`pl-10 ${errors.price ? 'border-red-500' : ''}`}
-                                        />
-                                    </div>
-                                    {errors.price && <p className="mt-1 text-sm text-red-500">{errors.price}</p>}
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="stock_quantity">Stock Quantity *</Label>
-                                    <Input
-                                        id="stock_quantity"
-                                        type="number"
-                                        value={data.stock_quantity}
-                                        onChange={(e) => setData('stock_quantity', e.target.value)}
-                                        placeholder="0"
-                                        className={errors.stock_quantity ? 'border-red-500' : ''}
-                                    />
-                                    {errors.stock_quantity && <p className="mt-1 text-sm text-red-500">{errors.stock_quantity}</p>}
-                                </div>
-
                                 <div className="md:col-span-2">
-                                    <Label htmlFor="description">Description</Label>
-                                    <Textarea
-                                        id="description"
-                                        value={data.description}
-                                        onChange={(e) => setData('description', e.target.value)}
-                                        placeholder="Enter product description"
-                                        rows={3}
-                                        className={errors.description ? 'border-red-500' : ''}
+                                    <Label htmlFor="base_sku">Base SKU</Label>
+                                    <Input
+                                        id="base_sku"
+                                        value={data.base_sku}
+                                        onChange={(e) => setData('base_sku', e.target.value)}
+                                        placeholder="Enter base SKU (e.g., PROD-001)"
+                                        className={errors.base_sku ? 'border-red-500' : ''}
                                     />
-                                    {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
+                                    {errors.base_sku && <p className="mt-1 text-sm text-red-500">{errors.base_sku}</p>}
+                                    <p className="mt-1 text-xs text-gray-500">SKU prefix for all variants (e.g., PROD-001-RED)</p>
                                 </div>
 
                                 <div>
@@ -289,68 +259,17 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                         </CardContent>
                     </Card>
 
-                    {/* Product Images */}
-                    <Card>
-                        <CardHeader className="pb-4">
-                            <div className="flex items-center gap-2">
-                                <ImageIcon className="h-5 w-5 text-purple-600" />
-                                <CardTitle className="text-lg">Product Images</CardTitle>
-                            </div>
-                            <CardDescription>
-                                Upload up to {uploadLimits.maxFiles} images (JPEG, PNG, GIF, WebP - max {uploadLimits.maxFileSize} each, total max {uploadLimits.maxRequestSize})
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {/* Upload Area */}
-                                <div className="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
-                                    <input
-                                        type="file"
-                                        id="images"
-                                        multiple
-                                        accept="image/*"
-                                        onChange={handleImageChange}
-                                        className="hidden"
-                                        disabled={data.images.length >= uploadLimits.maxFiles}
-                                    />
-                                    <label
-                                        htmlFor="images"
-                                        className={`cursor-pointer ${data.images.length >= uploadLimits.maxFiles ? 'cursor-not-allowed opacity-50' : ''}`}
-                                    >
-                                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                                        <p className="mt-2 text-sm text-gray-600">
-                                            {data.images.length >= uploadLimits.maxFiles ? `Maximum ${uploadLimits.maxFiles} images reached` : 'Click to upload images'}
-                                        </p>
-                                        <p className="text-xs text-gray-500">{data.images.length}/{uploadLimits.maxFiles} images uploaded</p>
-                                    </label>
-                                </div>
-
-                                {/* Image Previews */}
-                                {previewImages.length > 0 && (
-                                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                                        {previewImages.map((preview, index) => (
-                                            <div key={index} className="group relative">
-                                                <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
-                                                    <img src={preview} alt={`Preview ${index + 1}`} className="h-full w-full object-cover" />
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeImage(index)}
-                                                    className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                </button>
-                                                {index === 0 && <Badge className="absolute bottom-2 left-2 bg-blue-500">Main</Badge>}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {uploadError && <p className="text-sm text-red-500">{uploadError}</p>}
-                                {errors.images && <p className="text-sm text-red-500">{errors.images}</p>}
-                            </div>
-                        </CardContent>
-                    </Card>
+                    {/* Variants */}
+                    <VariantManager
+                        variants={data.variants}
+                        baseSku={data.base_sku}
+                        onVariantsChange={(variants) => setData('variants', variants)}
+                        uploadLimits={{
+                            maxFileSize: uploadLimits.maxFileSize,
+                            maxFileSizeBytes: uploadLimits.maxFileSizeBytes,
+                            maxFilesPerVariant: uploadLimits.maxFilesPerVariant,
+                        }}
+                    />
 
                     {/* Advanced Options */}
                     <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
@@ -359,7 +278,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                 <CardHeader className="cursor-pointer transition-colors hover:bg-gray-50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <DollarSign className="h-5 w-5 text-green-600" />
+                                            <Settings className="h-5 w-5 text-green-600" />
                                             <CardTitle className="text-lg">Advanced Options</CardTitle>
                                         </div>
                                         <ChevronDown className={`h-4 w-4 transition-transform ${isAdvancedOpen ? 'rotate-180' : ''}`} />
@@ -370,35 +289,29 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                             <CollapsibleContent>
                                 <CardContent className="pt-0">
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                        <div>
-                                            <Label htmlFor="sku">SKU (Auto-generated if empty)</Label>
+                                        <div className="md:col-span-2">
+                                            <Label htmlFor="seo_title">SEO Title</Label>
                                             <Input
-                                                id="sku"
-                                                value={data.sku}
-                                                onChange={(e) => setData('sku', e.target.value)}
-                                                placeholder="Will be auto-generated"
-                                                className={errors.sku ? 'border-red-500' : ''}
+                                                id="seo_title"
+                                                value={data.seo_title}
+                                                onChange={(e) => setData('seo_title', e.target.value)}
+                                                placeholder="SEO optimized title"
+                                                className={errors.seo_title ? 'border-red-500' : ''}
                                             />
-                                            {errors.sku && <p className="mt-1 text-sm text-red-500">{errors.sku}</p>}
-                                            <p className="mt-1 text-xs text-gray-500">Leave empty to auto-generate from product name</p>
+                                            {errors.seo_title && <p className="mt-1 text-sm text-red-500">{errors.seo_title}</p>}
                                         </div>
 
-                                        <div>
-                                            <Label htmlFor="compare_price">Compare Price</Label>
-                                            <div className="relative">
-                                                <DollarSign className="absolute top-3 left-3 h-4 w-4 text-gray-400" />
-                                                <Input
-                                                    id="compare_price"
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={data.compare_price}
-                                                    onChange={(e) => setData('compare_price', e.target.value)}
-                                                    placeholder="0.00"
-                                                    className={`pl-10 ${errors.compare_price ? 'border-red-500' : ''}`}
-                                                />
-                                            </div>
-                                            {errors.compare_price && <p className="mt-1 text-sm text-red-500">{errors.compare_price}</p>}
-                                            <p className="mt-1 text-xs text-gray-500">Original price for discount display</p>
+                                        <div className="md:col-span-2">
+                                            <Label htmlFor="seo_description">SEO Description</Label>
+                                            <Textarea
+                                                id="seo_description"
+                                                value={data.seo_description}
+                                                onChange={(e) => setData('seo_description', e.target.value)}
+                                                placeholder="SEO optimized description"
+                                                rows={3}
+                                                className={errors.seo_description ? 'border-red-500' : ''}
+                                            />
+                                            {errors.seo_description && <p className="mt-1 text-sm text-red-500">{errors.seo_description}</p>}
                                         </div>
                                     </div>
                                 </CardContent>
