@@ -75,9 +75,12 @@ class GenerateSitemap extends Command
             ->withCount(['products' => function ($query) {
                 $query->active()->inStock();
             }])
-            ->having('products_count', '>', 0)
             ->chunk(100, function ($categories) use ($sitemap) {
                 foreach ($categories as $category) {
+                    // Skip categories with no products
+                    if ($category->products_count <= 0) {
+                        continue;
+                    }
                     $sitemap->add(
                         Url::create("/categories/{$category->slug}")
                             ->setLastModificationDate($category->updated_at)

@@ -1,9 +1,6 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\WithoutMiddleware;
-
-uses(WithoutMiddleware::class);
 
 test('confirm password screen can be rendered', function () {
     $user = User::factory()->create();
@@ -27,12 +24,12 @@ test('password can be confirmed', function () {
 test('password is not confirmed with invalid password', function () {
     $user = User::factory()->create();
 
-    // Test with withoutExceptionHandling to see the actual exception
-    $this->withoutExceptionHandling();
-    
-    $this->expectException(\Illuminate\Validation\ValidationException::class);
-    
-    $this->actingAs($user)->post('/confirm-password', [
+    $response = $this->actingAs($user)->post('/confirm-password', [
         'password' => 'wrong-password',
     ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasErrors(['password']);
+    // User should still be authenticated (not logged out)
+    $this->assertAuthenticated();
 });

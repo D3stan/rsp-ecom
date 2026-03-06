@@ -49,34 +49,42 @@ class GoogleAuthController extends Controller
             } else {
                 $googleUser = Socialite::driver('google')->user();
             }
-            
-            // Check if user already exists with this Google ID
-            $user = User::where('google_id', $googleUser->getId())->first();
-            
-            if ($user) {
-                // User exists, log them in
-                Auth::login($user);
-                return redirect()->intended('/dashboard');
-            }
-            
+
             // Check if there's already a logged-in user wanting to link their account
+            // This must come FIRST to allow linking attempts to be validated
             $currentUser = Auth::user();
             if ($currentUser) {
-                // Check if this Google account is already linked to another user
-                $googleAccountAlreadyLinked = User::where('google_id', $googleUser->getId())->exists();
-                
-                if ($googleAccountAlreadyLinked) {
+                // Check if this Google account is already linked to THIS user
+                if ($currentUser->google_id === $googleUser->getId()) {
+                    return redirect()->route('profile.edit')->with('info', 'This Google account is already linked to your account.');
+                }
+
+                // Check if this Google account is linked to ANOTHER user
+                $otherUserWithGoogleId = User::where('google_id', $googleUser->getId())
+                    ->where('id', '!=', $currentUser->id)
+                    ->first();
+
+                if ($otherUserWithGoogleId) {
                     return redirect()->route('profile.edit')->with('error', 'This Google account is already linked to another user account.');
                 }
-                
+
                 // Link Google account to the current logged-in user
                 $currentUser->update([
                     'google_id' => $googleUser->getId(),
                     'avatar' => $googleUser->getAvatar(),
                     'email_verified_at' => now(), // Ensure Google accounts are verified
                 ]);
-                
+
                 return redirect()->route('profile.edit')->with('success', 'Google account linked successfully!');
+            }
+
+            // Check if user already exists with this Google ID
+            $user = User::where('google_id', $googleUser->getId())->first();
+
+            if ($user) {
+                // User exists, log them in
+                Auth::login($user);
+                return redirect()->intended('/dashboard');
             }
             
             // Check if user exists with the same email

@@ -164,9 +164,10 @@ class ProductsController extends Controller
             ->withCount(['products' => function ($query) {
                 $query->active()->inStock();
             }])
-            ->having('products_count', '>', 0)
             ->orderBy('name')
             ->get()
+            ->filter(fn (Category $category) => $category->products_count > 0)
+            ->values()
             ->map(function (Category $category) {
                 return [
                     'id' => $category->id,

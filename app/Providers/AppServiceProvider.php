@@ -7,6 +7,7 @@ use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\GenerateSitemapIndex;
 use App\Console\Commands\ClearSitemaps;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Laravel\Cashier\Cashier;
 use App\Services\StripeService;
@@ -40,10 +41,16 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        // Initialize Stripe API key globally
-        $stripeSecret = StripeService::getSecretKey();
-        if ($stripeSecret) {
-            Stripe::setApiKey($stripeSecret);
+        // Initialize Stripe API key globally (only if settings table exists)
+        try {
+            if (Schema::hasTable('settings')) {
+                $stripeSecret = StripeService::getSecretKey();
+                if ($stripeSecret) {
+                    Stripe::setApiKey($stripeSecret);
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently skip Stripe initialization when database is unavailable
         }
 
         // Configure Cashier
