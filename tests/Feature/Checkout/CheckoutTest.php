@@ -56,9 +56,10 @@ class CheckoutTest extends TestCase
         // Create cart items for user
         $cartItem = $cart->cartItems()->create([
             'product_id' => $this->product->id,
+            'product_variant_id' => $this->product->defaultVariant->id,
             'size_id' => $this->size->id,
             'quantity' => 2,
-            'price' => $this->product->price,
+            'price' => $this->product->defaultVariant->price,
         ]);
 
         $response = $this->actingAs($this->user)->get('/checkout/details');
@@ -187,9 +188,10 @@ class CheckoutTest extends TestCase
 
         $cart->cartItems()->create([
             'product_id' => $this->product->id,
+            'product_variant_id' => $this->product->defaultVariant->id,
             'size_id' => $this->size->id,
             'quantity' => 1,
-            'price' => $this->product->price,
+            'price' => $this->product->defaultVariant->price,
         ]);
 
         $response = $this->get('/guest/checkout/details');
@@ -217,9 +219,10 @@ class CheckoutTest extends TestCase
         // Create multiple cart items
         $cart->cartItems()->create([
             'product_id' => $this->product->id,
+            'product_variant_id' => $this->product->defaultVariant->id,
             'size_id' => $this->size->id,
             'quantity' => 2,
-            'price' => $this->product->price,
+            'price' => $this->product->defaultVariant->price,
         ]);
 
         $product2 = Product::factory()->create([
@@ -229,9 +232,10 @@ class CheckoutTest extends TestCase
 
         $cart->cartItems()->create([
             'product_id' => $product2->id,
+            'product_variant_id' => $product2->defaultVariant->id,
             'size_id' => $this->size->id,
             'quantity' => 1,
-            'price' => $product2->price,
+            'price' => $product2->defaultVariant->price,
         ]);
 
         $response = $this->actingAs($this->user)->get('/checkout/details');
@@ -261,9 +265,10 @@ class CheckoutTest extends TestCase
 
         $cart->cartItems()->create([
             'product_id' => $expensiveProduct->id,
+            'product_variant_id' => $expensiveProduct->defaultVariant->id,
             'size_id' => $this->size->id,
             'quantity' => 1,
-            'price' => $expensiveProduct->price,
+            'price' => $expensiveProduct->defaultVariant->price,
         ]);
 
         $response = $this->actingAs($this->user)->get('/checkout/details');

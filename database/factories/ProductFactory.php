@@ -31,7 +31,7 @@ class ProductFactory extends Factory
         $name = $this->generateProductName($category?->name ?? 'Electronics');
         $baseSlug = Str::slug($name);
         $uniqueSlug = $baseSlug . '-' . $this->faker->unique()->numberBetween(1000, 9999);
-        
+
         return [
             'name' => $name,
             'slug' => $uniqueSlug,
@@ -40,6 +40,7 @@ class ProductFactory extends Factory
             'compare_price' => $comparePrice,
             'stock_quantity' => $this->faker->numberBetween(0, 150),
             'sku' => $this->generateSKU(),
+            'base_sku' => $this->faker->unique()->regexify('[A-Z]{3}[0-9]{4}'),
             'images' => $this->generateProductImages(),
             'status' => $this->faker->randomElement(['active', 'active', 'active', 'inactive', 'draft']), // Mostly active
             'featured' => $this->faker->boolean(20), // 20% chance of being featured
@@ -241,6 +242,29 @@ class ProductFactory extends Factory
     {
         // Return empty array for all products - default image will be handled by frontend/backend logic
         return [];
+    }
+
+    /**
+     * Configure the factory to create a default variant after creating the product.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function ($product) {
+            // Create a default variant if none exists
+            if ($product->variants()->count() === 0) {
+                $product->variants()->create([
+                    'name' => 'Standard',
+                    'sku_suffix' => '',
+                    'price' => $product->getAttributes()['price'] ?? 99.99,
+                    'stock_quantity' => $product->getAttributes()['stock_quantity'] ?? 10,
+                    'description' => $product->getAttributes()['description'] ?? null,
+                    'images' => $product->getAttributes()['images'] ?? [],
+                    'is_default' => true,
+                    'sort_order' => 0,
+                    'status' => 'active',
+                ]);
+            }
+        });
     }
 
     /**

@@ -227,55 +227,70 @@ class Product extends Model
      * Backward compatibility accessors - delegate to default variant
      */
 
-    public function getPriceAttribute(): ?float
+    public function getPriceAttribute($value): ?float
     {
-        return $this->defaultVariant?->price;
+        // Return the raw database value, not the variant's value
+        return $value !== null ? (float) $value : null;
     }
 
-    public function getStockQuantityAttribute(): ?int
+    public function getStockQuantityAttribute($value): ?int
     {
-        return $this->defaultVariant?->stock_quantity;
+        // Return the raw database value, not the variant's value
+        return $value !== null ? (int) $value : null;
     }
 
-    public function getImagesAttribute(): ?array
+    public function getImagesAttribute($value): array
     {
-        return $this->defaultVariant?->images;
+        // The 'array' cast handles the conversion, but we ensure it's always an array
+        return is_array($value) ? $value : [];
     }
 
-    public function getDescriptionAttribute(): ?string
+    public function getDescriptionAttribute($value): ?string
     {
-        return $this->defaultVariant?->description;
+        // Return the raw database value
+        return $value;
     }
 
-    public function getSkuAttribute(): ?string
+    public function getSkuAttribute($value): ?string
     {
-        return $this->defaultVariant?->full_sku;
+        // Return the raw database value, not the variant's full_sku
+        return $value;
     }
 
     public function getMainImageUrlAttribute(): string
     {
-        return $this->defaultVariant?->main_image_url ?? '/images/product.png';
+        $images = $this->images;
+        if (!empty($images)) {
+            return asset('storage/products/' . $this->id . '/' . $images[0]);
+        }
+        return '/images/product.png';
     }
 
     public function getImageUrlsAttribute(): array
     {
-        return $this->defaultVariant?->image_urls ?? ['/images/product.png'];
+        $images = $this->images;
+        if (empty($images)) {
+            return ['/images/product.png'];
+        }
+        return collect($images)->map(function ($image) {
+            return asset('storage/products/' . $this->id . '/' . $image);
+        })->toArray();
     }
 
-    public function getComparePriceAttribute(): ?float
+    public function getComparePriceAttribute($value): ?float
     {
-        return $this->defaultVariant?->compare_price;
+        // Return the raw database value
+        return $value !== null ? (float) $value : null;
     }
 
     public function getDiscountPercentageAttribute(): ?float
     {
-        $defaultVariant = $this->defaultVariant;
-        if (!$defaultVariant) {
+        $comparePrice = $this->compare_price;
+        $price = $this->price;
+
+        if (!$comparePrice || !$price || $comparePrice <= $price) {
             return null;
         }
-
-        $comparePrice = $defaultVariant->compare_price ?? 0;
-        $price = $defaultVariant->price ?? 0;
 
         if (!$comparePrice || $comparePrice <= $price) {
             return null;
