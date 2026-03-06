@@ -344,12 +344,11 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                 <div className="flex-1">
                     {product.category && <p className="mb-2 text-sm font-medium text-gray-600">{product.category.name}</p>}
                     <h3 className="mb-3 line-clamp-2 text-lg leading-tight font-bold text-gray-900">{product.name}</h3>
-                    <div className="mb-4 flex items-center space-x-2">
-                        <div className="flex">{renderStars(product.rating)}</div>
-                        <span className="text-sm font-medium text-gray-500">
-                            ({product.reviews} {t('products.reviews')})
-                        </span>
-                    </div>
+                    {product.reviews >= 1 && (
+                        <div className="mb-4 flex items-center space-x-2">
+                            <div className="flex">{renderStars(product.rating)}</div>
+                        </div>
+                    )}
                     <div className="mb-4 flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                             <span className="text-xl font-bold text-gray-900">{formatCurrency(product.price)}</span>
