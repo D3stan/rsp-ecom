@@ -12,6 +12,7 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'product_id', // Can be null for guest orders where we don't have a proper product reference
+        'product_variant_id',
         'product_name',
         'size_id',
         'quantity',
@@ -44,6 +45,11 @@ class OrderItem extends Model
     public function size(): BelongsTo
     {
         return $this->belongsTo(Size::class);
+    }
+
+    public function productVariant(): BelongsTo
+    {
+        return $this->belongsTo(ProductVariant::class);
     }
 
     // Accessors
