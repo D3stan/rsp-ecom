@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { VariantSelector } from '@/components/VariantSelector';
 import { WishlistButton } from '@/components/wishlist-button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -15,32 +15,29 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronLeft, ChevronRight, Heart, Minus, Plus, Share2, ShoppingCart, Star } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
+interface ProductVariant {
+    id: number;
+    name: string;
+    price: number;
+    stock_quantity: number;
+    images: string[];
+    description: string;
+    is_default: boolean;
+}
+
 interface Product {
     id: number;
     name: string;
     slug: string;
-    description: string;
-    shortDescription?: string;
-    price: number;
-    originalPrice?: number;
-    rating: number;
-    reviews: number;
-    images: string[];
-    badge?: string;
-    inStock: boolean;
-    stockQuantity: number;
-    inWishlist?: boolean;
-    specifications?: Record<string, string>;
-    category?: {
+    category: {
         id: number;
         name: string;
         slug: string;
+    } | null;
+    variants: ProductVariant[];
+    shipping: {
+        size: string;
     };
-    sizes: Array<{
-        id: number;
-        name: string;
-        price_adjustment: number;
-    }>;
 }
 
 interface Review {
@@ -84,26 +81,31 @@ export default function Product() {
     const isMobile = useIsMobile();
     const { t } = useTranslation();
 
-    // State for image carousel
+    // Find default variant
+    const defaultVariant = product.variants.find((v) => v.is_default) ?? product.variants[0];
+
+    // State
+    const [selectedVariantId, setSelectedVariantId] = useState<number>(defaultVariant.id);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
-    const [selectedSize, setSelectedSize] = useState<string>('');
-
-    // Handle empty images array
-    const displayImages = product.images.length > 0 ? product.images : ['/images/product.png'];
-
-    // Auto-select first available size when component mounts
-    useEffect(() => {
-        if (product.sizes.length > 0 && !selectedSize) {
-            setSelectedSize(product.sizes[0].id.toString());
-        }
-    }, [product.sizes, selectedSize]);
-
-    // State for collapsibles
+    const [isAddingToCart, setIsAddingToCart] = useState(false);
     const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
     const [isSpecsOpen, setIsSpecsOpen] = useState(false);
     const [isReviewsOpen, setIsReviewsOpen] = useState(false);
-    const [isAddingToCart, setIsAddingToCart] = useState(false);
+
+    // Get selected variant
+    const selectedVariant = product.variants.find((v) => v.id === selectedVariantId)!;
+
+    // Reset image index when variant changes
+    useEffect(() => {
+        setCurrentImageIndex(0);
+    }, [selectedVariantId]);
+
+    // Display images from selected variant
+    const displayImages = selectedVariant.images.length > 0 ? selectedVariant.images : ['/images/product.png'];
+
+    // Price is directly from variant
+    const currentPrice = selectedVariant.price;
 
     const handleImageChange = (index: number) => {
         setCurrentImageIndex(index);
@@ -120,7 +122,7 @@ export default function Product() {
     const handleQuantityChange = (delta: number) => {
         setQuantity((prev) => {
             const newQuantity = prev + delta;
-            return Math.max(1, Math.min(newQuantity, product.stockQuantity));
+            return Math.max(1, Math.min(newQuantity, selectedVariant.stock_quantity));
         });
     };
 
@@ -132,17 +134,14 @@ export default function Product() {
         try {
             const cartData: AddToCartData = {
                 product_id: product.id,
+                product_variant_id: selectedVariantId,
                 quantity: quantity,
             };
-
-            if (selectedSize) {
-                cartData.size_id = parseInt(selectedSize);
-            }
 
             const response = await cartService.addToCart(cartData);
 
             if (response.success) {
-                cartService.triggerCartUpdate(); // Trigger cart count refresh
+                cartService.triggerCartUpdate();
                 cartService.triggerCartAnimation('success');
             } else {
                 cartService.triggerCartAnimation('error');
@@ -155,10 +154,6 @@ export default function Product() {
         }
     };
 
-    const currentPrice = selectedSize
-        ? Number(product.price) + (product.sizes.find((s) => s.id.toString() === selectedSize)?.price_adjustment || 0)
-        : Number(product.price);
-
     const handleShare = async () => {
         const shareUrl = window.location.href;
 
@@ -166,7 +161,7 @@ export default function Product() {
             if (navigator.share) {
                 await navigator.share({
                     title: product.name,
-                    text: product.shortDescription || product.name,
+                    text: selectedVariant.description || product.name,
                     url: shareUrl,
                 });
                 return;
@@ -265,8 +260,7 @@ export default function Product() {
                                     </>
                                 )}
 
-                                {/* Badge */}
-                                {product.badge && <Badge className="absolute top-4 left-4">{product.badge}</Badge>}
+                                {/* Badge - removed as not in variant model */}
                             </div>
 
                             {/* Thumbnail images */}
@@ -294,43 +288,25 @@ export default function Product() {
                                 {product.category && <p className="mb-2 text-sm text-gray-600">{product.category.name}</p>}
                                 <h1 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">{product.name}</h1>
 
-                                {/* Rating */}
+                                {/* Rating - placeholder for now */}
                                 <div className="mb-4 flex items-center space-x-2">
-                                    <div className="flex">{renderStars(product.rating)}</div>
-                                    <span className="text-sm text-gray-600">({product.reviews} reviews)</span>
+                                    <div className="flex">{renderStars(0)}</div>
+                                    <span className="text-sm text-gray-600">(0 reviews)</span>
                                 </div>
 
                                 {/* Price */}
                                 <div className="mb-6 flex items-center space-x-3">
                                     <span className="text-3xl font-bold text-gray-900">{formatCurrency(currentPrice)}</span>
-                                    {product.originalPrice && (
-                                        <span className="text-xl text-gray-500 line-through">{formatCurrency(Number(product.originalPrice))}</span>
-                                    )}
                                 </div>
                             </div>
 
-                            {/* Size Selector */}
-                            {product.sizes.length > 0 && (
-                                <div>
-                                    <Label className="mb-3 block text-sm font-medium text-gray-900">{t('product.size')}</Label>
-                                    <Select value={selectedSize} onValueChange={setSelectedSize}>
-                                        <SelectTrigger className="w-full text-black">
-                                            <SelectValue placeholder={t('product.select_size')} />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-white text-gray-900">
-                                            {product.sizes.map((size) => (
-                                                <SelectItem key={size.id} value={size.id.toString()}>
-                                                    {size.name}
-                                                    {size.price_adjustment !== 0 && (
-                                                        <span className="ml-2 text-gray-500">
-                                                            ({size.price_adjustment > 0 ? '+' : ''}{formatCurrency(size.price_adjustment)})
-                                                        </span>
-                                                    )}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            {/* Variant Selector */}
+                            {product.variants.length > 1 && (
+                                <VariantSelector
+                                    variants={product.variants}
+                                    selectedVariantId={selectedVariantId}
+                                    onVariantChange={setSelectedVariantId}
+                                />
                             )}
 
                             {/* Quantity Selector */}
@@ -352,14 +328,14 @@ export default function Product() {
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => handleQuantityChange(1)}
-                                            disabled={quantity >= product.stockQuantity}
+                                            disabled={quantity >= selectedVariant.stock_quantity}
                                             className="h-10 w-10 p-0 hover:bg-gray-100"
                                         >
                                             <Plus className="h-4 w-4 text-black" />
                                         </Button>
                                     </div>
                                     <span className="text-sm text-gray-600">
-                                        {product.stockQuantity} {t('product.in_stock')}
+                                        {selectedVariant.stock_quantity} {t('product.in_stock')}
                                     </span>
                                 </div>
                             </div>
@@ -368,19 +344,19 @@ export default function Product() {
                             <div className="space-y-3">
                                 <Button
                                     onClick={handleAddToCart}
-                                    disabled={!product.inStock || (product.sizes.length > 0 && !selectedSize) || isAddingToCart}
+                                    disabled={selectedVariant.stock_quantity === 0 || isAddingToCart}
                                     className="h-12 w-full text-lg font-semibold"
                                     size="lg"
                                 >
                                     <ShoppingCart className="mr-2 h-5 w-5" />
-                                    {isAddingToCart ? t('product.adding') : product.inStock ? t('product.add_to_cart') : t('product.out_of_stock')}
+                                    {isAddingToCart ? t('product.adding') : selectedVariant.stock_quantity > 0 ? t('product.add_to_cart') : t('product.out_of_stock')}
                                 </Button>
 
                                 <div className="grid grid-cols-2 gap-3">
                                     {auth.user ? (
                                         <WishlistButton
                                             productId={product.id}
-                                            initialInWishlist={product.inWishlist || false}
+                                            initialInWishlist={false}
                                             showText={true}
                                             variant="outline"
                                             className="h-12"
@@ -402,55 +378,17 @@ export default function Product() {
                             </div>
 
                             {/* Short Description */}
-                            {product.shortDescription && (
+                            {selectedVariant.description && (
                                 <div className="border-t border-gray-200 pt-6">
-                                    <p className="leading-relaxed text-gray-700">{product.shortDescription}</p>
+                                    <p className="leading-relaxed text-gray-700">{selectedVariant.description}</p>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Collapsible Sections */}
-                    <div className="mt-16 space-y-4">
-                        {/* Product Description */}
-                        {product.description && (
-                            <Collapsible open={isDescriptionOpen} onOpenChange={setIsDescriptionOpen} className="rounded-lg border border-gray-300">
-                                <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-gray-50 p-4 transition-colors hover:bg-gray-200">
-                                    <span className="text-lg font-semibold text-gray-900">{t('product.product_description')}</span>
-                                    <ChevronDown
-                                        className={`h-5 w-5 text-black transition-transform duration-200 ${isDescriptionOpen ? 'rotate-180' : ''}`}
-                                    />
-                                </CollapsibleTrigger>
-                                <CollapsibleContent className="mt-2 rounded-lg p-4 text-black">
-                                    <div className="prose prose-gray max-w-none whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: product.description }} />
-                                </CollapsibleContent>
-                            </Collapsible>
-                        )}
-
-                        {/* Specifications */}
-                        {product.specifications && Object.keys(product.specifications).length > 0 && (
-                            <Collapsible open={isSpecsOpen} onOpenChange={setIsSpecsOpen} className="rounded-lg border border-gray-300">
-                                <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-gray-50 p-4 transition-colors hover:bg-gray-100">
-                                    <span className="text-lg font-semibold text-gray-900">{t('product.specifications')}</span>
-                                    <ChevronDown
-                                        className={`h-5 w-5 text-black transition-transform duration-200 ${isSpecsOpen ? 'rotate-180' : ''}`}
-                                    />
-                                </CollapsibleTrigger>
-                                <CollapsibleContent className="mt-2 rounded-lg border border-gray-200 p-4">
-                                    <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                        {Object.entries(product.specifications).map(([key, value]) => (
-                                            <div key={key}>
-                                                <dt className="text-sm font-medium text-gray-600">{key}</dt>
-                                                <dd className="mt-1 text-sm text-gray-900">{value}</dd>
-                                            </div>
-                                        ))}
-                                    </dl>
-                                </CollapsibleContent>
-                            </Collapsible>
-                        )}
-
-                        {/* Reviews */}
-                        {reviews.length > 0 && (
+                    {/* Reviews */}
+                    {reviews.length > 0 && (
+                        <div className="mt-16 space-y-4">
                             <Collapsible open={isReviewsOpen} onOpenChange={setIsReviewsOpen} className="rounded-lg border border-gray-300">
                                 <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-gray-50 p-4 transition-colors hover:bg-gray-100">
                                     <span className="text-lg font-semibold text-gray-900">
@@ -475,8 +413,8 @@ export default function Product() {
                                     </div>
                                 </CollapsibleContent>
                             </Collapsible>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     {/* Related Products */}
                     {relatedProducts.length > 0 && (
@@ -507,17 +445,14 @@ export default function Product() {
                         <div className="flex items-center justify-between space-x-4">
                             <div>
                                 <p className="text-lg font-bold text-gray-900">{formatCurrency(currentPrice)}</p>
-                                {product.originalPrice && (
-                                    <p className="text-sm text-gray-500 line-through">{formatCurrency(Number(product.originalPrice))}</p>
-                                )}
                             </div>
                             <Button
                                 onClick={handleAddToCart}
-                                disabled={!product.inStock || (product.sizes.length > 0 && !selectedSize) || isAddingToCart}
+                                disabled={selectedVariant.stock_quantity === 0 || isAddingToCart}
                                 className="h-12 flex-1 font-semibold"
                             >
                                 <ShoppingCart className="mr-2 h-5 w-5" />
-                                {isAddingToCart ? t('product.adding') : product.inStock ? t('product.add_to_cart') : t('product.out_of_stock')}
+                                {isAddingToCart ? t('product.adding') : selectedVariant.stock_quantity > 0 ? t('product.add_to_cart') : t('product.out_of_stock')}
                             </Button>
                         </div>
                     </div>
