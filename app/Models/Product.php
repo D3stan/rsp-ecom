@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
@@ -17,12 +18,13 @@ class Product extends Model
         'slug',
         'description',
         'seo_title',
-        'seo_description', 
+        'seo_description',
         'social_image_url',
         'price',
         'compare_price',
         'stock_quantity',
         'sku',
+        'base_sku',
         'images',
         'status',
         'featured',
@@ -90,6 +92,24 @@ class Product extends Model
     public function approvedReviews(): HasMany
     {
         return $this->hasMany(Review::class)->where('is_approved', true);
+    }
+
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
+
+    public function activeVariants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class)
+            ->where('status', 'active')
+            ->orderBy('sort_order');
+    }
+
+    public function defaultVariant(): HasOne
+    {
+        return $this->hasOne(ProductVariant::class)
+            ->where('is_default', true);
     }
 
     // Image handling methods
@@ -244,5 +264,66 @@ class Product extends Model
     protected function getSitemapImportantFields(): array
     {
         return ['slug', 'status', 'name', 'stock_quantity'];
+    }
+
+    /**
+     * Backward compatibility accessors - delegate to default variant
+     */
+
+    public function getPriceAttribute(): ?float
+    {
+        return $this->defaultVariant?->price;
+    }
+
+    public function getStockQuantityAttribute(): ?int
+    {
+        return $this->defaultVariant?->stock_quantity;
+    }
+
+    public function getImagesAttribute(): ?array
+    {
+        return $this->defaultVariant?->images;
+    }
+
+    public function getDescriptionAttribute(): ?string
+    {
+        return $this->defaultVariant?->description;
+    }
+
+    public function getSkuAttribute(): ?string
+    {
+        return $this->defaultVariant?->full_sku;
+    }
+
+    public function getMainImageUrlAttribute(): string
+    {
+        return $this->defaultVariant?->main_image_url ?? '/images/product.png';
+    }
+
+    public function getImageUrlsAttribute(): array
+    {
+        return $this->defaultVariant?->image_urls ?? ['/images/product.png'];
+    }
+
+    public function getComparePriceAttribute(): ?float
+    {
+        return $this->defaultVariant?->compare_price;
+    }
+
+    public function getDiscountPercentageAttribute(): ?float
+    {
+        $defaultVariant = $this->defaultVariant;
+        if (!$defaultVariant) {
+            return null;
+        }
+
+        $comparePrice = $defaultVariant->compare_price ?? 0;
+        $price = $defaultVariant->price ?? 0;
+
+        if (!$comparePrice || $comparePrice <= $price) {
+            return null;
+        }
+
+        return round((($comparePrice - $price) / $comparePrice) * 100, 2);
     }
 }
