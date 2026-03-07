@@ -61,6 +61,8 @@ interface CheckoutDetailsProps extends SharedData {
     shippingCost: number;
     taxAmount: number;
     discountAmount?: number;
+    couponCode?: string;
+    discountDescription?: string;
     total: number;
     totalItems: number;
 }
@@ -69,7 +71,7 @@ interface CheckoutDetailsProps extends SharedData {
 
 export default function CheckoutDetails() {
     const pageProps = usePage<CheckoutDetailsProps>().props;
-    const { cartItems, subtotal, shippingCost, taxAmount, discountAmount = 0, total, totalItems, auth } = pageProps;
+    const { cartItems, subtotal, shippingCost, taxAmount, discountAmount = 0, couponCode: initialCouponCode, discountDescription, total, totalItems, auth } = pageProps;
     const { t, isLoading } = useTranslation();
     const isMobile = useIsMobile();
     const { addToast } = useToast();
@@ -99,7 +101,7 @@ export default function CheckoutDetails() {
         phone: '',
     });
 
-    const [couponCode, setCouponCode] = useState('');
+    const [couponCode, setCouponCode] = useState(initialCouponCode || '');
     const [orderNotes, setOrderNotes] = useState('');
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);

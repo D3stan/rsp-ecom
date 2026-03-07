@@ -34,6 +34,7 @@ Route::delete('/cart/items/{cartItem}', [CartController::class, 'remove'])->name
 Route::delete('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
 Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.apply-coupon');
+Route::delete('/cart/remove-coupon', [CartController::class, 'removeCoupon'])->name('cart.remove-coupon');
 
 // CSRF token endpoint for AJAX requests
 Route::get('/csrf-token', function () {

@@ -701,14 +701,24 @@ class CheckoutController extends Controller
             $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
-            
+
             // Calculate tax-exclusive subtotal and tax amount
             $subtotal = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
             $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
             $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
-            
-            $discountAmount = 0; // TODO: Implement discount logic
-            $total = $taxInclusiveSubtotal + $shippingCost - $discountAmount;
+
+            // Get applied coupon from session
+            $appliedCoupon = session('applied_coupon');
+            $discountAmount = 0;
+            if ($appliedCoupon) {
+                // Recalculate discount based on current subtotal for percentage discounts
+                if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
+                    $discountAmount = round($taxInclusiveSubtotal * ($appliedCoupon['discount_percentage'] / 100), 2);
+                } else {
+                    $discountAmount = min($appliedCoupon['discount_amount'], $taxInclusiveSubtotal);
+                }
+            }
+            $total = max(0, $taxInclusiveSubtotal + $shippingCost - $discountAmount);
             $totalItems = $cart->cartItems->sum('quantity');
 
             return Inertia::render('Checkout/Details', [
@@ -717,6 +727,8 @@ class CheckoutController extends Controller
                 'subtotal' => $subtotal,
                 'shippingCost' => $shippingCost,
                 'taxAmount' => $taxAmount,
+                'couponCode' => $appliedCoupon['code'] ?? null,
+                'discountDescription' => $appliedCoupon['description'] ?? null,
                 'discountAmount' => $discountAmount,
                 'total' => $total,
                 'totalItems' => $totalItems,
@@ -766,9 +778,19 @@ class CheckoutController extends Controller
             // Apply free shipping logic for orders over $100
             $baseShippingCost = $cart->shipping_cost; // Size-based shipping
             $shippingCost = $taxInclusiveSubtotal >= 100 ? 0 : $baseShippingCost;
-            
-            $discountAmount = 0; // TODO: Implement discount logic
-            $total = $taxInclusiveSubtotal + $shippingCost - $discountAmount;
+
+            // Get applied coupon from session
+            $appliedCoupon = session('applied_coupon');
+            $discountAmount = 0;
+            if ($appliedCoupon) {
+                // Recalculate discount based on current subtotal for percentage discounts
+                if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
+                    $discountAmount = round($taxInclusiveSubtotal * ($appliedCoupon['discount_percentage'] / 100), 2);
+                } else {
+                    $discountAmount = min($appliedCoupon['discount_amount'], $taxInclusiveSubtotal);
+                }
+            }
+            $total = max(0, $taxInclusiveSubtotal + $shippingCost - $discountAmount);
             $totalItems = $cart->cartItems->sum('quantity');
 
             return Inertia::render('Checkout/Details', [
@@ -778,6 +800,8 @@ class CheckoutController extends Controller
                 'shippingCost' => $shippingCost,
                 'taxAmount' => $taxAmount,
                 'discountAmount' => $discountAmount,
+                'couponCode' => $appliedCoupon['code'] ?? null,
+                'discountDescription' => $appliedCoupon['description'] ?? null,
                 'total' => $total,
                 'totalItems' => $totalItems,
             ]);
@@ -1058,11 +1082,23 @@ class CheckoutController extends Controller
             $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
-            
+
             $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
             $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
             $subtotalExcludingTax = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
-            $totalAmount = $taxInclusiveSubtotal + $shippingCost;
+
+            // Get applied coupon from session and calculate discount
+            $appliedCoupon = session('applied_coupon');
+            $discountAmount = 0;
+            if ($appliedCoupon) {
+                if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
+                    $discountAmount = round($taxInclusiveSubtotal * ($appliedCoupon['discount_percentage'] / 100), 2);
+                } else {
+                    $discountAmount = min($appliedCoupon['discount_amount'], $taxInclusiveSubtotal);
+                }
+            }
+
+            $totalAmount = max(0, $taxInclusiveSubtotal + $shippingCost - $discountAmount);
 
             // Convert to cents for Stripe
             $totalAmountCents = (int)($totalAmount * 100);
@@ -1167,11 +1203,23 @@ class CheckoutController extends Controller
             $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
-            
+
             $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
             $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
             $subtotalExcludingTax = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
-            $totalAmount = $taxInclusiveSubtotal + $shippingCost;
+
+            // Get applied coupon from session and calculate discount
+            $appliedCoupon = session('applied_coupon');
+            $discountAmount = 0;
+            if ($appliedCoupon) {
+                if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
+                    $discountAmount = round($taxInclusiveSubtotal * ($appliedCoupon['discount_percentage'] / 100), 2);
+                } else {
+                    $discountAmount = min($appliedCoupon['discount_amount'], $taxInclusiveSubtotal);
+                }
+            }
+
+            $totalAmount = max(0, $taxInclusiveSubtotal + $shippingCost - $discountAmount);
 
             // Convert to cents for Stripe
             $totalAmountCents = (int)($totalAmount * 100);

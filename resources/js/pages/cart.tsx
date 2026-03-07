@@ -1,14 +1,16 @@
 import Header from '@/components/header';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/contexts/ToastContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatCurrency } from '@/lib/utils';
 import { cartService } from '@/services/cartService';
 import { type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowRight, Minus, Package, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { ArrowRight, Minus, Package, Plus, ShoppingCart, Tag, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 
 interface CartItem {
@@ -35,18 +37,24 @@ interface CartPageProps extends SharedData {
     cartItems: CartItem[];
     subtotal: number;
     shippingCost: number;
+    discountAmount?: number;
+    discountDescription?: string;
+    couponCode?: string;
     total: number;
     totalItems: number;
 }
 
 export default function Cart() {
     const pageProps = usePage<CartPageProps>().props;
-    const { cartItems, subtotal, shippingCost, total, totalItems } = pageProps;
+    const { cartItems, subtotal, shippingCost, discountAmount, discountDescription, couponCode, total, totalItems } = pageProps;
     const { auth } = pageProps;
     const isMobile = useIsMobile();
     const { t, isLoading } = useTranslation();
+    const { addToast } = useToast();
 
     const [isUpdating, setIsUpdating] = useState<number | null>(null);
+    const [couponInput, setCouponInput] = useState('');
+    const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
     const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
         console.error("product image not found", 404)
@@ -111,6 +119,81 @@ export default function Cart() {
         } else {
             // User is not authenticated, redirect to guest checkout details page
             router.get('/guest/checkout');
+        }
+    };
+
+    const applyCoupon = async () => {
+        if (!couponInput.trim()) return;
+
+        setIsApplyingCoupon(true);
+
+        try {
+            const response = await fetch('/cart/apply-coupon', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                body: JSON.stringify({ code: couponInput }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                addToast({
+                    type: 'success',
+                    title: 'Coupon Applied',
+                    description: data.message,
+                });
+                setCouponInput('');
+                // Reload page to show updated totals
+                router.reload();
+            } else {
+                addToast({
+                    type: 'error',
+                    title: 'Invalid Coupon',
+                    description: data.message || 'The coupon code is invalid or expired.',
+                });
+            }
+        } catch (error) {
+            console.error('Error applying coupon:', error);
+            addToast({
+                type: 'error',
+                title: 'Error',
+                description: 'An unexpected error occurred while applying the coupon.',
+            });
+        } finally {
+            setIsApplyingCoupon(false);
+        }
+    };
+
+    const removeCoupon = async () => {
+        try {
+            const response = await fetch('/cart/remove-coupon', {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                addToast({
+                    type: 'success',
+                    title: 'Coupon Removed',
+                    description: data.message,
+                });
+                // Reload page to show updated totals
+                router.reload();
+            }
+        } catch (error) {
+            console.error('Error removing coupon:', error);
+            addToast({
+                type: 'error',
+                title: 'Error',
+                description: 'An unexpected error occurred while removing the coupon.',
+            });
         }
     };
 
@@ -260,6 +343,50 @@ export default function Cart() {
                         {/* Cart Summary */}
                         <div className="lg:col-span-1">
                             <div className="space-y-6 rounded-lg bg-gray-50 p-6">
+                                {/* Coupon Section */}
+                                {couponCode ? (
+                                    <div className="rounded-lg bg-green-50 p-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Tag className="h-4 w-4 text-green-600" />
+                                                <span className="text-sm font-medium text-green-800">
+                                                    {discountDescription} applied
+                                                </span>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={removeCoupon}
+                                                className="h-auto p-1 text-green-800 hover:bg-green-100"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="coupon" className="text-sm font-medium text-gray-700">
+                                            Discount Code
+                                        </Label>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                id="coupon"
+                                                placeholder="Enter code"
+                                                value={couponInput}
+                                                onChange={(e) => setCouponInput(e.target.value)}
+                                                className="flex-1"
+                                            />
+                                            <Button
+                                                onClick={applyCoupon}
+                                                disabled={!couponInput.trim() || isApplyingCoupon}
+                                                variant="outline"
+                                            >
+                                                {isApplyingCoupon ? 'Applying...' : 'Apply'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Order Summary */}
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-gray-700">
@@ -270,6 +397,12 @@ export default function Cart() {
                                         <span>{t('cart.shipping')}</span>
                                         <span>{shippingCost > 0 ? formatCurrency(shippingCost) : t('cart.calculated_at_checkout')}</span>
                                     </div>
+                                    {discountAmount && discountAmount > 0 && (
+                                        <div className="flex justify-between text-green-600">
+                                            <span>Discount {discountDescription && `(${discountDescription})`}</span>
+                                            <span>-{formatCurrency(discountAmount)}</span>
+                                        </div>
+                                    )}
                                     <div className="border-t border-gray-200 pt-3">
                                         <div className="flex justify-between text-lg font-semibold text-gray-900">
                                             <span>{t('cart.total')}</span>

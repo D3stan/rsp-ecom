@@ -21,6 +21,8 @@ class Order extends Model
         'subtotal',
         'tax_amount',
         'shipping_amount',
+        'discount_amount',
+        'coupon_code',
         'total_amount',
         'currency',
         'notes',
@@ -45,6 +47,7 @@ class Order extends Model
         'subtotal' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'shipping_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'confirmation_email_sent' => 'boolean',
         'confirmation_email_sent_at' => 'datetime',
@@ -332,6 +335,7 @@ class Order extends Model
         $data['subtotal'] = (float) $this->subtotal;
         $data['tax_amount'] = (float) $this->tax_amount;
         $data['shipping_amount'] = (float) $this->shipping_amount;
+        $data['discount_amount'] = (float) $this->discount_amount;
         $data['total_amount'] = (float) $this->total_amount;
         
         // Include order items with proper formatting

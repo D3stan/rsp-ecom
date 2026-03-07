@@ -22,7 +22,7 @@ class CheckoutService
     /**
      * Calculate order totals from cart items
      */
-    public function calculateTotals(Collection $cartItems, Cart $cart = null): array
+    public function calculateTotals(Collection $cartItems, Cart $cart = null, array $appliedCoupon = null): array
     {
         $subtotal = 0;
         $totalQuantity = 0;
@@ -37,32 +37,50 @@ class CheckoutService
         // In Phase 3, we'll add tax calculation and shipping
         $taxRate = \App\Models\Setting::getTaxRate() / 100; // Get from settings and convert percentage to decimal
         $pricesIncludeTax = \App\Models\Setting::getPricesIncludeTax();
-        
+
+        // Calculate discount from applied coupon
+        $discountAmount = 0;
+        if ($appliedCoupon) {
+            // Recalculate discount based on current subtotal for percentage discounts
+            if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
+                $discountAmount = round($subtotal * ($appliedCoupon['discount_percentage'] / 100), 2);
+            } else {
+                $discountAmount = min($appliedCoupon['discount_amount'], $subtotal);
+            }
+        }
+
+        // Calculate subtotal after discount
+        $subtotalAfterDiscount = max(0, $subtotal - $discountAmount);
+
         if ($pricesIncludeTax) {
             // Prices include tax - calculate tax portion and tax-exclusive subtotal
-            $taxAmount = round(($subtotal * $taxRate) / (1 + $taxRate), 2);
-            $subtotalExcludingTax = round($subtotal / (1 + $taxRate), 2);
+            $taxAmount = round(($subtotalAfterDiscount * $taxRate) / (1 + $taxRate), 2);
+            $subtotalExcludingTax = round($subtotalAfterDiscount / (1 + $taxRate), 2);
         } else {
             // Prices exclude tax - add tax on top
-            $taxAmount = round($subtotal * $taxRate, 2);
-            $subtotalExcludingTax = $subtotal;
+            $taxAmount = round($subtotalAfterDiscount * $taxRate, 2);
+            $subtotalExcludingTax = $subtotalAfterDiscount;
         }
-        
+
         // Use cart's shipping cost if available (considers size-based shipping)
         // Otherwise fall back to simple calculation
         $shippingCost = $cart ? $cart->shipping_cost : $this->calculateShipping($subtotal, $totalQuantity);
-        
+
         // Calculate total based on whether prices include tax
         if ($pricesIncludeTax) {
             // Prices already include tax, so total = subtotal + shipping
-            $total = $subtotal + $shippingCost;
+            $total = $subtotalAfterDiscount + $shippingCost;
         } else {
             // Prices exclude tax, so total = subtotal + tax + shipping
-            $total = $subtotal + $taxAmount + $shippingCost;
+            $total = $subtotalAfterDiscount + $taxAmount + $shippingCost;
         }
 
         return [
-            'subtotal' => round($subtotal, 2), // Tax-inclusive subtotal (display price)
+            'subtotal' => round($subtotal, 2), // Original subtotal before discount
+            'discount_amount' => $discountAmount,
+            'discount_description' => $appliedCoupon['description'] ?? null,
+            'coupon_code' => $appliedCoupon['code'] ?? null,
+            'subtotal_after_discount' => round($subtotalAfterDiscount, 2),
             'subtotal_excluding_tax' => round($subtotalExcludingTax, 2), // Tax-exclusive subtotal
             'tax_amount' => $taxAmount,
             'tax_rate' => $taxRate,

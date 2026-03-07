@@ -138,11 +138,24 @@ class StripeWebhookListener
             $subtotal = $cart->cartItems->sum(function ($item) {
                 return $item->price * $item->quantity;
             });
-            
+
             // Use cart's size-based shipping cost, or fall back to Stripe session amount
             $shippingCost = $cart ? $cart->shipping_cost : (($session['total_details']['amount_shipping'] ?? 0) / 100);
             $taxAmount = ($session['total_details']['amount_tax'] ?? 0) / 100;
             $totalAmount = $session['amount_total'] / 100;
+
+            // Get discount from metadata or calculate from session
+            $couponCode = $metadata['coupon_code'] ?? null;
+            $discountAmount = 0;
+            if ($couponCode && isset($session['total_details']['amount_discount'])) {
+                $discountAmount = $session['total_details']['amount_discount'] / 100;
+            } else {
+                // Calculate expected discount from cart subtotal vs total
+                $expectedTotal = $subtotal + $shippingCost;
+                if ($expectedTotal > $totalAmount) {
+                    $discountAmount = $expectedTotal - $totalAmount;
+                }
+            }
 
             // Create order
             $orderData = [
@@ -154,6 +167,8 @@ class StripeWebhookListener
                 'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
                 'shipping_amount' => $shippingCost,
+                'discount_amount' => $discountAmount,
+                'coupon_code' => $couponCode,
                 'total_amount' => $totalAmount,
                 'currency' => strtoupper($session['currency']),
                 'notes' => $metadata['order_notes'] ?? null,
@@ -201,9 +216,10 @@ class StripeWebhookListener
                 Log::warning('Failed to send order confirmation email from webhook', ['order_id' => $order->id]);
             }
 
-            // Clear the cart after successful order creation
+            // Clear the cart and coupon after successful order creation
             $cart->cartItems()->delete();
             $cart->delete();
+            session()->forget('applied_coupon');
 
         } catch (\Exception $e) {
             Log::error('Failed to create order from webhook', [

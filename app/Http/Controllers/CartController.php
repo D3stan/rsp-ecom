@@ -64,6 +64,19 @@ class CartController extends Controller
         // Reload to get updated size relationship
         $cart->load(['cartItems.size', 'cartItems.productVariant']);
 
+        // Get applied coupon and calculate discount
+        $appliedCoupon = $this->getAppliedCoupon();
+        $discountAmount = 0;
+
+        if ($appliedCoupon) {
+            // Recalculate discount based on current subtotal
+            $discountAmount = min($appliedCoupon['discount_amount'], $cart->subtotal);
+        }
+
+        $subtotal = (float) $cart->subtotal;
+        $shippingCost = (float) $cart->shipping_cost;
+        $total = max(0, $subtotal + $shippingCost - $discountAmount);
+
         return Inertia::render('cart', [
             'cart' => $cart,
             'cartItems' => $cartItems->map(function ($item) {
@@ -92,9 +105,12 @@ class CartController extends Controller
                     'size' => $item->size?->name,
                 ];
             }),
-            'subtotal' => (float) $cart->subtotal,
-            'shippingCost' => (float) $cart->shipping_cost,
-            'total' => (float) $cart->total,
+            'subtotal' => $subtotal,
+            'shippingCost' => $shippingCost,
+            'discountAmount' => $discountAmount,
+            'discountDescription' => $appliedCoupon['description'] ?? null,
+            'couponCode' => $appliedCoupon['code'] ?? null,
+            'total' => $total,
             'totalItems' => $cart->total_items,
         ]);
     }
@@ -290,13 +306,71 @@ class CartController extends Controller
             'code' => 'required|string|max:50',
         ]);
 
-        // TODO: Implement coupon functionality
-        // For now, return a placeholder response
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Coupon functionality not yet implemented.',
+        $code = $request->input('code');
+
+        // Use PromotionService to validate the coupon via Stripe
+        $promotionService = app(\App\Services\PromotionService::class);
+        $validation = $promotionService->validatePromotionCode($code);
+
+        if (!$validation['valid']) {
+            return response()->json([
+                'success' => false,
+                'message' => $validation['error'],
+            ], 422);
+        }
+
+        // Get cart for subtotal calculation
+        $cart = $this->getOrCreateCart();
+        $subtotal = $cart ? $cart->subtotal : 0;
+
+        // Calculate discount amount
+        $discount = $promotionService->calculateDiscount($validation['coupon'], $subtotal);
+
+        // Store coupon in session
+        session([
+            'applied_coupon' => [
+                'code' => $code,
+                'promotion_code_id' => $validation['promotion_code']->id,
+                'coupon_id' => $validation['coupon']->id,
+                'name' => $validation['coupon']->name,
+                'discount_type' => $discount['type'],
+                'discount_amount' => $discount['amount'],
+                'discount_percentage' => $discount['percentage'],
+                'description' => $discount['description'],
+            ]
         ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Coupon applied successfully.',
+            'coupon' => [
+                'code' => $code,
+                'name' => $validation['coupon']->name,
+                'description' => $discount['description'],
+                'discount_amount' => $discount['amount'],
+            ],
+        ]);
+    }
+
+    /**
+     * Remove applied coupon
+     */
+    public function removeCoupon()
+    {
+        session()->forget('applied_coupon');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Coupon removed successfully.',
+        ]);
+    }
+
+    /**
+     * Get applied coupon from session
+     */
+    protected function getAppliedCoupon(): ?array
+    {
+        return session('applied_coupon');
     }
 
     /**
