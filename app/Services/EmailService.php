@@ -73,7 +73,7 @@ class EmailService
     /**
      * Send order shipped notification to customer
      */
-    public function sendOrderShipped(Order $order, string $trackingNumber = null): bool
+    public function sendOrderShipped(Order $order, ?string $trackingNumber = null): bool
     {
         try {
             $recipient = $order->user ? $order->user->email : $order->guest_email;

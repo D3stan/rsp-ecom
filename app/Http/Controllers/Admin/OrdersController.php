@@ -188,21 +188,50 @@ class OrdersController extends Controller
             $statusChangedToShipped = $originalStatus !== 'shipped' && $newStatus === 'shipped';
             $trackingNumberUpdated = $newTrackingNumber && $newTrackingNumber !== $originalTrackingNumber;
 
+            Log::info('Checking shipping email conditions', [
+                'order_id' => $order->id,
+                'original_status' => $originalStatus,
+                'new_status' => $newStatus,
+                'original_tracking' => $originalTrackingNumber,
+                'new_tracking' => $newTrackingNumber,
+                'status_changed_to_shipped' => $statusChangedToShipped,
+                'tracking_number_updated' => $trackingNumberUpdated,
+                'tracking_number_added' => $trackingNumberAdded,
+            ]);
+
             if ($statusChangedToShipped || $trackingNumberUpdated) {
-                if (\App\Models\Setting::get('order_shipped_enabled', true)) {
+                $emailEnabled = \App\Models\Setting::get('order_shipped_enabled', true);
+                Log::info('Shipping email condition met', [
+                    'order_id' => $order->id,
+                    'email_enabled' => $emailEnabled,
+                ]);
+
+                if ($emailEnabled) {
                     $emailService = app(\App\Services\EmailService::class);
 
                     // Scenario 1: Manual status change to shipped (no tracking number) -> send email WITHOUT tracking
                     // Scenario 2: Tracking number added/updated -> send email WITH tracking
                     $emailTrackingNumber = ($trackingNumberAdded || $trackingNumberUpdated) ? $newTrackingNumber : null;
-                    $emailService->sendOrderShipped($order, $emailTrackingNumber);
 
-                    Log::info('Order shipped email sent', [
+                    Log::info('Attempting to send shipping email', [
                         'order_id' => $order->id,
-                        'tracking_number' => $emailTrackingNumber,
-                        'reason' => $statusChangedToShipped ? 'status_changed_to_shipped' : 'tracking_number_updated'
+                        'email_tracking_number' => $emailTrackingNumber,
                     ]);
+
+                    $emailSent = $emailService->sendOrderShipped($order, $emailTrackingNumber);
+
+                    Log::info('Shipping email result', [
+                        'order_id' => $order->id,
+                        'email_sent' => $emailSent,
+                    ]);
+                } else {
+                    Log::info('Shipping email disabled in settings', ['order_id' => $order->id]);
                 }
+            } else {
+                Log::info('Shipping email conditions not met', [
+                    'order_id' => $order->id,
+                    'condition_check' => 'skipped',
+                ]);
             }
 
             // Update order items if provided

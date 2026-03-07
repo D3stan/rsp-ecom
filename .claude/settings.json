@@ -31,7 +31,9 @@
       "Bash(git add resources/js/components/admin/VariantManager.tsx)",
       "Bash(git add resources/js/pages/Admin/Products/Create.tsx)",
       "Bash(php artisan test --filter=CheckoutServiceTest)",
-      "Bash(php artisan test --filter=CheckoutTest)"
+      "Bash(php artisan test --filter=CheckoutTest)",
+      "Bash(php -l app/Mail/WelcomeEmail.php)",
+      "Bash(php -l app/Mail/OrderConfirmation.php)"
     ]
   }
 }
