@@ -19,7 +19,15 @@ return new class extends Migration
                         $rawPrice = $product->getRawOriginal('price') ?? 0;
                         $rawStock = $product->getRawOriginal('stock_quantity') ?? 0;
                         $rawDescription = $product->getRawOriginal('description');
-                        $rawImages = $product->getRawOriginal('images') ?? [];
+
+                        // Handle raw JSON string from database
+                        $rawImages = $product->getRawOriginal('images');
+                        if (is_string($rawImages)) {
+                            $rawImages = json_decode($rawImages, true) ?? [];
+                        } else {
+                            $rawImages = $rawImages ?? [];
+                        }
+
                         $rawSku = $product->getRawOriginal('sku') ?? '';
 
                         // Create default variant
@@ -62,7 +70,14 @@ return new class extends Migration
 
     private function migrateImages(Product $product, ProductVariant $variant): void
     {
-        $images = $product->getRawOriginal('images') ?? [];
+        $rawImages = $product->getRawOriginal('images');
+
+        // Handle raw JSON string from database
+        if (is_string($rawImages)) {
+            $images = json_decode($rawImages, true) ?? [];
+        } else {
+            $images = $rawImages ?? [];
+        }
 
         if (empty($images)) {
             return;
