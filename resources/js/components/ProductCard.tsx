@@ -173,11 +173,18 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
     const handleAddToCart = async (addQuantity: number = quantity) => {
         if (isAddingToCart) return;
 
+        // If product has multiple variants, navigate to product page for selection
+        if (product.variants && product.variants.length > 1) {
+            router.visit(`/products/${product.slug}`);
+            return;
+        }
+
         setIsAddingToCart(true);
 
         try {
             const cartData: AddToCartData = {
                 product_id: product.id,
+                product_variant_id: product.defaultVariantId ?? product.id,
                 quantity: addQuantity,
             };
 

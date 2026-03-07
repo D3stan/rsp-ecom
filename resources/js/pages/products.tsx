@@ -11,6 +11,14 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Filter, Grid3X3, List, Search, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+interface ProductVariant {
+    id: number;
+    name: string;
+    price: number;
+    stock_quantity: number;
+    image: string;
+}
+
 export interface Product {
     id: number;
     name: string;
@@ -29,6 +37,8 @@ export interface Product {
         name: string;
         slug: string;
     };
+    defaultVariantId?: number;
+    variants?: ProductVariant[];
 }
 
 interface Category {

@@ -56,7 +56,7 @@ class ProductsController extends Controller
         TwitterCard::setTitle($pageTitle . ' – ' . config('app.name'));
         TwitterCard::setDescription(Str::limit($metaDescription, 200));
         
-        $query = Product::with(['category', 'approvedReviews'])
+        $query = Product::with(['category', 'approvedReviews', 'defaultVariant'])
             ->active()
             ->inStock();
 
@@ -142,20 +142,28 @@ class ProductsController extends Controller
                 'id' => $product->id,
                 'name' => $product->name,
                 'slug' => $product->slug,
-                'price' => $product->price,
+                'price' => $product->defaultVariant?->price ?? $product->price,
                 'originalPrice' => $product->compare_price,
                 'rating' => round($product->average_rating, 1),
                 'reviews' => $product->review_count,
-                'image' => $imageUrl,
+                'image' => $product->defaultVariant?->main_image_url ?? $imageUrl,
                 'badge' => $this->getProductBadge($product),
-                'inStock' => $product->stock_quantity > 0,
-                'stockQuantity' => $product->stock_quantity,
+                'inStock' => ($product->defaultVariant?->stock_quantity ?? $product->stock_quantity) > 0,
+                'stockQuantity' => $product->defaultVariant?->stock_quantity ?? $product->stock_quantity,
                 'inWishlist' => $inWishlist,
                 'category' => $product->category ? [
                     'id' => $product->category->id,
                     'name' => $product->category->name,
                     'slug' => $product->category->slug,
                 ] : null,
+                'defaultVariantId' => $product->defaultVariant?->id,
+                'variants' => $product->activeVariants->map(fn($v) => [
+                    'id' => $v->id,
+                    'name' => $v->name,
+                    'price' => $v->price,
+                    'stock_quantity' => $v->stock_quantity,
+                    'image' => $v->main_image_url,
+                ]),
             ];
         });
 

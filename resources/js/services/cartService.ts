@@ -2,6 +2,7 @@
 
 export interface AddToCartData {
     product_id: number;
+    product_variant_id: number;
     quantity: number;
     size_id?: number;
 }
