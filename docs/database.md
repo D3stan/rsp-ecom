@@ -209,18 +209,21 @@ Defines physical dimensions and shipping properties for products.
 ---
 
 ## PRODUCTS
-The core entity storing all product information and inventory details.
+The core entity storing product information. Product-specific data (price, stock, images) has been moved to the `product_variants` table. Every product must have at least one variant.
 
-**Purpose**: Manages product catalog with pricing, inventory, and metadata.
+**Purpose**: Manages product catalog with shared attributes while variants handle specific configurations.
 
 **Key Fields**:
-- `compare_price`: Original price for discount display
-- `sku`: Unique product identifier for inventory management
-- `images`: JSON array of product image URLs
+- `base_sku`: SKU prefix shared by all variants (e.g., "IP15P" for iPhone 15 Pro variants)
 - `featured`: Highlights products on homepage
 - `size_id`: Links to shipping dimensions and costs
+- `category_id`: Product category
+- `seo_title`, `seo_description`, `social_image_url`: SEO metadata
 
-**Relationship**: Each product belongs to one category and has one size specification.
+**Relationship**:
+- Each product belongs to one category and has one size specification
+- Each product has one or more variants (stored in `product_variants`)
+- Product price, stock, images, and description are now on the variant level
 
 **Examples**:
 1. **Smartphone Product**:
@@ -228,16 +231,13 @@ The core entity storing all product information and inventory details.
    id: 1
    name: "iPhone 15 Pro"
    slug: "iphone-15-pro"
-   description: "Latest iPhone with advanced camera system"
-   price: 999.99
-   compare_price: 1099.99
-   stock_quantity: 25
-   sku: "IP15P-128GB-BLK"
-   images: ["img1.jpg", "img2.jpg", "img3.jpg"]
    status: "active"
    featured: true
+   base_sku: "IP15P"
    category_id: 1
    size_id: 1
+   seo_title: "iPhone 15 Pro - Buy Now"
+   seo_description: "Latest iPhone with advanced camera system"
    ```
 
 2. **T-Shirt Product**:
@@ -245,17 +245,90 @@ The core entity storing all product information and inventory details.
    id: 2
    name: "Cotton Basic T-Shirt"
    slug: "cotton-basic-tshirt"
-   description: "Comfortable 100% cotton t-shirt"
-   price: 24.99
-   compare_price: null
-   stock_quantity: 150
-   sku: "TSHIRT-COT-MED-BLU"
-   images: ["tshirt1.jpg", "tshirt2.jpg"]
    status: "active"
    featured: false
+   base_sku: "TSHIRT-COT"
    category_id: 2
    size_id: 2
+   seo_title: null
+   seo_description: null
    ```
+
+---
+
+## PRODUCT_VARIANTS
+Stores variant-specific data for products. Every product has at least one variant (the default). Variants allow different configurations (e.g., Rugoso vs Carbon headlight models) with independent pricing, stock, and images.
+
+**Purpose**: Manages product configurations with independent price, stock, and images.
+
+**Key Fields**:
+- `product_id`: Parent product reference
+- `name`: Variant name (e.g., "Rugoso", "Carbon", "Standard")
+- `sku_suffix`: Appended to product's `base_sku` (e.g., "-RUG" → "IP15P-RUG")
+- `description`: Variant-specific description (supports HTML)
+- `price`: Absolute price in EUR (not relative to other variants)
+- `stock_quantity`: Independent stock for this variant
+- `images`: JSON array of image filenames
+- `is_default`: True for the variant shown by default
+- `sort_order`: Display order in variant selector
+- `status`: 'active' or 'inactive'
+
+**Constraints**:
+- Unique constraint on (`product_id`, `name`) - no duplicate variant names per product
+- Exactly one variant per product must be marked as `is_default`
+
+**Relationship**: Each variant belongs to one product.
+
+**Examples**:
+1. **Default Variant (Single Product)**:
+   ```
+   id: 1
+   product_id: 2
+   name: "Standard"
+   sku_suffix: ""
+   description: "Comfortable 100% cotton t-shirt"
+   price: 24.99
+   stock_quantity: 150
+   images: ["tshirt1.jpg", "tshirt2.jpg"]
+   is_default: true
+   sort_order: 0
+   status: "active"
+   ```
+
+2. **Multiple Variants (Headlight Models)**:
+   ```
+   id: 2
+   product_id: 1
+   name: "Rugoso"
+   sku_suffix: "-RUG"
+   description: "Rugged design for off-road use"
+   price: 149.00
+   stock_quantity: 15
+   images: ["rugoso1.jpg", "rugoso2.jpg"]
+   is_default: true
+   sort_order: 0
+   status: "active"
+   ```
+
+   ```
+   id: 3
+   product_id: 1
+   name: "Carbon"
+   sku_suffix: "-CAR"
+   description: "Lightweight carbon fiber finish"
+   price: 179.00
+   stock_quantity: 8
+   images: ["carbon1.jpg", "carbon2.jpg"]
+   is_default: false
+   sort_order: 1
+   status: "active"
+   ```
+
+**Computed Full SKU**:
+```
+full_sku = product.base_sku + variant.sku_suffix
+Example: "IP15P" + "-RUG" = "IP15P-RUG"
+```
 
 ---
 
@@ -341,12 +414,18 @@ Individual products added to shopping carts with quantities and pricing.
 **Purpose**: Stores specific products and quantities in each cart.
 
 **Key Fields**:
+- `product_id`: References the parent product
+- `product_variant_id`: References the specific variant (e.g., Rugoso vs Carbon)
 - `price`: Captures price at time of adding (for price change protection)
 - `quantity`: Number of items
 - `size_id`: Optional reference to specific size (BIGINT UNSIGNED NULL, foreign key to sizes table)
 
 **Constraints**:
-- Unique constraint on `cart_id` and `product_id` combination (prevents duplicate products in same cart)
+- Unique constraint on `cart_id`, `product_id`, and `product_variant_id` combination (prevents duplicate variants in same cart)
+
+**Notes**:
+- `product_variant_id` is required for new carts after the migration
+- Legacy cart items may have `product_variant_id` as NULL until they are updated
 
 **Relationship**: Each cart can have multiple cart items, each cart item belongs to one cart and references one product. Cart items can optionally reference a specific size.
 
@@ -489,29 +568,33 @@ Individual products within completed orders with historical pricing.
 **Purpose**: Records exactly what was purchased in each order with prices at purchase time.
 
 **Key Fields**:
+- `product_id`: References the parent product
+- `product_variant_id`: References the specific variant purchased (e.g., Rugoso vs Carbon)
 - `product_name`: Snapshot of product name (in case product is deleted/renamed)
 - `price`: Price paid per item
 - `total`: Price × quantity
 
-**Relationship**: Each order contains multiple order items, each item references the original product.
+**Relationship**: Each order contains multiple order items, each item references the original product and variant.
 
 **Examples**:
-1. **iPhone Order Item**:
+1. **iPhone Rugoso Variant Order Item**:
    ```
    id: 1
    order_id: 1
    product_id: 1
-   product_name: "iPhone 15 Pro"
+   product_variant_id: 2
+   product_name: "iPhone 15 Pro - Rugoso"
    quantity: 1
-   price: 999.99
-   total: 999.99
+   price: 149.00
+   total: 149.00
    ```
 
-2. **T-Shirt Order Item**:
+2. **T-Shirt Standard Variant Order Item**:
    ```
    id: 2
    order_id: 1
    product_id: 2
+   product_variant_id: 1
    product_name: "Cotton Basic T-Shirt"
    quantity: 3
    price: 24.99
@@ -828,16 +911,30 @@ erDiagram
         int id PK
         string name
         string slug UK
-        text description
-        decimal price
-        decimal compare_price
-        int stock_quantity
-        string sku UK
-        json images
+        string base_sku
         enum status "active, inactive, draft"
         boolean featured
         int category_id FK
         int size_id FK
+        string seo_title
+        string seo_description
+        string social_image_url
+        timestamps created_at
+        timestamps updated_at
+    }
+
+    PRODUCT_VARIANTS {
+        int id PK
+        int product_id FK
+        string name
+        string sku_suffix
+        text description
+        decimal price
+        int stock_quantity
+        json images
+        boolean is_default
+        int sort_order
+        enum status "active, inactive"
         timestamps created_at
         timestamps updated_at
     }
@@ -873,6 +970,7 @@ erDiagram
         int id PK
         int cart_id FK
         int product_id FK
+        int product_variant_id FK
         int quantity
         decimal price
         int size_id FK
@@ -924,6 +1022,7 @@ erDiagram
         int id PK
         int order_id FK
         int product_id FK
+        int product_variant_id FK
         string product_name
         int quantity
         decimal price
@@ -1086,10 +1185,12 @@ erDiagram
     CATEGORIES ||--o{ PRODUCTS : contains
     SIZES ||--o{ PRODUCTS : "has size"
 
-    PRODUCTS ||--o{ CART_ITEMS : "added to"
-    PRODUCTS ||--o{ ORDER_ITEMS : "ordered as"
+    PRODUCTS ||--o{ PRODUCT_VARIANTS : "has variants"
     PRODUCTS ||--o{ WISHLISTS : "saved in"
     PRODUCTS ||--o{ REVIEWS : "reviewed in"
+
+    PRODUCT_VARIANTS ||--o{ CART_ITEMS : "added to"
+    PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : "ordered as"
 
     SIZES ||--o{ CART_ITEMS : "has size"
 
