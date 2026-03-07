@@ -313,6 +313,11 @@ class CartController extends Controller
         $validation = $promotionService->validatePromotionCode($code);
 
         if (!$validation['valid']) {
+            // Check if this is an Inertia request
+            if ($request->header('X-Inertia')) {
+                return back()->withErrors(['coupon' => $validation['error']]);
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => $validation['error'],
@@ -340,6 +345,11 @@ class CartController extends Controller
             ]
         ]);
 
+        // Check if this is an Inertia request
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Coupon applied successfully.');
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Coupon applied successfully.',
@@ -355,9 +365,14 @@ class CartController extends Controller
     /**
      * Remove applied coupon
      */
-    public function removeCoupon()
+    public function removeCoupon(Request $request)
     {
         session()->forget('applied_coupon');
+
+        // Check if this is an Inertia request
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Coupon removed successfully.');
+        }
 
         return response()->json([
             'success' => true,

@@ -132,6 +132,7 @@ export default function Cart() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 },
                 body: JSON.stringify({ code: couponInput }),
@@ -172,6 +173,7 @@ export default function Cart() {
             const response = await fetch('/cart/remove-coupon', {
                 method: 'DELETE',
                 headers: {
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 },
             });

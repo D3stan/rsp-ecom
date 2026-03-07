@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
@@ -114,6 +115,8 @@ export default function OrderShow({ order }: Props) {
     const [isUpdating, setIsUpdating] = useState(false);
     const [isAddingTracking, setIsAddingTracking] = useState(false);
     const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || '');
+    const [showShipConfirmation, setShowShipConfirmation] = useState(false);
+    const [pendingStatus, setPendingStatus] = useState<string | null>(null);
     const [collapsedSections, setCollapsedSections] = useState({
         orderStatus: false,
         orderItems: false,
@@ -165,14 +168,40 @@ export default function OrderShow({ order }: Props) {
     };
 
     const updateOrderStatus = (newStatus: string) => {
+        // Check if status is being changed to shipped without a tracking number
+        const isChangingToShipped = newStatus === 'shipped' && order.status !== 'shipped';
+        const hasTrackingNumber = order.tracking_number && order.tracking_number.trim() !== '';
+
+        if (isChangingToShipped && !hasTrackingNumber) {
+            // Show confirmation modal for status change to shipped without tracking
+            setPendingStatus(newStatus);
+            setShowShipConfirmation(true);
+            return;
+        }
+
+        // Proceed with status update
+        submitStatusUpdate(newStatus);
+    };
+
+    const submitStatusUpdate = (newStatus: string) => {
         setIsUpdating(true);
         router.patch(
             `/admin/orders/${order.id}`,
             { status: newStatus },
             {
-                onFinish: () => setIsUpdating(false),
+                onFinish: () => {
+                    setIsUpdating(false);
+                    setPendingStatus(null);
+                },
             },
         );
+    };
+
+    const handleConfirmShip = () => {
+        setShowShipConfirmation(false);
+        if (pendingStatus) {
+            submitStatusUpdate(pendingStatus);
+        }
     };
 
     const getNextStatus = () => {
@@ -589,6 +618,30 @@ export default function OrderShow({ order }: Props) {
                     </div>
                 </div>
             </div>
+
+            {/* Confirmation Modal for Manual Status Change to Shipped */}
+            <Dialog open={showShipConfirmation} onOpenChange={setShowShipConfirmation}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Mark Order as Shipped?</DialogTitle>
+                        <DialogDescription>
+                            You are about to mark this order as shipped without a tracking number.
+                            A shipping notification email will be sent to the customer without tracking information.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                            setShowShipConfirmation(false);
+                            setPendingStatus(null);
+                        }}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleConfirmShip} disabled={isUpdating}>
+                            {isUpdating ? 'Processing...' : 'Confirm & Send Email'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }
