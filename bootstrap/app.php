@@ -61,10 +61,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if (!$request->expectsJson()) {
                 $statusCode = $e->getStatusCode();
                 
-                // Always show custom pages for test routes or specific conditions
-                $isTestRoute = str_contains($request->path(), 'test-');
                 $isTesting = app()->environment('testing');
-                $shouldShowCustomPage = !$isTesting && ($isTestRoute || !config('app.debug') || !app()->environment('local'));
+                $isDebugEnv = config('app.debug') && app()->environment('local', 'development');
+                $shouldShowCustomPage = !$isTesting && !$isDebugEnv;
                 
                 if ($shouldShowCustomPage) {
                     switch ($statusCode) {
@@ -105,7 +104,8 @@ return Application::configure(basePath: dirname(__DIR__))
             if (!$request->expectsJson()) {
                 $isTestRoute = str_contains($request->path(), 'test-');
                 $isTesting = app()->environment('testing');
-                $shouldShowCustomPage = !$isTesting && ($isTestRoute || !config('app.debug') || !app()->environment('local'));
+                $isDebugEnv = config('app.debug') && app()->environment('local', 'development');
+                $shouldShowCustomPage = !$isTesting && !$isDebugEnv;
 
                 if ($shouldShowCustomPage) {
                     return \Inertia\Inertia::render('Errors/ServerError')

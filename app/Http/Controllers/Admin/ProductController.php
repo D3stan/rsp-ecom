@@ -211,6 +211,8 @@ class ProductController extends Controller
             return redirect()->route('admin.products.index')
                 ->with('success', 'Product created with ' . count($validated['variants']) . ' variant(s).');
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Illuminate\Database\QueryException $e) {
             DB::rollBack();
             Log::error('Product creation failed', ['error' => $e->getMessage()]);
@@ -284,14 +286,29 @@ class ProductController extends Controller
         $directory = "products/{$variant->product_id}/variants/{$variant->id}";
         Storage::disk('public')->makeDirectory($directory);
 
+        // Get existing images and append new ones
+        $existingImages = $variant->images ?? [];
         $uploadedImages = [];
+
         foreach ($images as $image) {
             $filename = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
             $path = $image->storeAs($directory, $filename, 'public');
-            if ($path) $uploadedImages[] = $filename;
+            if ($path) {
+                $uploadedImages[] = $filename;
+                \Log::info('Variant image uploaded', ['filename' => $filename, 'variant_id' => $variant->id]);
+            }
         }
 
-        $variant->update(['images' => $uploadedImages]);
+        // Merge existing with new images
+        $allImages = array_merge($existingImages, $uploadedImages);
+        $variant->update(['images' => $allImages]);
+
+        \Log::info('Variant images updated', [
+            'variant_id' => $variant->id,
+            'existing_count' => count($existingImages),
+            'new_count' => count($uploadedImages),
+            'total_count' => count($allImages),
+        ]);
     }
 
     /**
@@ -308,6 +325,8 @@ class ProductController extends Controller
             'uploadLimits' => [
                 'maxFileSize' => FileUploadConfigService::getMaxFileUploadSizeFormatted(),
                 'maxFileSizeBytes' => FileUploadConfigService::getMaxFileUploadSize(),
+                'maxRequestSize' => FileUploadConfigService::getMaxRequestSizeFormatted(),
+                'maxRequestSizeBytes' => FileUploadConfigService::getMaxRequestSize(),
                 'maxFilesPerVariant' => 10,
             ],
         ]);
@@ -318,8 +337,6 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
-        \Log::info('Product update with variants started', ['product_id' => $product->id]);
-
         try {
             $this->checkStorageSetup();
 
@@ -375,6 +392,8 @@ class ProductController extends Controller
 
             DB::beginTransaction();
 
+            \Log::info('Transaction started');
+
             // Update base product fields
             $productData = [
                 'name' => $validated['name'],
@@ -395,6 +414,7 @@ class ProductController extends Controller
             $productData['stock_quantity'] = $defaultVariantData['stock_quantity'];
 
             $product->update($productData);
+            \Log::info('Product updated', ['product_id' => $product->id]);
 
             // Delete removed variants
             if (!empty($validated['variants_to_delete'])) {
@@ -416,6 +436,8 @@ class ProductController extends Controller
             // Sync/create variants
             $hasDefault = false;
             foreach ($validated['variants'] as $index => $variantData) {
+                \Log::info("Processing variant {$index}", ['variant_id' => $variantData['id'] ?? 'new']);
+
                 $isDefault = !$hasDefault && ($variantData['is_default'] ?? $index === 0);
                 if ($isDefault) $hasDefault = true;
 
@@ -435,20 +457,33 @@ class ProductController extends Controller
                     $variant = ProductVariant::find($variantData['id']);
                     if ($variant && $variant->product_id === $product->id) {
                         // Handle existing images - keep only the ones still in the list
-                        $existingImages = $variantData['existing_images'] ?? [];
+                        $existingImages = $variantData['existing_images'] ?? null;
                         $currentImages = $variant->images ?? [];
 
-                        // Filter to only keep images that are still referenced
-                        $keptImages = array_intersect($currentImages, $existingImages);
+                        // Only process image changes if existing_images was explicitly provided
+                        // If null, keep all existing images (no changes made to images)
+                        if ($existingImages !== null) {
+                            // Normalize existing_images to just filenames (in case full URLs are sent)
+                            $existingFilenames = array_map('basename', $existingImages);
 
-                        // Delete removed images from storage
-                        $removedImages = array_diff($currentImages, $existingImages);
-                        foreach ($removedImages as $image) {
-                            Storage::disk('public')->delete("products/{$product->id}/variants/{$variant->id}/{$image}");
+                            // Filter to only keep images that are still referenced
+                            $keptImages = array_intersect($currentImages, $existingFilenames);
+
+                            // Delete removed images from storage
+                            $removedImages = array_diff($currentImages, $existingFilenames);
+                            foreach ($removedImages as $image) {
+                                Storage::disk('public')->delete("products/{$product->id}/variants/{$variant->id}/{$image}");
+                            }
+
+                            $variantAttributes['images'] = array_values($keptImages);
+                        } else {
+                            // Keep existing images unchanged
+                            $variantAttributes['images'] = $currentImages;
                         }
 
-                        $variantAttributes['images'] = array_values($keptImages);
+                        \Log::info("Updating variant", ['variant_id' => $variant->id, 'attributes' => $variantAttributes]);
                         $variant->update($variantAttributes);
+                        \Log::info("Variant updated successfully", ['variant_id' => $variant->id]);
                     }
                 } else {
                     // Create new variant
@@ -459,16 +494,31 @@ class ProductController extends Controller
 
                 // Handle new image uploads for this variant
                 $imageKey = "variant_images_{$index}";
+                \Log::info("Checking for images", ['image_key' => $imageKey, 'has_file' => $request->hasFile($imageKey)]);
                 if ($fileUploadsEnabled && $request->hasFile($imageKey)) {
-                    $this->handleVariantImageUploads($variant, $request->file($imageKey));
+                    $files = $request->file($imageKey);
+                    \Log::info("Processing image uploads", ['count' => count($files), 'variant_id' => $variant->id]);
+                    try {
+                        $this->handleVariantImageUploads($variant, $files);
+                    } catch (\Exception $e) {
+                        \Log::error("Image upload failed", ['error' => $e->getMessage(), 'variant_id' => $variant->id]);
+                        throw $e;
+                    }
                 }
+                \Log::info("Finished processing variant", ['variant_id' => $variant->id ?? 'new']);
             }
 
+            \Log::info('All variants processed, committing transaction');
             DB::commit();
+            \Log::info('Transaction committed successfully');
 
             return redirect()->route('admin.products.index')
                 ->with('success', 'Product updated with ' . count($validated['variants']) . ' variant(s).');
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Re-throw so Laravel handles it natively (422 + Inertia error props)
+            // Do NOT call DB::rollBack() here — no transaction has been started yet
+            throw $e;
         } catch (\Illuminate\Database\QueryException $e) {
             DB::rollBack();
             \Log::error('Product update failed (QueryException)', [

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AdminLayout from '@/layouts/admin-layout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { ChevronDown, Package, Settings, Star } from 'lucide-react';
 import { useState } from 'react';
 import { route } from 'ziggy-js';
@@ -83,7 +83,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
             is_default: v.is_default,
             sort_order: v.sort_order,
             images: [],
-            existing_images: v.images || [],
+            existing_images: v.image_urls || [],
         }));
     };
 
@@ -140,6 +140,28 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
 
         setValidationErrors({});
 
+        // Check total file size before uploading
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let totalFileSize = 0;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (data.variants as any[]).forEach((variant: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            variant.images.forEach((file: any) => {
+                totalFileSize += file.size || 0;
+            });
+        });
+
+        console.log('Total file size:', totalFileSize, 'bytes');
+        console.log('Max request size:', uploadLimits.maxRequestSizeBytes, 'bytes');
+
+        if (totalFileSize > uploadLimits.maxRequestSizeBytes) {
+            alert(
+                `Total file size (${(totalFileSize / 1024 / 1024).toFixed(2)}MB) exceeds the maximum allowed (${uploadLimits.maxRequestSize}). ` +
+                `Please reduce image sizes or upload fewer images.`
+            );
+            return;
+        }
+
         // Create FormData for file uploads
         const formData = new FormData();
         formData.append('_method', 'PUT');
@@ -153,6 +175,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
         formData.append('seo_description', data.seo_description as string);
 
         // Add variants as JSON (without images, with existing_images)
+        // Note: existing_images contains full URLs, backend will extract filenames using basename()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const variantsForJson = (data.variants as any[]).map((v) => ({
             id: v.id,
@@ -163,7 +186,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
             description: v.description,
             is_default: v.is_default,
             sort_order: v.sort_order,
-            existing_images: v.existing_images || [],
+            existing_images: v.existing_images || [], // Full URLs for display, backend extracts filenames
         }));
         formData.append('variants', JSON.stringify(variantsForJson));
 
@@ -183,10 +206,29 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
             });
         });
 
-        post(route('admin.products.update', product.id), {
-            // @ts-expect-error - inertia types don't handle FormData perfectly
-            data: formData,
+        // Debug: Log what we're sending
+        console.log('FormData contents:');
+        for (const [key, value] of formData.entries()) {
+            if (value instanceof File) {
+                console.log(`${key}: File(name=${value.name}, size=${value.size})`);
+            } else {
+                console.log(`${key}: ${value}`);
+            }
+        }
+
+        router.post(route('admin.products.update', product.id), formData, {
             forceFormData: true,
+            onError: (errors: any) => {
+                console.error('Server errors:', errors);
+                // Display error to user
+                if (errors.error) {
+                    alert('Error: ' + errors.error);
+                } else if (errors.variants) {
+                    alert('Variant error: ' + errors.variants);
+                } else {
+                    alert('An error occurred. Check console for details.');
+                }
+            },
         });
     };
 
