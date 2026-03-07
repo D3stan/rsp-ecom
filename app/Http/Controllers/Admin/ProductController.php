@@ -160,6 +160,9 @@ class ProductController extends Controller
 
             DB::beginTransaction();
 
+            // Get price from the first variant for the main product
+            $firstVariant = $validated['variants'][0];
+
             $productData = [
                 'name' => $validated['name'],
                 'slug' => Str::slug($validated['name']),
@@ -170,6 +173,9 @@ class ProductController extends Controller
                 'base_sku' => $validated['base_sku'] ?: $this->generateSku($validated['name']),
                 'seo_title' => $validated['seo_title'] ?? null,
                 'seo_description' => $validated['seo_description'] ?? null,
+                'price' => $firstVariant['price'],
+                'stock_quantity' => $firstVariant['stock_quantity'],
+                'sku' => $validated['base_sku'] ?: $this->generateSku($validated['name']),
             ];
 
             $product = Product::create($productData);

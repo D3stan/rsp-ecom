@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan cache:clear)",
+      "Bash(php artisan config:clear)",
+      "Bash(php artisan view:clear)",
+      "Bash(php -r \"if \\(function_exists\\(''opcache_reset''\\)\\) { opcache_reset\\(\\); echo ''OPcache cleared''; } else { echo ''OPcache not available''; }\")"
+    ]
+  }
+}

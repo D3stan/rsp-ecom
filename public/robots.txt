@@ -8,4 +8,4 @@ Disallow: /api/
 # Allow all other pages
 Allow: /
 
-Sitemap: http://localhost/sitemap.xml
+Sitemap: http://localhost:8000/sitemap.xml
