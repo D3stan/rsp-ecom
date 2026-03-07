@@ -35,7 +35,7 @@ export default function Header({ transparent = false }: HeaderProps) {
         };
 
         const loadWishlistCount = async () => {
-            if (!auth.user) return;
+            if (!auth?.user) return;
             
             try {
                 const response = await fetch('/wishlist/count', {
@@ -56,7 +56,7 @@ export default function Header({ transparent = false }: HeaderProps) {
 
         loadCartCount();
         loadWishlistCount();
-    }, [auth.user]);
+    }, [auth?.user]);
 
     // Handle scroll to change header appearance on transparent pages
     useEffect(() => {
@@ -109,7 +109,7 @@ export default function Header({ transparent = false }: HeaderProps) {
         };
 
         const handleWishlistUpdate = async () => {
-            if (!auth.user) return;
+            if (!auth?.user) return;
             
             try {
                 const response = await fetch('/wishlist/count', {
@@ -147,7 +147,7 @@ export default function Header({ transparent = false }: HeaderProps) {
             window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
             window.removeEventListener('cartAnimation', handleCartAnimation as EventListener);
         };
-    }, [auth.user]);
+    }, [auth?.user]);
 
     // Close menu when clicking outside - optimized to prevent scroll interference
     useEffect(() => {
@@ -302,7 +302,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                                     )}
                                 </Button>
                             </Link>
-                            {auth.user && (
+                            {auth?.user && (
                                 <Link href={route('wishlist.index')}>
                                     <Button
                                         variant="ghost"
@@ -318,7 +318,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                                     </Button>
                                 </Link>
                             )}
-                            <Link href={auth.user ? route('dashboard') : route('login')}>
+                            <Link href={auth?.user ? route('dashboard') : route('login')}>
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -444,7 +444,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                                 <span>{t('cart_link')}</span>
                             </Link>
 
-                            {auth.user && (
+                            {auth?.user && (
                                 <Link
                                     href={route('wishlist.index')}
                                     onClick={closeMenu}
@@ -455,7 +455,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                                 </Link>
                             )}
 
-                            {auth.user && (
+                            {auth?.user && (
                                 <Link
                                     href="/orders"
                                     onClick={closeMenu}

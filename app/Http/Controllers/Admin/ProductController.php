@@ -325,6 +325,17 @@ class ProductController extends Controller
 
             $fileUploadsEnabled = ini_get('file_uploads') && FileUploadConfigService::getMaxFileUploadSize() > 0;
 
+            // Decode JSON variants from FormData
+            $variantsInput = $request->input('variants');
+            if (is_string($variantsInput)) {
+                $variantsInput = json_decode($variantsInput, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    return back()->withInput()->withErrors(['variants' => 'Invalid variants data format']);
+                }
+                // Merge decoded variants back into request for validation
+                $request->merge(['variants' => $variantsInput]);
+            }
+
             $validationRules = [
                 'name' => 'required|string|max:255',
                 'category_id' => 'required|exists:categories,id',
@@ -359,6 +370,8 @@ class ProductController extends Controller
             }
 
             $validated = $request->validate($validationRules);
+
+            \Log::info('Update validation passed', ['variant_count' => count($validated['variants'])]);
 
             DB::beginTransaction();
 
@@ -458,7 +471,11 @@ class ProductController extends Controller
 
         } catch (\Illuminate\Database\QueryException $e) {
             DB::rollBack();
-            \Log::error('Product update failed', ['error' => $e->getMessage()]);
+            \Log::error('Product update failed (QueryException)', [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'product_id' => $product->id,
+            ]);
 
             if ($e->getCode() === '23000' && str_contains($e->getMessage(), 'products_slug_unique')) {
                 return back()->withInput()->withErrors([
@@ -466,11 +483,15 @@ class ProductController extends Controller
                 ]);
             }
 
-            return back()->withInput()->withErrors(['error' => 'Failed: ' . $e->getMessage()]);
+            return back()->withInput()->withErrors(['error' => 'Database error: ' . $e->getMessage()]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Product update failed', ['error' => $e->getMessage()]);
-            return back()->withInput()->withErrors(['error' => 'Failed: ' . $e->getMessage()]);
+            \Log::error('Product update failed (Exception)', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'product_id' => $product->id,
+            ]);
+            return back()->withInput()->withErrors(['error' => 'Error: ' . $e->getMessage()]);
         }
     }
 
