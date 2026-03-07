@@ -22,7 +22,7 @@ class GuestCheckoutRequest extends FormRequest
         return [
             // Guest contact information
             'guest_email' => ['required', 'email', 'max:255'],
-            'guest_phone' => ['nullable', 'string', 'max:20'],
+            'guest_phone' => ['required', 'string', 'max:20'],
             
             // Billing address (required)
             'billing_address.first_name' => ['required', 'string', 'max:255'],

@@ -158,19 +158,54 @@ class OrdersController extends Controller
                 'order_id' => $order->id
             ]);
 
-            // Update order basic information
-            $order->update($request->only([
-                'status', 
-                'payment_status', 
-                'notes', 
-            'tracking_number',
-            'shipping_amount', 
-            'tax_amount', 
-            'subtotal', 
-            'total_amount'
-        ]));
+            // Get original status and tracking number to detect changes
+            $originalStatus = $order->status;
+            $originalTrackingNumber = $order->tracking_number;
 
-        // Update order items if provided
+            // Check what was provided in the request
+            $newStatus = $request->input('status', $order->status);
+            $newTrackingNumber = $request->input('tracking_number', $order->tracking_number);
+
+            // Scenario 2: If tracking number is being added for the first time, auto-change status to shipped
+            $trackingNumberAdded = $newTrackingNumber && !$originalTrackingNumber;
+            if ($trackingNumberAdded && $newStatus !== 'shipped') {
+                $newStatus = 'shipped';
+            }
+
+            // Update order with all data (including potentially modified status)
+            $order->update([
+                'status' => $newStatus,
+                'payment_status' => $request->input('payment_status', $order->payment_status),
+                'notes' => $request->input('notes', $order->notes),
+                'tracking_number' => $newTrackingNumber,
+                'shipping_amount' => $request->input('shipping_amount', $order->shipping_amount),
+                'tax_amount' => $request->input('tax_amount', $order->tax_amount),
+                'subtotal' => $request->input('subtotal', $order->subtotal),
+                'total_amount' => $request->input('total_amount', $order->total_amount),
+            ]);
+
+            // Send shipping notification email
+            $statusChangedToShipped = $originalStatus !== 'shipped' && $newStatus === 'shipped';
+            $trackingNumberUpdated = $newTrackingNumber && $newTrackingNumber !== $originalTrackingNumber;
+
+            if ($statusChangedToShipped || $trackingNumberUpdated) {
+                if (\App\Models\Setting::get('order_shipped_enabled', true)) {
+                    $emailService = app(\App\Services\EmailService::class);
+
+                    // Scenario 1: Manual status change to shipped (no tracking number) -> send email WITHOUT tracking
+                    // Scenario 2: Tracking number added/updated -> send email WITH tracking
+                    $emailTrackingNumber = ($trackingNumberAdded || $trackingNumberUpdated) ? $newTrackingNumber : null;
+                    $emailService->sendOrderShipped($order, $emailTrackingNumber);
+
+                    Log::info('Order shipped email sent', [
+                        'order_id' => $order->id,
+                        'tracking_number' => $emailTrackingNumber,
+                        'reason' => $statusChangedToShipped ? 'status_changed_to_shipped' : 'tracking_number_updated'
+                    ]);
+                }
+            }
+
+            // Update order items if provided
         if ($request->has('order_items')) {
             $orderItems = json_decode($request->order_items, true);
             if (is_array($orderItems)) {
@@ -367,7 +402,7 @@ class OrdersController extends Controller
             // Send shipping notification email if enabled
             if (\App\Models\Setting::get('order_shipped_enabled', true)) {
                 $emailService = app(\App\Services\EmailService::class);
-                $emailService->sendOrderShipped($order, null); // No tracking number for now
+                $emailService->sendOrderShipped($order, $order->tracking_number);
             }
 
             Log::info('Order shipped successfully', [

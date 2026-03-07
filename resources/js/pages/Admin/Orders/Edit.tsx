@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -127,6 +128,8 @@ export default function Edit({ order }: Props) {
         financial: true,
         addresses: true,
     });
+
+    const [showShipConfirmation, setShowShipConfirmation] = useState(false);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('it-IT', {
@@ -262,6 +265,21 @@ export default function Edit({ order }: Props) {
         // Clear validation errors if form is valid
         setValidationErrors([]);
 
+        // Check if status is being manually changed to shipped without a tracking number
+        const isChangingToShipped = formData.status === 'shipped' && order.status !== 'shipped';
+        const hasTrackingNumber = formData.tracking_number && formData.tracking_number.trim() !== '';
+
+        if (isChangingToShipped && !hasTrackingNumber) {
+            // Show confirmation modal for manual status change to shipped
+            setShowShipConfirmation(true);
+            return;
+        }
+
+        // Proceed with submission
+        submitForm();
+    };
+
+    const submitForm = () => {
         calculateTotals();
 
         const updateData = {
@@ -291,6 +309,7 @@ export default function Edit({ order }: Props) {
         router.patch(`/admin/orders/${order.id}`, updateData, {
             onSuccess: () => {
                 setProcessing(false);
+                setShowShipConfirmation(false);
                 addToast({
                     type: 'success',
                     title: 'Order Updated',
@@ -781,6 +800,34 @@ export default function Edit({ order }: Props) {
                         </Button>
                     </div>
                 </form>
+
+                {/* Confirmation Modal for Manual Status Change to Shipped */}
+                <Dialog open={showShipConfirmation} onOpenChange={setShowShipConfirmation}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Mark Order as Shipped?</DialogTitle>
+                            <DialogDescription>
+                                You are about to mark this order as shipped without a tracking number.
+                                A shipping notification email will be sent to the customer without tracking information.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowShipConfirmation(false)}>
+                                Cancel
+                            </Button>
+                            <Button onClick={submitForm} disabled={processing}>
+                                {processing ? (
+                                    <>
+                                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    'Confirm & Send Email'
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </AppLayout>
     );

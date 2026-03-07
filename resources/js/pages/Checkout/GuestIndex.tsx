@@ -193,11 +193,12 @@ export default function GuestCheckout({ cartItems, totals, guestSessionId }: Pro
                                         </div>
                                         <div>
                                             <label htmlFor="guest_phone" className="block text-sm font-medium text-gray-700">
-                                                Phone Number
+                                                Phone Number *
                                             </label>
                                             <input
                                                 type="tel"
                                                 id="guest_phone"
+                                                required
                                                 value={data.guest_phone}
                                                 onChange={(e) => setData('guest_phone', e.target.value)}
                                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"

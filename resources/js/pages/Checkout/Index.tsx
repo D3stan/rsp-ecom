@@ -287,12 +287,18 @@ export default function CheckoutIndex({ auth, cartItems, totals, errors }: Props
 
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div>
-                                            <Label htmlFor="billing_phone">{t('checkout.phone')}</Label>
+                                            <Label htmlFor="billing_phone">
+                                                {t('checkout.phone')} {t('checkout.required')}
+                                            </Label>
                                             <Input
                                                 id="billing_phone"
                                                 value={data.billing_address.phone}
                                                 onChange={(e) => updateBillingAddress('phone', e.target.value)}
+                                                required
                                             />
+                                            {errors?.['billing_address.phone'] && (
+                                                <p className="mt-1 text-sm text-red-500">{errors['billing_address.phone']}</p>
+                                            )}
                                         </div>
                                         <div>
                                             <Label htmlFor="billing_company">{t('checkout.company')}</Label>

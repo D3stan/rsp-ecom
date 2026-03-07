@@ -26,7 +26,7 @@ class CheckoutRequest extends FormRequest
             'billing_address.first_name' => 'required|string|max:255',
             'billing_address.last_name' => 'required|string|max:255',
             'billing_address.email' => 'required|email|max:255',
-            'billing_address.phone' => 'nullable|string|max:20',
+            'billing_address.phone' => 'required|string|max:20',
             'billing_address.company' => 'nullable|string|max:255',
             'billing_address.address_line_1' => 'required|string|max:255',
             'billing_address.address_line_2' => 'nullable|string|max:255',
