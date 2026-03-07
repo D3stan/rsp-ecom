@@ -11,6 +11,10 @@ import AdminLayout from '@/layouts/admin-layout';
 import { Head, useForm } from '@inertiajs/react';
 import { ChevronDown, Package, Settings, Star } from 'lucide-react';
 import { useState } from 'react';
+
+interface ValidationErrors {
+    [key: string]: boolean;
+}
 import { route } from 'ziggy-js';
 
 interface FormData {
@@ -83,17 +87,42 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
         ],
     });
 
+    const [validationErrors, setValidationErrors] = useState<Record<string, boolean>>({});
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validation
-        if (!data.name.trim()) return;
-        if (!data.category_id) return;
-        if (!data.size_id) return;
+        // Client-side validation with field highlighting
+        const errors: Record<string, boolean> = {};
+
+        if (!data.name.trim()) {
+            errors['name'] = true;
+        }
+        if (!data.category_id) {
+            errors['category_id'] = true;
+        }
+        if (!data.size_id) {
+            errors['size_id'] = true;
+        }
+
+        // Validate variants
+        data.variants.forEach((v, index) => {
+            if (!v.name) errors[`variant_${index}_name`] = true;
+            if (!v.price) errors[`variant_${index}_price`] = true;
+            if (!v.stock_quantity) errors[`variant_${index}_stock`] = true;
+        });
+
         if (data.variants.some((v) => !v.name || !v.price || !v.stock_quantity)) {
-            alert('Tutte le varianti devono avere nome, prezzo e quantità');
+            setValidationErrors(errors);
             return;
         }
+
+        if (Object.keys(errors).length > 0) {
+            setValidationErrors(errors);
+            return;
+        }
+
+        setValidationErrors({});
 
         // Create FormData for file uploads
         const formData = new FormData();
@@ -145,6 +174,13 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* General Error Display */}
+                    {(errors.error || errors.name) && (
+                        <div className="rounded-md border border-red-200 bg-red-50 p-4">
+                            <p className="text-sm text-red-600">{errors.error || errors.name}</p>
+                        </div>
+                    )}
+
                     {/* Basic Information */}
                     <Card>
                         <CardHeader className="pb-4">
@@ -264,6 +300,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                         variants={data.variants}
                         baseSku={data.base_sku}
                         onVariantsChange={(variants) => setData('variants', variants)}
+                        validationErrors={validationErrors}
                         uploadLimits={{
                             maxFileSize: uploadLimits.maxFileSize,
                             maxFileSizeBytes: uploadLimits.maxFileSizeBytes,

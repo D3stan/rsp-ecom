@@ -23,6 +23,7 @@ interface VariantManagerProps {
     variants: Variant[];
     baseSku: string;
     onVariantsChange: (variants: Variant[]) => void;
+    validationErrors?: Record<string, boolean>;
     uploadLimits: {
         maxFileSize: string;
         maxFileSizeBytes: number;
@@ -30,7 +31,7 @@ interface VariantManagerProps {
     };
 }
 
-export function VariantManager({ variants, baseSku, onVariantsChange, uploadLimits }: VariantManagerProps) {
+export function VariantManager({ variants, baseSku, onVariantsChange, validationErrors = {}, uploadLimits }: VariantManagerProps) {
     const [previews, setPreviews] = useState<Record<number, string[]>>({});
 
     const addVariant = () => {
@@ -120,10 +121,10 @@ export function VariantManager({ variants, baseSku, onVariantsChange, uploadLimi
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Varianti Prodotto</CardTitle>
+                <CardTitle>Product Variants</CardTitle>
                 <Button type="button" onClick={addVariant} size="sm">
                     <Plus className="mr-2 h-4 w-4" />
-                    Aggiungi Variante
+                    Add Variant
                 </Button>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -136,12 +137,16 @@ export function VariantManager({ variants, baseSku, onVariantsChange, uploadLimi
                                 <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-2">
                                     {/* Name */}
                                     <div>
-                                        <Label>Nome Variante *</Label>
+                                        <Label>Variant Name *</Label>
                                         <Input
                                             value={variant.name}
                                             onChange={(e) => updateVariant(index, { name: e.target.value })}
-                                            placeholder="Es. Rugoso, Carbon"
+                                            placeholder="e.g. Standard, Premium"
+                                            className={validationErrors[`variant_${index}_name`] ? 'border-red-500' : ''}
                                         />
+                                        {validationErrors[`variant_${index}_name`] && (
+                                            <p className="mt-1 text-sm text-red-500">Variant name is required</p>
+                                        )}
                                     </div>
 
                                     {/* SKU */}
@@ -160,41 +165,49 @@ export function VariantManager({ variants, baseSku, onVariantsChange, uploadLimi
 
                                     {/* Price */}
                                     <div>
-                                        <Label>Prezzo *</Label>
+                                        <Label>Price *</Label>
                                         <Input
                                             type="number"
                                             step="0.01"
                                             value={variant.price}
                                             onChange={(e) => updateVariant(index, { price: e.target.value })}
                                             placeholder="0.00"
+                                            className={validationErrors[`variant_${index}_price`] ? 'border-red-500' : ''}
                                         />
+                                        {validationErrors[`variant_${index}_price`] && (
+                                            <p className="mt-1 text-sm text-red-500">Price is required</p>
+                                        )}
                                     </div>
 
                                     {/* Stock */}
                                     <div>
-                                        <Label>Quantita *</Label>
+                                        <Label>Stock Quantity *</Label>
                                         <Input
                                             type="number"
                                             value={variant.stock_quantity}
                                             onChange={(e) => updateVariant(index, { stock_quantity: e.target.value })}
                                             placeholder="0"
+                                            className={validationErrors[`variant_${index}_stock`] ? 'border-red-500' : ''}
                                         />
+                                        {validationErrors[`variant_${index}_stock`] && (
+                                            <p className="mt-1 text-sm text-red-500">Stock quantity is required</p>
+                                        )}
                                     </div>
 
                                     {/* Description */}
                                     <div className="md:col-span-2">
-                                        <Label>Descrizione</Label>
+                                        <Label>Description</Label>
                                         <Textarea
                                             value={variant.description}
                                             onChange={(e) => updateVariant(index, { description: e.target.value })}
-                                            placeholder="Descrizione specifica per questa variante"
+                                            placeholder="Specific description for this variant"
                                             rows={3}
                                         />
                                     </div>
 
                                     {/* Images */}
                                     <div className="md:col-span-2">
-                                        <Label>Immagini (max {uploadLimits.maxFilesPerVariant})</Label>
+                                        <Label>Images (max {uploadLimits.maxFilesPerVariant})</Label>
                                         <Input
                                             type="file"
                                             multiple
@@ -253,7 +266,7 @@ export function VariantManager({ variants, baseSku, onVariantsChange, uploadLimi
                                         disabled={variants.length <= 1}
                                     >
                                         <Trash2 className="mr-2 h-4 w-4" />
-                                        Elimina
+                                        Delete
                                     </Button>
                                 </div>
                             </div>

@@ -211,6 +211,18 @@ class ProductController extends Controller
             return redirect()->route('admin.products.index')
                 ->with('success', 'Product created with ' . count($validated['variants']) . ' variant(s).');
 
+        } catch (\Illuminate\Database\QueryException $e) {
+            DB::rollBack();
+            Log::error('Product creation failed', ['error' => $e->getMessage()]);
+
+            // Handle duplicate slug/name error
+            if ($e->getCode() === '23000' && str_contains($e->getMessage(), 'products_slug_unique')) {
+                return back()->withInput()->withErrors([
+                    'name' => 'A product with this name already exists. Please use a different name.'
+                ]);
+            }
+
+            return back()->withInput()->withErrors(['error' => 'Failed: ' . $e->getMessage()]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Product creation failed', ['error' => $e->getMessage()]);
@@ -306,72 +318,160 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
-        // Debug what we're actually receiving
-        \Log::info('===== DEBUGGING PRODUCT UPDATE =====');
-        \Log::info('All request data:', ['data' => $request->all()]);
-        \Log::info('Request input name:', ['name' => $request->input('name')]);
-        \Log::info('Request has files:', ['has_files' => $request->hasFile('new_images')]);
-        \Log::info('Request files count:', ['files' => $request->file('new_images') ? count($request->file('new_images')) : 0]);
-        
-        // Check if this is the issue - no data is being received
-        if (empty($request->all())) {
-            \Log::error('No request data received!');
-            return response()->json(['error' => 'No data received'], 422);
-        }
+        \Log::info('Product update with variants started', ['product_id' => $product->id]);
 
-        // Simplified validation for debugging
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|string', // Temporarily accept as string
-            'compare_price' => 'nullable|string',
-            'stock_quantity' => 'required|string', // Temporarily accept as string
-            'sku' => 'required|string|unique:products,sku,' . $product->id,
-            'status' => 'required|in:active,inactive,draft',
-            'featured' => 'nullable',
-            'category_id' => 'required|string', // Temporarily accept as string
-            'size_id' => 'required|string', // Temporarily accept as string
-            'new_images' => 'nullable|array|max:' . FileUploadConfigService::getMaxFileUploads(),
-            'new_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule(),
-            'remove_images' => 'nullable|array',
-        ]);
+        try {
+            $this->checkStorageSetup();
 
-        // Convert string values to proper types
-        $validated['price'] = (float) $validated['price'];
-        $validated['stock_quantity'] = (int) $validated['stock_quantity'];
-        $validated['category_id'] = (int) $validated['category_id'];
-        $validated['size_id'] = (int) $validated['size_id'];
-        
-        if (isset($validated['compare_price']) && $validated['compare_price'] !== '') {
-            $validated['compare_price'] = (float) $validated['compare_price'];
-        } else {
-            $validated['compare_price'] = null;
-        }
+            $fileUploadsEnabled = ini_get('file_uploads') && FileUploadConfigService::getMaxFileUploadSize() > 0;
 
-        // Handle featured field explicitly
-        $validated['featured'] = $request->has('featured') ? (bool)$request->input('featured') : false;
+            $validationRules = [
+                'name' => 'required|string|max:255',
+                'category_id' => 'required|exists:categories,id',
+                'size_id' => 'required|exists:sizes,id',
+                'status' => 'required|in:active,inactive,draft',
+                'featured' => 'boolean',
+                'base_sku' => 'nullable|string|max:255',
+                'seo_title' => 'nullable|string|max:255',
+                'seo_description' => 'nullable|string|max:500',
+                'variants' => 'required|array|min:1',
+                'variants.*.id' => 'nullable|exists:product_variants,id',
+                'variants.*.name' => 'required|string|max:255',
+                'variants.*.sku_suffix' => 'nullable|string|max:50',
+                'variants.*.price' => 'required|numeric|min:0',
+                'variants.*.stock_quantity' => 'required|integer|min:0',
+                'variants.*.description' => 'nullable|string',
+                'variants.*.is_default' => 'boolean',
+                'variants.*.sort_order' => 'integer',
+                'variants.*.existing_images' => 'nullable|array',
+                'variants.*.existing_images.*' => 'string',
+                'variants_to_delete' => 'nullable|array',
+                'variants_to_delete.*' => 'exists:product_variants,id',
+            ];
 
-        $validated['slug'] = Str::slug($validated['name']);
-
-        \Log::info('Validated data:', ['validated' => $validated]);
-
-        // Update product
-        $product->update($validated);
-
-        // Remove specified images
-        if ($request->has('remove_images')) {
-            foreach ($request->remove_images as $imageToRemove) {
-                $product->removeImage($imageToRemove);
+            if ($fileUploadsEnabled) {
+                // Dynamic validation for variant images - check files with variant_images_{index} pattern
+                $variantCount = count($request->input('variants', []));
+                for ($i = 0; $i < $variantCount; $i++) {
+                    $validationRules["variant_images_{$i}"] = 'nullable|array|max:10';
+                    $validationRules["variant_images_{$i}.*"] = 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule();
+                }
             }
-        }
 
-        // Handle new image uploads
-        if ($request->hasFile('new_images')) {
-            $this->handleImageUploads($product, $request->file('new_images'));
-        }
+            $validated = $request->validate($validationRules);
 
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product updated successfully.');
+            DB::beginTransaction();
+
+            // Update base product fields
+            $productData = [
+                'name' => $validated['name'],
+                'slug' => Str::slug($validated['name']),
+                'category_id' => $validated['category_id'],
+                'size_id' => $validated['size_id'],
+                'status' => $validated['status'],
+                'featured' => $validated['featured'] ?? false,
+                'base_sku' => $validated['base_sku'] ?: $product->base_sku ?: $this->generateSku($validated['name']),
+                'seo_title' => $validated['seo_title'] ?? null,
+                'seo_description' => $validated['seo_description'] ?? null,
+            ];
+
+            // Get price from the default variant for backward compatibility
+            $defaultVariantData = collect($validated['variants'])->firstWhere('is_default', true)
+                ?? $validated['variants'][0];
+            $productData['price'] = $defaultVariantData['price'];
+            $productData['stock_quantity'] = $defaultVariantData['stock_quantity'];
+
+            $product->update($productData);
+
+            // Delete removed variants
+            if (!empty($validated['variants_to_delete'])) {
+                foreach ($validated['variants_to_delete'] as $variantId) {
+                    $variant = ProductVariant::find($variantId);
+                    if ($variant && $variant->product_id === $product->id) {
+                        // Delete variant images from storage
+                        if (!empty($variant->images)) {
+                            foreach ($variant->images as $image) {
+                                Storage::disk('public')->delete("products/{$product->id}/variants/{$variant->id}/{$image}");
+                            }
+                        }
+                        Storage::disk('public')->deleteDirectory("products/{$product->id}/variants/{$variant->id}");
+                        $variant->delete();
+                    }
+                }
+            }
+
+            // Sync/create variants
+            $hasDefault = false;
+            foreach ($validated['variants'] as $index => $variantData) {
+                $isDefault = !$hasDefault && ($variantData['is_default'] ?? $index === 0);
+                if ($isDefault) $hasDefault = true;
+
+                $variantAttributes = [
+                    'name' => $variantData['name'],
+                    'sku_suffix' => $variantData['sku_suffix'] ?? '',
+                    'price' => $variantData['price'],
+                    'stock_quantity' => $variantData['stock_quantity'],
+                    'description' => $variantData['description'] ?? null,
+                    'is_default' => $isDefault,
+                    'sort_order' => $variantData['sort_order'] ?? $index,
+                    'status' => 'active',
+                ];
+
+                if (!empty($variantData['id'])) {
+                    // Update existing variant
+                    $variant = ProductVariant::find($variantData['id']);
+                    if ($variant && $variant->product_id === $product->id) {
+                        // Handle existing images - keep only the ones still in the list
+                        $existingImages = $variantData['existing_images'] ?? [];
+                        $currentImages = $variant->images ?? [];
+
+                        // Filter to only keep images that are still referenced
+                        $keptImages = array_intersect($currentImages, $existingImages);
+
+                        // Delete removed images from storage
+                        $removedImages = array_diff($currentImages, $existingImages);
+                        foreach ($removedImages as $image) {
+                            Storage::disk('public')->delete("products/{$product->id}/variants/{$variant->id}/{$image}");
+                        }
+
+                        $variantAttributes['images'] = array_values($keptImages);
+                        $variant->update($variantAttributes);
+                    }
+                } else {
+                    // Create new variant
+                    $variantAttributes['product_id'] = $product->id;
+                    $variantAttributes['images'] = [];
+                    $variant = ProductVariant::create($variantAttributes);
+                }
+
+                // Handle new image uploads for this variant
+                $imageKey = "variant_images_{$index}";
+                if ($fileUploadsEnabled && $request->hasFile($imageKey)) {
+                    $this->handleVariantImageUploads($variant, $request->file($imageKey));
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('admin.products.index')
+                ->with('success', 'Product updated with ' . count($validated['variants']) . ' variant(s).');
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            DB::rollBack();
+            \Log::error('Product update failed', ['error' => $e->getMessage()]);
+
+            if ($e->getCode() === '23000' && str_contains($e->getMessage(), 'products_slug_unique')) {
+                return back()->withInput()->withErrors([
+                    'name' => 'A product with this name already exists. Please use a different name.'
+                ]);
+            }
+
+            return back()->withInput()->withErrors(['error' => 'Failed: ' . $e->getMessage()]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Product update failed', ['error' => $e->getMessage()]);
+            return back()->withInput()->withErrors(['error' => 'Failed: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -379,12 +479,20 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        // Clear all images before deleting
-        $product->clearImages();
-        
-        // Remove the product directory if empty
-        Storage::deleteDirectory("products/{$product->id}");
-        
+        // Delete all variant images and directories
+        foreach ($product->variants as $variant) {
+            if (!empty($variant->images)) {
+                foreach ($variant->images as $image) {
+                    Storage::disk('public')->delete("products/{$product->id}/variants/{$variant->id}/{$image}");
+                }
+            }
+            Storage::disk('public')->deleteDirectory("products/{$product->id}/variants/{$variant->id}");
+        }
+
+        // Remove the product directory
+        Storage::disk('public')->deleteDirectory("products/{$product->id}");
+
+        // Delete the product (cascade will delete variants)
         $product->delete();
 
         return redirect()->route('admin.products.index')
