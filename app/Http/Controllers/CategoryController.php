@@ -51,7 +51,7 @@ class CategoryController extends Controller
         }
 
         // Get products in this category with pagination
-        $query = Product::with(['category', 'approvedReviews'])
+        $query = Product::with(['category', 'approvedReviews', 'defaultVariant'])
             ->where('category_id', $category->id)
             ->active()
             ->inStock();

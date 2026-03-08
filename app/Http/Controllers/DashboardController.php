@@ -17,7 +17,7 @@ class DashboardController extends Controller
         
         $user = Auth::user();
         $orders = $user->orders()
-            ->with(['orderItems.product.category', 'orderItems.size'])
+            ->with(['orderItems.product.category', 'orderItems.product.defaultVariant', 'orderItems.size'])
             ->latest()
             ->get()
             ->map(function ($order) {
@@ -65,7 +65,7 @@ class DashboardController extends Controller
         
         $user = Auth::user();
         $wishlist = $user->wishlist()
-            ->with(['product.category'])
+            ->with(['product.category', 'product.defaultVariant'])
             ->latest()
             ->get()
             ->map(function ($wishlistItem) {

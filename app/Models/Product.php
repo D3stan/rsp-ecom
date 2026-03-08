@@ -43,6 +43,16 @@ class Product extends Model
 
     public function getImageUrlAttribute(): string
     {
+        // First, check if the default variant has images
+        if ($this->defaultVariant && !empty($this->defaultVariant->images)) {
+            $variantImages = $this->defaultVariant->images;
+            $firstImage = is_array($variantImages) ? ($variantImages[0] ?? null) : null;
+            if ($firstImage) {
+                return asset("storage/products/{$this->id}/variants/{$this->defaultVariant->id}/{$firstImage}");
+            }
+        }
+
+        // Fallback to product-level images
         if ($this->images && count($this->images) > 0) {
             return asset('storage/products/' . $this->id . '/' . $this->images[0]);
         }
@@ -259,15 +269,32 @@ class Product extends Model
 
     public function getMainImageUrlAttribute(): string
     {
+        // First, check if the default variant has images
+        if ($this->defaultVariant && !empty($this->defaultVariant->images)) {
+            $variantImages = $this->defaultVariant->images;
+            $firstImage = is_array($variantImages) ? ($variantImages[0] ?? null) : null;
+            if ($firstImage) {
+                return asset("storage/products/{$this->id}/variants/{$this->defaultVariant->id}/{$firstImage}");
+            }
+        }
+
+        // Fallback to product-level images
         $images = $this->images;
         if (!empty($images)) {
             return asset('storage/products/' . $this->id . '/' . $images[0]);
         }
+
         return '/images/product.png';
     }
 
     public function getImageUrlsAttribute(): array
     {
+        // First, check if the default variant has images
+        if ($this->defaultVariant && !empty($this->defaultVariant->images)) {
+            return $this->defaultVariant->image_urls;
+        }
+
+        // Fallback to product-level images
         $images = $this->images;
         if (empty($images)) {
             return ['/images/product.png'];

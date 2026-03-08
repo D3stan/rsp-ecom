@@ -22,7 +22,7 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'size']);
+        $query = Product::with(['category', 'size', 'defaultVariant']);
 
         // Search functionality
         if ($search = $request->get('search')) {

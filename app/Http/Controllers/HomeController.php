@@ -63,21 +63,15 @@ class HomeController extends Controller
             ->toScript();
 
         // Get featured products (active, in stock, featured flag)
-        $featuredProducts = Product::with(['category', 'approvedReviews'])
+        $featuredProducts = Product::with(['category', 'approvedReviews', 'defaultVariant'])
             ->active()
             ->featured()
             ->inStock()
             ->limit(6)
             ->get()
             ->map(function (Product $product) {
-                // Handle empty image arrays - use default image
-                $imageUrl = '/images/product.png';
-                if (!empty($product->images)) {
-                    $mainImage = $product->main_image_url;
-                    if ($mainImage && $this->imageExists($mainImage)) {
-                        $imageUrl = $mainImage;
-                    }
-                }
+                // Use the product's accessor which prioritizes default variant images
+                $imageUrl = $product->main_image_url;
                 
                 return [
                     'id' => $product->id,

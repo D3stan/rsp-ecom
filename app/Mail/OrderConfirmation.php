@@ -51,7 +51,7 @@ class OrderConfirmation extends Mailable
             with: [
                 'order' => $this->order,
                 'customer' => $this->order->user,
-                'items' => $this->order->orderItems()->with('product')->get(),
+                'items' => $this->order->orderItems()->with(['product', 'product.defaultVariant'])->get(),
                 'logoUrl' => $this->getLogoUrl(),
             ],
         );

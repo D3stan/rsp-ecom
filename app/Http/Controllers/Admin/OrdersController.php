@@ -17,7 +17,7 @@ class OrdersController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Order::with(['user', 'orderItems.product', 'billingAddress', 'shippingAddress'])
+        $query = Order::with(['user', 'orderItems.product', 'orderItems.product.defaultVariant', 'billingAddress', 'shippingAddress'])
             ->orderBy('created_at', 'desc');
 
         // Apply filters
@@ -102,7 +102,7 @@ class OrdersController extends Controller
     {
         $order->load([
             'user',
-            'orderItems.product',
+            'orderItems.product', 'orderItems.product.defaultVariant',
             'billingAddress',
             'shippingAddress'
         ]);
@@ -119,7 +119,7 @@ class OrdersController extends Controller
     {
         $order->load([
             'user',
-            'orderItems.product',
+            'orderItems.product', 'orderItems.product.defaultVariant',
             'billingAddress',
             'shippingAddress'
         ]);
@@ -356,7 +356,7 @@ class OrdersController extends Controller
     {
         $order->load([
             'user',
-            'orderItems.product',
+            'orderItems.product', 'orderItems.product.defaultVariant',
             'billingAddress',
             'shippingAddress'
         ]);

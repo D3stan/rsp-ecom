@@ -192,7 +192,7 @@ class CheckoutController extends Controller
             
             // Find the order in our database by session ID
             $order = Order::where('stripe_checkout_session_id', $sessionId)
-                ->with(['orderItems.product'])
+                ->with(['orderItems.product', 'orderItems.product.defaultVariant'])
                 ->first();
             
             // If no order found, create one from the session data
@@ -313,7 +313,7 @@ class CheckoutController extends Controller
                 ]);
             } elseif (isset($metadata->guest_session_id)) {
                 $cart = Cart::where('session_id', $metadata->guest_session_id)
-                    ->with(['cartItems.product', 'cartItems.size'])
+                    ->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])
                     ->first();
                 Log::info('Found cart by guest_session_id', [
                     'guest_session_id' => $metadata->guest_session_id,
@@ -683,7 +683,7 @@ class CheckoutController extends Controller
             }
 
             // Get user's cart
-            $cart = $user->carts()->with(['cartItems.product', 'cartItems.size'])->latest()->first();
+            $cart = $user->carts()->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->latest()->first();
             
             if (!$cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
@@ -695,7 +695,7 @@ class CheckoutController extends Controller
                     $item->update(['price' => $item->product->price]);
                 }
             }
-            $cart->load(['cartItems.product', 'cartItems.size']); // Reload cart items with corrected prices and relationships
+            $cart->load(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size']); // Reload cart items with corrected prices and relationships
 
             // Calculate totals (cart prices are tax-inclusive)
             $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
@@ -752,7 +752,7 @@ class CheckoutController extends Controller
         try {
             // Get guest cart from database using session ID
             $guestSessionId = session()->getId();
-            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.size'])->first();
+            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->first();
             
             if (!$cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
@@ -764,7 +764,7 @@ class CheckoutController extends Controller
                     $item->update(['price' => $item->product->price]);
                 }
             }
-            $cart->load(['cartItems.product', 'cartItems.size']); // Reload cart items with corrected prices and relationships
+            $cart->load(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size']); // Reload cart items with corrected prices and relationships
 
             // Calculate totals (cart prices are tax-inclusive)
             $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
@@ -867,7 +867,7 @@ class CheckoutController extends Controller
 
         try {
             // Get user's cart with cart items
-            $cart = $user->carts()->with(['cartItems.product', 'cartItems.size'])->latest()->first();
+            $cart = $user->carts()->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->latest()->first();
             
             if (!$cart || $cart->cartItems->isEmpty()) {
                 return response()->json(['error' => 'Your cart is empty'], 422);
@@ -948,7 +948,7 @@ class CheckoutController extends Controller
 
             // Get guest cart from session
             $guestSessionId = $validated['cart_session_id'];
-            $cart = Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.size'])->first();
+            $cart = Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->first();
             
             if (!$cart || $cart->cartItems->isEmpty()) {
                 return response()->json(['error' => 'Your cart is empty'], 422);
@@ -1064,7 +1064,7 @@ class CheckoutController extends Controller
             ]);
 
             // Get user's cart (using the correct relationship method)
-            $cart = $user->carts()->with(['cartItems.product', 'cartItems.size'])->latest()->first();
+            $cart = $user->carts()->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->latest()->first();
             
             if (!$cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
@@ -1076,7 +1076,7 @@ class CheckoutController extends Controller
                     $item->update(['price' => $item->product->price]);
                 }
             }
-            $cart->load(['cartItems.product', 'cartItems.size']); // Reload cart items with corrected prices and relationships
+            $cart->load(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size']); // Reload cart items with corrected prices and relationships
 
             // Calculate total amount for the entire cart (prices are tax-inclusive)
             $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
@@ -1185,7 +1185,7 @@ class CheckoutController extends Controller
 
             // Get guest cart from database using session ID
             $guestSessionId = session()->getId();
-            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.size'])->first();
+            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->first();
             
             if (!$cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
@@ -1197,7 +1197,7 @@ class CheckoutController extends Controller
                     $item->update(['price' => $item->product->price]);
                 }
             }
-            $cart->load(['cartItems.product', 'cartItems.size']); // Reload cart items with corrected prices and relationships
+            $cart->load(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size']); // Reload cart items with corrected prices and relationships
 
             // Calculate total amount from cart items (prices are tax-inclusive)
             $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {

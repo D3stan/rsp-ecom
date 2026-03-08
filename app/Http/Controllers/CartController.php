@@ -38,7 +38,7 @@ class CartController extends Controller
             ]);
         }
 
-        $cartItems = $cart->cartItems()->with(['product.category', 'product.size', 'size', 'productVariant'])->get();
+        $cartItems = $cart->cartItems()->with(['product.category', 'product.size', 'product.defaultVariant', 'size', 'productVariant'])->get();
 
         // Fix any cart items that have shipping cost incorrectly added to price
         // Also fix cart items missing size_id when product has a size
