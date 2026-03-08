@@ -382,10 +382,10 @@ export default function Home() {
                                 return (
                                     <Link
                                         key={category.id}
-                                        href={`/products/category/${category.slug}`}
+                                        href={`/products?category=${category.slug}`}
                                         className="group"
                                         {...categoryInteractions.getInteractionProps(category.id, () => {
-                                            window.location.href = `/products/category/${category.slug}`;
+                                            window.location.href = `/products?category=${category.slug}`;
                                         })}
                                     >
                                         <div

@@ -559,14 +559,6 @@ function FilterSection({
 }: FilterSectionProps) {
     const { t } = useTranslation();
 
-    const handleApplyFilters = () => {
-        applyFilters();
-        // Close modal only if we're in mobile mode and closeModal is provided
-        if (closeModal) {
-            closeModal();
-        }
-    };
-
     return (
         <div className="space-y-6 bg-white">
             <div className="flex items-center justify-between">
@@ -629,6 +621,30 @@ function FilterSection({
                                     const newMax = range.max === null ? priceRange?.max || 1000 : range.max;
                                     setPriceMin(newMin);
                                     setPriceMax(newMax);
+                                    // Auto-apply filters after price range change
+                                    setTimeout(() => {
+                                        const params: Record<string, string | number> = {
+                                            search: '',
+                                            category: selectedCategory === 'all' ? '' : selectedCategory,
+                                            min_price: newMin !== priceRange?.min ? newMin.toString() : '',
+                                            max_price: newMax !== priceRange?.max ? newMax.toString() : '',
+                                            sort: 'name',
+                                            per_page: 12,
+                                        };
+
+                                        // Remove empty parameters
+                                        Object.keys(params).forEach((key) => {
+                                            const value = params[key];
+                                            if (value === '' || value === null || value === undefined) {
+                                                delete params[key];
+                                            }
+                                        });
+
+                                        router.get(route('products'), params, {
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                        });
+                                    }, 0);
                                 }}
                                 className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
                             />
@@ -649,6 +665,28 @@ function FilterSection({
                                 type="number"
                                 value={priceMin}
                                 onChange={(e) => setPriceMin(parseInt(e.target.value) || priceRange?.min || 0)}
+                                onBlur={() => {
+                                    const params: Record<string, string | number> = {
+                                        search: '',
+                                        category: selectedCategory === 'all' ? '' : selectedCategory,
+                                        min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
+                                        max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
+                                        sort: 'name',
+                                        per_page: 12,
+                                    };
+
+                                    Object.keys(params).forEach((key) => {
+                                        const value = params[key];
+                                        if (value === '' || value === null || value === undefined) {
+                                            delete params[key];
+                                        }
+                                    });
+
+                                    router.get(route('products'), params, {
+                                        preserveState: true,
+                                        preserveScroll: true,
+                                    });
+                                }}
                                 min={priceRange?.min || 0}
                                 max={priceRange?.max || 1000}
                                 className="h-10 border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500"
@@ -661,6 +699,28 @@ function FilterSection({
                                 type="number"
                                 value={priceMax}
                                 onChange={(e) => setPriceMax(parseInt(e.target.value) || priceRange?.max || 1000)}
+                                onBlur={() => {
+                                    const params: Record<string, string | number> = {
+                                        search: '',
+                                        category: selectedCategory === 'all' ? '' : selectedCategory,
+                                        min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
+                                        max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
+                                        sort: 'name',
+                                        per_page: 12,
+                                    };
+
+                                    Object.keys(params).forEach((key) => {
+                                        const value = params[key];
+                                        if (value === '' || value === null || value === undefined) {
+                                            delete params[key];
+                                        }
+                                    });
+
+                                    router.get(route('products'), params, {
+                                        preserveState: true,
+                                        preserveScroll: true,
+                                    });
+                                }}
                                 min={priceRange?.min || 0}
                                 max={priceRange?.max || 1000}
                                 className="h-10 border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500"
@@ -674,12 +734,6 @@ function FilterSection({
                 </div>
             </div>
 
-            <Button
-                onClick={handleApplyFilters}
-                className="h-11 w-full bg-blue-600 text-base font-semibold text-white transition-all duration-200 hover:bg-blue-700 focus:ring-4 focus:ring-blue-200"
-            >
-                {t('products.apply_filters')}
-            </Button>
         </div>
     );
 }
