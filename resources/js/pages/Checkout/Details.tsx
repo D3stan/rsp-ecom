@@ -137,16 +137,16 @@ export default function CheckoutDetails() {
                         setCouponCode('');
                         addToast({
                             type: 'success',
-                            title: 'Coupon Applied',
-                            description: 'Your discount code has been successfully applied.',
+                            title: t('cart.coupon_applied'),
+                            description: t('cart.coupon_applied_description'),
                         });
                     },
                     onError: (errors) => {
                         console.error('Failed to apply coupon:', errors);
                         addToast({
                             type: 'error',
-                            title: 'Invalid Coupon',
-                            description: 'The discount code you entered is not valid or has expired.',
+                            title: t('cart.coupon_invalid'),
+                            description: t('cart.coupon_invalid_description'),
                         });
                     },
                     onFinish: () => {
@@ -158,8 +158,8 @@ export default function CheckoutDetails() {
             console.error('Error applying coupon:', error);
             addToast({
                 type: 'error',
-                title: 'Error',
-                description: 'An unexpected error occurred while applying the coupon.',
+                title: t('cart.error'),
+                description: t('cart.coupon_apply_error'),
             });
             setIsApplyingCoupon(false);
         }
@@ -174,8 +174,8 @@ export default function CheckoutDetails() {
         if (!contactInfo.email.trim()) {
             addToast({
                 type: 'error',
-                title: 'Missing Information',
-                description: 'Please provide a valid email address.',
+                title: t('cart.missing_information'),
+                description: t('cart.email_required'),
             });
             return;
         }
@@ -187,12 +187,13 @@ export default function CheckoutDetails() {
             !shippingAddress.city.trim() ||
             !shippingAddress.state.trim() ||
             !shippingAddress.postal_code.trim() ||
-            !shippingAddress.country.trim()
+            !shippingAddress.country.trim() ||
+            !shippingAddress.phone?.trim()
         ) {
             addToast({
                 type: 'error',
-                title: 'Missing Information',
-                description: 'Please fill in all required shipping address fields.',
+                title: t('cart.missing_information'),
+                description: t('cart.shipping_required'),
             });
             return;
         }
@@ -202,8 +203,8 @@ export default function CheckoutDetails() {
         if (!emailRegex.test(contactInfo.email)) {
             addToast({
                 type: 'error',
-                title: 'Invalid Email',
-                description: 'Please provide a valid email address.',
+                title: t('cart.invalid_email'),
+                description: t('cart.email_required'),
             });
             return;
         }
@@ -231,8 +232,8 @@ export default function CheckoutDetails() {
                     console.error('Checkout errors:', errors);
                     addToast({
                         type: 'error',
-                        title: 'Checkout Error',
-                        description: 'There was an error processing your checkout. Please try again.',
+                        title: t('cart.checkout_error'),
+                        description: t('cart.checkout_error_description'),
                     });
                     setIsProcessing(false);
                 },
@@ -253,8 +254,8 @@ export default function CheckoutDetails() {
                     console.error('Checkout errors:', errors);
                     addToast({
                         type: 'error',
-                        title: 'Checkout Error',
-                        description: 'There was an error processing your checkout. Please try again.',
+                        title: t('cart.checkout_error'),
+                        description: t('cart.checkout_error_description'),
                     });
                     setIsProcessing(false);
                 },
@@ -482,13 +483,14 @@ export default function CheckoutDetails() {
                                                 </Select>
                                             </div>
                                             <div>
-                                                <Label htmlFor="phone" className="text-gray-600">
-                                                    {t('checkout.phone')}
+                                                <Label htmlFor="phone" className="font-medium text-black">
+                                                    {t('checkout.phone')} *
                                                 </Label>
                                                 <Input
                                                     id="phone"
                                                     value={shippingAddress.phone}
                                                     onChange={(e) => updateShippingAddress('phone', e.target.value)}
+                                                    required
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
                                             </div>

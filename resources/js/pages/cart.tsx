@@ -143,7 +143,7 @@ export default function Cart() {
             if (response.ok && data.success) {
                 addToast({
                     type: 'success',
-                    title: 'Coupon Applied',
+                    title: t('cart.coupon_applied'),
                     description: data.message,
                 });
                 setCouponInput('');
@@ -152,16 +152,16 @@ export default function Cart() {
             } else {
                 addToast({
                     type: 'error',
-                    title: 'Invalid Coupon',
-                    description: data.message || 'The coupon code is invalid or expired.',
+                    title: t('cart.coupon_invalid'),
+                    description: data.message || t('cart.coupon_invalid_description'),
                 });
             }
         } catch (error) {
             console.error('Error applying coupon:', error);
             addToast({
                 type: 'error',
-                title: 'Error',
-                description: 'An unexpected error occurred while applying the coupon.',
+                title: t('cart.error'),
+                description: t('cart.coupon_apply_error'),
             });
         } finally {
             setIsApplyingCoupon(false);
@@ -183,7 +183,7 @@ export default function Cart() {
             if (response.ok && data.success) {
                 addToast({
                     type: 'success',
-                    title: 'Coupon Removed',
+                    title: t('cart.coupon_removed'),
                     description: data.message,
                 });
                 // Reload page to show updated totals
@@ -193,8 +193,8 @@ export default function Cart() {
             console.error('Error removing coupon:', error);
             addToast({
                 type: 'error',
-                title: 'Error',
-                description: 'An unexpected error occurred while removing the coupon.',
+                title: t('cart.error'),
+                description: t('cart.coupon_remove_error'),
             });
         }
     };
@@ -352,7 +352,7 @@ export default function Cart() {
                                             <div className="flex items-center gap-2">
                                                 <Tag className="h-4 w-4 text-green-600" />
                                                 <span className="text-sm font-medium text-green-800">
-                                                    {discountDescription} applied
+                                                    {discountDescription} {t('cart.discount_applied_label')}
                                                 </span>
                                             </div>
                                             <Button
@@ -368,12 +368,12 @@ export default function Cart() {
                                 ) : (
                                     <div className="space-y-2">
                                         <Label htmlFor="coupon" className="text-sm font-medium text-gray-700">
-                                            Discount Code
+                                            {t('cart.discount_code')}
                                         </Label>
                                         <div className="flex gap-2">
                                             <Input
                                                 id="coupon"
-                                                placeholder="Enter code"
+                                                placeholder={t('cart.coupon_placeholder_input')}
                                                 value={couponInput}
                                                 onChange={(e) => setCouponInput(e.target.value)}
                                                 className="flex-1"
@@ -383,7 +383,7 @@ export default function Cart() {
                                                 disabled={!couponInput.trim() || isApplyingCoupon}
                                                 variant="outline"
                                             >
-                                                {isApplyingCoupon ? 'Applying...' : 'Apply'}
+                                                {isApplyingCoupon ? t('cart.applying') : t('cart.apply')}
                                             </Button>
                                         </div>
                                     </div>
@@ -401,7 +401,7 @@ export default function Cart() {
                                     </div>
                                     {discountAmount && discountAmount > 0 && (
                                         <div className="flex justify-between text-green-600">
-                                            <span>Discount {discountDescription && `(${discountDescription})`}</span>
+                                            <span>{t('cart.discount')} {discountDescription && `(${discountDescription})`}</span>
                                             <span>-{formatCurrency(discountAmount)}</span>
                                         </div>
                                     )}
