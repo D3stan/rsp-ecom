@@ -318,8 +318,41 @@ class ProductController extends Controller
     {
         $product->load(['variants', 'category', 'size']);
 
+        // Transform product data to ensure proper formatting
+        $productData = $product->toArray();
+
+        // Transform variants to ensure proper data formatting
+        $productData['variants'] = $product->variants->map(function ($variant) {
+            // Ensure images is always an array (handle JSON string case)
+            $images = $variant->images;
+            if (is_string($images)) {
+                $images = json_decode($images, true) ?? [];
+            }
+            if (!is_array($images)) {
+                $images = [];
+            }
+
+            // Generate image URLs for actual images only (not placeholder)
+            $imageUrls = [];
+            if (!empty($images)) {
+                foreach ($images as $image) {
+                    if (filter_var($image, FILTER_VALIDATE_URL)) {
+                        $imageUrls[] = $image;
+                    } else {
+                        $imageUrls[] = asset("storage/products/{$variant->product_id}/variants/{$variant->id}/{$image}");
+                    }
+                }
+            }
+
+            $variantData = $variant->toArray();
+            $variantData['images'] = $images;
+            $variantData['image_urls'] = $imageUrls;
+
+            return $variantData;
+        })->toArray();
+
         return Inertia::render('Admin/Products/Edit', [
-            'product' => $product,
+            'product' => $productData,
             'categories' => Category::where('is_active', true)->get(),
             'sizes' => Size::all(),
             'uploadLimits' => [
@@ -463,6 +496,12 @@ class ProductController extends Controller
                         // Only process image changes if existing_images was explicitly provided
                         // If null, keep all existing images (no changes made to images)
                         if ($existingImages !== null) {
+                            // Ensure existing_images is an array (handle both array and JSON string)
+                            if (is_string($existingImages)) {
+                                $existingImages = json_decode($existingImages, true) ?? [];
+                            }
+                            $existingImages = is_array($existingImages) ? $existingImages : [];
+
                             // Normalize existing_images to just filenames (in case full URLs are sent)
                             $existingFilenames = array_map('basename', $existingImages);
 

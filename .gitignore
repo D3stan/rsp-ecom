@@ -25,3 +25,5 @@ yarn-error.log
 /.zed
 .DS_Store
 /.worktrees
+.playwright-mcp
+.claude
