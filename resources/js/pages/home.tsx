@@ -49,6 +49,7 @@ interface Product {
     reviews: number;
     image: string;
     badge?: string;
+    defaultVariantId?: number;
     category?: {
         id: number;
         name: string;
@@ -122,14 +123,21 @@ export default function Home() {
     }, []);
     */
 
-    const handleAddToCart = async (productId: number) => {
-        if (addingToCartId === productId) return;
+    const handleAddToCart = async (product: Product) => {
+        if (addingToCartId === product.id) return;
 
-        setAddingToCartId(productId);
+        if (!product.defaultVariantId) {
+            console.error('Product has no default variant');
+            cartService.triggerCartAnimation('error');
+            return;
+        }
+
+        setAddingToCartId(product.id);
 
         try {
             const cartData: AddToCartData = {
-                product_id: productId,
+                product_id: product.id,
+                product_variant_id: product.defaultVariantId,
                 quantity: 1,
             };
 
@@ -324,7 +332,7 @@ export default function Home() {
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
-                                                        handleAddToCart(product.id);
+                                                        handleAddToCart(product);
                                                     }}
                                                 >
                                                     {addingToCartId === product.id ? 'Adding...' : t('add_to_cart')}

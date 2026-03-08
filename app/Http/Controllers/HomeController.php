@@ -83,6 +83,7 @@ class HomeController extends Controller
                     'reviews' => $product->review_count,
                     'image' => $imageUrl,
                     'badge' => $this->getProductBadge($product),
+                    'defaultVariantId' => $product->defaultVariant?->id,
                     'category' => $product->category ? [
                         'id' => $product->category->id,
                         'name' => $product->category->name,
