@@ -376,7 +376,7 @@ export default function Cart() {
                                                 placeholder={t('cart.coupon_placeholder_input')}
                                                 value={couponInput}
                                                 onChange={(e) => setCouponInput(e.target.value)}
-                                                className="flex-1"
+                                                className="flex-1 text-black"
                                             />
                                             <Button
                                                 onClick={applyCoupon}

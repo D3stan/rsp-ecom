@@ -427,7 +427,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                         {/* Bottom Actions */}
                         <div className="space-y-3 border-t border-gray-200 pt-4">
                             <Link
-                                href="/help"
+                                href="/contact"
                                 onClick={closeMenu}
                                 className="flex items-center space-x-3 text-gray-700 transition-colors hover:text-blue-600"
                             >
