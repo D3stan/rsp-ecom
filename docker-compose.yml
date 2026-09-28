@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # Dokploy writes the variables from its Environment tab into this .env file.
+    env_file:
+      - .env
+    volumes:
+      - storage-app:/var/www/html/storage/app
+      - storage-logs:/var/www/html/storage/logs
+    networks:
+      - dokploy-network
+
+volumes:
+  storage-app:
+  storage-logs:
+
+networks:
+  dokploy-network:
+    external: true
