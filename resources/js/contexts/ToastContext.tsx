@@ -6,6 +6,7 @@ export interface Toast {
     title: string;
     description?: string;
     duration?: number;
+    leaving?: boolean;
 }
 
 interface ToastContextType {
@@ -44,8 +45,12 @@ export function ToastProvider({ children }: ToastProviderProps) {
         }, duration);
     };
 
+    // Mark as leaving first so the exit animation can play, then unmount
     const removeToast = (id: string) => {
-        setToasts((prev) => prev.filter((toast) => toast.id !== id));
+        setToasts((prev) => prev.map((toast) => (toast.id === id ? { ...toast, leaving: true } : toast)));
+        setTimeout(() => {
+            setToasts((prev) => prev.filter((toast) => toast.id !== id));
+        }, 180);
     };
 
     return <ToastContext.Provider value={{ toasts, addToast, removeToast }}>{children}</ToastContext.Provider>;

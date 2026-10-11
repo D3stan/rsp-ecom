@@ -81,11 +81,11 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                     <div className="container mx-auto max-w-4xl px-4 py-8">
                         {/* Success Header */}
                         <div className="mb-8 text-center">
-                            <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                            <div className="success-pop mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                                 <CheckCircle className="h-8 w-8 text-green-600" />
                             </div>
-                            <h1 className="mb-2 text-3xl font-bold text-gray-900">{t('checkout.success.title')}</h1>
-                            <p className="text-gray-600">
+                            <h1 className="success-rise mb-2 text-3xl font-bold text-gray-900" style={{ animationDelay: '120ms' }}>{t('checkout.success.title')}</h1>
+                            <p className="success-rise text-gray-600" style={{ animationDelay: '180ms' }}>
                                 {isGuest ? t('checkout.success.thank_you_guest') : t('checkout.success.thank_you_user', { name: user?.name || '' })}
                             </p>
                         </div>

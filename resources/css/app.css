@@ -336,3 +336,208 @@
         animation: accordion-up 0.2s ease-out;
     }
 }
+
+/* ==========================================================================
+   Motion
+   Shared curves + keyframes. Reduced motion keeps opacity fades, drops movement.
+   ========================================================================== */
+:root {
+    --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Collapsible (checkout sections, reviews, filters) */
+@keyframes collapsible-open {
+    from {
+        height: 0;
+        opacity: 0;
+        overflow: hidden;
+    }
+    to {
+        height: var(--radix-collapsible-content-height);
+        opacity: 1;
+        overflow: hidden;
+    }
+}
+
+@keyframes collapsible-close {
+    from {
+        height: var(--radix-collapsible-content-height);
+        opacity: 1;
+        overflow: hidden;
+    }
+    to {
+        height: 0;
+        opacity: 0;
+        overflow: hidden;
+    }
+}
+
+[data-slot='collapsible-content'][data-state='open'] {
+    animation: collapsible-open 220ms var(--ease-out-strong);
+}
+
+[data-slot='collapsible-content'][data-state='closed'] {
+    animation: collapsible-close 180ms var(--ease-out-strong);
+}
+
+/* Toasts: enter and exit on the same (top) edge */
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes toast-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+}
+
+.toast-enter {
+    animation: toast-in 250ms var(--ease-out-strong);
+}
+
+.toast-exit {
+    animation: toast-out 180ms var(--ease-out-strong) forwards;
+}
+
+/* Cart header badge */
+@keyframes badge-pop {
+    0% {
+        transform: scale(1);
+    }
+    40% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.badge-pop {
+    animation: badge-pop 250ms var(--ease-out-strong);
+}
+
+/* Cart row removal */
+.cart-item-removing {
+    opacity: 0;
+    transform: translateX(-8px);
+    pointer-events: none;
+    transition:
+        opacity 200ms var(--ease-out-strong),
+        transform 200ms var(--ease-out-strong);
+}
+
+/* Checkout success header */
+@keyframes success-rise {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes success-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.success-pop {
+    animation: success-pop 400ms var(--ease-out-strong) both;
+}
+
+.success-rise {
+    animation: success-rise 300ms var(--ease-out-strong) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    @keyframes collapsible-open {
+        from {
+            height: auto;
+            opacity: 0;
+            overflow: hidden;
+        }
+        to {
+            height: auto;
+            opacity: 1;
+            overflow: hidden;
+        }
+    }
+
+    @keyframes collapsible-close {
+        from {
+            height: auto;
+            opacity: 1;
+            overflow: hidden;
+        }
+        to {
+            height: auto;
+            opacity: 0;
+            overflow: hidden;
+        }
+    }
+
+    @keyframes toast-in {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes toast-out {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
+    }
+
+    @keyframes success-rise {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes success-pop {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .badge-pop {
+        animation: none;
+    }
+
+    .cart-item-removing {
+        transform: none;
+    }
+}

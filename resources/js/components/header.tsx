@@ -206,7 +206,7 @@ export default function Header({ transparent = false }: HeaderProps) {
 
     // Memoize menu classes to prevent animation glitches
     const menuClasses = useMemo(() => {
-        const baseClasses = 'mobile-menu fixed top-0 right-0 z-50 h-screen w-80 max-w-[85vw] bg-white shadow-xl transition-transform duration-300 ease-out md:absolute md:top-full md:right-0 md:h-auto md:w-64 md:rounded-lg md:border md:border-gray-200 md:shadow-xl';
+        const baseClasses = 'mobile-menu fixed top-0 right-0 z-50 h-screen w-80 max-w-[85vw] bg-white shadow-xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] md:absolute md:top-full md:right-0 md:h-auto md:w-64 md:rounded-lg md:border md:border-gray-200 md:shadow-xl';
         const transformClasses = isMenuOpen 
             ? 'transform translate-x-0' 
             : 'transform translate-x-full md:translate-x-0 md:-translate-y-2 md:opacity-0 md:pointer-events-none';
@@ -344,12 +344,13 @@ export default function Header({ transparent = false }: HeaderProps) {
             </div>
 
             {/* Overlay for mobile */}
-            {isMenuOpen && (
-                <div 
-                    className="fixed inset-0 z-40 bg-black/50 opacity-100 transition-opacity duration-300 md:hidden" 
-                    onClick={closeMenu} 
-                />
-            )}
+            <div
+                aria-hidden="true"
+                className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:duration-150 md:hidden ${
+                    isMenuOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+                }`}
+                onClick={closeMenu}
+            />
 
             {/* Slide-out Menu */}
             <div

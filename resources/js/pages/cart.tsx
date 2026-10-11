@@ -53,6 +53,7 @@ export default function Cart() {
     const { addToast } = useToast();
 
     const [isUpdating, setIsUpdating] = useState<number | null>(null);
+    const [removingId, setRemovingId] = useState<number | null>(null);
     const [couponInput, setCouponInput] = useState('');
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
@@ -96,6 +97,7 @@ export default function Cart() {
     };
 
     const removeItem = async (itemId: number) => {
+        setRemovingId(itemId);
         try {
             await router.delete(`/cart/items/${itemId}`, {
                 preserveScroll: true,
@@ -106,9 +108,13 @@ export default function Cart() {
                 onError: (errors) => {
                     console.error('Failed to remove item:', errors);
                 },
+                onFinish: () => {
+                    setRemovingId(null);
+                },
             });
         } catch (error) {
             console.error('Error removing item:', error);
+            setRemovingId(null);
         }
     };
 
@@ -257,7 +263,9 @@ export default function Cart() {
                             {cartItems.map((item) => (
                                 <div
                                     key={item.id}
-                                    className="rounded-lg border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md sm:p-6"
+                                    className={`rounded-lg border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md sm:p-6 ${
+                                        removingId === item.id ? 'cart-item-removing' : ''
+                                    }`}
                                 >
                                     {/* Top Section: Image and Product Details */}
                                     <div className="mb-4 flex items-start space-x-4">
