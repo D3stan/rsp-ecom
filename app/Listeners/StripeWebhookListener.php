@@ -181,7 +181,7 @@ class StripeWebhookListener
             // Add guest-specific fields
             if ($isGuestOrder) {
                 $orderData['guest_email'] = $session['customer_details']['email'] ?? $metadata['guest_email'];
-                $orderData['guest_phone'] = $session['customer_details']['phone'] ?? null;
+                $orderData['guest_phone'] = ($metadata['customer_phone'] ?? null) ?: ($session['customer_details']['phone'] ?? null);
                 $orderData['guest_session_id'] = $guestSessionId;
             }
 
@@ -278,7 +278,7 @@ class StripeWebhookListener
             'state' => $state ?: ($address['state'] ?? ''),
             'postal_code' => $postalCode ?: ($address['postal_code'] ?? ''),
             'country' => $addressParts['country'] ?: ($address['country'] ?? 'US'),
-            'phone' => $customerDetails['phone'] ?? null,
+            'phone' => ($session['metadata']['customer_phone'] ?? null) ?: ($customerDetails['phone'] ?? null),
         ]);
     }
 

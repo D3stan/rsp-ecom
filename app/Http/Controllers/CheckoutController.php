@@ -366,7 +366,7 @@ class CheckoutController extends Controller
             // Add guest-specific fields
             if ($isGuestOrder) {
                 $orderData['guest_email'] = $checkoutSession->customer_details->email ?? $metadata->guest_email ?? null;
-                $orderData['guest_phone'] = $checkoutSession->customer_details->phone ?? null;
+                $orderData['guest_phone'] = ($metadata->customer_phone ?? null) ?: ($checkoutSession->customer_details->phone ?? null);
                 $orderData['guest_session_id'] = $metadata->guest_session_id ?? null;
             }
 
@@ -520,7 +520,7 @@ class CheckoutController extends Controller
             'state' => $stateFromAddress,
             'postal_code' => $postalCodeFromAddress,
             'country' => $country,
-            'phone' => $customerDetails->phone ?? null,
+            'phone' => ($session->metadata->customer_phone ?? null) ?: ($customerDetails->phone ?? null),
         ]);
     }
 
@@ -1059,6 +1059,7 @@ class CheckoutController extends Controller
                 'shipping_address.state' => 'required|string|max:255',
                 'shipping_address.postal_code' => 'required|string|max:20',
                 'shipping_address.country' => 'required|string|max:2',
+                'shipping_address.phone' => 'nullable|string|max:20',
                 'order_notes' => 'nullable|string|max:500',
                 'coupon_code' => 'nullable|string|max:50',
             ]);
@@ -1130,6 +1131,7 @@ class CheckoutController extends Controller
                     'type' => 'cart_checkout',
                     'description' => $description,
                     'shipping_address' => $shippingAddressString,
+                    'customer_phone' => $validated['shipping_address']['phone'] ?? '',
                     'order_notes' => $validated['order_notes'] ?? '',
                     'coupon_code' => $validated['coupon_code'] ?? '',
                 ]
@@ -1179,6 +1181,7 @@ class CheckoutController extends Controller
                 'shipping_address.state' => 'required|string|max:255',
                 'shipping_address.postal_code' => 'required|string|max:20',
                 'shipping_address.country' => 'required|string|max:2',
+                'shipping_address.phone' => 'nullable|string|max:20',
                 'order_notes' => 'nullable|string|max:500',
                 'coupon_code' => 'nullable|string|max:50',
             ]);
@@ -1271,6 +1274,7 @@ class CheckoutController extends Controller
                     'type' => 'guest_cart_checkout',
                     'description' => $description,
                     'shipping_address' => $shippingAddressString,
+                    'customer_phone' => $validated['shipping_address']['phone'] ?? '',
                     'order_notes' => $validated['order_notes'] ?? '',
                     'coupon_code' => $validated['coupon_code'] ?? '',
                 ]

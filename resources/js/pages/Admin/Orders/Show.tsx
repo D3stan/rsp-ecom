@@ -57,8 +57,10 @@ interface Order {
         id: number;
         name: string;
         email: string;
+        phone?: string;
     };
     guest_email?: string;
+    guest_phone?: string;
     status: string;
     payment_status: string;
     subtotal: number;
@@ -157,12 +159,14 @@ export default function OrderShow({ order }: Props) {
             return {
                 name: order.user.name,
                 email: order.user.email,
+                phone: order.user.phone || order.shippingAddress?.phone,
                 type: 'Registered Customer',
             };
         }
         return {
             name: 'Guest Customer',
             email: order.guest_email || 'N/A',
+            phone: order.guest_phone || order.shippingAddress?.phone,
             type: 'Guest',
         };
     };
@@ -541,6 +545,7 @@ export default function OrderShow({ order }: Props) {
                                     <div className="space-y-2">
                                         <p className="font-medium">{customer.name}</p>
                                         <p className="text-sm text-muted-foreground">{customer.email}</p>
+                                        {customer.phone && <p className="text-sm text-muted-foreground">📞 {customer.phone}</p>}
                                         <Badge variant="secondary" className="text-xs">
                                             {customer.type}
                                         </Badge>
