@@ -2,19 +2,18 @@
 
 namespace App\Mail;
 
-use App\Models\Order;
+use App\Mail\Traits\DescribesOrder;
 use App\Mail\Traits\HasLogo;
+use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Mail\Mailables\Address;
-use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Queue\SerializesModels;
 
 class OrderConfirmation extends Mailable
 {
-    use Queueable, SerializesModels, HasLogo;
+    use DescribesOrder, HasLogo, Queueable, SerializesModels;
 
     public $order;
 
@@ -32,8 +31,7 @@ class OrderConfirmation extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Conferma Ordine #' . $this->order->order_number,
+            subject: __('emails.order_confirmation.subject', ['number' => '#'.$this->order->order_number]),
             tags: ['order-confirmation'],
             metadata: [
                 'order_id' => $this->order->id,
@@ -48,10 +46,9 @@ class OrderConfirmation extends Mailable
     {
         return new Content(
             view: 'emails.order-confirmation',
-            with: [
-                'order' => $this->order,
-                'customer' => $this->order->user,
-                'items' => $this->order->orderItems()->with(['product', 'product.defaultVariant'])->get(),
+            text: 'emails.order-confirmation-text',
+            with: $this->orderContext($this->order) + [
+                'delivery' => $this->deliveryEstimate(),
                 'logoUrl' => $this->getLogoUrl(),
             ],
         );

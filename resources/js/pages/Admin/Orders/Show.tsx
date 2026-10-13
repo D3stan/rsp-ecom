@@ -5,6 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
 import {
@@ -70,6 +71,10 @@ interface Order {
     currency: string;
     notes?: string;
     tracking_number?: string;
+    tracking_carrier?: string | null;
+    tracking_status?: string | null;
+    tracking_last_synced_at?: string | null;
+    tracking_events?: TrackingEvent[];
     created_at: string;
     updated_at: string;
     orderItems: OrderItem[];
@@ -77,8 +82,22 @@ interface Order {
     shippingAddress?: Address;
 }
 
+interface TrackingEvent {
+    id: number;
+    status: string;
+    description?: string | null;
+    location?: string | null;
+    occurred_at: string;
+}
+
+interface Carrier {
+    code: string;
+    name: string;
+}
+
 interface Props {
     order: Order;
+    carriers?: Carrier[];
 }
 
 const statusColors = {
@@ -113,7 +132,9 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-export default function OrderShow({ order }: Props) {
+export default function OrderShow({ order, carriers = [] }: Props) {
+    const { t } = useTranslation();
+    const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
     const [isUpdating, setIsUpdating] = useState(false);
     const [isAddingTracking, setIsAddingTracking] = useState(false);
     const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || '');
@@ -485,6 +506,45 @@ export default function OrderShow({ order }: Props) {
                                                 )}
                                             </div>
                                         </div>
+
+                                        {/* Carrier tracking (set from the edit page; updated automatically when a tracking driver is active) */}
+                                        {(carrierName || order.tracking_status) && (
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {carrierName && (
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">{t('tracking_admin.carrier')}</p>
+                                                        <p className="text-sm">{carrierName}</p>
+                                                    </div>
+                                                )}
+                                                {order.tracking_status && (
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">
+                                                            {t('tracking_admin.section_title')}
+                                                        </p>
+                                                        <p className="text-sm">{t(`tracking_admin.status.${order.tracking_status}`)}</p>
+                                                        {order.tracking_last_synced_at && (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {t('tracking_admin.last_sync')}: {formatDate(order.tracking_last_synced_at)}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {order.tracking_events && order.tracking_events.length > 0 && (
+                                            <div>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('tracking_admin.events_title')}</p>
+                                                <ul className="mt-1 space-y-1 text-sm">
+                                                    {order.tracking_events.map((event) => (
+                                                        <li key={event.id}>
+                                                            <span className="text-xs text-muted-foreground">{formatDate(event.occurred_at)}</span>{' '}
+                                                            {event.description || t(`tracking_admin.status.${event.status}`)}
+                                                            {event.location ? ` (${event.location})` : ''}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
 
                                         {/* Status Display */}
                                         {order.status === 'shipped' || order.status === 'delivered' ? (

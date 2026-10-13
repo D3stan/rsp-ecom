@@ -27,12 +27,15 @@ interface OrderItem {
 
 interface Order {
     id: number | string;
+    order_number?: string;
     total_amount: number;
     status: string;
     payment_status: string;
     subtotal: number;
     tax_amount: number;
-    shipping_cost: number;
+    shipping_amount?: number;
+    shipping_cost?: number;
+    discount_amount?: number;
     currency?: string;
     created_at: string;
     orderItems: OrderItem[];
@@ -57,14 +60,32 @@ interface Props {
     order: Order;
     session: Session;
     isGuest: boolean;
+    // True when the viewer is not proven to be the buyer: no email/address are sent, only the order summary
+    restricted?: boolean;
     user?: User;
 }
 
-export default function CheckoutSuccess({ order, session, isGuest, user }: Props) {
-    const { t } = useTranslation();
+export default function CheckoutSuccess({ order, session, isGuest, restricted = false, user }: Props) {
+    const { t, locale } = useTranslation();
 
     // Add loading state for when order is still being processed
     const isLoading = order.id === 'pending';
+
+    // Amounts in the viewer's language and the order's currency
+    const formatMoney = (value: number) => {
+        const currency = (order.currency || session.currency || 'EUR').toUpperCase();
+        try {
+            return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);
+        } catch {
+            return `${value.toFixed(2)} ${currency}`;
+        }
+    };
+
+    const shippingAmount = order.shipping_amount ?? order.shipping_cost ?? 0;
+    const discountAmount = order.discount_amount ?? 0;
+    const customerEmail = isGuest ? session.customer_email : user?.email;
+    // Guests (and anyone who is not proven to be the buyer) follow their order through the link in the confirmation email
+    const showInboxNotice = isGuest || restricted;
 
     // Image handling helper
     const getImageSrc = (item: OrderItem) => {
@@ -84,7 +105,9 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                             <div className="success-pop mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                                 <CheckCircle className="h-8 w-8 text-green-600" />
                             </div>
-                            <h1 className="success-rise mb-2 text-3xl font-bold text-gray-900" style={{ animationDelay: '120ms' }}>{t('checkout.success.title')}</h1>
+                            <h1 className="success-rise mb-2 text-3xl font-bold text-gray-900" style={{ animationDelay: '120ms' }}>
+                                {t('checkout.success.title')}
+                            </h1>
                             <p className="success-rise text-gray-600" style={{ animationDelay: '180ms' }}>
                                 {isGuest ? t('checkout.success.thank_you_guest') : t('checkout.success.thank_you_user', { name: user?.name || '' })}
                             </p>
@@ -106,13 +129,13 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-600">{t('checkout.success.order_number')}</span>
                                                 <span className="font-mono text-sm text-black">
-                                                    {order.id === 'pending' ? 'Processing...' : `#${order.id.toString().padStart(6, '0')}`}
+                                                    {isLoading || !order.order_number ? t('checkout.success.processing') : order.order_number}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-600">{t('checkout.success.order_date')}</span>
                                                 <span className="text-sm text-black">
-                                                    {new Date(order.created_at).toLocaleDateString('it-IT', {
+                                                    {new Date(order.created_at).toLocaleDateString(locale, {
                                                         year: 'numeric',
                                                         month: 'long',
                                                         day: 'numeric',
@@ -127,35 +150,27 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                                     {session.payment_status}
                                                 </Badge>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-600">
-                                                    {isGuest ? t('checkout.success.email') : t('checkout.success.account')}
-                                                </span>
-                                                <div className="flex items-center gap-2">
-                                                    {isGuest ? (
-                                                        <>
+                                            {customerEmail && (
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-gray-600">
+                                                        {isGuest ? t('checkout.success.email') : t('checkout.success.account')}
+                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        {isGuest ? (
                                                             <Mail className="h-4 w-4 text-gray-400" />
-                                                            <span className="text-sm text-black">{session.customer_email}</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
+                                                        ) : (
                                                             <User className="h-4 w-4 text-gray-400" />
-                                                            <span className="text-sm text-black">{user?.email}</span>
-                                                        </>
-                                                    )}
+                                                        )}
+                                                        <span className="text-sm text-black">{customerEmail}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
 
-                                            {/* Guest Order Notice */}
-                                            {isGuest && (
+                                            {/* Where to follow the order: the link in the confirmation email */}
+                                            {showInboxNotice && (
                                                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                                                    <p className="text-sm text-blue-800">
-                                                        {t('checkout.success.guest_order_notice')}{' '}
-                                                        <Link href={route('register')} className="underline">
-                                                            {t('checkout.success.creating_account')}
-                                                        </Link>{' '}
-                                                        for easier order management.
-                                                    </p>
+                                                    <p className="text-sm font-medium text-blue-900">{t('checkout.success.restricted_title')}</p>
+                                                    <p className="mt-1 text-sm text-blue-800">{t('checkout.success.restricted_body')}</p>
                                                 </div>
                                             )}
                                         </div>
@@ -189,10 +204,10 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                                             </p>
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="font-medium">€{(item.quantity * item.price).toFixed(2)}</p>
+                                                            <p className="font-medium">{formatMoney(item.quantity * item.price)}</p>
                                                             {item.quantity > 1 && (
                                                                 <p className="text-sm text-gray-600">
-                                                                    €{item.price.toFixed(2)} {t('checkout.success.each')}
+                                                                    {formatMoney(item.price)} {t('checkout.success.each')}
                                                                 </p>
                                                             )}
                                                         </div>
@@ -264,21 +279,26 @@ export default function CheckoutSuccess({ order, session, isGuest, user }: Props
                                         <div className="space-y-2">
                                             <div className="flex justify-between">
                                                 <span className="text-sm">{t('checkout.success.subtotal')}</span>
-                                                <span className="text-sm">€{((order.subtotal || 0) + (order.tax_amount || 0)).toFixed(2)}</span>
+                                                <span className="text-sm">{formatMoney((order.subtotal || 0) + (order.tax_amount || 0))}</span>
                                             </div>
+                                            {discountAmount > 0 && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-sm">{t('checkout.success.discount')}</span>
+                                                    <span className="text-sm">-{formatMoney(discountAmount)}</span>
+                                                </div>
+                                            )}
                                             <div className="flex justify-between">
                                                 <span className="text-sm">{t('checkout.success.shipping')}</span>
                                                 <span className="text-sm">
-                                                    {(order.shipping_cost || 0) === 0
-                                                        ? t('checkout.success.free')
-                                                        : `€${(order.shipping_cost || 0).toFixed(2)}`}
+                                                    {shippingAmount === 0 ? t('checkout.success.free') : formatMoney(shippingAmount)}
                                                 </span>
                                             </div>
                                             <Separator />
                                             <div className="flex justify-between text-lg font-bold">
                                                 <span>{t('checkout.success.total')}</span>
-                                                <span>€{(order.total_amount || 0).toFixed(2)}</span>
+                                                <span>{formatMoney(order.total_amount || 0)}</span>
                                             </div>
+                                            <p className="text-right text-xs text-gray-500">{t('checkout.success.vat_included')}</p>
                                         </div>
 
                                         <Separator />

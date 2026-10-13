@@ -6,7 +6,13 @@ use App\Console\Commands\SendTestOrderConfirmation;
 use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\GenerateSitemapIndex;
 use App\Console\Commands\ClearSitemaps;
+use App\Models\Order;
+use App\Observers\OrderObserver;
+use App\Shipping\Tracking\Contracts\TrackingProvider;
+use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Laravel\Cashier\Cashier;
@@ -20,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Carrier tracking module: one manager, the active driver is injectable as TrackingProvider
+        $this->app->singleton(TrackingManager::class);
+        $this->app->bind(TrackingProvider::class, fn ($app) => $app->make(TrackingManager::class)->driver());
+
         // Register console commands
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -53,6 +63,11 @@ class AppServiceProvider extends ServiceProvider
             // Silently skip Stripe initialization when database is unavailable
         }
 
+        $this->warnAboutUnsafeProductionMail();
+
+        // Lifecycle emails (delivered, cancelled) follow order status changes
+        Order::observe(OrderObserver::class);
+
         // Configure Cashier
         // Cashier::calculateTaxes(); // Uncomment to enable automatic tax calculation
         
@@ -61,5 +76,48 @@ class AppServiceProvider extends ServiceProvider
         
         // Configure custom models if needed
         // Cashier::useCustomerModel(User::class);
+    }
+
+    /**
+     * Customer mail silently goes nowhere with the log/array transport (or with no real
+     * sender/support address). Make that impossible to miss in production logs.
+     * Throttled to once an hour so the per-minute scheduler boot doesn't flood the log.
+     */
+    private function warnAboutUnsafeProductionMail(): void
+    {
+        if (! $this->app->isProduction()) {
+            return;
+        }
+
+        $problems = [];
+
+        if (in_array(config('mail.default'), ['log', 'array'], true)) {
+            $problems[] = 'MAIL_MAILER is "'.config('mail.default').'": no email is delivered to customers';
+        }
+
+        // Placeholder domains: example.com (code defaults) and your-domain (.env.example)
+        $isPlaceholder = fn (string $address): bool => str_ends_with($address, '@example.com') || str_ends_with($address, '@your-domain');
+
+        if ($isPlaceholder((string) config('mail.from.address'))) {
+            $problems[] = 'MAIL_FROM_ADDRESS is still a placeholder address';
+        }
+
+        if ($isPlaceholder((string) config('mail.support_address'))) {
+            $problems[] = 'MAIL_SUPPORT_ADDRESS is not set (emails would show a placeholder support address)';
+        }
+
+        if ($problems === []) {
+            return;
+        }
+
+        try {
+            if (! Cache::add('mail-config-warning', true, now()->addHour())) {
+                return;
+            }
+        } catch (\Throwable) {
+            // Cache unavailable (e.g. before migrations): warn anyway.
+        }
+
+        Log::critical('Unsafe production mail configuration: '.implode('; ', $problems));
     }
 }

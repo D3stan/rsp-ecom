@@ -9,8 +9,10 @@ use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\GuestOrderController;
 use App\Http\Controllers\Api\PromotionController;
 use App\Http\Controllers\ReviewController;
+use App\Shipping\Tracking\Http\TrackingWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
@@ -82,11 +84,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Guest cart checkout
 Route::post('/guest/checkout/cart', [CheckoutController::class, 'guestCartCheckout'])->name('guest.cart.checkout');
-Route::post('/guest/checkout/session', [CheckoutController::class, 'createGuestSession'])->name('checkout.guest.session');
 
 // Success and cancel pages - accessible to both authenticated and guest users
 Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
+
+// Order-status page for guests, reached through the signed link in the emails (Order::publicUrl())
+Route::get('/orders/{order}', [GuestOrderController::class, 'show'])
+    ->middleware('throttle:60,1')
+    ->name('orders.guest.show');
 
 // Remove test route since it was causing Inertia issues
 
@@ -98,10 +104,17 @@ Route::get('/guest/checkout/{priceId}/promo/{promoCode}', [CheckoutController::c
 // Configure in Stripe Dashboard to point to: /stripe/webhook
 // Cashier registers this route automatically and uses our custom webhook controller
 
+// Carrier tracking webhooks. Only drivers implementing SupportsWebhooks answer (404 otherwise), the driver
+// authenticates the request; CSRF-exempt in bootstrap/app.php. See docs/shipping-tracking-module.md.
+Route::post('/webhooks/tracking/{driver}', TrackingWebhookController::class)
+    ->where('driver', '[A-Za-z0-9_-]+')
+    ->middleware('throttle:120,1')
+    ->name('webhooks.tracking');
+
 Route::get('/about', [PageController::class, 'about'])->name('about');
 
 Route::get('/contact', [ContactController::class, 'index'])->name('contact');
-Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
 
 Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
 
@@ -194,7 +207,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         $orderStats = [
             'total' => $user->orders()->count(),
             'pending' => $user->orders()->where('status', 'pending')->count(),
-            'completed' => $user->orders()->whereIn('status', ['completed', 'delivered'])->count(),
+            'completed' => $user->orders()->where('status', 'delivered')->count(),
         ];
         
         // Get wishlist count and items

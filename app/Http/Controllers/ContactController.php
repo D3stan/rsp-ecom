@@ -34,11 +34,19 @@ class ContactController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'firstName' => 'required|string|max:255',
-            'lastName' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'subject' => 'required|string|max:255',
+        // Values that end up in mail headers are single-line; line breaks are never legitimate there.
+        $input = $request->all();
+        foreach (['firstName', 'lastName', 'subject'] as $field) {
+            if (isset($input[$field]) && is_string($input[$field])) {
+                $input[$field] = ContactMessage::singleLine($input[$field]);
+            }
+        }
+
+        $validator = Validator::make($input, [
+            'firstName' => 'required|string|max:100',
+            'lastName' => 'required|string|max:100',
+            'email' => 'required|email|max:254',
+            'subject' => 'required|string|max:150',
             'message' => 'required|string|min:10|max:5000',
         ]);
 
@@ -57,7 +65,7 @@ class ContactController extends Controller
             
             return back()->with('success', 'Thank you for your message! We\'ll get back to you soon.');
         } catch (\Exception $e) {
-            \Log::error('Contact form submission failed: ' . $e->getMessage());
+            \Log::error('Contact form submission failed', ['exception' => get_class($e), 'error' => $e->getMessage()]);
             
             return back()->with('error', 'Sorry, there was an error sending your message. Please try again later or contact us directly.');
         }

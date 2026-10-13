@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -104,11 +106,13 @@ class OrdersController extends Controller
             'user',
             'orderItems.product', 'orderItems.product.defaultVariant',
             'billingAddress',
-            'shippingAddress'
+            'shippingAddress',
+            'trackingEvents' => fn ($events) => $events->orderByDesc('occurred_at')->limit(20),
         ]);
 
         return Inertia::render('Admin/Orders/Show', [
             'order' => $order->toFrontendArray(),
+            'carriers' => app(TrackingManager::class)->carriers(),
         ]);
     }
 
@@ -126,6 +130,7 @@ class OrdersController extends Controller
 
         return Inertia::render('Admin/Orders/Edit', [
             'order' => $order->toFrontendArray(),
+            'carriers' => app(TrackingManager::class)->carriers(),
         ]);
     }
 
@@ -142,9 +147,10 @@ class OrdersController extends Controller
 
             $request->validate([
                 'status' => 'sometimes|string|in:pending,processing,shipped,delivered,cancelled',
-                'payment_status' => 'sometimes|string|in:pending,processing,succeeded,failed',
+                'payment_status' => 'sometimes|string|in:pending,processing,succeeded,failed,cancelled',
                 'notes' => 'sometimes|nullable|string|max:1000',
                 'tracking_number' => 'sometimes|nullable|string|max:100',
+                'tracking_carrier' => ['sometimes', 'nullable', 'string', 'max:50', Rule::in(app(TrackingManager::class)->carrierCodes())],
                 'shipping_amount' => 'sometimes|numeric|min:0',
                 'tax_amount' => 'sometimes|numeric|min:0',
                 'subtotal' => 'sometimes|numeric|min:0',
@@ -178,6 +184,7 @@ class OrdersController extends Controller
                 'payment_status' => $request->input('payment_status', $order->payment_status),
                 'notes' => $request->input('notes', $order->notes),
                 'tracking_number' => $newTrackingNumber,
+                'tracking_carrier' => $request->input('tracking_carrier', $order->tracking_carrier),
                 'shipping_amount' => $request->input('shipping_amount', $order->shipping_amount),
                 'tax_amount' => $request->input('tax_amount', $order->tax_amount),
                 'subtotal' => $request->input('subtotal', $order->subtotal),
@@ -199,31 +206,24 @@ class OrdersController extends Controller
                 'tracking_number_added' => $trackingNumberAdded,
             ]);
 
-            if ($statusChangedToShipped || $trackingNumberUpdated) {
-                $emailEnabled = \App\Models\Setting::get('order_shipped_enabled', true);
-                Log::info('Shipping email condition met', [
-                    'order_id' => $order->id,
-                    'email_enabled' => $emailEnabled,
-                ]);
+            // The shipped email is only for orders that are (still) shipped. EmailService dedupes on
+            // status + tracking number, so repeated saves never re-send; only a changed number does.
+            $emailWarning = null;
 
-                if ($emailEnabled) {
-                    $emailService = app(\App\Services\EmailService::class);
+            if (($statusChangedToShipped || $trackingNumberUpdated) && $newStatus === 'shipped') {
+                $emailService = app(\App\Services\EmailService::class);
 
-                    // Scenario 1: Manual status change to shipped (no tracking number) -> send email WITHOUT tracking
-                    // Scenario 2: Tracking number added/updated -> send email WITH tracking
-                    $emailTrackingNumber = ($trackingNumberAdded || $trackingNumberUpdated) ? $newTrackingNumber : null;
-
-                    Log::info('Attempting to send shipping email', [
-                        'order_id' => $order->id,
-                        'email_tracking_number' => $emailTrackingNumber,
-                    ]);
-
-                    $emailSent = $emailService->sendOrderShipped($order, $emailTrackingNumber);
+                if ($emailService->isEnabled(\App\Models\OrderEmail::TYPE_SHIPPED)) {
+                    $emailQueued = $emailService->sendOrderShipped($order, $newTrackingNumber ?: null);
 
                     Log::info('Shipping email result', [
                         'order_id' => $order->id,
-                        'email_sent' => $emailSent,
+                        'email_queued' => $emailQueued,
                     ]);
+
+                    if (! $emailQueued) {
+                        $emailWarning = 'The order was updated, but the shipping email could not be queued. Please check the application logs.';
+                    }
                 } else {
                     Log::info('Shipping email disabled in settings', ['order_id' => $order->id]);
                 }
@@ -267,7 +267,9 @@ class OrdersController extends Controller
         }
 
         Log::info('Order updated successfully', ['order_id' => $order->id]);
-        return back()->with('success', 'Order updated successfully.');
+        $response = back()->with('success', 'Order updated successfully.');
+
+        return $emailWarning ? $response->with('warning', $emailWarning) : $response;
         
         } catch (\Exception $e) {
             Log::error('Failed to update order', [
@@ -288,9 +290,23 @@ class OrdersController extends Controller
             'status' => 'required|string|in:pending,processing,shipped,delivered,cancelled',
         ]);
 
+        $wasShipped = $order->status === 'shipped';
+
         $order->update(['status' => $request->status]);
 
-        return back()->with('success', 'Order status updated successfully.');
+        $response = back()->with('success', 'Order status updated successfully.');
+
+        // Same deduped shipped-email path as update()/processShip()
+        if ($request->status === 'shipped' && ! $wasShipped) {
+            $emailService = app(\App\Services\EmailService::class);
+
+            if ($emailService->isEnabled(\App\Models\OrderEmail::TYPE_SHIPPED)
+                && ! $emailService->sendOrderShipped($order, $order->tracking_number)) {
+                $response->with('warning', 'The status was updated, but the shipping email could not be queued. Please check the application logs.');
+            }
+        }
+
+        return $response;
     }
 
     /**
@@ -304,12 +320,30 @@ class OrdersController extends Controller
             'status' => 'required|string|in:pending,processing,shipped,delivered,cancelled',
         ]);
 
-        Order::whereIn('id', $request->order_ids)
-            ->update(['status' => $request->status]);
+        $emailService = app(\App\Services\EmailService::class);
+        $emailFailures = 0;
+
+        // Per model (not a bulk query) so model events keep status/payment_status consistent
+        Order::with('user')->whereIn('id', $request->order_ids)->get()
+            ->each(function (Order $order) use ($request, $emailService, &$emailFailures) {
+                $wasShipped = $order->status === 'shipped';
+
+                $order->update(['status' => $request->status]);
+
+                // Same deduped path as update()/processShip(): no tracking number -> fingerprint without tracking
+                if ($request->status === 'shipped' && ! $wasShipped
+                    && $emailService->isEnabled(\App\Models\OrderEmail::TYPE_SHIPPED)
+                    && ! $emailService->sendOrderShipped($order, $order->tracking_number)) {
+                    $emailFailures++;
+                }
+            });
 
         $count = count($request->order_ids);
+        $response = back()->with('success', "{$count} orders updated successfully.");
 
-        return back()->with('success', "{$count} orders updated successfully.");
+        return $emailFailures > 0
+            ? $response->with('warning', "{$emailFailures} shipping email(s) could not be queued. Please check the application logs.")
+            : $response;
     }
 
     /**
@@ -336,7 +370,8 @@ class OrdersController extends Controller
             'reason' => 'sometimes|string|max:500',
         ]);
 
-        // TODO: Implement Stripe refund logic here
+        // TODO: Implement Stripe refund logic here, then call EmailService::sendOrderRefunded($order, $refundAmount).
+        //       Until money really moves the customer must NOT be emailed (no refund email from this placeholder).
         // For now, just mark as refunded in notes
         $refundAmount = $request->amount ?? $order->total_amount;
         $reason = $request->reason ?? 'Admin refund';
@@ -380,6 +415,7 @@ class OrdersController extends Controller
             'order' => $order->toFrontendArray(),
             'adminSettings' => $adminSettings,
             'sizes' => $sizes,
+            'carriers' => app(TrackingManager::class)->carriers(),
         ]);
     }
 
@@ -410,6 +446,7 @@ class OrdersController extends Controller
             'box_info.weight' => 'nullable|numeric|min:0',
             'box_info.carrier' => 'nullable|string|max:100',
             'box_info.service_type' => 'nullable|string|max:100',
+            'tracking_carrier' => ['nullable', 'string', 'max:50', Rule::in(app(TrackingManager::class)->carrierCodes())],
             'additional_settings.insurance_enabled' => 'boolean',
             'additional_settings.insurance_value' => 'nullable|numeric|min:0',
             'additional_settings.contrassegno_enabled' => 'boolean',
@@ -426,21 +463,29 @@ class OrdersController extends Controller
                 'notes' => $this->buildShippingNotes($order, $request->all()),
             ];
 
+            // Carrier chosen from config('shipping.carriers'); drives the tracking link and automatic tracking
+            if ($request->has('tracking_carrier')) {
+                $updateData['tracking_carrier'] = $request->input('tracking_carrier');
+            }
+
             $order->update($updateData);
 
-            // Send shipping notification email if enabled
-            if (\App\Models\Setting::get('order_shipped_enabled', true)) {
-                $emailService = app(\App\Services\EmailService::class);
-                $emailService->sendOrderShipped($order, $order->tracking_number);
-            }
+            // Queue the shipping notification (deduped per status + tracking number)
+            $emailService = app(\App\Services\EmailService::class);
+            $emailQueued = ! $emailService->isEnabled(\App\Models\OrderEmail::TYPE_SHIPPED)
+                || $emailService->sendOrderShipped($order, $order->tracking_number);
 
             Log::info('Order shipped successfully', [
                 'order_id' => $order->id,
                 'carrier' => $request->input('box_info.carrier'),
             ]);
 
-            return redirect()->route('admin.orders.show', $order)
+            $response = redirect()->route('admin.orders.show', $order)
                 ->with('success', 'Order has been shipped successfully!');
+
+            return $emailQueued
+                ? $response
+                : $response->with('warning', 'The order was marked as shipped, but the shipping email could not be queued. Please check the application logs.');
 
         } catch (\Exception $e) {
             Log::error('Failed to process order shipping', [

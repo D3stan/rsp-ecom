@@ -1,17 +1,51 @@
+# One image, three roles. `app` serves HTTP; `queue` sends mail and runs other queued jobs;
+# `scheduler` runs routes/console.php. The workers are plain command overrides of the same image
+# (serversideup/php docs: framework-guides/laravel/queue and /task-scheduler).
+x-app-common: &app-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  # Dokploy writes the variables from its Environment tab into this .env file.
+  env_file:
+    - .env
+  volumes:
+    - storage-app:/var/www/html/storage/app
+    - storage-logs:/var/www/html/storage/logs
+  networks:
+    - dokploy-network
+
+# The image entrypoint runs the Laravel "automations" (migrate, storage:link, ...) for ANY command when
+# AUTORUN_ENABLED=true (set in the Dockerfile). Workers must not repeat them: only `app` migrates.
+x-worker-environment: &worker-environment
+  AUTORUN_ENABLED: "false"
+  RSP_STARTUP_TASKS: "false"
+
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    # Dokploy writes the variables from its Environment tab into this .env file.
-    env_file:
-      - .env
-    volumes:
-      - storage-app:/var/www/html/storage/app
-      - storage-logs:/var/www/html/storage/logs
-    networks:
-      - dokploy-network
+    <<: *app-common
+
+  queue:
+    <<: *app-common
+    command: ["php", "/var/www/html/artisan", "queue:work", "--tries=3", "--max-time=3600", "--sleep=3", "--timeout=60"]
+    environment: *worker-environment
+    stop_signal: SIGTERM
+    # Let the current job (a mail send) finish on shutdown/redeploy.
+    stop_grace_period: 90s
+    healthcheck:
+      # Native script of the serversideup image: fails when no `queue:work` process is running.
+      test: ["CMD", "healthcheck-queue"]
+      start_period: 10s
+
+  scheduler:
+    <<: *app-common
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    environment: *worker-environment
+    stop_signal: SIGTERM
+    healthcheck:
+      # Native script of the serversideup image: fails when no `schedule:work` process is running.
+      test: ["CMD", "healthcheck-schedule"]
+      start_period: 10s
 
 volumes:
   storage-app:

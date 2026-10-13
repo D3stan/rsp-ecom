@@ -63,6 +63,7 @@ interface SettingsData {
     order_shipped_enabled: boolean;
     order_delivered_enabled: boolean;
     order_cancelled_enabled: boolean;
+    order_refunded_enabled: boolean;
     newsletter_enabled: boolean;
     from_email: string;
     from_name: string;
@@ -123,6 +124,7 @@ export default function AdminSettings({ settings }: Props) {
         order_shipped_enabled: settings.order_shipped_enabled,
         order_delivered_enabled: settings.order_delivered_enabled,
         order_cancelled_enabled: settings.order_cancelled_enabled,
+        order_refunded_enabled: settings.order_refunded_enabled,
         newsletter_enabled: settings.newsletter_enabled,
         from_email: settings.from_email,
         from_name: settings.from_name,
@@ -658,7 +660,9 @@ export default function AdminSettings({ settings }: Props) {
                                             onChange={(e) => emailForm.setData('admin_notification_email', e.target.value)}
                                             placeholder="admin@yourstore.com"
                                         />
-                                        <p className="text-sm text-muted-foreground">Email address to receive order notifications</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Receives new-order alerts and urgent payment alerts. If empty, the contact email from the environment is used.
+                                        </p>
                                     </div>
 
                                     <Separator />
@@ -712,6 +716,18 @@ export default function AdminSettings({ settings }: Props) {
                                                     id="order_cancelled_enabled"
                                                     checked={emailForm.data.order_cancelled_enabled}
                                                     onCheckedChange={(checked) => emailForm.setData('order_cancelled_enabled', checked)}
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center justify-between">
+                                                <div className="space-y-0.5">
+                                                    <Label htmlFor="order_refunded_enabled">Order Refunded</Label>
+                                                    <p className="text-sm text-muted-foreground">Send notification when a refund has been issued</p>
+                                                </div>
+                                                <Switch
+                                                    id="order_refunded_enabled"
+                                                    checked={emailForm.data.order_refunded_enabled}
+                                                    onCheckedChange={(checked) => emailForm.setData('order_refunded_enabled', checked)}
                                                 />
                                             </div>
                                         </div>

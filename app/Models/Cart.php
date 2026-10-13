@@ -53,6 +53,22 @@ class Cart extends Model
         return $this->subtotal + $this->shipping_cost;
     }
 
+    /**
+     * Fingerprint of what is being bought (variant, size, quantity, price), independent of item order.
+     * Stored in the Stripe session metadata when checkout starts and compared when the order is created.
+     */
+    public function contentHash(): string
+    {
+        $lines = $this->cartItems->map(fn ($item) => implode('|', [
+            $item->product_variant_id ?? 'p'.$item->product_id,
+            $item->size_id ?? '-',
+            (int) $item->quantity,
+            number_format((float) $item->price, 2, '.', ''),
+        ]))->sort()->values()->all();
+
+        return sha1(implode("\n", $lines));
+    }
+
     // Helper methods
     public function addItem(Product $product, int $quantity = 1): CartItem
     {

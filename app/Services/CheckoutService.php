@@ -3,12 +3,9 @@
 namespace App\Services;
 
 use App\Models\Cart;
-use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\User;
 use App\Services\EmailService;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Stripe\Checkout\Session;
 use Stripe\Price;
@@ -110,9 +107,6 @@ class CheckoutService
     public function createCheckoutSession(User $user, Collection $cartItems, array $checkoutData, Cart $cart = null): Session
     {
         try {
-            // Calculate totals
-            $totals = $this->calculateTotals($cartItems, $cart);
-
             // Create or update Stripe customer
             if (!$user->hasStripeId()) {
                 $user->createAsStripeCustomer([
@@ -141,11 +135,16 @@ class CheckoutService
                 'phone_number_collection' => [
                     'enabled' => true,
                 ],
-                'metadata' => [
+                // The order is created after payment by OrderCreationService, from this metadata
+                'metadata' => array_filter([
                     'user_id' => $user->id,
+                    'cart_id' => $cart?->id,
                     'cart_items_count' => $cartItems->count(),
                     'order_type' => 'cart_checkout',
-                ],
+                    'locale' => app()->getLocale(),
+                    'source' => OrderCreationService::SESSION_SOURCE,
+                    'cart_hash' => $cart?->contentHash(),
+                ], fn ($value) => $value !== null),
             ];
 
             // Add tax ID collection if requested
@@ -169,12 +168,7 @@ class CheckoutService
             }
 
             // Create the checkout session
-            $session = Session::create($sessionParams);
-
-            // Create order record
-            $this->createOrderFromSession($user, $cartItems, $session, $totals, $checkoutData);
-
-            return $session;
+            return Session::create($sessionParams);
 
         } catch (ApiErrorException $e) {
             Log::error('Stripe API error during checkout session creation', [
@@ -222,60 +216,13 @@ class CheckoutService
                             'sku' => $product->sku ?? $product->slug,
                         ],
                     ],
-                    'unit_amount' => (int)($product->price * 100), // Convert to cents
+                    'unit_amount' => (int) round($product->price * 100), // Convert to cents
                 ],
                 'quantity' => $item->quantity,
             ];
         }
 
         return $lineItems;
-    }
-
-    /**
-     * Create order record from checkout session
-     */
-    protected function createOrderFromSession(
-        User $user,
-        Collection $cartItems,
-        Session $session,
-        array $totals,
-        array $checkoutData
-    ): Order {
-        return DB::transaction(function () use ($user, $cartItems, $session, $totals, $checkoutData) {
-            // Create the order
-            $order = Order::create([
-                'user_id' => $user->id,
-                'total_amount' => $totals['total'],
-                'status' => 'pending',
-                'stripe_checkout_session_id' => $session->id,
-                'stripe_customer_id' => $user->stripe_id,
-                'payment_status' => 'pending',
-                'payment_method' => 'stripe',
-                'subtotal' => $totals['subtotal'],
-                'tax_amount' => $totals['tax_amount'],
-                'shipping_cost' => $totals['shipping_cost'],
-                'billing_address' => json_encode($checkoutData['billing_address']),
-                'shipping_address' => json_encode(
-                    $checkoutData['shipping_same_as_billing'] 
-                        ? $checkoutData['billing_address']
-                        : $checkoutData['shipping_address']
-                ),
-            ]);
-
-            // Create order items
-            foreach ($cartItems as $item) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item->product_id,
-                    'size_id' => $item->size_id,
-                    'quantity' => $item->quantity,
-                    'price' => $item->product->price,
-                    'total' => $item->product->price * $item->quantity,
-                ]);
-            }
-
-            return $order;
-        });
     }
 
     /**
@@ -315,6 +262,8 @@ class CheckoutService
                     'guest_checkout' => 'true',
                     'guest_session_id' => $guestSessionId,
                     'guest_phone' => $guestData['guest_phone'] ?? '',
+                    'locale' => app()->getLocale(),
+                    'source' => OrderCreationService::SESSION_SOURCE,
                 ],
             ];
 
@@ -344,7 +293,7 @@ class CheckoutService
             Log::info('Guest checkout session created from cart', [
                 'session_id' => $session->id,
                 'guest_session_id' => $guestSessionId,
-                'amount' => $totals['total'] * 100,
+                'amount' => (int) round($totals['total'] * 100),
                 'customer_email' => $guestData['guest_email'],
             ]);
 
@@ -380,6 +329,9 @@ class CheckoutService
                     'guest_checkout' => 'true',
                     'guest_session_id' => $guestSessionId,
                     'guest_phone' => $guestData['guest_phone'] ?? '',
+                    'locale' => app()->getLocale(),
+                    'source' => OrderCreationService::SESSION_SOURCE,
+                    'cart_hash' => $cart?->contentHash() ?? '',
                 ],
             ];
 
@@ -409,7 +361,7 @@ class CheckoutService
             Log::info('Guest checkout session created', [
                 'session_id' => $session->id,
                 'guest_session_id' => $guestSessionId,
-                'amount' => $totals['total'] * 100,
+                'amount' => (int) round($totals['total'] * 100),
                 'customer_email' => $guestData['guest_email'],
             ]);
 
@@ -503,175 +455,5 @@ class CheckoutService
             'total' => round($total, 2),
             'total_quantity' => $totalQuantity,
         ];
-    }
-
-    /**
-     * Create order from guest checkout session using cart
-     */
-    public function createGuestOrderFromCartSession(Session $session): Order
-    {
-        return DB::transaction(function () use ($session) {
-            $guestSessionId = $session->metadata->guest_session_id ?? null;
-            
-            if (!$guestSessionId) {
-                throw new \Exception('Guest session ID not found in session metadata');
-            }
-
-            // Get cart from session
-            $cart = Cart::where('session_id', $guestSessionId)->first();
-
-            if (!$cart || $cart->cartItems->isEmpty()) {
-                throw new \Exception('Guest cart is empty or not found');
-            }
-
-            // Get cart items with relationships
-            $cartItems = $cart->cartItems()->with(['product', 'size'])->get();
-
-            // Create order record
-            $order = Order::create([
-                'user_id' => null, // Guest order
-                'guest_email' => $session->customer_email,
-                'guest_phone' => $session->metadata->guest_phone ?? null,
-                'guest_session_id' => $guestSessionId,
-                'total_amount' => $session->amount_total / 100,
-                'tax_amount' => ($session->total_details->amount_tax ?? 0) / 100,
-                'shipping_amount' => ($session->total_details->amount_shipping ?? 0) / 100,
-                'currency' => strtoupper($session->currency),
-                'status' => 'pending',
-                'payment_status' => 'processing',
-                'stripe_checkout_session_id' => $session->id,
-                'stripe_payment_intent_id' => $session->payment_intent,
-                'payment_method' => 'stripe',
-            ]);
-
-            // Create order items from cart items
-            foreach ($cartItems as $cartItem) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $cartItem->product->id,
-                    'size_id' => $cartItem->size->id ?? null,
-                    'quantity' => $cartItem->quantity,
-                    'price' => $cartItem->price,
-                    'total' => $cartItem->total,
-                ]);
-            }
-
-            // Clear cart after successful order creation
-            $cart->cartItems()->delete();
-            $cart->delete();
-
-            Log::info('Guest order created successfully from cart session', [
-                'order_id' => $order->id,
-                'session_id' => $session->id,
-                'guest_session_id' => $guestSessionId,
-                'total_amount' => $order->total_amount,
-            ]);
-
-            return $order;
-        });
-    }
-
-    /**
-     * Create order from Cashier checkout session
-     */
-    public function createOrderFromCheckout(User $user, Collection $cartItems, $checkout, array $checkoutData): Order
-    {
-        return DB::transaction(function () use ($user, $cartItems, $checkout, $checkoutData) {
-            // Calculate totals
-            $totals = $this->calculateTotals($cartItems);
-
-            // Create order
-            $order = Order::create([
-                'user_id' => $user->id,
-                'order_number' => 'ORD-' . time() . '-' . $user->id,
-                'status' => 'pending',
-                'subtotal' => $totals['subtotal'],
-                'tax_amount' => $totals['tax_amount'],
-                'shipping_amount' => $totals['shipping_cost'],
-                'total_amount' => $totals['total'],
-                'currency' => 'usd',
-                'stripe_checkout_session_id' => $checkout->id,
-                'payment_status' => 'pending',
-                'payment_method' => 'stripe_checkout',
-                'stripe_customer_id' => $user->stripe_id,
-            ]);
-
-            // Create order items
-            foreach ($cartItems as $cartItem) {
-                $order->orderItems()->create([
-                    'product_id' => $cartItem->product_id,
-                    'size_id' => $cartItem->size_id,
-                    'quantity' => $cartItem->quantity,
-                    'price' => $cartItem->price,
-                    'total' => $cartItem->price * $cartItem->quantity,
-                ]);
-            }
-
-            Log::info('Order created from Cashier checkout', [
-                'order_id' => $order->id,
-                'session_id' => $checkout->id,
-                'user_id' => $user->id,
-                'total_amount' => $order->total_amount,
-            ]);
-
-            return $order;
-        });
-    }
-
-    /**
-     * Create guest order from Cashier checkout session
-     */
-    public function createGuestOrderFromCheckout(array $cartItems, $checkout, array $checkoutData, string $guestSessionId): Order
-    {
-        return DB::transaction(function () use ($cartItems, $checkout, $checkoutData, $guestSessionId) {
-            // Calculate totals from cart items
-            $subtotal = 0;
-            foreach ($cartItems as $item) {
-                $subtotal += $item['product']['price'] * $item['quantity'];
-            }
-
-            $taxRate = 0.0875; // 8.75%
-            $taxAmount = round($subtotal * $taxRate, 2);
-            $shippingCost = $subtotal >= 100 ? 0.0 : 10.0;
-            $total = $subtotal + $taxAmount + $shippingCost;
-
-            // Create guest order
-            $order = Order::create([
-                'user_id' => null, // Guest order
-                'order_number' => 'GUEST-' . time() . '-' . substr($guestSessionId, 0, 8),
-                'status' => 'pending',
-                'subtotal' => $subtotal,
-                'tax_amount' => $taxAmount,
-                'shipping_amount' => $shippingCost,
-                'total_amount' => $total,
-                'currency' => 'usd',
-                'stripe_checkout_session_id' => $checkout->id,
-                'payment_status' => 'pending',
-                'payment_method' => 'stripe_checkout',
-                'guest_email' => $checkoutData['guest_email'],
-                'guest_phone' => $checkoutData['guest_phone'] ?? null,
-                'guest_session_id' => $guestSessionId,
-            ]);
-
-            // Create order items
-            foreach ($cartItems as $item) {
-                $order->orderItems()->create([
-                    'product_id' => $item['product']['id'],
-                    'size_id' => $item['size']['id'],
-                    'quantity' => $item['quantity'],
-                    'price' => $item['product']['price'],
-                    'total' => $item['product']['price'] * $item['quantity'],
-                ]);
-            }
-
-            Log::info('Guest order created from Cashier checkout', [
-                'order_id' => $order->id,
-                'session_id' => $checkout->id,
-                'guest_session_id' => $guestSessionId,
-                'total_amount' => $order->total_amount,
-            ]);
-
-            return $order;
-        });
     }
 }

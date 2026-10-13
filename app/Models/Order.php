@@ -2,16 +2,24 @@
 
 namespace App\Models;
 
+use App\Shipping\Tracking\DTO\TrackingRequest;
+use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class Order extends Model
 {
     use HasFactory;
-    
+
+    /**
+     * Validity (days) of the signed order-status link sent in emails.
+     */
+    public const PUBLIC_URL_DAYS = 30;
+
     protected $fillable = [
         'order_number',
         'user_id',
@@ -25,6 +33,7 @@ class Order extends Model
         'coupon_code',
         'total_amount',
         'currency',
+        'locale',
         'notes',
         'stripe_payment_intent_id',
         'stripe_checkout_session_id',
@@ -32,6 +41,12 @@ class Order extends Model
         'payment_method',
         'stripe_customer_id',
         'tracking_number',
+        // Carrier tracking module (App\Shipping\Tracking)
+        'tracking_carrier',
+        'tracking_status',
+        'tracking_last_synced_at',
+        'tracking_next_sync_at',
+        'tracking_started_at',
         'shipping_method',
         'estimated_delivery_date',
         // Guest order fields
@@ -51,6 +66,9 @@ class Order extends Model
         'total_amount' => 'decimal:2',
         'confirmation_email_sent' => 'boolean',
         'confirmation_email_sent_at' => 'datetime',
+        'tracking_last_synced_at' => 'datetime',
+        'tracking_next_sync_at' => 'datetime',
+        'tracking_started_at' => 'datetime',
     ];
 
     // Boot method to generate order number
@@ -61,6 +79,37 @@ class Order extends Model
         static::creating(function ($order) {
             if (empty($order->order_number)) {
                 $order->order_number = static::generateOrderNumber();
+            }
+        });
+
+        // Cancelling an order whose payment never completed also closes the payment. A captured
+        // payment (succeeded) is left alone: returning the money is a separate refund step.
+        static::updating(function ($order) {
+            if ($order->isDirty('status')
+                && $order->status === 'cancelled'
+                && !$order->isDirty('payment_status')
+                && $order->isPaymentPending()) {
+                $order->payment_status = 'cancelled';
+            }
+        });
+
+        // A corrected tracking number or carrier starts a fresh tracking cycle (old status and
+        // schedule belong to the previous parcel; this also re-enables polling switched off for it).
+        static::updating(function ($order) {
+            if (! $order->isDirty('tracking_number') && ! $order->isDirty('tracking_carrier')) {
+                return;
+            }
+
+            $numberChanged = strcasecmp(
+                TrackingRequest::normalizeNumber($order->getOriginal('tracking_number')),
+                TrackingRequest::normalizeNumber($order->tracking_number),
+            ) !== 0;
+
+            if ($numberChanged || $order->isDirty('tracking_carrier')) {
+                $order->tracking_status = null;
+                $order->tracking_last_synced_at = null;
+                $order->tracking_next_sync_at = null;
+                $order->tracking_started_at = null;
             }
         });
     }
@@ -89,6 +138,11 @@ class Order extends Model
     public function size(): BelongsTo
     {
         return $this->belongsTo(Size::class);
+    }
+
+    public function trackingEvents(): HasMany
+    {
+        return $this->hasMany(ShipmentTrackingEvent::class);
     }
 
     // Scopes
@@ -289,6 +343,59 @@ class Order extends Model
         return null;
     }
 
+    /**
+     * Signed, expiring link to the order-status page (orders.guest.show). Safe to put in emails:
+     * it works without an account or cookies, and is useless once tampered with or expired.
+     */
+    public function publicUrl(): string
+    {
+        return URL::temporarySignedRoute('orders.guest.show', now()->addDays(self::PUBLIC_URL_DAYS), ['order' => $this->order_number]);
+    }
+
+    /**
+     * Public tracking page for the shipment, as given by the active tracking driver (App\Shipping\Tracking),
+     * which falls back to the carrier's URL template in config/shipping.php. Null when none is known
+     * (the number is then shown without a link). Reads the carrier through getAttribute() so it keeps
+     * working before and after the column exists.
+     */
+    public function trackingUrl(?string $trackingNumber = null): ?string
+    {
+        $number = trim((string) ($trackingNumber ?? $this->tracking_number));
+        $carrier = $this->getAttribute('tracking_carrier');
+
+        if ($number === '') {
+            return null;
+        }
+
+        return app(TrackingManager::class)->trackingUrl($number, is_string($carrier) && $carrier !== '' ? $carrier : null);
+    }
+
+    /**
+     * Display name of the carrier, when known (config name, else the stored code).
+     */
+    public function trackingCarrierName(): ?string
+    {
+        $carrier = $this->getAttribute('tracking_carrier');
+
+        return is_string($carrier) && $carrier !== '' ? app(TrackingManager::class)->carrierName($carrier) : null;
+    }
+
+    /**
+     * Is this viewer proven to be the buyer? Either the logged-in owner, or the browser session
+     * the guest checkout started from. Anyone else only gets the non-personal order summary.
+     */
+    public function isOwnedBy(?\Illuminate\Contracts\Auth\Authenticatable $user, ?string $sessionId): bool
+    {
+        if ($user !== null && $this->user_id !== null && (int) $user->getAuthIdentifier() === (int) $this->user_id) {
+            return true;
+        }
+
+        return $this->user_id === null
+            && ! empty($this->guest_session_id)
+            && ! empty($sessionId)
+            && hash_equals((string) $this->guest_session_id, $sessionId);
+    }
+
     // Scopes for guest orders
     public function scopeGuestOrders($query)
     {
@@ -321,7 +428,19 @@ class Order extends Model
      */
     public function hasEmailBeenSent(): bool
     {
-        return (bool) $this->confirmation_email_sent;
+        return (bool) $this->confirmation_email_sent
+            || $this->emails()
+                ->where('type', OrderEmail::TYPE_CONFIRMATION)
+                ->whereNotNull('sent_at')
+                ->exists();
+    }
+
+    /**
+     * Idempotency/audit rows for the transactional emails of this order
+     */
+    public function emails(): HasMany
+    {
+        return $this->hasMany(OrderEmail::class);
     }
 
     /**

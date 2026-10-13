@@ -2,14 +2,11 @@
 
 namespace App\Mail;
 
-use App\Models\User;
 use App\Mail\Traits\HasLogo;
+use App\Models\User;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Mail\Mailables\Address;
-use Illuminate\Mail\Mailables\Attachment;
-use Illuminate\Queue\SerializesModels;
 
 class WelcomeEmail extends Mailable
 {
@@ -31,8 +28,7 @@ class WelcomeEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Benvenuto nel nostro store!',
+            subject: __('emails.welcome.subject', ['app' => config('app.name')]),
             tags: ['welcome'],
             metadata: [
                 'user_id' => $this->user->id,
@@ -45,10 +41,17 @@ class WelcomeEmail extends Mailable
      */
     public function content(): Content
     {
+        $name = trim((string) $this->user->name);
+
         return new Content(
             view: 'emails.welcome',
+            text: 'emails.welcome-text',
             with: [
                 'user' => $this->user,
+                'greeting' => $name !== ''
+                    ? __('emails.common.greeting', ['name' => $name])
+                    : __('emails.common.greeting_generic'),
+                'accountUrl' => route('dashboard'),
                 'logoUrl' => $this->getLogoUrl(),
             ],
         );

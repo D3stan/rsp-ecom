@@ -81,9 +81,9 @@ return [
 
         'failover' => [
             'transport' => 'failover',
+            // Never fall back to `log`: that would silently swallow customer mail.
             'mailers' => [
                 'smtp',
-                'log',
             ],
         ],
 
@@ -119,10 +119,38 @@ return [
     |--------------------------------------------------------------------------
     |
     | This is the email address where contact form submissions will be sent.
-    | If not specified, it will fall back to the default 'from' address.
+    | If not specified, it falls back to the support address, then the 'from' address.
     |
     */
 
-    'contact_email' => env('CONTACT_EMAIL', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+    'contact_email' => env('CONTACT_EMAIL', env('MAIL_SUPPORT_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com'))),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Support Address
+    |--------------------------------------------------------------------------
+    |
+    | Monitored mailbox customers are told to write to. Automated mail is sent
+    | from the no-reply "from" address above with no Reply-To, so this is the
+    | single address every template shows in its "contact us" notice.
+    |
+    */
+
+    'support_address' => env('MAIL_SUPPORT_ADDRESS', env('CONTACT_EMAIL', 'support@example.com')),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Queue Health Alerts
+    |--------------------------------------------------------------------------
+    |
+    | Thresholds for the scheduled `ops:check-queue` command, which logs a
+    | critical entry when queued mail is not being processed.
+    |
+    */
+
+    'queue_alerts' => [
+        'max_job_age_minutes' => (int) env('QUEUE_ALERT_MAX_JOB_AGE_MINUTES', 10),
+        'failed_jobs_threshold' => (int) env('QUEUE_ALERT_FAILED_JOBS_THRESHOLD', 10),
+    ],
 
 ];

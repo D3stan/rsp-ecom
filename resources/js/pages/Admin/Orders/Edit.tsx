@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/contexts/ToastContext';
+import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
 import { ChevronDown, DollarSign, LoaderCircle, MapPin, Package, Save, User } from 'lucide-react';
@@ -67,6 +68,7 @@ interface Order {
     billing_address?: Address;
     shipping_address?: Address;
     tracking_number?: string;
+    tracking_carrier?: string | null;
     shipping_method?: string;
     estimated_delivery_date?: string;
 }
@@ -83,11 +85,21 @@ interface FormData {
     billing_address: Address | null;
     shipping_address: Address | null;
     tracking_number: string;
+    tracking_carrier: string;
+}
+
+interface Carrier {
+    code: string;
+    name: string;
 }
 
 interface Props {
     order: Order;
+    carriers?: Carrier[];
 }
+
+// Radix Select cannot hold an empty value: this stands for "other / unknown" (sent as no carrier)
+const NO_CARRIER = '__none__';
 
 const statusOptions = [
     { value: 'pending', label: 'Pending' },
@@ -99,13 +111,15 @@ const statusOptions = [
 
 const paymentStatusOptions = [
     { value: 'pending', label: 'Pending' },
-    { value: 'paid', label: 'Paid' },
+    { value: 'processing', label: 'Processing' },
+    { value: 'succeeded', label: 'Paid' },
     { value: 'failed', label: 'Failed' },
-    { value: 'refunded', label: 'Refunded' },
+    { value: 'cancelled', label: 'Cancelled' },
 ];
 
-export default function Edit({ order }: Props) {
+export default function Edit({ order, carriers = [] }: Props) {
     const { addToast } = useToast();
+    const { t } = useTranslation();
     const [processing, setProcessing] = useState(false);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [formData, setFormData] = useState<FormData>({
@@ -120,6 +134,7 @@ export default function Edit({ order }: Props) {
         billing_address: order.billing_address || null,
         shipping_address: order.shipping_address || null,
         tracking_number: order.tracking_number || '',
+        tracking_carrier: order.tracking_carrier || '',
     });
 
     const [openSections, setOpenSections] = useState({
@@ -291,6 +306,8 @@ export default function Edit({ order }: Props) {
             total_amount: formData.total_amount,
             notes: formData.notes,
             tracking_number: formData.tracking_number,
+            // only sent when carriers are configured, so nothing changes for installations without any
+            ...(carriers.length > 0 ? { tracking_carrier: formData.tracking_carrier || null } : {}),
             order_items: JSON.stringify(
                 formData.order_items.map((item) => ({
                     id: item.id,
@@ -455,6 +472,29 @@ export default function Edit({ order }: Props) {
                                             placeholder="Enter tracking number"
                                         />
                                     </div>
+                                    {carriers.length > 0 && (
+                                        <div>
+                                            <Label htmlFor="tracking_carrier">{t('tracking_admin.carrier')}</Label>
+                                            <Select
+                                                value={formData.tracking_carrier || NO_CARRIER}
+                                                onValueChange={(value) =>
+                                                    setFormData((prev) => ({ ...prev, tracking_carrier: value === NO_CARRIER ? '' : value }))
+                                                }
+                                            >
+                                                <SelectTrigger id="tracking_carrier">
+                                                    <SelectValue placeholder={t('tracking_admin.carrier_select')} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {carriers.map((carrier) => (
+                                                        <SelectItem key={carrier.code} value={carrier.code}>
+                                                            {carrier.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                    <SelectItem value={NO_CARRIER}>{t('tracking_admin.carrier_unknown')}</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
                                     <div>
                                         <Label htmlFor="notes">Order Notes</Label>
                                         <Textarea

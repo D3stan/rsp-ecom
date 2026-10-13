@@ -7,12 +7,11 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Queue\SerializesModels;
 
 class TestEmail extends Mailable
 {
-    use Queueable, SerializesModels, HasLogo;
+    use HasLogo, Queueable, SerializesModels;
 
     /**
      * Create a new message instance.
@@ -28,8 +27,7 @@ class TestEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Test Email with Logo - ' . config('app.name'),
+            subject: __('emails.test.subject', ['app' => config('app.name')]),
             tags: ['test-email'],
         );
     }
@@ -40,10 +38,10 @@ class TestEmail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.test-logo',
+            view: 'emails.test-email',
+            text: 'emails.test-email-text',
             with: [
                 'logoUrl' => $this->getLogoUrl(),
-                'appName' => config('app.name'),
             ],
         );
     }

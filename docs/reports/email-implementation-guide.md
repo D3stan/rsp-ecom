@@ -14,13 +14,20 @@ MAIL_HOST=authsmtp.securemail.pro
 MAIL_PORT=465
 MAIL_USERNAME=smtp@yourdomain.ext
 MAIL_PASSWORD=YourSMTPPassword
-MAIL_ENCRYPTION=ssl
-MAIL_FROM_ADDRESS="smtp@yourdomain.ext"
+MAIL_SCHEME=smtps          # Laravel 11+/12: replaces MAIL_ENCRYPTION. Use smtps for port 465, smtp (STARTTLS) for 587
+MAIL_FROM_ADDRESS="noreply@yourdomain.ext"   # automated mail is sent From a no-reply address
 MAIL_FROM_NAME="Your Store Name"
+MAIL_SUPPORT_ADDRESS="support@yourdomain.ext" # monitored mailbox shown in every email
+
+# Transactional mail is queued: a queue worker must be running (see docs/reports/email-operations.md)
+QUEUE_CONNECTION=database
 
 # For development/testing, you can use:
 # MAIL_MAILER=log
 ```
+
+> **Updated:** `MAIL_ENCRYPTION` no longer exists in Laravel 12 (use `MAIL_SCHEME`), emails are now sent by queue
+> workers, and the sender/support addresses are configured as above. The runbook is `docs/reports/email-operations.md`.
 
 **Important**: Replace:
 - `smtp@yourdomain.ext` with your actual SMTP username

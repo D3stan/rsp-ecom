@@ -6,10 +6,11 @@ Add these variables to your `.env` file:
 
 ```env
 # Contact Form Email Configuration
-MAIL_CONTACT_EMAIL=your-contact@yourdomain.com
+CONTACT_EMAIL=your-contact@yourdomain.com
 ```
 
-If `MAIL_CONTACT_EMAIL` is not set, the system will use `MAIL_FROM_ADDRESS` as fallback.
+If `CONTACT_EMAIL` is not set, the system falls back to `MAIL_SUPPORT_ADDRESS`, then to `MAIL_FROM_ADDRESS`
+(`config('mail.contact_email')`). Note: the env var is `CONTACT_EMAIL`, not `MAIL_CONTACT_EMAIL` (older versions of this guide were wrong).
 
 ## Mail Configuration
 
@@ -23,6 +24,7 @@ MAIL_USERNAME=your-smtp-username
 MAIL_PASSWORD=your-smtp-password
 MAIL_FROM_ADDRESS=noreply@yourdomain.com
 MAIL_FROM_NAME="Your Store Name"
+MAIL_SUPPORT_ADDRESS=support@yourdomain.com
 ```
 
 ## Features Implemented
@@ -54,7 +56,7 @@ MAIL_FROM_NAME="Your Store Name"
 
 1. Fill out the contact form on `/contact`
 2. Submit the form
-3. Check the email configured in `MAIL_CONTACT_EMAIL`
+3. Check the email configured in `CONTACT_EMAIL`
 4. Verify the email contains all submitted information
 5. Test reply functionality (reply should go to customer's email)
 

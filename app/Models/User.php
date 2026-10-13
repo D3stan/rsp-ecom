@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Notifications\AccountMailMessages;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -117,6 +120,23 @@ class User extends Authenticatable implements MustVerifyEmail
     public function scopeAdmins($query)
     {
         return $query->where('role', 'admin');
+    }
+
+    /**
+     * Brand the framework's password-reset and verification emails (localised, with plain-text part).
+     */
+    protected static function booted(): void
+    {
+        ResetPassword::toMailUsing(function (object $notifiable, string $token) {
+            $url = url(route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ], false));
+
+            return AccountMailMessages::passwordReset($notifiable, $url);
+        });
+
+        VerifyEmail::toMailUsing(fn (object $notifiable, string $url) => AccountMailMessages::verifyEmail($notifiable, $url));
     }
 
     // Helper methods

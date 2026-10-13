@@ -40,7 +40,7 @@ test('pending verification email contains verification link', function () {
     // The notification uses a custom view, so we check the view data
     // Verify the mail message is configured correctly
     expect($mail)->toBeInstanceOf(\Illuminate\Notifications\Messages\MailMessage::class);
-    expect($mail->subject)->toContain('Verify Your Email Address');
+    expect($mail->subject)->toBe(__('emails.verify_pending.subject', ['app' => config('app.name')]));
 
     // Generate the expected URL to verify it contains the right components
     $expectedUrl = URL::temporarySignedRoute(

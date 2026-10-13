@@ -2,20 +2,19 @@
 
 namespace App\Mail;
 
-use App\Models\Order;
+use App\Mail\Traits\DescribesOrder;
 use App\Mail\Traits\HasLogo;
+use App\Models\Order;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Mail\Mailables\Address;
-use Illuminate\Mail\Mailables\Attachment;
-use Illuminate\Queue\SerializesModels;
 
 class OrderShipped extends Mailable
 {
-    use HasLogo;
+    use DescribesOrder, HasLogo;
 
     public $order;
+
     public $trackingNumber;
 
     /**
@@ -33,8 +32,7 @@ class OrderShipped extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address(config('mail.from.address'), config('mail.from.name')),
-            subject: 'Il tuo ordine #' . $this->order->order_number . ' è stato spedito',
+            subject: __('emails.order_shipped.subject', ['number' => '#'.$this->order->order_number]),
             tags: ['order-shipped'],
             metadata: [
                 'order_id' => $this->order->id,
@@ -47,12 +45,19 @@ class OrderShipped extends Mailable
      */
     public function content(): Content
     {
+        $trackingNumber = $this->trackingNumber !== null && trim((string) $this->trackingNumber) !== ''
+            ? trim((string) $this->trackingNumber)
+            : null;
+
         return new Content(
             view: 'emails.order-shipped',
-            with: [
-                'order' => $this->order,
-                'customer' => $this->order->user,
-                'trackingNumber' => $this->trackingNumber,
+            text: 'emails.order-shipped-text',
+            with: $this->orderContext($this->order) + [
+                'trackingNumber' => $trackingNumber,
+                'carrierName' => $trackingNumber ? $this->order->trackingCarrierName() : null,
+                // A link only when the carrier's tracking page is known; otherwise the number is shown alone
+                'trackingUrl' => $trackingNumber ? $this->order->trackingUrl($trackingNumber) : null,
+                'delivery' => $this->deliveryEstimate(),
                 'logoUrl' => $this->getLogoUrl(),
             ],
         );

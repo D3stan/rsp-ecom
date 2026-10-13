@@ -52,6 +52,26 @@ class HandleInertiaRequests extends Middleware
                 'location' => $request->url(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // Session flashes set by controllers (->with('success'|'error'|'warning', ...)); rendered as toasts by the admin layout
+            'flash' => fn (): array => [
+                'success' => $this->flashMessage($request, 'success'),
+                'error' => $this->flashMessage($request, 'error'),
+                'warning' => $this->flashMessage($request, 'warning'),
+            ],
         ];
+    }
+
+    /**
+     * A flashed message as plain text, or null when there is none (or it is not a string).
+     */
+    private function flashMessage(Request $request, string $key): ?string
+    {
+        if (! $request->hasSession()) {
+            return null;
+        }
+
+        $message = $request->session()->get($key);
+
+        return is_string($message) && $message !== '' ? $message : null;
     }
 }

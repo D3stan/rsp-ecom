@@ -43,6 +43,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => AdminMiddleware::class,
             'auth' => Authenticate::class,
         ]);
+
+        // Server-to-server carrier webhooks cannot carry a CSRF token (authenticated by the driver instead)
+        $middleware->validateCsrfTokens(except: ['webhooks/tracking/*']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
 

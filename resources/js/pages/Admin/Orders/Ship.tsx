@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Box, ChevronDown, ChevronUp, CreditCard, MapPin, Package, Shield, User } from 'lucide-react';
@@ -65,13 +66,24 @@ interface Size {
     shipping_cost: number;
 }
 
+interface Carrier {
+    code: string;
+    name: string;
+}
+
 interface Props {
     order: Order;
     adminSettings: AdminSettings;
     sizes: Size[];
+    carriers?: Carrier[];
 }
 
-export default function OrderShip({ order, adminSettings, sizes }: Props) {
+// Radix Select cannot hold an empty value: this stands for "other / unknown" (sent as no carrier)
+const NO_CARRIER = '__none__';
+
+export default function OrderShip({ order, adminSettings, sizes, carriers = [] }: Props) {
+    const { t } = useTranslation();
+    const [trackingCarrier, setTrackingCarrier] = useState('');
     const [openSections, setOpenSections] = useState({
         sender: false,
         customer: true,
@@ -145,6 +157,7 @@ export default function OrderShip({ order, adminSettings, sizes }: Props) {
                 customer_info: customerInfo,
                 shipping_address: shippingAddress,
                 box_info: boxInfo,
+                tracking_carrier: trackingCarrier || null,
                 additional_settings: additionalSettings,
             };
 
@@ -625,18 +638,46 @@ export default function OrderShip({ order, adminSettings, sizes }: Props) {
 
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div>
-                                            <Label htmlFor="carrier">Carrier</Label>
-                                            <Input
-                                                id="carrier"
-                                                value={boxInfo.carrier}
-                                                onChange={(e) =>
-                                                    setBoxInfo((prev) => ({
-                                                        ...prev,
-                                                        carrier: e.target.value,
-                                                    }))
-                                                }
-                                                placeholder="DHL, UPS, FedEx, etc."
-                                            />
+                                            <Label htmlFor="carrier">{t('tracking_admin.carrier')}</Label>
+                                            {carriers.length > 0 && (
+                                                <Select
+                                                    value={trackingCarrier || NO_CARRIER}
+                                                    onValueChange={(value) => {
+                                                        const code = value === NO_CARRIER ? '' : value;
+                                                        setTrackingCarrier(code);
+                                                        setBoxInfo((prev) => ({
+                                                            ...prev,
+                                                            carrier: carriers.find((carrier) => carrier.code === code)?.name ?? '',
+                                                        }));
+                                                    }}
+                                                >
+                                                    <SelectTrigger id="carrier">
+                                                        <SelectValue placeholder={t('tracking_admin.carrier_select')} />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {carriers.map((carrier) => (
+                                                            <SelectItem key={carrier.code} value={carrier.code}>
+                                                                {carrier.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                        <SelectItem value={NO_CARRIER}>{t('tracking_admin.carrier_unknown')}</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                            {!trackingCarrier && (
+                                                <Input
+                                                    id={carriers.length > 0 ? 'carrier_name' : 'carrier'}
+                                                    className={carriers.length > 0 ? 'mt-2' : undefined}
+                                                    value={boxInfo.carrier}
+                                                    onChange={(e) =>
+                                                        setBoxInfo((prev) => ({
+                                                            ...prev,
+                                                            carrier: e.target.value,
+                                                        }))
+                                                    }
+                                                    placeholder="DHL, UPS, FedEx, etc."
+                                                />
+                                            )}
                                         </div>
                                         <div>
                                             <Label htmlFor="service_type">Service Type</Label>
