@@ -124,7 +124,7 @@ class ContactFormTest extends TestCase
             'email' => str_repeat('e', 250).'@x.test',
         ]))->assertSessionHasErrors(['firstName', 'lastName', 'subject', 'message', 'email']);
 
-        Mail::assertNothingSent();
+        Mail::assertNothingQueued();
     }
 
     public function test_a_subject_made_only_of_line_breaks_is_rejected(): void
@@ -133,7 +133,7 @@ class ContactFormTest extends TestCase
 
         $this->post('/contact', $this->payload(['subject' => "\r\n\r\n"]))->assertSessionHasErrors('subject');
 
-        Mail::assertNothingSent();
+        Mail::assertNothingQueued();
     }
 
     public function test_the_form_is_rate_limited(): void
@@ -146,6 +146,6 @@ class ContactFormTest extends TestCase
 
         $this->post('/contact', $this->payload())->assertStatus(429);
 
-        Mail::assertSent(ContactMessage::class, 5);
+        Mail::assertQueued(ContactMessage::class, 5);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\UserNotificationKind;
+use App\Jobs\SendUserNotification;
 use App\Notifications\AccountMailMessages;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -137,6 +139,23 @@ class User extends Authenticatable implements MustVerifyEmail
         });
 
         VerifyEmail::toMailUsing(fn (object $notifiable, string $url) => AccountMailMessages::verifyEmail($notifiable, $url));
+    }
+
+    /**
+     * Queue the password-reset mail instead of sending it inside the request.
+     * The locale is captured now: the worker has no request.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        SendUserNotification::dispatch($this->id, UserNotificationKind::PasswordReset, (string) $token, app()->getLocale());
+    }
+
+    /**
+     * Queue the email-verification mail instead of sending it inside the request.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        SendUserNotification::dispatch($this->id, UserNotificationKind::VerifyEmail, null, app()->getLocale());
     }
 
     // Helper methods

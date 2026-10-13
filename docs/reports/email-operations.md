@@ -14,6 +14,32 @@ checkout / admin action
         SendOrderEmail: reload order -> build mail -> send -> set order_emails.sent_at
 ```
 
+### Other queued mails (no `order_emails` row)
+
+| Mail | Queued as | Where |
+|---|---|---|
+| Welcome (after verification) | `SendWelcomeEmail` job | `EmailService::sendWelcomeEmail` |
+| Registration verification (pending users) | queued `PendingUserEmailVerification` notification | registration flow |
+| **Password reset** (existing users) | `SendUserNotification` job (kind `PasswordReset`) | `User::sendPasswordResetNotification` |
+| **Email verification / resend** (existing users) | `SendUserNotification` job (kind `VerifyEmail`) | `User::sendEmailVerificationNotification` |
+| **Contact form** (to the shop inbox) | queued `ContactMessage` mailable (`Mail::to(...)->queue`) | `ContactController::store` |
+
+All of them use 5 attempts with waits of 1 min, 5 min, 15 min, 1 h, are dispatched after the DB commit, and end in `failed_jobs` (plus a masked log line) when the last attempt fails.
+Details of the three newer ones:
+
+- **Locale:** `SendUserNotification` captures `app()->getLocale()` when the request dispatches it and sends `->locale($locale)` from the worker, so the mail is in the visitor's language
+  (unsupported values fall back to `APP_LOCALE`). The contact mail goes to the shop and has no locale handling.
+- **Security trade-off:** the password-reset token travels in the queue payload (the `jobs` table) from the request until the worker has sent the mail, i.e. normally seconds,
+  longer during an outage or a retry. It is never logged (the failure log has the user id, the masked address and the error message only) and the payload is deleted when the job succeeds.
+  Only the hash of the token is stored in `password_reset_tokens`; the token expires after `auth.passwords.users.expire` minutes counted from **request** time, so a mail delayed by retries has less validity left.
+  Whoever can read the `jobs` table can therefore read live tokens: treat it like the `password_reset_tokens` plus mailbox access.
+- **Verification link:** the signed URL is built in the worker when the mail renders (valid for `auth.verification.expire` minutes from sending time, default 60). The job does nothing if the user was deleted or has verified in the meantime.
+- **Password reset anti-enumeration is unchanged:** the controller answers the same for known and unknown addresses; for unknown ones no job is queued.
+- **Contact form:** the visitor sees success once the job is queued; if the queue backend cannot even accept it, the visitor sees the usual error message. A message that exhausts its retries is in `failed_jobs`
+  (`php artisan queue:retry <id>`) and logged as `Contact form message permanently failed` with the visitor address masked.
+- **Deliberately synchronous:** the admin test/custom mail paths (`EmailService::sendCustomEmail`, `testEmailConfiguration`, `sendSimpleTestEmail`) and the `email:test`, `email:send-test`,
+  `email:test-order-confirmation`, `auth:test-verification` commands send inside the call, because immediate success/failure feedback is their purpose.
+
 - Returns `true` from `EmailService` mean "accepted for delivery": queued now, already queued, already sent, or switched off in settings.
   `false` means it could not be queued (no recipient, queue backend down, or an earlier permanent failure).
 - **Dedupe key** `(order_id, type, fingerprint)`:
@@ -66,7 +92,7 @@ Rows created before this feature were backfilled from `orders.confirmation_email
 | Service | Command | Purpose |
 |---|---|---|
 | `app` | image default (nginx + php-fpm) | web; runs migrations at start (`AUTORUN_LARAVEL_MIGRATION=true`) |
-| `queue` | `php /var/www/html/artisan queue:work --tries=3 --max-time=3600 --sleep=3 --timeout=60` | sends email and any other queued job |
+| `queue` | `php /var/www/html/artisan queue:work --tries=3 --max-time=3600 --sleep=3 --timeout=60` | sends email and any other queued job. **Without a running worker, password resets, verification resends and contact-form messages stop as well as order mail**; the `ops:check-queue` alert (section 4) covers it. |
 | `scheduler` | `php /var/www/html/artisan schedule:work` | runs `routes/console.php` every minute |
 
 `docker-compose.yml` defines all three from the same image. The two workers set `AUTORUN_ENABLED=false` (so only `app` migrates) and

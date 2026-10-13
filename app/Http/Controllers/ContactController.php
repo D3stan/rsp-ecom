@@ -60,8 +60,8 @@ class ContactController extends Controller
         $contactEmail = config('mail.contact_email', config('mail.from.address'));
         
         try {
-            // Send email to the contact address
-            Mail::to($contactEmail)->send(new ContactMessage($validated));
+            // Queued: the visitor does not wait for SMTP; an exception here means the queue backend is unreachable
+            Mail::to($contactEmail)->queue(new ContactMessage($validated));
             
             return back()->with('success', 'Thank you for your message! We\'ll get back to you soon.');
         } catch (\Exception $e) {

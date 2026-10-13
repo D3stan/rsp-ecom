@@ -9,7 +9,7 @@ use Illuminate\Notifications\Messages\MailMessage;
  * email verification). They are plugged in with ResetPassword::toMailUsing() / VerifyEmail::toMailUsing()
  * (see User::booted()), so the notification classes themselves stay the framework's.
  *
- * Both notifications are sent synchronously inside the request, so the visitor's locale is the app locale.
+ * Both are sent from the queue worker (see App\Jobs\SendUserNotification), which applies the locale captured in the request.
  */
 class AccountMailMessages
 {

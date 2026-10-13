@@ -3,16 +3,22 @@
 namespace App\Mail;
 
 use App\Mail\Traits\HasLogo;
+use App\Support\Privacy;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
-class ContactMessage extends Mailable
+class ContactMessage extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels, HasLogo;
+
+    public int $tries = 5;
 
     /**
      * Create a new message instance.
@@ -26,6 +32,24 @@ class ContactMessage extends Mailable
                 $this->contactData[$field] = self::singleLine((string) $this->contactData[$field]);
             }
         }
+
+        $this->afterCommit();
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function backoff(): array
+    {
+        return [60, 300, 900, 3600];
+    }
+
+    public function failed(?Throwable $e): void
+    {
+        Log::error('Contact form message permanently failed', [
+            'visitor' => Privacy::maskEmail($this->contactData['email'] ?? null),
+            'error' => $e?->getMessage(),
+        ]);
     }
 
     /**

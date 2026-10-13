@@ -124,3 +124,12 @@ Signature `auth:cleanup-pending {--force}`; `handle()` returns void (exit 0). It
    `orders/{order}` with `order = "bulk-status"` and returns 404; the bulk endpoint is unreachable (and no frontend code calls it). Move the bulk route above the
    resource route to enable it. Tests call the controller method directly.
 3. New `ops:check-queue` command (scheduled every 5 minutes) with thresholds in `config('mail.queue_alerts')`.
+
+## 10. Follow-up: last synchronous mails queued
+
+Password reset and email verification for existing users (framework `ResetPassword` / `VerifyEmail`) and the contact form used to send inside the web request (SMTP wait,
+no retry, a failed send surfaced as an error or a 500). They are now queued: `User::sendPasswordResetNotification()` / `sendEmailVerificationNotification()` dispatch one
+`SendUserNotification` job (user id, a `UserNotificationKind` enum, the reset token when needed, the request locale; 5 tries, backoff 1 min / 5 min / 15 min / 1 h, after commit)
+and `ContactMessage` is a `ShouldQueue` mailable queued by `ContactController`. The framework notification classes are not subclassed (existing `Notification::assertSentTo(..., ResetPassword::class)` keeps working).
+Trade-off: the reset token sits in the queue payload until the mail is sent (never logged). **Deployment consequence: a missing queue worker now also blocks password resets and contact messages;
+the existing `ops:check-queue` alert covers it.** Admin/CLI test and custom mails stay synchronous on purpose (immediate feedback). See `docs/reports/email-operations.md` section 1.
