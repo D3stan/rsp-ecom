@@ -226,3 +226,39 @@ it('returns a guest who signs in from the cart (guest checkout on) to the checko
     $this->post('/login', ['email' => $user->email, 'password' => 'password'])
         ->assertRedirect(route('checkout.details'));
 });
+
+it('replaces a different variant of the same product with the guest line (one line per product in a cart)', function () {
+    $otherVariantX = CatalogFixtures::variant($this->productX, ['stock_quantity' => 50, 'price' => 12, 'is_default' => false]);
+    guestCartAdd($this, $this->productX, $otherVariantX, 2);
+    $user = User::factory()->create();
+    userCartWith($user, [[$this->productX, $this->variantX, 1], [$this->productY, $this->variantY, 1]]);
+
+    $this->post('/login', ['email' => $user->email, 'password' => 'password']);
+
+    expect(cartPageQuantities($this))->toBe([$this->variantY->id => 1, $otherVariantX->id => 2]);
+});
+
+it('does not move a guest line whose variant is out of stock, and never shrinks the user line', function () {
+    guestCartAdd($this, $this->productX, $this->variantX, 2);
+    guestCartAdd($this, $this->productY, $this->variantY, 1);
+    $user = User::factory()->create();
+    userCartWith($user, [[$this->productX, $this->variantX, 4]]);
+    $this->variantX->update(['stock_quantity' => 3]);
+    $this->variantY->update(['stock_quantity' => 0]);
+
+    $this->post('/login', ['email' => $user->email, 'password' => 'password']);
+
+    expect(cartPageQuantities($this))->toBe([$this->variantX->id => 4])
+        ->and(guestCartRowExists($this->guestSid))->toBeFalse();
+});
+
+it('still signs the customer in when the merge fails', function () {
+    guestCartAdd($this, $this->productX, $this->variantX, 1);
+    $user = User::factory()->create();
+    $this->mock(\App\Services\CartMerger::class)
+        ->shouldReceive('merge')->once()->andThrow(new RuntimeException('boom'));
+
+    $this->post('/login', ['email' => $user->email, 'password' => 'password'])->assertRedirect();
+
+    $this->assertAuthenticatedAs($user);
+});

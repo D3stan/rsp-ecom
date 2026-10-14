@@ -390,6 +390,9 @@ class CheckoutController extends Controller
             return null;
         }
 
+        // Back to the checkout once signed in (the guest cart is merged into the user's cart at login)
+        redirect()->setIntendedUrl(route('checkout.details'));
+
         return redirect()->route('login')->with('error', __('checkout.guest_checkout_disabled'));
     }
 

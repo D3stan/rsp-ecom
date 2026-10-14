@@ -132,8 +132,9 @@ export default function Cart() {
         }
 
         if (needsSignIn) {
-            // Guest checkout is switched off: the customer has to sign in first
-            router.get('/login');
+            // Guest checkout is switched off: the customer has to sign in first. The checkout details page requires
+            // a login, so the server remembers it as the intended URL and returns there after sign-in.
+            router.get(route('checkout.details'));
         } else if (auth?.user) {
             // User is authenticated, proceed to checkout details page
             router.get('/checkout');
@@ -460,7 +461,7 @@ export default function Cart() {
                                         <div className="hidden text-center md:block">
                                             <p className="mb-2 text-sm text-gray-600">{t('cart.already_have_account')}</p>
                                             <Button variant="outline" asChild className="w-full">
-                                                <Link href="/login">{t('cart.sign_in_to_continue')}</Link>
+                                                <Link href={route('checkout.details')}>{t('cart.sign_in_to_continue')}</Link>
                                             </Button>
                                         </div>
                                     )}
