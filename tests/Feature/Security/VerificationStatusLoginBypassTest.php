@@ -122,4 +122,5 @@ it('sends the registering browser to the login page when the verification is not
         ->assertJsonMissingPath('user_id');
 
     $this->assertGuest();
+    $this->get(route('login'))->assertInertia(fn ($page) => $page->where('status', __('auth.verified_log_in')));
 });

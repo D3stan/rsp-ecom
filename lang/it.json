@@ -686,7 +686,8 @@
         "sign_up": "Registrati",
         "failed": "Queste credenziali non corrispondono ai nostri record.",
         "password_incorrect": "La password fornita non è corretta.",
-        "throttle": "Troppi tentativi di accesso. Riprova tra {seconds} secondi."
+        "throttle": "Troppi tentativi di accesso. Riprova tra {seconds} secondi.",
+        "verified_log_in": "La tua email è stata verificata. Accedi per continuare."
     },
     "flash": {
         "success": "Operazione riuscita",
