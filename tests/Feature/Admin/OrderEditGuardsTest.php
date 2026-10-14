@@ -173,3 +173,19 @@ it('tells the edit page whether the amounts are locked', function () {
     $this->actingAs($this->admin)->get(route('admin.orders.edit', $unpaid))
         ->assertInertia(fn (Assert $page) => $page->where('financials_locked', false));
 });
+
+it('locks the amounts while the payment is in flight (Stripe charges the amount it was given)', function () {
+    $order = editGuardsOrder('processing', 'pending');
+
+    $this->actingAs($this->admin)->patch(route('admin.orders.update', $order), [
+        'order_items' => editGuardsLines($order, ['Line A' => ['quantity' => 5]]),
+        'shipping_amount' => 0,
+    ])->assertSessionHas('error');
+
+    expect($order->orderItems()->where('product_name', 'Line A')->value('quantity'))->toBe(2)
+        ->and((float) $order->fresh()->total_amount)->toBe(27.0)
+        ->and($order->fresh()->hasCapturedPayment())->toBeFalse(); // in flight is not captured (refunds)
+
+    $this->actingAs($this->admin)->get(route('admin.orders.edit', $order))
+        ->assertInertia(fn (Assert $page) => $page->where('financials_locked', true));
+});

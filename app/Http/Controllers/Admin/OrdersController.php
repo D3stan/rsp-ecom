@@ -147,8 +147,8 @@ class OrdersController extends Controller
         return Inertia::render('Admin/Orders/Edit', [
             'order' => $order->toFrontendArray(),
             'allowed_transitions' => $order->allowedTransitions(),
-            // paid: lines, prices and totals are read-only (money goes back through a refund)
-            'financials_locked' => $order->hasCapturedPayment(),
+            // paid or payment in flight: lines, prices and totals are read-only (money goes back through a refund)
+            'financials_locked' => $order->financialsLocked(),
             'carriers' => app(TrackingManager::class)->carriers(),
         ]);
     }

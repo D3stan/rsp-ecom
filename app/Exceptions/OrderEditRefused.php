@@ -17,7 +17,7 @@ class OrderEditRefused extends DomainException
 
     public static function financialsLocked(string $orderNumber): self
     {
-        return new self("Order {$orderNumber} is paid: its items, prices, quantities and totals can no longer be edited. Use a refund to return money.");
+        return new self("Order {$orderNumber} is paid or its payment is in progress: its items, prices, quantities and totals can no longer be edited. Use a refund to return money.");
     }
 
     public static function invalidLines(string $detail): self

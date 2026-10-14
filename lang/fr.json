@@ -768,7 +768,7 @@
     "admin.orders.reason_required": "Motif (obligatoire)",
     "admin.orders.reason_optional": "Motif (facultatif)",
     "admin.orders.keep_as_is": "Ne rien changer",
-    "admin.orders.financials_locked": "Cette commande est payée : articles, prix et montants ne peuvent plus être modifiés. Utilisez un remboursement pour rendre de l'argent.",
+    "admin.orders.financials_locked": "Cette commande est payée ou son paiement est en cours : articles, prix et montants ne peuvent plus être modifiés. Utilisez un remboursement pour rendre de l'argent.",
     "admin.orders.status.pending": "En attente",
     "admin.orders.status.cancelled": "Annulée",
     "admin.orders.timeline.placed": "Commande passée",

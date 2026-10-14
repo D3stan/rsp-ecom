@@ -785,7 +785,7 @@
     "admin.orders.reason_required": "Reason (required)",
     "admin.orders.reason_optional": "Reason (optional)",
     "admin.orders.keep_as_is": "Keep as is",
-    "admin.orders.financials_locked": "This order is paid: items, prices and amounts can no longer be changed. Use a refund to return money.",
+    "admin.orders.financials_locked": "This order is paid or its payment is in progress: items, prices and amounts can no longer be changed. Use a refund to return money.",
     "admin.orders.status.pending": "Pending",
     "admin.orders.status.cancelled": "Cancelled",
     "admin.orders.timeline.placed": "Order placed",

@@ -380,6 +380,16 @@ class Order extends Model
         return in_array($this->payment_status, self::CAPTURED_PAYMENT_STATUSES, true);
     }
 
+    /**
+     * Lines, prices and totals can no longer be edited: the money was captured, or a payment is in flight (Stripe
+     * charges the amount it was given, so an edit could only make the order disagree with it). Not the same as
+     * hasCapturedPayment(): an in-flight payment cannot be refunded.
+     */
+    public function financialsLocked(): bool
+    {
+        return $this->payment_status === 'processing' || $this->hasCapturedPayment();
+    }
+
     public function isPaymentFailed(): bool
     {
         return $this->payment_status === 'failed';

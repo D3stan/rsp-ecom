@@ -97,7 +97,7 @@ interface Props {
     order: Order;
     // statuses this order may move to next (server-side order lifecycle)
     allowed_transitions?: string[];
-    // paid order: lines, prices and amounts are read-only (money goes back through a refund)
+    // paid order, or payment in flight: lines, prices and amounts are read-only (money goes back through a refund)
     financials_locked?: boolean;
     carriers?: Carrier[];
 }

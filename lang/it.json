@@ -784,7 +784,7 @@
     "admin.orders.reason_required": "Motivo (obbligatorio)",
     "admin.orders.reason_optional": "Motivo (facoltativo)",
     "admin.orders.keep_as_is": "Lascia così",
-    "admin.orders.financials_locked": "Questo ordine è pagato: articoli, prezzi e importi non si possono più modificare. Per restituire denaro usa un rimborso.",
+    "admin.orders.financials_locked": "Questo ordine è pagato o ha un pagamento in corso: articoli, prezzi e importi non si possono più modificare. Per restituire denaro usa un rimborso.",
     "admin.orders.status.pending": "In attesa",
     "admin.orders.status.cancelled": "Annullato",
     "admin.orders.timeline.placed": "Ordine effettuato",
