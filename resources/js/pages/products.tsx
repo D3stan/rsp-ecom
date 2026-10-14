@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
+import { buildProductFilterParams, type ProductFilterOverrides } from '@/lib/product-filters';
 import { type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Filter, Grid3X3, List, Search, X } from 'lucide-react';
@@ -112,88 +113,42 @@ export default function Products() {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+    // The single way to apply filters: the current state plus the change being applied (its value is not in the
+    // state yet), so search, category, price and sort always travel together. The bounds are primitives so that a
+    // new priceRange object on every visit does not re-trigger the search debounce below.
+    const priceRangeMin = priceRange?.min;
+    const priceRangeMax = priceRange?.max;
     const applyFilters = useCallback(
-        (overrides: Record<string, string | number> = {}) => {
-            const params: Record<string, string | number> = {
-                search: searchTerm,
-                category: selectedCategory === 'all' ? '' : selectedCategory,
-                min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
-                max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
-                sort: sortBy,
-                ...overrides,
-            };
-
-            // Remove empty parameters
-            Object.keys(params).forEach((key) => {
-                const value = params[key];
-                if (value === '' || value === null || value === undefined) {
-                    delete params[key];
-                }
-            });
+        (overrides: ProductFilterOverrides = {}) => {
+            const params = buildProductFilterParams(
+                {
+                    search: searchTerm,
+                    category: selectedCategory,
+                    priceMin,
+                    priceMax,
+                    sort: sortBy,
+                    priceRange: { min: priceRangeMin, max: priceRangeMax },
+                },
+                overrides,
+            );
 
             router.get(route('products'), params, {
                 preserveState: true,
                 preserveScroll: true,
             });
         },
-        [searchTerm, selectedCategory, priceMin, priceMax, sortBy, priceRange?.min, priceRange?.max],
+        [searchTerm, selectedCategory, priceMin, priceMax, sortBy, priceRangeMin, priceRangeMax],
     );
 
     // Only debounce search, don't auto-apply other filters
     useEffect(() => {
         const timer = setTimeout(() => {
             if (searchTerm !== filters.search) {
-                // Inline the filter logic to avoid circular dependency
-                const params: Record<string, string | number> = {
-                    search: searchTerm,
-                    category: selectedCategory === 'all' ? '' : selectedCategory,
-                    min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
-                    max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
-                    sort: sortBy,
-                };
-
-                // Remove empty parameters
-                Object.keys(params).forEach((key) => {
-                    const value = params[key];
-                    if (value === '' || value === null || value === undefined) {
-                        delete params[key];
-                    }
-                });
-
-                router.get(route('products'), params, {
-                    preserveState: true,
-                    preserveScroll: true,
-                });
+                applyFilters();
             }
         }, 500);
         return () => clearTimeout(timer);
-    }, [searchTerm, filters.search, selectedCategory, priceMin, priceMax, sortBy, priceRange?.min, priceRange?.max]);
-
-    const handleApplyFilters = () => {
-        const params: Record<string, string | number> = {
-            search: searchTerm,
-            category: selectedCategory === 'all' ? '' : selectedCategory,
-            min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
-            max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
-            sort: sortBy,
-        };
-
-        // Remove empty parameters
-        Object.keys(params).forEach((key) => {
-            const value = params[key];
-            if (value === '' || value === null || value === undefined) {
-                delete params[key];
-            }
-        });
-
-        // Close the mobile filter modal
-        setIsFilterOpen(false);
-
-        router.get(route('products'), params, {
-            preserveState: true,
-            preserveScroll: true,
-        });
-    };
+    }, [searchTerm, filters.search, applyFilters]);
 
     const clearFilters = () => {
         setSearchTerm('');
@@ -289,7 +244,7 @@ export default function Products() {
                                                 setPriceMin={setPriceMin}
                                                 priceMax={priceMax}
                                                 setPriceMax={setPriceMax}
-                                                applyFilters={handleApplyFilters}
+                                                applyFilters={applyFilters}
                                                 clearFilters={clearFilters}
                                                 closeModal={() => setIsFilterOpen(false)}
                                                 priceRanges={PRICE_RANGES}
@@ -367,7 +322,7 @@ export default function Products() {
                                     setPriceMin={setPriceMin}
                                     priceMax={priceMax}
                                     setPriceMax={setPriceMax}
-                                    applyFilters={handleApplyFilters}
+                                    applyFilters={applyFilters}
                                     clearFilters={clearFilters}
                                     priceRanges={PRICE_RANGES}
                                 />
@@ -544,7 +499,7 @@ interface FilterSectionProps {
     setPriceMin: (price: number) => void;
     priceMax: number;
     setPriceMax: (price: number) => void;
-    applyFilters: () => void;
+    applyFilters: (overrides?: ProductFilterOverrides) => void;
     clearFilters: () => void;
     closeModal?: () => void;
     priceRanges: { label: string; min: number | null; max: number | null }[];
@@ -584,7 +539,8 @@ function FilterSection({
                     value={selectedCategory}
                     onValueChange={(value) => {
                         setSelectedCategory(value);
-                        applyFilters();
+                        closeModal?.(); // mobile sheet
+                        applyFilters({ category: value });
                     }}
                 >
                     <SelectTrigger className="h-10 w-full border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500">
@@ -629,29 +585,7 @@ function FilterSection({
                                     const newMax = range.max === null ? priceRange?.max || 1000 : range.max;
                                     setPriceMin(newMin);
                                     setPriceMax(newMax);
-                                    // Auto-apply filters after price range change
-                                    setTimeout(() => {
-                                        const params: Record<string, string | number> = {
-                                            search: '',
-                                            category: selectedCategory === 'all' ? '' : selectedCategory,
-                                            min_price: newMin !== priceRange?.min ? newMin.toString() : '',
-                                            max_price: newMax !== priceRange?.max ? newMax.toString() : '',
-                                            sort: 'name',
-                                        };
-
-                                        // Remove empty parameters
-                                        Object.keys(params).forEach((key) => {
-                                            const value = params[key];
-                                            if (value === '' || value === null || value === undefined) {
-                                                delete params[key];
-                                            }
-                                        });
-
-                                        router.get(route('products'), params, {
-                                            preserveState: true,
-                                            preserveScroll: true,
-                                        });
-                                    }, 0);
+                                    applyFilters({ priceMin: newMin, priceMax: newMax });
                                 }}
                                 className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
                             />
@@ -672,27 +606,7 @@ function FilterSection({
                                 type="number"
                                 value={priceMin}
                                 onChange={(e) => setPriceMin(parseInt(e.target.value) || priceRange?.min || 0)}
-                                onBlur={() => {
-                                    const params: Record<string, string | number> = {
-                                        search: '',
-                                        category: selectedCategory === 'all' ? '' : selectedCategory,
-                                        min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
-                                        max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
-                                        sort: 'name',
-                                    };
-
-                                    Object.keys(params).forEach((key) => {
-                                        const value = params[key];
-                                        if (value === '' || value === null || value === undefined) {
-                                            delete params[key];
-                                        }
-                                    });
-
-                                    router.get(route('products'), params, {
-                                        preserveState: true,
-                                        preserveScroll: true,
-                                    });
-                                }}
+                                onBlur={() => applyFilters()}
                                 min={priceRange?.min || 0}
                                 max={priceRange?.max || 1000}
                                 className="h-10 border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500"
@@ -705,27 +619,7 @@ function FilterSection({
                                 type="number"
                                 value={priceMax}
                                 onChange={(e) => setPriceMax(parseInt(e.target.value) || priceRange?.max || 1000)}
-                                onBlur={() => {
-                                    const params: Record<string, string | number> = {
-                                        search: '',
-                                        category: selectedCategory === 'all' ? '' : selectedCategory,
-                                        min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
-                                        max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
-                                        sort: 'name',
-                                    };
-
-                                    Object.keys(params).forEach((key) => {
-                                        const value = params[key];
-                                        if (value === '' || value === null || value === undefined) {
-                                            delete params[key];
-                                        }
-                                    });
-
-                                    router.get(route('products'), params, {
-                                        preserveState: true,
-                                        preserveScroll: true,
-                                    });
-                                }}
+                                onBlur={() => applyFilters()}
                                 min={priceRange?.min || 0}
                                 max={priceRange?.max || 1000}
                                 className="h-10 border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500"

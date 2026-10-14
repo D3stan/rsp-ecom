@@ -13,34 +13,20 @@ export type ProductFilterOverrides = Partial<Omit<ProductFilterState, 'priceRang
 
 /**
  * Query parameters for GET /products (ProductsController@index): the current filters plus the overrides of the
- * change being applied; empty values are left out.
- *
- * REPRO VERSION: the logic as it is today in pages/products.tsx, copied verbatim. The category Select calls
- * handleApplyFilters(), which takes no overrides and reads `selectedCategory` from its render closure (so the new
- * category never reaches it), and the price radios / min-max inputs (products.tsx:633-654, 675-695, 708-728) build
- * their params with a hardcoded `search: ''` and `sort: 'name'`.
+ * change being applied (the value just picked is not in the React state yet when the change applies it); empty
+ * values are left out.
  */
-export function buildProductFilterParams(current: ProductFilterState, overrides: ProductFilterOverrides = {}): Record<string, string | number> {
-    const priceRange = current.priceRange;
-    const selectedCategory = current.category;
-    const newMin = overrides.priceMin ?? current.priceMin;
-    const newMax = overrides.priceMax ?? current.priceMax;
+export function buildProductFilterParams(current: ProductFilterState, overrides: ProductFilterOverrides = {}): Record<string, string> {
+    const { search, category, priceMin, priceMax, sort } = { ...current, ...overrides };
+    const { priceRange } = current;
 
-    const params: Record<string, string | number> = {
-        search: '',
-        category: selectedCategory === 'all' ? '' : selectedCategory,
-        min_price: newMin !== priceRange?.min ? newMin.toString() : '',
-        max_price: newMax !== priceRange?.max ? newMax.toString() : '',
-        sort: 'name',
+    const params: Record<string, string> = {
+        search,
+        category: category === 'all' ? '' : category,
+        min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
+        max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
+        sort,
     };
 
-    // Remove empty parameters
-    Object.keys(params).forEach((key) => {
-        const value = params[key];
-        if (value === '' || value === null || value === undefined) {
-            delete params[key];
-        }
-    });
-
-    return params;
+    return Object.fromEntries(Object.entries(params).filter(([, value]) => value !== '' && value !== null && value !== undefined));
 }
