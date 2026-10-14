@@ -2,6 +2,7 @@
 
 namespace App\Shipping\Tracking;
 
+use App\Exceptions\InvalidOrderTransition;
 use App\Models\Order;
 use App\Models\ShipmentTrackingEvent;
 use App\Shipping\Tracking\DTO\TrackingEvent;
@@ -208,10 +209,20 @@ class ShipmentTrackingService
             ]);
         }
 
+        $delivered = false;
+
         if ($moves && $new === TrackingStatus::Delivered && $this->autoDeliver() && $order->status === 'shipped') {
-            // Same path as the admin action (saves the tracking fields too), so the OrderObserver sends the delivered email
-            $order->transitionTo('delivered', null, null, ['source' => 'tracking', 'provider' => $provider]);
-        } else {
+            // Same path as the admin action (saves the tracking fields too), so the OrderObserver sends the delivered email.
+            // A refused move must not fail the carrier webhook/poll: the tracking data is still saved below.
+            try {
+                $order->transitionTo('delivered', null, null, ['source' => 'tracking', 'provider' => $provider]);
+                $delivered = true;
+            } catch (InvalidOrderTransition $e) {
+                Log::warning('Carrier delivery not applied: refused by the order lifecycle', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        if (! $delivered) {
             $order->save();
         }
 

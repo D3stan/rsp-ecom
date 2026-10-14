@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\InvalidOrderTransition;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\CheckoutSnapshot;
@@ -124,13 +125,10 @@ class OrderCreationService
                 return $order;
             }
 
+            // Only reached while the payment is pending (checked above), so a captured payment is never overwritten
             $order->payment_status = $outcome === 'expired' ? 'cancelled' : 'failed';
 
-            if ($order->can_be_cancelled) {
-                $order->transitionTo('cancelled', null, null, ['source' => 'stripe', 'outcome' => $outcome]);
-            } else {
-                $order->save();
-            }
+            $this->transitionOrSave($order, $order->can_be_cancelled ? 'cancelled' : null, ['source' => 'stripe', 'outcome' => $outcome]);
 
             Log::info('Order closed: its checkout did not end in a payment', ['order_id' => $order->id, 'outcome' => $outcome]);
 
@@ -235,10 +233,10 @@ class OrderCreationService
             $updates['payment_status'] = 'succeeded';
         }
 
-        if ($becamePaid && $order->status === 'pending') {
-            $order->fill($updates)->transitionTo('processing', null, null, ['source' => 'stripe']);
-        } elseif ($updates) {
-            $order->update($updates);
+        if ($updates) {
+            // The payment is recorded even if the status cannot follow
+            $order->fill($updates);
+            $this->transitionOrSave($order, $becamePaid && $order->status === 'pending' ? 'processing' : null, ['source' => 'stripe']);
         }
 
         if ($becamePaid) {
@@ -248,6 +246,34 @@ class OrderCreationService
         }
 
         return $order;
+    }
+
+    /**
+     * Webhook-driven status change: move the order to $to (null: just save the other changes). A move the lifecycle
+     * refuses must never fail the webhook (Stripe would retry it for days): it is logged and the other changes
+     * (payment fields) are saved without the status change.
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    protected function transitionOrSave(Order $order, ?string $to, array $meta): void
+    {
+        if ($to === null) {
+            $order->save();
+
+            return;
+        }
+
+        try {
+            $order->transitionTo($to, null, null, $meta);
+        } catch (InvalidOrderTransition $e) {
+            Log::warning('Stripe webhook status change refused by the order lifecycle; payment fields saved only', [
+                'order_id' => $order->id,
+                'to' => $to,
+                'error' => $e->getMessage(),
+            ]);
+
+            $order->save();
+        }
     }
 
     protected function createOrder(string $sessionId, array $session): Order
