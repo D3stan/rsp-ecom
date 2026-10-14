@@ -140,6 +140,8 @@ class ProductController extends Controller
                 'base_sku' => 'nullable|string|max:255',
                 'seo_title' => 'nullable|string|max:255',
                 'seo_description' => 'nullable|string|max:500',
+                // GPSR: warnings and safety information shown on the product page
+                'safety_information' => 'nullable|string|max:5000',
                 'variants' => 'required|array|min:1',
                 'variants.*.name' => 'required|string|max:255',
                 'variants.*.sku_suffix' => 'nullable|string|max:50',
@@ -172,6 +174,7 @@ class ProductController extends Controller
                 'base_sku' => $validated['base_sku'] ?: $this->generateSku($validated['name']),
                 'seo_title' => $validated['seo_title'] ?? null,
                 'seo_description' => $validated['seo_description'] ?? null,
+                'safety_information' => $validated['safety_information'] ?? null,
                 'price' => $firstVariant['price'],
                 'stock_quantity' => $firstVariant['stock_quantity'],
                 'sku' => $validated['base_sku'] ?: $this->generateSku($validated['name']),
@@ -394,6 +397,8 @@ class ProductController extends Controller
                 'base_sku' => 'nullable|string|max:255',
                 'seo_title' => 'nullable|string|max:255',
                 'seo_description' => 'nullable|string|max:500',
+                // GPSR: warnings and safety information shown on the product page
+                'safety_information' => 'nullable|string|max:5000',
                 'variants' => 'required|array|min:1',
                 'variants.*.id' => 'nullable|exists:product_variants,id',
                 'variants.*.name' => 'required|string|max:255',
@@ -442,6 +447,11 @@ class ProductController extends Controller
                 'seo_title' => $validated['seo_title'] ?? null,
                 'seo_description' => $validated['seo_description'] ?? null,
             ];
+
+            // Absent (a form without the field) keeps the stored text; an emptied field clears it
+            if (array_key_exists('safety_information', $validated)) {
+                $productData['safety_information'] = $validated['safety_information'];
+            }
 
             // Get price from the default variant for backward compatibility
             $defaultVariantData = collect($validated['variants'])->firstWhere('is_default', true)

@@ -69,6 +69,7 @@ return [
         'tax' => ['icon' => 'Percent'],
         'shipping' => ['icon' => 'Truck'],
         'legal' => ['icon' => 'Scale'],
+        'compliance' => ['icon' => 'ShieldCheck'],
         'orders' => ['icon' => 'ShoppingCart'],
         'inventory' => ['icon' => 'Boxes'],
         'catalog' => ['icon' => 'LayoutGrid'],
@@ -132,6 +133,14 @@ return [
         // EU statutory minimum for distance sales (Directive 2011/83/EU), set in config/shipping.php. Read-only: shown in
         // the admin, quoted by the policy pages (React: useSetting) and the order emails.
         ['key' => 'legal.withdrawal_days', 'type' => 'int', 'default' => (int) $shipping['withdrawal_days'], 'required' => true, 'min' => 14, 'max' => 365, 'unit' => 'days', 'access' => 'readonly', 'public' => true],
+
+        // ------------------------------------------------------------- compliance
+        // GPSR (Regulation (EU) 2023/988) block of the product page. Empty = the store's own identity
+        // (store.legal_name / store.address / contact.support_email), see ProductsController::compliance().
+        ['key' => 'compliance.manufacturer_name', 'type' => 'string', 'default' => '', 'max' => 160, 'public' => true],
+        ['key' => 'compliance.manufacturer_address', 'type' => 'text', 'default' => '', 'max' => 500, 'public' => true],
+        ['key' => 'compliance.manufacturer_email', 'type' => 'email', 'default' => '', 'public' => true],
+        ['key' => 'compliance.eu_responsible_person', 'type' => 'text', 'default' => '', 'max' => 500, 'public' => true],
 
         // ----------------------------------------------------------------- orders
         ['key' => 'orders.min_amount', 'type' => 'float', 'default' => 0, 'required' => true, 'min' => 0, 'max' => 100000, 'unit' => 'EUR', 'public' => true],

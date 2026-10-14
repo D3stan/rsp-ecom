@@ -16,6 +16,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronLeft, ChevronRight, Heart, Minus, Plus, Share2, ShoppingCart, Star } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useInitialVariantId } from '@/hooks/use-initial-variant';
+import ProductSafety from '@/components/product/ProductSafety';
 
 interface ProductVariant {
     id: number;
@@ -401,6 +402,8 @@ export default function Product() {
                             )}
                         </div>
                     </div>
+
+                    <ProductSafety variantId={selectedVariantId} />
 
                     {/* Reviews */}
                     {reviews.length > 0 && (
