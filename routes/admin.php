@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\CategoriesAndSizesController;
 use App\Http\Controllers\Admin\ReviewsController;
+use App\Http\Controllers\Admin\NewsletterSubscribersController;
 use App\Http\Controllers\Admin\SettingsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -54,6 +55,13 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/settings/{group}/history', [SettingsController::class, 'history'])->name('settings.history');
     Route::patch('/settings/{group}', [SettingsController::class, 'update'])->name('settings.update');
     Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->name('settings.reset');
+
+    // Newsletter (docs/newsletter-and-reminders.md)
+    Route::redirect('/newsletter', '/admin/newsletter/subscribers');
+    Route::get('/newsletter/subscribers', [NewsletterSubscribersController::class, 'index'])->name('newsletter.subscribers');
+    Route::get('/newsletter/subscribers/export', [NewsletterSubscribersController::class, 'export'])->name('newsletter.subscribers.export');
+    Route::post('/newsletter/subscribers/{subscriber}/unsubscribe', [NewsletterSubscribersController::class, 'unsubscribe'])->name('newsletter.subscribers.unsubscribe');
+    Route::delete('/newsletter/subscribers/{subscriber}', [NewsletterSubscribersController::class, 'destroy'])->name('newsletter.subscribers.destroy');
 
     // TODO: Add other admin routes as they are implemented
     // Route::resource('customers', CustomersController::class);

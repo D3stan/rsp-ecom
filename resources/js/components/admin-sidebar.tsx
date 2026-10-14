@@ -23,6 +23,7 @@ import {
     Folder,
     LayoutGrid,
     MessageSquare,
+    Newspaper,
     Package,
     Plus,
     Settings,
@@ -62,6 +63,11 @@ const mainNavItems: NavItem[] = [
         title: 'Reviews',
         href: '/admin/reviews',
         icon: MessageSquare,
+    },
+    {
+        title: 'Newsletter',
+        href: '/admin/newsletter/subscribers',
+        icon: Newspaper,
     },
     {
         title: 'Settings',

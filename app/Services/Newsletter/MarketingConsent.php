@@ -229,6 +229,26 @@ class MarketingConsent
     }
 
     /**
+     * GDPR erasure: deletes the subscriber and its consent trail (the IP / user agent history of that address).
+     * Only an anonymised `erased` event remains: no subscriber, no email, no IP.
+     */
+    public function erase(NewsletterSubscriber $subscriber, string $source = 'admin'): void
+    {
+        DB::transaction(function () use ($subscriber, $source) {
+            // Explicit as well as the FK cascade, so it never depends on the driver's foreign key settings
+            ConsentEvent::query()->where('subscriber_id', $subscriber->id)->delete();
+            NewsletterSubscriber::query()->whereKey($subscriber->id)->delete();
+
+            ConsentEvent::create([
+                'subscriber_id' => null,
+                'event' => ConsentEvent::EVENT_ERASED,
+                'source' => mb_substr($source, 0, 40),
+                'consent_text_version' => self::CONSENT_TEXT_VERSION,
+            ]);
+        });
+    }
+
+    /**
      * Sender name of marketing email: the newsletter setting, or the store name while it is empty.
      */
     public function senderName(): string
