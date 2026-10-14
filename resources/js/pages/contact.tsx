@@ -1,7 +1,6 @@
 import PublicLayout from '@/layouts/public-layout';
 import { Head, useForm, usePage } from '@inertiajs/react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,16 +8,15 @@ import { Label } from '@/components/ui/label';
 import { useSetting } from '@/hooks/use-setting';
 import useTranslation from '@/hooks/useTranslation';
 import { type SharedData } from '@/types';
-import { AlertCircle, CheckCircle, Clock, Mail, Phone } from 'lucide-react';
+import { Clock, Mail, Phone } from 'lucide-react';
 
 interface ContactPageProps extends SharedData {
     errors: Record<string, string>;
-    success?: string;
-    error?: string;
 }
 
 export default function Contact() {
-    const { errors, success, error } = usePage<ContactPageProps>().props;
+    // The outcome of a submission is the controller flash, toasted by the FlashToaster (app.tsx)
+    const { errors } = usePage<ContactPageProps>().props;
     const { t } = useTranslation();
     const supportEmail = useSetting('contact.support_email', '');
     const phone = useSetting('contact.phone', '');
@@ -51,25 +49,6 @@ export default function Contact() {
                     <h1 className="mb-6 text-4xl font-bold text-black">{t('contact.title')}</h1>
                     <p className="mx-auto max-w-3xl text-xl text-gray-600">{t('contact.subtitle')}</p>
                 </div>
-
-                {/* Success/Error Messages */}
-                {success && (
-                    <div className="mx-auto mb-8 max-w-2xl">
-                        <Alert className="border-green-200 bg-green-50">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <AlertDescription className="text-green-800">{success}</AlertDescription>
-                        </Alert>
-                    </div>
-                )}
-
-                {error && (
-                    <div className="mx-auto mb-8 max-w-2xl">
-                        <Alert className="border-red-200 bg-red-50">
-                            <AlertCircle className="h-4 w-4 text-red-600" />
-                            <AlertDescription className="text-red-800">{error}</AlertDescription>
-                        </Alert>
-                    </div>
-                )}
 
                 <div className="grid gap-12 lg:grid-cols-2">
                     {/* Contact Form */}

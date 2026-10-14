@@ -21,10 +21,11 @@ type LoginForm = {
 interface LoginProps {
     status?: string;
     canResetPassword: boolean;
-    error?: string;
 }
 
-export default function Login({ status, canResetPassword, error }: LoginProps) {
+// Errors from redirects to this page (Google sign-in, guest checkout switched off) are controller flashes, toasted
+// by the FlashToaster (app.tsx)
+export default function Login({ status, canResetPassword }: LoginProps) {
     const { t } = useTranslation();
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
         email: '',
@@ -42,12 +43,6 @@ export default function Login({ status, canResetPassword, error }: LoginProps) {
     return (
         <AuthLayout title={t('auth.login_title')} description={t('auth.login_description')}>
             <Head title={t('auth.log_in_title')} />
-
-            {error && (
-                <div className="mb-4 p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                    {error}
-                </div>
-            )}
 
             <div className="flex flex-col gap-4">
                 <GoogleButton disabled={processing}>

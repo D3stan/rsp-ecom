@@ -152,12 +152,8 @@ export default function CheckoutDetails() {
                 {
                     preserveScroll: true,
                     onSuccess: () => {
+                        // the confirmation is the controller flash, toasted by the FlashToaster (app.tsx)
                         setCouponCode('');
-                        addToast({
-                            type: 'success',
-                            title: t('cart.coupon_applied'),
-                            description: t('cart.coupon_applied_description'),
-                        });
                     },
                     onError: (errors) => {
                         console.error('Failed to apply coupon:', errors);
@@ -185,6 +181,20 @@ export default function CheckoutDetails() {
 
     const handleBackToCart = () => {
         router.get('/cart');
+    };
+
+    // On success the backend sends the browser to Stripe (Inertia::location, a full redirect), so a page response
+    // here means it redirected back: its flash error is toasted by the FlashToaster; without one, say it here.
+    const onCheckoutResponse = (page: Page<{ url?: string; flash?: SharedData['flash'] }>) => {
+        if (page.props?.url) {
+            window.location.href = page.props.url;
+        } else if (!page.props?.flash?.error) {
+            addToast({
+                type: 'error',
+                title: t('cart.checkout_error'),
+                description: t('cart.checkout_error_description'),
+            });
+        }
     };
 
     const proceedToPayment = () => {
@@ -249,12 +259,7 @@ export default function CheckoutDetails() {
         if (auth?.user) {
             // User is authenticated, proceed to cart checkout using Cashier
             router.post('/checkout/cart', checkoutData, {
-                onSuccess: (page: Page<{ url?: string }>) => {
-                    // Redirect to Stripe checkout will be handled by the backend
-                    if (page.props?.url) {
-                        window.location.href = page.props.url;
-                    }
-                },
+                onSuccess: onCheckoutResponse,
                 onError: (errors) => {
                     console.error('Checkout errors:', errors);
                     addToast({
@@ -271,12 +276,7 @@ export default function CheckoutDetails() {
         } else {
             // User is not authenticated, redirect to guest cart checkout
             router.post('/guest/checkout/cart', checkoutData, {
-                onSuccess: (page: Page<{ url?: string }>) => {
-                    // Redirect to Stripe checkout will be handled by the backend
-                    if (page.props?.url) {
-                        window.location.href = page.props.url;
-                    }
-                },
+                onSuccess: onCheckoutResponse,
                 onError: (errors) => {
                     console.error('Checkout errors:', errors);
                     addToast({
