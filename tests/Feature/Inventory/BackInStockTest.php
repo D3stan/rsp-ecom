@@ -421,13 +421,28 @@ it('points cart notifications to the cart', function () {
     expect((new BackInStock($notification))->locale('en')->render())->toContain(route('cart'));
 });
 
-it('unsubscribes through the signed link without logging in', function () {
+it('only asks for confirmation when the signed link is opened (link scanners prefetch GETs)', function () {
     $user = User::factory()->create();
+    $url = URL::signedRoute('restock.unsubscribe', ['user' => $user->id]);
 
-    $this->get(URL::signedRoute('restock.unsubscribe', ['user' => $user->id]))
+    $this->get($url)
         ->assertOk()
         ->assertHeader('Referrer-Policy', 'no-referrer')
-        ->assertInertia(fn (Assert $page) => $page->component('Restock/Unsubscribed')->where('unsubscribed', true));
+        ->assertInertia(fn (Assert $page) => $page->component('Restock/Unsubscribed')
+            ->where('status', 'confirm')
+            ->where('actionUrl', $url));
+
+    expect($user->fresh()->notify_back_in_stock)->toBeTrue();
+});
+
+it('unsubscribes when the confirmation button posts to the signed link, without logging in', function () {
+    $user = User::factory()->create();
+
+    $this->withHeaders(['X-Inertia' => 'true'])
+        ->post(URL::signedRoute('restock.unsubscribe', ['user' => $user->id]))
+        ->assertOk()
+        ->assertJsonPath('component', 'Restock/Unsubscribed')
+        ->assertJsonPath('props.status', 'done');
 
     expect($user->fresh()->notify_back_in_stock)->toBeFalse();
 });
@@ -447,10 +462,12 @@ it('refuses an unsigned or tampered unsubscribe link', function () {
 
     $this->get(route('restock.unsubscribe', ['user' => $user->id]))
         ->assertForbidden()
-        ->assertInertia(fn (Assert $page) => $page->component('Restock/Unsubscribed')->where('unsubscribed', false));
+        ->assertInertia(fn (Assert $page) => $page->component('Restock/Unsubscribed')->where('status', 'invalid'));
     $this->post(route('restock.unsubscribe', ['user' => $user->id]))->assertForbidden();
+    $this->withHeaders(['X-Inertia' => 'true'])->post(route('restock.unsubscribe', ['user' => $user->id]))->assertForbidden();
     $tampered = str_replace('/unsubscribe/'.$user->id, '/unsubscribe/'.$other->id, URL::signedRoute('restock.unsubscribe', ['user' => $user->id]));
     $this->get($tampered)->assertForbidden();
+    $this->post($tampered)->assertForbidden();
 
     expect($user->fresh()->notify_back_in_stock)->toBeTrue()
         ->and($other->fresh()->notify_back_in_stock)->toBeTrue();
@@ -486,6 +503,7 @@ it('has the admin switch with label and help in every locale', function () {
 
         expect($strings['settings.email.back_in_stock.label'] ?? '')->not->toBe('', "{$locale} label")
             ->and($strings['settings.email.back_in_stock.help'] ?? '')->not->toBe('', "{$locale} help")
-            ->and($strings['restock']['preference_label'] ?? '')->not->toBe('', "{$locale} account switch");
+            ->and($strings['restock']['preference_label'] ?? '')->not->toBe('', "{$locale} account switch")
+            ->and($strings['restock']['confirm_button'] ?? '')->not->toBe('', "{$locale} unsubscribe button");
     }
 });

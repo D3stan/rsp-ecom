@@ -84,7 +84,8 @@ Route::get('/orders/{order}', [GuestOrderController::class, 'show'])
     ->middleware('throttle:60,1')
     ->name('orders.guest.show');
 
-// One-click unsubscribe from back-in-stock emails (signed link in the email; POST = RFC 8058 one-click, CSRF-exempt)
+// Unsubscribe from back-in-stock emails (signed link): GET asks to confirm, only POST acts (page button or RFC 8058
+// one-click from mail clients; CSRF-exempt, the signature protects it)
 Route::match(['get', 'post'], '/restock/unsubscribe/{user}', RestockUnsubscribeController::class)
     ->whereNumber('user')
     ->middleware('throttle:30,1')
