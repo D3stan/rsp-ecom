@@ -39,6 +39,7 @@ interface Product {
     variants: ProductVariant[];
     average_rating: number | null;
     review_count: number;
+    inWishlist: boolean;
     shipping: {
         size: string;
     };
@@ -374,7 +375,7 @@ export default function Product() {
                                     {auth.user ? (
                                         <WishlistButton
                                             productId={product.id}
-                                            initialInWishlist={false}
+                                            initialInWishlist={product.inWishlist}
                                             showText={true}
                                             variant="outline"
                                             className="h-12"

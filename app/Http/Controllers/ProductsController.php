@@ -338,6 +338,8 @@ class ProductsController extends Controller
             // Approved reviews only (null average when there are none)
             'average_rating' => $product->approved_reviews_count > 0 ? round((float) $product->approved_reviews_avg_rating, 1) : null,
             'review_count' => (int) $product->approved_reviews_count,
+            // Same check as the product list: the wishlist heart starts from the real state
+            'inWishlist' => auth()->check() && auth()->user()->hasInWishlist($product),
         ];
 
         // Get reviews with user information
