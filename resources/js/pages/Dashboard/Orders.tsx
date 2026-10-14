@@ -205,7 +205,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                                         <div className="space-y-2">
                                             <CardTitle className="flex items-center gap-2">
                                                 <Package className="h-5 w-5" />
-                                                {t('orders.order_number', { id: order.id })}
+                                                {t('orders.order_number', { id: order.order_number })}
                                             </CardTitle>
                                             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                                                 <div className="flex items-center gap-1">

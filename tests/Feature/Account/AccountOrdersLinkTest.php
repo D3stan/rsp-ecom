@@ -32,3 +32,12 @@ it('gives the account orders page the order number of every order', function () 
 
     expect($order->order_number)->toStartWith('ORD-')->not->toBe((string) $order->id);
 });
+
+it('gives the dashboard latest-orders card the order number as well', function () {
+    $user = User::factory()->create(['role' => 'customer']);
+    $order = Order::factory()->create(['user_id' => $user->id]);
+
+    $this->actingAs($user)->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('recentOrders.0.order_number', $order->order_number));
+});

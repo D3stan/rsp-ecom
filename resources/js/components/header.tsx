@@ -441,7 +441,7 @@ export default function Header({ transparent = false }: HeaderProps) {
 
                             {auth?.user && (
                                 <Link
-                                    href="/orders"
+                                    href={route('orders.index')}
                                     onClick={closeMenu}
                                     className="flex items-center space-x-3 text-gray-700 transition-colors hover:text-blue-600"
                                 >
