@@ -464,7 +464,8 @@ it('refuses an unsigned or tampered unsubscribe link', function () {
         ->assertForbidden()
         ->assertInertia(fn (Assert $page) => $page->component('Restock/Unsubscribed')->where('status', 'invalid'));
     $this->post(route('restock.unsubscribe', ['user' => $user->id]))->assertForbidden();
-    $this->withHeaders(['X-Inertia' => 'true'])->post(route('restock.unsubscribe', ['user' => $user->id]))->assertForbidden();
+    // per-request header: withHeaders() would carry X-Inertia into the requests below (409 on an asset-version mismatch)
+    $this->post(route('restock.unsubscribe', ['user' => $user->id]), [], ['X-Inertia' => 'true'])->assertForbidden();
     $tampered = str_replace('/unsubscribe/'.$user->id, '/unsubscribe/'.$other->id, URL::signedRoute('restock.unsubscribe', ['user' => $user->id]));
     $this->get($tampered)->assertForbidden();
     $this->post($tampered)->assertForbidden();
