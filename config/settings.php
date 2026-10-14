@@ -127,6 +127,8 @@ return [
             'bridge_format' => 'keyed_by_code',
             'seed' => false,
         ],
+        // Items total after the coupon discount from which shipping is free (App\Support\Shipping). 0 = off.
+        ['key' => 'shipping.free_threshold', 'type' => 'float', 'default' => 1000, 'min' => 0, 'max' => 100000, 'unit' => 'EUR', 'public' => true],
 
         // ------------------------------------------------------------------ legal
         // EU statutory minimum for distance sales (Directive 2011/83/EU), set in config/shipping.php. Read-only: shown in

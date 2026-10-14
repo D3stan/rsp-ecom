@@ -11,6 +11,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Support\CheckoutTotals;
 use App\Support\Money;
 use App\Support\Vat;
 use App\Models\CheckoutSnapshot;
@@ -299,49 +300,19 @@ class CheckoutController extends Controller
             'discountAmount' => $totals['discount'],
             'total' => $totals['total'],
             'totalItems' => $cart->cartItems->sum('quantity'),
+            'freeShippingRemaining' => $totals['free_shipping_remaining'],
         ];
     }
 
     /**
-     * What the customer pays, in one place (used by both details pages and both Stripe checkouts):
-     * items (VAT-inclusive) - coupon discount + shipping, where shipping is the sum of the package sizes' own
-     * shipping_cost (Cart::shipping_cost); it is never waived or capped by the order value. VAT is the portion contained in the total.
+     * What the customer pays (CheckoutTotals, shared with the cart page): used by both details pages and both
+     * Stripe checkouts, so the snapshot, the Stripe amount and the stored order follow the free-shipping rule too.
      *
-     * @return array{items: float, shipping: float, discount: float, total: float, vat: array{rate: float|null, amount: float}}
+     * @return array{items: float, shipping: float, discount: float, total: float, vat: array{rate: float|null, amount: float}, free_shipping_remaining: float|null}
      */
     private function checkoutTotals(\App\Models\Cart $cart): array
     {
-        $items = round((float) $cart->cartItems->sum(fn ($item) => $item->price * $item->quantity), 2);
-        $shipping = round((float) $cart->shipping_cost, 2);
-        $discount = $this->couponDiscount($items);
-        $total = round(max(0, $items + $shipping - $discount), 2);
-
-        return [
-            'items' => $items,
-            'shipping' => $shipping,
-            'discount' => $discount,
-            'total' => $total,
-            'vat' => Vat::includedIn($total),
-        ];
-    }
-
-    /**
-     * Discount of the coupon stored in the session on a VAT-inclusive items total
-     */
-    private function couponDiscount(float $itemsTotal): float
-    {
-        $appliedCoupon = session('applied_coupon');
-
-        if (! $appliedCoupon) {
-            return 0.0;
-        }
-
-        // Recalculate discount based on current subtotal for percentage discounts
-        if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
-            return round($itemsTotal * ($appliedCoupon['discount_percentage'] / 100), 2);
-        }
-
-        return (float) min($appliedCoupon['discount_amount'], $itemsTotal);
+        return CheckoutTotals::for($cart, session('applied_coupon'));
     }
 
     /**

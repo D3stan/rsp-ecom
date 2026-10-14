@@ -1,3 +1,4 @@
+import ShippingLine from '@/components/checkout/ShippingLine';
 import Header from '@/components/header';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
@@ -68,13 +69,14 @@ interface CheckoutDetailsProps extends SharedData {
     discountDescription?: string;
     total: number;
     totalItems: number;
+    freeShippingRemaining?: number | null;
 }
 
 
 
 export default function CheckoutDetails() {
     const pageProps = usePage<CheckoutDetailsProps>().props;
-    const { cartItems, subtotal, shippingCost, taxAmount, taxRate, discountAmount = 0, couponCode: initialCouponCode, discountDescription, total, totalItems, auth } = pageProps;
+    const { cartItems, subtotal, shippingCost, taxAmount, taxRate, discountAmount = 0, couponCode: initialCouponCode, discountDescription, total, totalItems, freeShippingRemaining, auth } = pageProps;
     const { t, isLoading, locale } = useTranslation();
     const formatCurrency = useMoney();
 
@@ -624,10 +626,12 @@ export default function CheckoutDetails() {
                                             <span>{t('cart.subtotal')}</span>
                                             <span className="font-medium text-black">{formatCurrency(subtotal)}</span>
                                         </div>
-                                        <div className="flex justify-between text-gray-600">
-                                            <span>{t('cart.shipping')}</span>
-                                            <span className="font-medium text-black">{formatCurrency(shippingCost)}</span>
-                                        </div>
+                                        <ShippingLine
+                                            shippingCost={shippingCost}
+                                            freeShippingRemaining={freeShippingRemaining}
+                                            className="flex justify-between text-gray-600"
+                                            amountClassName="font-medium text-black"
+                                        />
                                         {discountAmount > 0 && (
                                             <div className="flex justify-between text-green-600">
                                                 <span>{t('cart.discount')}</span>

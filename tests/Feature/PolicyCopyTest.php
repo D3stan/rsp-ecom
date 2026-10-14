@@ -11,8 +11,9 @@ use Tests\TestCase;
 
 /**
  * The shipping / returns / VAT copy, in the five locales: EU-standard return policy (withdrawal days, delivery times
- * and the support address come from the settings, never from the text), no free-shipping promise anywhere, no
- * hard-coded prices or currency symbols, and the same placeholders in every language.
+ * and the support address come from the settings, never from the text), no free-shipping promise anywhere (the only
+ * free shipping is the admin threshold `shipping.free_threshold`, decided by App\Support\Shipping and shown by its own
+ * keys), no hard-coded prices or currency symbols, and the same placeholders in every language.
  */
 class PolicyCopyTest extends TestCase
 {
@@ -65,6 +66,29 @@ class PolicyCopyTest extends TestCase
         'checkout.free_shipping_notice', 'checkout.return_policy_notice',
         'shipping_returns.express_delivery', 'shipping_returns.destination', 'shipping_returns.standard',
         'shipping_returns.express', 'shipping_returns.eu_countries', 'shipping_returns.uk',
+    ];
+
+    /**
+     * The texts of the free-shipping threshold (setting `shipping.free_threshold`): shown only while the threshold is on
+     * ("Free shipping" once reached, "Add X more for free shipping" below it) and in the admin settings page.
+     */
+    private const FREE_SHIPPING_THRESHOLD_KEYS = [
+        'shipping.free', 'shipping.free_remaining',
+        'settings.shipping.free_threshold.label', 'settings.shipping.free_threshold.help',
+    ];
+
+    /** The only files that may implement or display free shipping: the threshold rule and the summaries that show it. */
+    private const FREE_SHIPPING_THRESHOLD_FILES = [
+        'app/Support/Shipping.php',
+        'app/Support/CheckoutTotals.php',
+        'app/Models/Cart.php',
+        'app/Http/Controllers/CartController.php',
+        'app/Http/Controllers/CheckoutController.php',
+        'config/settings.php',
+        'resources/js/components/checkout/ShippingLine.tsx',
+        'resources/js/pages/cart.tsx',
+        'resources/js/pages/Checkout/Details.tsx',
+        'resources/js/types/settings.d.ts',
     ];
 
     /** "Free shipping" in each language (any text of the locale, not only the rewritten keys). */
@@ -155,7 +179,8 @@ class PolicyCopyTest extends TestCase
             }
 
             $strings = [];
-            array_walk_recursive($lang, function ($value, $key) use (&$strings) {
+            $promises = array_diff_key($lang, array_flip(self::FREE_SHIPPING_THRESHOLD_KEYS));
+            array_walk_recursive($promises, function ($value, $key) use (&$strings) {
                 if (is_string($value)) {
                     $strings[$key] = $value;
                 }
@@ -181,8 +206,18 @@ class PolicyCopyTest extends TestCase
                     continue;
                 }
 
-                if (preg_match($pattern, file_get_contents($file->getPathname()), $match)) {
-                    $hits[] = str_replace(base_path().'/', '', $file->getPathname()).': '.$match[0];
+                $path = str_replace(base_path().'/', '', $file->getPathname());
+                $content = file_get_contents($file->getPathname());
+
+                // the threshold's own texts are allowed in the translation files, nothing else
+                if (str_starts_with($path, 'lang/') && str_ends_with($path, '.json')) {
+                    $content = json_encode(array_diff_key(json_decode($content, true), array_flip(self::FREE_SHIPPING_THRESHOLD_KEYS)), JSON_UNESCAPED_UNICODE);
+                }
+
+                // the old rate-table logic is gone everywhere; the threshold lives only in its own files
+                $allowed = in_array($path, self::FREE_SHIPPING_THRESHOLD_FILES, true);
+                if (preg_match($allowed ? '/calculateShippingCost/i' : $pattern, $content, $match)) {
+                    $hits[] = $path.': '.$match[0];
                 }
             }
         }
