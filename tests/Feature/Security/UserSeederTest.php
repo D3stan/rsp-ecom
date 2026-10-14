@@ -18,8 +18,11 @@ function seedUsersIn(string $environment): void
 
 test('production seeding creates no known admin login and no demo users', function () {
     config(['app.admin_seed.email' => null, 'app.admin_seed.password' => null]);
+    app()['env'] = 'production';
 
-    seedUsersIn('production');
+    $this->artisan('db:seed', ['--class' => UserSeeder::class, '--force' => true])
+        ->expectsOutputToContain('Set ADMIN_EMAIL and ADMIN_PASSWORD')
+        ->assertExitCode(0);
 
     $admin = User::where('email', 'admin@example.com')->first();
     expect($admin === null || ! Hash::check('password', $admin->password))->toBeTrue('production has admin@example.com / password')
