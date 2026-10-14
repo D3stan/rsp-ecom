@@ -5,8 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Orders\OrderFinancialEdit;
 use App\Exceptions\InvalidOrderTransition;
 use App\Exceptions\OrderEditRefused;
+use App\Exceptions\RefundFailed;
+use App\Exceptions\RefundRefused;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Refund;
+use App\Services\RefundService;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -120,6 +124,16 @@ class OrdersController extends Controller
             'allowed_transitions' => $order->allowedTransitions(),
             // Audit trail for the timeline, oldest first (empty for orders from before it existed)
             'events' => $order->events()->with('actor:id,name')->get()->map->toTimelineArray()->values()->all(),
+            // Money returned so far (newest first) and what can still be refunded through Stripe
+            'refunds' => $order->refunds()->with('creator:id,name')->orderByDesc('id')->get()->map->toAdminArray()->values()->all(),
+            'refund' => [
+                'refundable_cents' => app(RefundService::class)->refundableCents($order),
+                'has_payment_intent' => ! empty($order->stripe_payment_intent_id),
+                // units each line can still put back in stock (empty when the stock was never taken or already returned)
+                'restockable' => $order->stock_deducted_at !== null && $order->stock_restored_at === null
+                    ? $order->orderItems->mapWithKeys(fn ($item) => [$item->id => max(0, (int) $item->quantity - (int) $item->oversold_qty - (int) $item->restocked_qty)])->all()
+                    : (object) [],
+            ],
             'carriers' => app(TrackingManager::class)->carriers(),
             // Internal stock bookkeeping (hidden from every customer-facing array): units sold beyond the stock
             'stock' => [
@@ -399,27 +413,34 @@ class OrdersController extends Controller
     }
 
     /**
-     * Refund an order (placeholder for Stripe integration)
+     * Refund money through Stripe (RefundService): amount in EUR from the form, converted to cents; optional reason and
+     * units per line to put back in stock. Refused refunds change nothing; a Stripe failure is recorded on the order.
      */
-    public function refund(Request $request, Order $order)
+    public function refund(Request $request, Order $order, RefundService $refunds)
     {
-        $request->validate([
-            'amount' => 'sometimes|numeric|min:0.01|max:' . $order->total_amount,
-            'reason' => 'sometimes|string|max:500',
+        $data = $request->validate([
+            'amount' => 'required|numeric|min:0.01|max:1000000',
+            'reason' => 'nullable|string|max:500',
+            'restock' => 'sometimes|array',
+            'restock.*' => 'integer|min:0',
         ]);
 
-        // TODO: Implement Stripe refund logic here, then call EmailService::sendOrderRefunded($order, $refundAmount).
-        //       Until money really moves the customer must NOT be emailed (no refund email from this placeholder).
-        // For now, just mark as refunded in notes
-        $refundAmount = $request->amount ?? $order->total_amount;
-        $reason = $request->reason ?? 'Admin refund';
-        
-        $order->update([
-            'notes' => ($order->notes ? $order->notes . "\n\n" : '') . 
-                      "REFUND: $" . number_format($refundAmount, 2) . " - {$reason} (Processed on " . now()->format('Y-m-d H:i:s') . ")"
-        ]);
+        try {
+            $refund = $refunds->refund(
+                $order,
+                (int) round((float) $data['amount'] * 100),
+                $data['reason'] ?? null,
+                $request->user(),
+                Refund::SOURCE_ADMIN,
+                array_filter($data['restock'] ?? [], fn ($quantity) => (int) $quantity > 0),
+            );
+        } catch (RefundRefused $e) {
+            return back()->withErrors(['amount' => $e->getMessage()])->with('error', $e->getMessage());
+        } catch (RefundFailed $e) {
+            return back()->with('error', 'Stripe did not execute the refund: '.$e->getMessage());
+        }
 
-        return back()->with('success', 'Refund processed successfully.');
+        return back()->with('success', sprintf('Refund of %s %s issued.', number_format($refund->amount(), 2, ',', '.'), $refund->currency));
     }
 
     /**

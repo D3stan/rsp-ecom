@@ -67,12 +67,20 @@ export default function OrderTimeline({ createdAt, status, events, formatDate }:
             case 'status_changed':
                 return t('admin.orders.timeline.status_changed', { from: statusLabel(event.from_status), to: statusLabel(event.to_status) });
             case 'refund':
-                return t('admin.orders.timeline.refund');
+                return `${t('admin.orders.timeline.refund')}${amountOf(event)}`;
             case 'refund_failed':
-                return t('admin.orders.timeline.refund_failed');
+                return `${t('admin.orders.timeline.refund_failed')}${amountOf(event)}`;
             default:
                 return t('admin.orders.timeline.note');
         }
+    };
+
+    // " · 20,00 €" for refund events (payload from RefundService)
+    const amountOf = (event: OrderTimelineEvent) => {
+        const cents = Number(event.payload?.amount_cents);
+        const currency = typeof event.payload?.currency === 'string' ? event.payload.currency : 'EUR';
+
+        return Number.isFinite(cents) && cents > 0 ? ` · ${new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(cents / 100)}` : '';
     };
 
     const who = (event: OrderTimelineEvent) =>

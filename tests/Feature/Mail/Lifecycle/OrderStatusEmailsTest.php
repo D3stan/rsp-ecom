@@ -162,14 +162,3 @@ it('resolves PATCH admin/orders/bulk-status to the bulk action, not to orders/{o
     expect(app('router')->getRoutes()->match(Illuminate\Http\Request::create('/admin/orders/'.$order->id, 'PATCH'))->getName())
         ->toBe('admin.orders.update');
 });
-
-it('does not email a refund from the placeholder refund action', function () {
-    $order = Fx::paidOrder();
-
-    $this->actingAs($this->admin)
-        ->post(route('admin.orders.refund', $order), ['amount' => 10, 'reason' => 'test'])
-        ->assertSessionHas('success');
-
-    Queue::assertNothingPushed();
-    expect(OrderEmail::where('type', OrderEmail::TYPE_REFUNDED)->count())->toBe(0);
-});

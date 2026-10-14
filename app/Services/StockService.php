@@ -124,7 +124,8 @@ class StockService
                     continue;
                 }
 
-                $give[$variantId] = ($give[$variantId] ?? 0) + max(0, (int) $item->quantity - (int) $item->oversold_qty);
+                // units already given back with a refund (restoreItems) are not given back twice
+                $give[$variantId] = ($give[$variantId] ?? 0) + max(0, (int) $item->quantity - (int) $item->oversold_qty - (int) $item->restocked_qty);
             }
 
             $this->applyDelta($variants, $give);
@@ -133,6 +134,75 @@ class StockService
             $order->syncOriginalAttributes(['stock_restored_at']);
 
             return true;
+        });
+    }
+
+    /**
+     * Give back units of some lines (items returned with a refund), once per $idempotencyKey (e.g. "refund:{id}"): the
+     * key is claimed in stock_restorations before the stock moves, so a retried call does nothing. Only for an order
+     * whose stock was deducted and not already restored by a cancellation; each line gives back at most what it took
+     * (quantity - oversold) minus what earlier calls gave back (order_items.restocked_qty, which restoreForOrder also
+     * respects).
+     *
+     * @param  array<int, int>  $qtyByItem  order item id => units to give back
+     * @return array<int, int> order item id => units actually given back (empty: nothing to do, or a retry)
+     */
+    public function restoreItems(Order $order, array $qtyByItem, string $idempotencyKey): array
+    {
+        $qtyByItem = array_filter(array_map('intval', $qtyByItem), fn (int $quantity) => $quantity > 0);
+
+        if ($qtyByItem === []) {
+            return [];
+        }
+
+        return DB::transaction(function () use ($order, $qtyByItem, $idempotencyKey) {
+            $state = Order::query()->whereKey($order->id)->lockForUpdate()->first(['id', 'stock_deducted_at', 'stock_restored_at']);
+
+            if (! $state || $state->stock_deducted_at === null || $state->stock_restored_at !== null) {
+                return [];
+            }
+
+            $claimed = DB::table('stock_restorations')->insertOrIgnore([
+                'idempotency_key' => $idempotencyKey,
+                'order_id' => $order->id,
+                'quantities' => '{}',
+                'created_at' => now(),
+            ]);
+
+            if (! $claimed) {
+                return [];
+            }
+
+            $items = OrderItem::query()->where('order_id', $order->id)->whereIn('id', array_keys($qtyByItem))->orderBy('id')->get();
+            $variantIds = $this->variantIdsByItem($items);
+            $variants = $this->lockVariants($variantIds);
+            $give = [];
+            $done = [];
+
+            foreach ($items as $item) {
+                $variantId = $variantIds[$item->id] ?? null;
+
+                if ($variantId === null || ! $variants->has($variantId)) {
+                    continue;
+                }
+
+                $left = max(0, (int) $item->quantity - (int) $item->oversold_qty - (int) $item->restocked_qty);
+                $quantity = min($left, $qtyByItem[$item->id]);
+
+                if ($quantity <= 0) {
+                    continue;
+                }
+
+                $give[$variantId] = ($give[$variantId] ?? 0) + $quantity;
+                $done[$item->id] = $quantity;
+                OrderItem::query()->whereKey($item->id)->increment('restocked_qty', $quantity);
+            }
+
+            $this->applyDelta($variants, $give);
+
+            DB::table('stock_restorations')->where('idempotency_key', $idempotencyKey)->update(['quantities' => json_encode($done)]);
+
+            return $done;
         });
     }
 

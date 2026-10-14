@@ -13,16 +13,23 @@ class FakeStripeHttpClient implements ClientInterface
     /** @var array<int, array{0: string, 1: string, 2: array|null}> method, URL, request parameters */
     public array $requests = [];
 
-    /** @var array<string, array> URL fragment => JSON body */
+    /** @var array<int, array<int, string>> request headers, same order as (e.g. "Idempotency-Key: ...") */
+    public array $headers = [];
+
+    /** @var array<string, array> URL fragment => JSON body; a "__status" key sets the HTTP status (default 200) */
     public array $responses = [];
 
     public function request($method, $absUrl, $headers, $params, $hasFile, $apiMode = 'v1')
     {
         $this->requests[] = [$method, $absUrl, $params];
+        $this->headers[] = $headers;
 
         foreach ($this->responses as $fragment => $body) {
             if (str_contains($absUrl, $fragment)) {
-                return [json_encode($body), 200, []];
+                $status = $body['__status'] ?? 200;
+                unset($body['__status']);
+
+                return [json_encode($body), $status, []];
             }
         }
 

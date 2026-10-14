@@ -97,11 +97,12 @@ class EmailService
     }
 
     /**
-     * Queue the refund notification. One mail per distinct refunded amount.
+     * Queue the refund notification: one mail per refund ($refundId, from RefundService), else per distinct amount.
+     * The amount guard accepts any partial refund (0 < amount <= order total).
      *
      * Call this only once the money has really been returned (Stripe refund executed).
      */
-    public function sendOrderRefunded(Order $order, float $amount): bool
+    public function sendOrderRefunded(Order $order, float $amount, ?int $refundId = null): bool
     {
         if (round($amount, 2) <= 0 || round($amount, 2) > round((float) $order->total_amount, 2)) {
             Log::warning('Refund email skipped: invalid amount', ['order_id' => $order->id]);
@@ -112,7 +113,7 @@ class EmailService
         return $this->dispatchOrderEmail(
             $order,
             OrderEmail::TYPE_REFUNDED,
-            OrderEmail::refundedFingerprint($amount),
+            OrderEmail::refundedFingerprint($amount, $refundId),
             amount: OrderEmail::formatAmount($amount),
         );
     }

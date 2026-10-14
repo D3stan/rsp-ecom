@@ -91,6 +91,8 @@ const paymentStatusColors = {
     processing: 'bg-blue-100 text-blue-800',
     succeeded: 'bg-green-100 text-green-800',
     failed: 'bg-red-100 text-red-800',
+    partially_refunded: 'bg-orange-100 text-orange-800',
+    refunded: 'bg-gray-100 text-gray-800',
 };
 
 export default function OrdersIndex({ orders, kpis, filters }: Props) {
@@ -284,6 +286,8 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                     <option value="processing">Processing</option>
                                     <option value="succeeded">Succeeded</option>
                                     <option value="failed">Failed</option>
+                                    <option value="partially_refunded">Partially refunded</option>
+                                    <option value="refunded">Refunded</option>
                                 </select>
                             </div>
 

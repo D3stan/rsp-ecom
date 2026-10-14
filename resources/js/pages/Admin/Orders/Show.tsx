@@ -1,3 +1,4 @@
+import OrderRefunds, { type OrderRefund, type RefundInfo } from '@/components/admin/orders/OrderRefunds';
 import OrderStatusActions, { forwardTransitions } from '@/components/admin/orders/OrderStatusActions';
 import OrderTimeline, { type OrderTimelineEvent } from '@/components/admin/orders/OrderTimeline';
 import { Badge } from '@/components/ui/badge';
@@ -112,6 +113,9 @@ interface Props {
     allowed_transitions: string[];
     // audit trail (order_events), oldest first
     events?: OrderTimelineEvent[];
+    // money returned so far and what can still be refunded (RefundService)
+    refunds?: OrderRefund[];
+    refund?: RefundInfo;
     carriers?: Carrier[];
     stock?: StockInfo;
 }
@@ -129,6 +133,8 @@ const paymentStatusColors = {
     processing: 'bg-blue-100 text-blue-800',
     succeeded: 'bg-green-100 text-green-800',
     failed: 'bg-red-100 text-red-800',
+    partially_refunded: 'bg-orange-100 text-orange-800',
+    refunded: 'bg-gray-100 text-gray-800',
 };
 
 const getStatusIcon = (status: string) => {
@@ -148,7 +154,7 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-export default function OrderShow({ order, allowed_transitions = [], events = [], carriers = [], stock }: Props) {
+export default function OrderShow({ order, allowed_transitions = [], events = [], refunds = [], refund, carriers = [], stock }: Props) {
     const { t } = useTranslation();
     const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
     const [isUpdating, setIsUpdating] = useState(false);
@@ -643,6 +649,18 @@ export default function OrderShow({ order, allowed_transitions = [], events = []
                                 </CollapsibleContent>
                             </Card>
                         </Collapsible>
+
+                        {refund && (
+                            <OrderRefunds
+                                orderId={order.id}
+                                currency={order.currency}
+                                shippingAmount={Number(order.shipping_amount)}
+                                lines={order.orderItems.map((item) => ({ id: item.id, name: item.product.name, quantity: item.quantity }))}
+                                refunds={refunds}
+                                info={refund}
+                                formatDate={formatDate}
+                            />
+                        )}
 
                         {/* Notes */}
                         {order.notes && (

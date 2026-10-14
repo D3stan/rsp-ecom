@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Services\EmailService;
 use App\Services\OrderCreationService;
+use App\Services\RefundService;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Events\WebhookReceived;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -44,6 +45,9 @@ class StripeWebhookListener
                 break;
             case 'checkout.session.expired':
                 $this->closeUnpaidSession($payload, 'expired');
+                break;
+            case 'charge.refunded':
+                $this->reconcileRefunds($payload);
                 break;
             default:
                 Log::info('Unhandled webhook event type: '.$payload['type']);
@@ -104,6 +108,30 @@ class StripeWebhookListener
             ]);
 
             $this->alertAdmin($sessionId, $session, $e);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * charge.refunded: record refunds made in the Stripe dashboard (and complete our own whose outcome was never
+     * stored). Idempotent, so a failure is logged critical and rethrown: Stripe retries the delivery.
+     */
+    private function reconcileRefunds(array $payload): void
+    {
+        $charge = $payload['data']['object'];
+
+        try {
+            $applied = app(RefundService::class)->reconcileCharge($charge);
+
+            Log::info('charge.refunded processed', ['event_id' => $payload['id'], 'charge' => $charge['id'] ?? null, 'applied' => $applied]);
+        } catch (Throwable $e) {
+            Log::critical('Stripe refund could not be recorded', [
+                'event_id' => $payload['id'],
+                'charge' => $charge['id'] ?? null,
+                'exception' => get_class($e),
+                'error' => $e->getMessage(),
+            ]);
 
             throw $e;
         }

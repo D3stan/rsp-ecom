@@ -91,11 +91,15 @@ class OrderEmail extends Model
     }
 
     /**
-     * Fingerprint for the "refunded" email: one mail per distinct refunded amount.
+     * Fingerprint for the "refunded" email: one mail per refund (refunds.id), so two partial refunds of the same
+     * amount each get their mail while a retry of the same refund does not. Without a refund id (legacy callers):
+     * one mail per distinct amount.
      */
-    public static function refundedFingerprint(float $amount): string
+    public static function refundedFingerprint(float $amount, ?int $refundId = null): string
     {
-        return substr(sha1('refunded|'.self::formatAmount($amount)), 0, 40);
+        $key = $refundId !== null ? 'refunded|refund:'.$refundId : 'refunded|'.self::formatAmount($amount);
+
+        return substr(sha1($key), 0, 40);
     }
 
     /**

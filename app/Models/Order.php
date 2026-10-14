@@ -156,6 +156,14 @@ class Order extends Model
     }
 
     /**
+     * Money returned for this order (RefundService).
+     */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
+    }
+
+    /**
      * Audit trail (status changes, refunds), oldest first.
      */
     public function events(): HasMany
