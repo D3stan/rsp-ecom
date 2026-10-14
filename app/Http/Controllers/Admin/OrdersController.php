@@ -116,6 +116,8 @@ class OrdersController extends Controller
         return Inertia::render('Admin/Orders/Show', [
             'order' => $order->toFrontendArray(),
             'allowed_transitions' => $order->allowedTransitions(),
+            // Audit trail for the timeline, oldest first (empty for orders from before it existed)
+            'events' => $order->events()->with('actor:id,name')->get()->map->toTimelineArray()->values()->all(),
             'carriers' => app(TrackingManager::class)->carriers(),
             // Internal stock bookkeeping (hidden from every customer-facing array): units sold beyond the stock
             'stock' => [

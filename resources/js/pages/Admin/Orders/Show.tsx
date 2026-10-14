@@ -1,4 +1,5 @@
 import OrderStatusActions, { forwardTransitions } from '@/components/admin/orders/OrderStatusActions';
+import OrderTimeline, { type OrderTimelineEvent } from '@/components/admin/orders/OrderTimeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -109,6 +110,8 @@ interface Props {
     order: Order;
     // statuses this order may move to next (server-side order lifecycle)
     allowed_transitions: string[];
+    // audit trail (order_events), oldest first
+    events?: OrderTimelineEvent[];
     carriers?: Carrier[];
     stock?: StockInfo;
 }
@@ -145,7 +148,7 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-export default function OrderShow({ order, allowed_transitions = [], carriers = [], stock }: Props) {
+export default function OrderShow({ order, allowed_transitions = [], events = [], carriers = [], stock }: Props) {
     const { t } = useTranslation();
     const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
     const [isUpdating, setIsUpdating] = useState(false);
@@ -355,48 +358,7 @@ export default function OrderShow({ order, allowed_transitions = [], carriers = 
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
                                     <div className="space-y-4">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                                                <CheckCircle className="h-4 w-4 text-green-600" />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium">Order Placed</p>
-                                                <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
-                                            </div>
-                                        </div>
-                                        {order.status !== 'pending' && (
-                                            <div className="flex items-center space-x-3">
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                                                    <Package className="h-4 w-4 text-blue-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium">Order Confirmed</p>
-                                                    <p className="text-sm text-muted-foreground">{formatDate(order.updated_at)}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {(order.status === 'shipped' || order.status === 'delivered') && (
-                                            <div className="flex items-center space-x-3">
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100">
-                                                    <Truck className="h-4 w-4 text-purple-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium">Order Shipped</p>
-                                                    <p className="text-sm text-muted-foreground">{formatDate(order.updated_at)}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {order.status === 'delivered' && (
-                                            <div className="flex items-center space-x-3">
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                                                    <CheckCircle className="h-4 w-4 text-green-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium">Order Delivered</p>
-                                                    <p className="text-sm text-muted-foreground">{formatDate(order.updated_at)}</p>
-                                                </div>
-                                            </div>
-                                        )}
+                                        <OrderTimeline createdAt={order.created_at} status={order.status} events={events} formatDate={formatDate} />
                                         {getNextStatus() && (
                                             <Button size="sm" onClick={() => updateOrderStatus(getNextStatus()!)} disabled={isUpdating}>
                                                 <SkipForward className="mr-2 h-4 w-4" />

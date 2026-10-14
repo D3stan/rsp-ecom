@@ -155,6 +155,14 @@ class Order extends Model
         return $this->hasMany(ShipmentTrackingEvent::class);
     }
 
+    /**
+     * Audit trail (status changes, refunds), oldest first.
+     */
+    public function events(): HasMany
+    {
+        return $this->hasMany(OrderEvent::class)->orderBy('created_at')->orderBy('id');
+    }
+
     // Scopes
     public function scopePending($query)
     {
@@ -236,6 +244,7 @@ class Order extends Model
      * admins, or an admin and the tracking sync, cannot both move the order from the same starting point. Sets
      * delivered_at when the order enters "delivered" and saves the model, together with any other attribute the caller
      * changed on it before. The OrderObserver then reacts as for any save (stock restore on cancel, status emails).
+     * Each actual move writes one order_events row (actor, both statuses, reason and $meta in payload).
      *
      * Moving to the status the order already has is a no-op for the status (other pending changes are still saved).
      *
@@ -249,7 +258,7 @@ class Order extends Model
             throw new \LogicException('Only a saved order can change status.');
         }
 
-        DB::transaction(function () use ($to, $reason) {
+        DB::transaction(function () use ($to, $actor, $reason, $meta) {
             $stored = static::query()->whereKey($this->getKey())->lockForUpdate()->value('status');
 
             // Decide on what is stored, not on what this instance remembers
@@ -284,6 +293,14 @@ class Order extends Model
             }
 
             $this->save();
+
+            $this->events()->create([
+                'actor_id' => $actor?->getKey(),
+                'type' => OrderEvent::TYPE_STATUS_CHANGED,
+                'from_status' => $from,
+                'to_status' => $to,
+                'payload' => array_filter(['reason' => $reason, 'meta' => $meta]) ?: null,
+            ]);
         });
     }
 
