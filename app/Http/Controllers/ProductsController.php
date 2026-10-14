@@ -323,9 +323,13 @@ class ProductsController extends Controller
                 'name' => $product->category->name,
                 'slug' => $product->category->slug,
             ] : null,
+            // GPSR product identifier (the selected variant's SKU, else base_sku) and safety text: ProductSafety.tsx
+            'base_sku' => $product->base_sku,
+            'safety_information' => $product->safety_information,
             'variants' => $product->activeVariants->map(fn($v) => [
                 'id' => $v->id,
                 'name' => $v->name,
+                'sku' => $product->base_sku ? $product->base_sku.$v->sku_suffix : null,
                 'price' => $v->price,
                 'stock_quantity' => $v->stock_quantity,
                 'images' => $v->image_urls,
@@ -380,7 +384,36 @@ class ProductsController extends Controller
             'reviews' => $reviews,
             'relatedProducts' => $relatedProducts,
             'breadcrumb' => $breadcrumb,
+            'compliance' => $this->compliance(),
         ]);
+    }
+
+    /**
+     * Manufacturer block of the product page (GPSR, Regulation (EU) 2023/988). Each compliance.* setting falls back to
+     * the store's own identity (the shop is treated as the manufacturer / EU importer until the admin fills them in).
+     *
+     * @return array{manufacturer_name: string|null, manufacturer_address: string|null, manufacturer_email: string|null, eu_responsible_person: string|null}
+     */
+    private function compliance(): array
+    {
+        $first = function (string ...$keys): ?string {
+            foreach ($keys as $key) {
+                $value = trim((string) settings($key, ''));
+
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+
+            return null;
+        };
+
+        return [
+            'manufacturer_name' => $first('compliance.manufacturer_name', 'store.legal_name', 'store.name'),
+            'manufacturer_address' => $first('compliance.manufacturer_address', 'store.address'),
+            'manufacturer_email' => $first('compliance.manufacturer_email', 'contact.support_email'),
+            'eu_responsible_person' => $first('compliance.eu_responsible_person'),
+        ];
     }
 
     /**

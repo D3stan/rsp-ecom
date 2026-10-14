@@ -71,4 +71,71 @@ class LocalesTest extends TestCase
         // assertTrue on purpose: diffing two translation files with assertSame/assertExactJson exhausts memory
         $this->assertTrue($response->json() === json_decode(file_get_contents(lang_path(Locales::fallback().'.json')), true));
     }
+
+    /**
+     * Every translation key as a dotted path ("cart.coupon_applied"); flat keys ("settings.tax.rate.label") stay as they are.
+     *
+     * @return array<int, string>
+     */
+    private function flatKeys(array $strings, string $prefix = ''): array
+    {
+        $keys = [];
+
+        foreach ($strings as $key => $value) {
+            $keys = is_array($value)
+                ? array_merge($keys, $this->flatKeys($value, $prefix.$key.'.'))
+                : array_merge($keys, [$prefix.$key]);
+        }
+
+        return $keys;
+    }
+
+    public function test_every_locale_has_every_english_key(): void
+    {
+        $english = $this->flatKeys(json_decode(file_get_contents(lang_path('en.json')), true));
+        $missing = [];
+
+        foreach (Locales::supported() as $locale) {
+            if ($locale === 'en') {
+                continue;
+            }
+
+            $keys = $this->flatKeys(json_decode(file_get_contents(lang_path("{$locale}.json")), true));
+
+            foreach (array_diff($english, $keys) as $key) {
+                $missing[] = "{$locale}: {$key}";
+            }
+        }
+
+        $this->assertSame([], array_values($missing), 'keys missing from a locale (they would render as the raw key)');
+    }
+
+    public function test_a_key_missing_from_a_locale_is_served_in_english(): void
+    {
+        $dir = sys_get_temp_dir().'/lang-fallback-'.uniqid();
+        mkdir($dir);
+        file_put_contents("{$dir}/en.json", json_encode([
+            'cart' => ['shipping' => 'Shipping', 'coupon_applied' => 'Coupon Applied'],
+            'settings.tax.rate.label' => 'VAT rate',
+            'welcome' => 'Welcome',
+        ]));
+        file_put_contents("{$dir}/de.json", json_encode([
+            'cart' => ['shipping' => 'Versand'],
+            'welcome' => 'Willkommen',
+        ]));
+        $this->app->useLangPath($dir);
+
+        try {
+            $response = $this->getJson('/api/translations/de')->assertOk();
+
+            // the German texts win, the missing ones (nested and flat) come from English instead of the raw key
+            $this->assertSame('Versand', $response->json('cart.shipping'));
+            $this->assertSame('Willkommen', $response->json('welcome'));
+            $this->assertSame('Coupon Applied', $response->json('cart.coupon_applied'));
+            $this->assertSame('VAT rate', $response->json()['settings.tax.rate.label'] ?? null);
+        } finally {
+            array_map('unlink', glob("{$dir}/*.json"));
+            rmdir($dir);
+        }
+    }
 }

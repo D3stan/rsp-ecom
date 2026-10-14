@@ -29,6 +29,7 @@ export interface PublicSettings {
     'shipping.delivery_days_max': number;
     'shipping.destinations': string[];
     'shipping.default_country': string;
+    'shipping.free_threshold': number;
     'legal.withdrawal_days': number;
     'orders.min_amount': number;
     'orders.max_qty_per_line': number;

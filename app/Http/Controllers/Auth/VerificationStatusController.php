@@ -5,78 +5,68 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\PendingUserVerification;
 use App\Models\User;
+use App\Support\RegistrationAutoLogin;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class VerificationStatusController extends Controller
 {
     /**
-     * Check if a pending verification has been completed
+     * Polled by the "verification pending" page. Only the browser that registered the email (proved by
+     * RegistrationAutoLogin) learns its status, and is logged in once it is verified. Everyone else gets the
+     * same "pending" answer: the endpoint never logs a stranger in and never tells whether an email exists.
      */
     public function checkStatus(Request $request): JsonResponse
     {
         $email = $request->query('email');
-        
-        if (!$email) {
+
+        if (! $email) {
             return response()->json(['verified' => false, 'error' => 'Email parameter required'], 400);
         }
 
-        // Check if user exists and is verified
+        if (! RegistrationAutoLogin::isRegistrant($request, (string) $email)) {
+            return response()->json(['verified' => false, 'pending' => true]);
+        }
+
         $user = User::where('email', $email)->first();
+
         if ($user && $user->hasVerifiedEmail()) {
-            // If user is verified but not logged in to this session, log them in
-            if (!Auth::check() || Auth::id() !== $user->id) {
-                Auth::login($user);
+            // One use: a verification older than the window sends the browser to the login page instead
+            $authenticated = RegistrationAutoLogin::consume($request, $user);
+
+            if (! $authenticated) {
+                $request->session()->flash('status', __('auth.verified_log_in'));
             }
-            
+
             return response()->json([
                 'verified' => true,
-                'user_id' => $user->id,
-                'authenticated' => true,
-                'redirect_url' => route('dashboard')
+                'authenticated' => $authenticated,
+                'redirect_url' => $authenticated ? route('dashboard') : route('login'),
             ]);
         }
 
-        // Check if pending verification still exists
         $pendingVerification = PendingUserVerification::where('email', $email)->first();
-        if (!$pendingVerification) {
-            // No user and no pending verification - something went wrong or user was manually verified
-            if ($user) {
-                // If user is verified but not logged in to this session, log them in
-                if (!Auth::check() || Auth::id() !== $user->id) {
-                    Auth::login($user);
-                }
-                
-                return response()->json([
-                    'verified' => true,
-                    'user_id' => $user->id,
-                    'authenticated' => true,
-                    'redirect_url' => route('dashboard')
-                ]);
-            }
-            
+
+        if (! $pendingVerification) {
             return response()->json([
                 'verified' => false,
                 'error' => 'No pending verification found',
-                'redirect_url' => route('register')
+                'redirect_url' => route('register'),
             ]);
         }
 
-        // Check if verification has expired
         if ($pendingVerification->isExpired()) {
             return response()->json([
                 'verified' => false,
                 'expired' => true,
-                'message' => 'Verification link has expired. Please request a new one.'
+                'message' => 'Verification link has expired. Please request a new one.',
             ]);
         }
 
-        // Still pending
         return response()->json([
             'verified' => false,
             'pending' => true,
-            'expires_at' => $pendingVerification->token_expires_at->toISOString()
+            'expires_at' => $pendingVerification->token_expires_at->toISOString(),
         ]);
     }
 }

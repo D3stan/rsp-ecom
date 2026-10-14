@@ -16,6 +16,8 @@ import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronLeft, ChevronRight, Heart, Minus, Plus, Share2, ShoppingCart, Star } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useInitialVariantId } from '@/hooks/use-initial-variant';
+import ProductSafety from '@/components/product/ProductSafety';
 
 interface ProductVariant {
     id: number;
@@ -91,7 +93,7 @@ export default function Product() {
     const defaultVariant = product.variants.find((v) => v.is_default) ?? product.variants[0];
 
     // State
-    const [selectedVariantId, setSelectedVariantId] = useState<number>(defaultVariant.id);
+    const [selectedVariantId, setSelectedVariantId] = useState<number>(useInitialVariantId(product.variants, defaultVariant.id));
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
     const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -296,7 +298,15 @@ export default function Product() {
                                                 index === currentImageIndex ? 'border-black' : 'border-gray-200 hover:border-gray-400'
                                             }`}
                                         >
-                                            <img src={image} alt={`${product.name} ${index + 1}`} className="h-full w-full object-cover" />
+                                            <img
+                                                src={image}
+                                                alt={`${product.name} ${index + 1}`}
+                                                loading="lazy"
+                                                decoding="async"
+                                                width={80}
+                                                height={80}
+                                                className="h-full w-full object-cover"
+                                            />
                                         </button>
                                     ))}
                                 </div>
@@ -405,6 +415,8 @@ export default function Product() {
                         </div>
                     </div>
 
+                    <ProductSafety variantId={selectedVariantId} />
+
                     {/* Reviews */}
                     {reviews.length > 0 && (
                         <div id="reviews" className="mt-16 scroll-mt-24 space-y-4">
@@ -446,6 +458,10 @@ export default function Product() {
                                             <img
                                                 src={relatedProduct.image}
                                                 alt={relatedProduct.name}
+                                                loading="lazy"
+                                                decoding="async"
+                                                width={300}
+                                                height={300}
                                                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                             />
                                         </div>

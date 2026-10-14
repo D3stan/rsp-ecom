@@ -51,7 +51,8 @@ class OrdersController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $orders = $query->paginate(15);
+        // withQueryString(): the page links keep the active filters
+        $orders = $query->paginate(15)->withQueryString();
 
         // Transform the pagination response to ensure proper structure
         $ordersData = [
@@ -64,7 +65,7 @@ class OrdersController extends Controller
                 'from' => $orders->firstItem(),
                 'to' => $orders->lastItem(),
             ],
-            'links' => [],
+            'links' => $orders->linkCollection()->toArray(),
         ];
 
         // Calculate KPI data

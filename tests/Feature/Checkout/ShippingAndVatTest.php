@@ -13,7 +13,8 @@ use Tests\Feature\Orders\Support\BuildsStripeOrderFixtures;
 use Tests\TestCase;
 
 /**
- * One price everywhere: shipping is the sum of the package sizes' shipping_cost (no free-shipping rule), and the
+ * One price everywhere: shipping is the sum of the package sizes' shipping_cost (these carts stay under the free-shipping
+ * threshold, see FreeShippingThresholdTest), and the
  * cart page, both details pages, the amount sent to Stripe and the stored order agree to the cent, VAT included.
  * Also the checkout-related settings: minimum amount, guest checkout switch, order note length, destinations.
  */

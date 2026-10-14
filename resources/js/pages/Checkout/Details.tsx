@@ -1,4 +1,6 @@
+import OrderSummary, { type SummaryLine } from '@/components/checkout/OrderSummary';
 import Header from '@/components/header';
+import InputError from '@/components/input-error';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,29 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/contexts/ToastContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { formatRate, useMoney } from '@/hooks/use-money';
+import { useMoney } from '@/hooks/use-money';
 import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SharedData } from '@/types';
 import { Page } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, Calculator, ChevronDown, ChevronUp, CreditCard, FileText, Tag, Truck } from 'lucide-react';
-import { useState } from 'react';
-
-interface CartItem {
-    id: number;
-    product: {
-        id: number;
-        name: string;
-        slug: string;
-        image: string;
-        category?: string;
-    };
-    quantity: number;
-    price: number;
-    total: number;
-    size?: string;
-}
+import { ArrowLeft, ChevronDown, ChevronUp, CreditCard, FileText, Tag, Truck } from 'lucide-react';
+import { type FormEvent, useEffect, useState } from 'react';
 
 interface Cart {
     id: number;
@@ -55,9 +42,27 @@ interface ContactInformation {
     email: string;
 }
 
+/** Validated fields in page order: server error key (CheckoutController::checkoutRules) => input id */
+const FIELDS: ReadonlyArray<readonly [string, string]> = [
+    ['email', 'email'],
+    ['shipping_address.first_name', 'first_name'],
+    ['shipping_address.last_name', 'last_name'],
+    ['shipping_address.company', 'company'],
+    ['shipping_address.address_line_1', 'address_line_1'],
+    ['shipping_address.address_line_2', 'address_line_2'],
+    ['shipping_address.city', 'city'],
+    ['shipping_address.state', 'state'],
+    ['shipping_address.postal_code', 'postal_code'],
+    ['shipping_address.country', 'country'],
+    ['shipping_address.phone', 'phone'],
+    ['order_notes', 'order_notes'],
+];
+
+const REQUIRED_ADDRESS_FIELDS = ['first_name', 'last_name', 'address_line_1', 'city', 'state', 'postal_code', 'country', 'phone'] as const;
+
 interface CheckoutDetailsProps extends SharedData {
     cart: Cart | null;
-    cartItems: CartItem[];
+    cartItems: SummaryLine[];
     subtotal: number;
     shippingCost: number;
     taxAmount: number;
@@ -68,13 +73,14 @@ interface CheckoutDetailsProps extends SharedData {
     discountDescription?: string;
     total: number;
     totalItems: number;
+    freeShippingRemaining?: number | null;
 }
 
 
 
 export default function CheckoutDetails() {
     const pageProps = usePage<CheckoutDetailsProps>().props;
-    const { cartItems, subtotal, shippingCost, taxAmount, taxRate, discountAmount = 0, couponCode: initialCouponCode, discountDescription, total, totalItems, auth } = pageProps;
+    const { cartItems, subtotal, shippingCost, taxAmount, taxRate, discountAmount = 0, couponCode: initialCouponCode, discountDescription, total, totalItems, freeShippingRemaining, auth } = pageProps;
     const { t, isLoading, locale } = useTranslation();
     const formatCurrency = useMoney();
 
@@ -99,7 +105,7 @@ export default function CheckoutDetails() {
     const [isShippingOpen, setIsShippingOpen] = useState(true);
     const [isDiscountOpen, setIsDiscountOpen] = useState(false);
     const [isNotesOpen, setIsNotesOpen] = useState(false);
-    const [isTotalsOpen, setIsTotalsOpen] = useState(true);
+    const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
     // Form states
     const [contactInfo, setContactInfo] = useState<ContactInformation>({
@@ -123,8 +129,85 @@ export default function CheckoutDetails() {
     const [orderNotes, setOrderNotes] = useState('');
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    // Back from Stripe with the browser's back button: the page comes out of the back/forward cache still "processing"
+    useEffect(() => {
+        const onPageShow = (event: PageTransitionEvent) => {
+            if (event.persisted) setIsProcessing(false);
+        };
+        window.addEventListener('pageshow', onPageShow);
+
+        return () => window.removeEventListener('pageshow', onPageShow);
+    }, []);
+
+    // Field errors, keyed like the server's (e.g. "shipping_address.postal_code"): client checks and server validation
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const clearError = (key: string) => {
+        setErrors((prev) => {
+            if (!(key in prev)) return prev;
+            const next = { ...prev };
+            delete next[key];
+            return next;
+        });
+    };
+
+    /** aria wiring of an input whose error (if any) is rendered as <InputError id="{id}-error"> */
+    const invalidProps = (key: string, id: string) => (errors[key] ? { 'aria-invalid': true as const, 'aria-describedby': `${id}-error` } : {});
+
+    /** Show the errors in place: open the sections that hold them and focus the first invalid field. */
+    const showFieldErrors = (fieldErrors: Record<string, string>) => {
+        setErrors(fieldErrors);
+        const keys = Object.keys(fieldErrors);
+        if (keys.includes('email')) setIsContactOpen(true);
+        if (keys.some((key) => key.startsWith('shipping_address.'))) setIsShippingOpen(true);
+        if (keys.includes('order_notes')) setIsNotesOpen(true);
+
+        const first = FIELDS.find(([key]) => key in fieldErrors);
+        if (first) {
+            // after the sections have opened
+            setTimeout(() => document.getElementById(first[1])?.focus(), 0);
+        }
+    };
+
+    const validate = (): Record<string, string> => {
+        const found: Record<string, string> = {};
+        const email = contactInfo.email.trim();
+
+        if (!email) {
+            found.email = t('checkout.field_required');
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            found.email = t('checkout.email_invalid');
+        }
+
+        for (const field of REQUIRED_ADDRESS_FIELDS) {
+            if (!shippingAddress[field]?.trim()) {
+                found[`shipping_address.${field}`] = t('checkout.field_required');
+            }
+        }
+
+        return found;
+    };
+
+    /** Server validation: field errors in place, anything else (e.g. the minimum amount) as a toast. */
+    const handleServerErrors = (serverErrors: Record<string, string>) => {
+        const fieldKeys = new Set(FIELDS.map(([key]) => key));
+        const fieldErrors = Object.fromEntries(Object.entries(serverErrors).filter(([key]) => fieldKeys.has(key)));
+        const otherErrors = Object.entries(serverErrors).filter(([key]) => !fieldKeys.has(key));
+
+        showFieldErrors(fieldErrors);
+
+        if (otherErrors.length > 0 || Object.keys(fieldErrors).length === 0) {
+            addToast({
+                type: 'error',
+                title: t('cart.checkout_error'),
+                description: otherErrors[0]?.[1] || t('cart.checkout_error_description'),
+            });
+        }
+        setIsProcessing(false);
+    };
 
     const updateShippingAddress = (field: keyof ShippingAddress, value: string) => {
+        clearError(`shipping_address.${String(field)}`);
         setShippingAddress((prev) => ({
             ...prev,
             [field]: value,
@@ -132,6 +215,7 @@ export default function CheckoutDetails() {
     };
 
     const updateContactInfo = (field: keyof ContactInformation, value: string) => {
+        clearError(field);
         setContactInfo((prev) => ({
             ...prev,
             [field]: value,
@@ -184,11 +268,16 @@ export default function CheckoutDetails() {
     };
 
     // On success the backend sends the browser to Stripe (Inertia::location, a full redirect), so a page response
-    // here means it redirected back: its flash error is toasted by the FlashToaster; without one, say it here.
+    // here means it redirected back: the customer may try again, and its flash error is toasted by the FlashToaster;
+    // without one, say it here.
     const onCheckoutResponse = (page: Page<{ url?: string; flash?: SharedData['flash'] }>) => {
         if (page.props?.url) {
             window.location.href = page.props.url;
-        } else if (!page.props?.flash?.error) {
+            return;
+        }
+
+        setIsProcessing(false);
+        if (!page.props?.flash?.error) {
             addToast({
                 type: 'error',
                 title: t('cart.checkout_error'),
@@ -197,7 +286,12 @@ export default function CheckoutDetails() {
         }
     };
 
-    const proceedToPayment = () => {
+    const proceedToPayment = (event?: FormEvent) => {
+        event?.preventDefault();
+
+        // Already on the way to Stripe: one click, one checkout session
+        if (isProcessing) return;
+
         if (belowMinimum) {
             addToast({
                 type: 'error',
@@ -207,45 +301,14 @@ export default function CheckoutDetails() {
             return;
         }
 
-        // Validate required fields
-        if (!contactInfo.email.trim()) {
-            addToast({
-                type: 'error',
-                title: t('cart.missing_information'),
-                description: t('cart.email_required'),
-            });
+        // Required fields and the email format, shown under each field
+        const clientErrors = validate();
+        if (Object.keys(clientErrors).length > 0) {
+            showFieldErrors(clientErrors);
             return;
         }
 
-        if (
-            !shippingAddress.first_name.trim() ||
-            !shippingAddress.last_name.trim() ||
-            !shippingAddress.address_line_1.trim() ||
-            !shippingAddress.city.trim() ||
-            !shippingAddress.state.trim() ||
-            !shippingAddress.postal_code.trim() ||
-            !shippingAddress.country.trim() ||
-            !shippingAddress.phone?.trim()
-        ) {
-            addToast({
-                type: 'error',
-                title: t('cart.missing_information'),
-                description: t('cart.shipping_required'),
-            });
-            return;
-        }
-
-        // Basic email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(contactInfo.email)) {
-            addToast({
-                type: 'error',
-                title: t('cart.invalid_email'),
-                description: t('cart.email_required'),
-            });
-            return;
-        }
-
+        setErrors({});
         setIsProcessing(true);
 
         // Prepare checkout data with proper typing
@@ -260,35 +323,17 @@ export default function CheckoutDetails() {
             // User is authenticated, proceed to cart checkout using Cashier
             router.post('/checkout/cart', checkoutData, {
                 onSuccess: onCheckoutResponse,
-                onError: (errors) => {
-                    console.error('Checkout errors:', errors);
-                    addToast({
-                        type: 'error',
-                        title: t('cart.checkout_error'),
-                        description: Object.values(errors)[0] || t('cart.checkout_error_description'),
-                    });
-                    setIsProcessing(false);
-                },
-                onFinish: () => {
-                    setIsProcessing(false);
-                },
+                onError: handleServerErrors,
+                // No onFinish reset: the Stripe redirect (Inertia::location) fires only onFinish, and the button must
+                // stay disabled while the browser leaves for Stripe
             });
         } else {
             // User is not authenticated, redirect to guest cart checkout
             router.post('/guest/checkout/cart', checkoutData, {
                 onSuccess: onCheckoutResponse,
-                onError: (errors) => {
-                    console.error('Checkout errors:', errors);
-                    addToast({
-                        type: 'error',
-                        title: t('cart.checkout_error'),
-                        description: Object.values(errors)[0] || t('cart.checkout_error_description'),
-                    });
-                    setIsProcessing(false);
-                },
-                onFinish: () => {
-                    setIsProcessing(false);
-                },
+                onError: handleServerErrors,
+                // No onFinish reset: the Stripe redirect (Inertia::location) fires only onFinish, and the button must
+                // stay disabled while the browser leaves for Stripe
             });
         }
     };
@@ -323,7 +368,7 @@ export default function CheckoutDetails() {
             <LoadingOverlay isLoading={isLoading} className={`min-h-screen bg-white ${isMobile ? 'pb-24' : ''}`}>
                 <Header />
 
-                <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                     {/* Checkout Header */}
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-gray-900">{t('checkout.title')}</h1>
@@ -332,7 +377,37 @@ export default function CheckoutDetails() {
                         </p>
                     </div>
 
-                    <div className="space-y-6">
+                    {/* Order summary, mobile and tablet: collapsed at the top */}
+                    <Card className="mb-6 border-2 border-gray-700 bg-white shadow-md lg:hidden">
+                        <Collapsible open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
+                            <CollapsibleTrigger className="w-full">
+                                <CardHeader className="transition-colors hover:bg-gray-50">
+                                    <CardTitle className="flex items-center justify-between text-left text-base text-black">
+                                        {isSummaryOpen ? t('checkout.summary_hide') : t('checkout.summary_show', { amount: formatCurrency(total) })}
+                                        {isSummaryOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                    </CardTitle>
+                                </CardHeader>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                                <CardContent>
+                                    <OrderSummary
+                                        lines={cartItems}
+                                        subtotal={subtotal}
+                                        discountAmount={discountAmount}
+                                        discountDescription={discountDescription}
+                                        shippingCost={shippingCost}
+                                        freeShippingRemaining={freeShippingRemaining}
+                                        total={total}
+                                        taxAmount={taxAmount}
+                                        taxRate={taxRate}
+                                    />
+                                </CardContent>
+                            </CollapsibleContent>
+                        </Collapsible>
+                    </Card>
+
+                    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-8">
+                    <form id="checkout-form" noValidate onSubmit={proceedToPayment} className="space-y-6">
                         {/* Contact Information */}
                         <Card className="border-2 border-gray-700 bg-white shadow-md">
                             <Collapsible open={isContactOpen} onOpenChange={setIsContactOpen}>
@@ -355,6 +430,9 @@ export default function CheckoutDetails() {
                                             </Label>
                                             <Input
                                                 id="email"
+                                                name="email"
+                                                autoComplete="email"
+                                                {...invalidProps('email', 'email')}
                                                 type="email"
                                                 value={contactInfo.email}
                                                 onChange={(e) => updateContactInfo('email', e.target.value)}
@@ -362,6 +440,7 @@ export default function CheckoutDetails() {
                                                 placeholder={t('checkout.email_placeholder')}
                                                 className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                             />
+                                            <InputError id="email-error" message={errors['email']} className="mt-1" />
                                             <p className="mt-1 text-sm text-gray-600">{t('checkout.email_confirmation_text')}</p>
                                         </div>
                                     </CardContent>
@@ -392,11 +471,15 @@ export default function CheckoutDetails() {
                                                 </Label>
                                                 <Input
                                                     id="first_name"
+                                                    name="first_name"
+                                                    autoComplete="given-name"
+                                                    {...invalidProps('shipping_address.first_name', 'first_name')}
                                                     value={shippingAddress.first_name}
                                                     onChange={(e) => updateShippingAddress('first_name', e.target.value)}
                                                     required
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
+                                                <InputError id="first_name-error" message={errors['shipping_address.first_name']} className="mt-1" />
                                             </div>
                                             <div>
                                                 <Label htmlFor="last_name" className="font-medium text-black">
@@ -404,11 +487,15 @@ export default function CheckoutDetails() {
                                                 </Label>
                                                 <Input
                                                     id="last_name"
+                                                    name="last_name"
+                                                    autoComplete="family-name"
+                                                    {...invalidProps('shipping_address.last_name', 'last_name')}
                                                     value={shippingAddress.last_name}
                                                     onChange={(e) => updateShippingAddress('last_name', e.target.value)}
                                                     required
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
+                                                <InputError id="last_name-error" message={errors['shipping_address.last_name']} className="mt-1" />
                                             </div>
                                         </div>
 
@@ -418,10 +505,14 @@ export default function CheckoutDetails() {
                                             </Label>
                                             <Input
                                                 id="company"
+                                                name="company"
+                                                autoComplete="organization"
+                                                {...invalidProps('shipping_address.company', 'company')}
                                                 value={shippingAddress.company}
                                                 onChange={(e) => updateShippingAddress('company', e.target.value)}
                                                 className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                             />
+                                            <InputError id="company-error" message={errors['shipping_address.company']} className="mt-1" />
                                         </div>
 
                                         <div>
@@ -430,10 +521,18 @@ export default function CheckoutDetails() {
                                             </Label>
                                             <Input
                                                 id="address_line_1"
+                                                name="address_line_1"
+                                                autoComplete="address-line1"
+                                                {...invalidProps('shipping_address.address_line_1', 'address_line_1')}
                                                 value={shippingAddress.address_line_1}
                                                 onChange={(e) => updateShippingAddress('address_line_1', e.target.value)}
                                                 required
                                                 className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                            />
+                                            <InputError
+                                                id="address_line_1-error"
+                                                message={errors['shipping_address.address_line_1']}
+                                                className="mt-1"
                                             />
                                         </div>
 
@@ -443,9 +542,17 @@ export default function CheckoutDetails() {
                                             </Label>
                                             <Input
                                                 id="address_line_2"
+                                                name="address_line_2"
+                                                autoComplete="address-line2"
+                                                {...invalidProps('shipping_address.address_line_2', 'address_line_2')}
                                                 value={shippingAddress.address_line_2}
                                                 onChange={(e) => updateShippingAddress('address_line_2', e.target.value)}
                                                 className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                            />
+                                            <InputError
+                                                id="address_line_2-error"
+                                                message={errors['shipping_address.address_line_2']}
+                                                className="mt-1"
                                             />
                                         </div>
 
@@ -456,11 +563,15 @@ export default function CheckoutDetails() {
                                                 </Label>
                                                 <Input
                                                     id="city"
+                                                    name="city"
+                                                    autoComplete="address-level2"
+                                                    {...invalidProps('shipping_address.city', 'city')}
                                                     value={shippingAddress.city}
                                                     onChange={(e) => updateShippingAddress('city', e.target.value)}
                                                     required
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
+                                                <InputError id="city-error" message={errors['shipping_address.city']} className="mt-1" />
                                             </div>
                                             <div>
                                                 <Label htmlFor="state" className="font-medium text-black">
@@ -468,11 +579,15 @@ export default function CheckoutDetails() {
                                                 </Label>
                                                 <Input
                                                     id="state"
+                                                    name="state"
+                                                    autoComplete="address-level1"
+                                                    {...invalidProps('shipping_address.state', 'state')}
                                                     value={shippingAddress.state}
                                                     onChange={(e) => updateShippingAddress('state', e.target.value)}
                                                     required
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
+                                                <InputError id="state-error" message={errors['shipping_address.state']} className="mt-1" />
                                             </div>
                                             <div>
                                                 <Label htmlFor="postal_code" className="font-medium text-black">
@@ -480,10 +595,20 @@ export default function CheckoutDetails() {
                                                 </Label>
                                                 <Input
                                                     id="postal_code"
+                                                    name="postal_code"
+                                                    autoComplete="postal-code"
+                                                    inputMode="text"
+                                                    autoCapitalize="characters"
+                                                    {...invalidProps('shipping_address.postal_code', 'postal_code')}
                                                     value={shippingAddress.postal_code}
                                                     onChange={(e) => updateShippingAddress('postal_code', e.target.value)}
                                                     required
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                />
+                                                <InputError
+                                                    id="postal_code-error"
+                                                    message={errors['shipping_address.postal_code']}
+                                                    className="mt-1"
                                                 />
                                             </div>
                                         </div>
@@ -494,10 +619,16 @@ export default function CheckoutDetails() {
                                                     {t('checkout.country')} *
                                                 </Label>
                                                 <Select
+                                                    name="country"
+                                                    autoComplete="country"
                                                     value={shippingAddress.country}
                                                     onValueChange={(value) => updateShippingAddress('country', value)}
                                                 >
-                                                    <SelectTrigger className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500">
+                                                    <SelectTrigger
+                                                        id="country"
+                                                        {...invalidProps('shipping_address.country', 'country')}
+                                                        className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                    >
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent className="bg-white text-black">
@@ -508,6 +639,7 @@ export default function CheckoutDetails() {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
+                                                <InputError id="country-error" message={errors['shipping_address.country']} className="mt-1" />
                                             </div>
                                             <div>
                                                 <Label htmlFor="phone" className="font-medium text-black">
@@ -515,11 +647,16 @@ export default function CheckoutDetails() {
                                                 </Label>
                                                 <Input
                                                     id="phone"
+                                                    name="phone"
+                                                    type="tel"
+                                                    autoComplete="tel"
+                                                    {...invalidProps('shipping_address.phone', 'phone')}
                                                     value={shippingAddress.phone}
                                                     onChange={(e) => updateShippingAddress('phone', e.target.value)}
                                                     required
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
+                                                <InputError id="phone-error" message={errors['shipping_address.phone']} className="mt-1" />
                                             </div>
                                         </div>
                                     </CardContent>
@@ -549,9 +686,17 @@ export default function CheckoutDetails() {
                                                 placeholder={t('cart.coupon_placeholder')}
                                                 value={couponCode}
                                                 onChange={(e) => setCouponCode(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        applyCoupon();
+                                                    }
+                                                }}
+                                                autoComplete="off"
                                                 className="flex-1 border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                             />
                                             <Button
+                                                type="button"
                                                 variant="outline"
                                                 onClick={applyCoupon}
                                                 disabled={!couponCode.trim() || isApplyingCoupon}
@@ -589,13 +734,20 @@ export default function CheckoutDetails() {
                                 <CollapsibleContent>
                                     <CardContent>
                                         <Textarea
+                                            id="order_notes"
+                                            name="order_notes"
+                                            {...invalidProps('order_notes', 'order_notes')}
                                             placeholder={t('checkout.order_notes_placeholder')}
                                             value={orderNotes}
-                                            onChange={(e) => setOrderNotes(e.target.value)}
+                                            onChange={(e) => {
+                                                clearError('order_notes');
+                                                setOrderNotes(e.target.value);
+                                            }}
                                             maxLength={orderNotesMax}
                                             className="resize-none border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                             rows={3}
                                         />
+                                        <InputError id="order_notes-error" message={errors['order_notes']} className="mt-1" />
                                         <p className="mt-1 text-xs text-gray-500">
                                             {orderNotes.length}/{orderNotesMax} {t('checkout.characters')}
                                         </p>
@@ -604,66 +756,26 @@ export default function CheckoutDetails() {
                             </Collapsible>
                         </Card>
 
-                        {/* Order Total */}
-                        <Card className="border-2 border-gray-700 bg-white shadow-md">
-                            <Collapsible open={isTotalsOpen} onOpenChange={setIsTotalsOpen}>
-                                <CollapsibleTrigger className="w-full">
-                                    <CardHeader className="transition-colors hover:bg-gray-50">
-                                        <CardTitle className="flex items-center justify-between text-black">
-                                            <div className="flex items-center gap-2">
-                                                <Calculator className="h-5 w-5" />
-                                                {t('cart.order_summary')}
-                                            </div>
-                                            {isTotalsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                                        </CardTitle>
-                                    </CardHeader>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                    <CardContent className="space-y-3">
-                                        <div className="flex justify-between text-gray-600">
-                                            <span>{t('cart.subtotal')}</span>
-                                            <span className="font-medium text-black">{formatCurrency(subtotal)}</span>
-                                        </div>
-                                        <div className="flex justify-between text-gray-600">
-                                            <span>{t('cart.shipping')}</span>
-                                            <span className="font-medium text-black">{formatCurrency(shippingCost)}</span>
-                                        </div>
-                                        {discountAmount > 0 && (
-                                            <div className="flex justify-between text-green-600">
-                                                <span>{t('cart.discount')}</span>
-                                                <span className="font-medium">-{formatCurrency(discountAmount)}</span>
-                                            </div>
-                                        )}
-                                        <div className="border-t border-gray-200 pt-3">
-                                            <div className="flex justify-between text-lg font-semibold text-black">
-                                                <span>{t('cart.total')}</span>
-                                                <span>{formatCurrency(total)}</span>
-                                            </div>
-                                            {taxRate !== null && (
-                                                <div className="mt-1 flex justify-between text-sm text-gray-500">
-                                                    <span>{t('checkout.vat_portion', { rate: formatRate(taxRate, locale) })}</span>
-                                                    <span>{formatCurrency(taxAmount)}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {belowMinimum && (
-                                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                                                <p className="text-sm text-amber-800">{t('cart.min_amount_notice', { amount: formatCurrency(minAmount) })}</p>
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </CollapsibleContent>
-                            </Collapsible>
-                        </Card>
+                        {belowMinimum && (
+                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                <p className="text-sm text-amber-800">{t('cart.min_amount_notice', { amount: formatCurrency(minAmount) })}</p>
+                            </div>
+                        )}
 
                         {/* Action Buttons - Hidden on mobile, only show on desktop */}
                         <div className="grid hidden grid-cols-1 gap-4 pt-6 md:grid md:grid-cols-2">
-                            <Button variant="outline" onClick={handleBackToCart} size="lg" className="w-full border-gray-300 hover:bg-gray-50">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleBackToCart}
+                                size="lg"
+                                className="w-full border-gray-300 hover:bg-gray-50"
+                            >
                                 <ArrowLeft className="mr-2 h-5 w-5" />
                                 {t('cart.back_to_cart')}
                             </Button>
                             <Button
-                                onClick={proceedToPayment}
+                                type="submit"
                                 disabled={isProcessing || belowMinimum}
                                 size="lg"
                                 className="w-full bg-black text-white hover:bg-gray-800"
@@ -672,6 +784,29 @@ export default function CheckoutDetails() {
                                 {isProcessing ? t('checkout.processing') : t('checkout.pay', { amount: formatCurrency(total) })}
                             </Button>
                         </div>
+                    </form>
+
+                    {/* Order summary, desktop: right column, sticky */}
+                    <aside className="hidden lg:sticky lg:top-8 lg:block">
+                        <Card className="border-2 border-gray-700 bg-white shadow-md">
+                            <CardHeader>
+                                <CardTitle className="text-black">{t('cart.order_summary')}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <OrderSummary
+                                    lines={cartItems}
+                                    subtotal={subtotal}
+                                    discountAmount={discountAmount}
+                                    discountDescription={discountDescription}
+                                    shippingCost={shippingCost}
+                                    freeShippingRemaining={freeShippingRemaining}
+                                    total={total}
+                                    taxAmount={taxAmount}
+                                    taxRate={taxRate}
+                                />
+                            </CardContent>
+                        </Card>
+                    </aside>
                     </div>
                 </div>
 
@@ -679,12 +814,13 @@ export default function CheckoutDetails() {
                 {isMobile && (
                     <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-300 bg-white p-4 shadow-lg">
                         <div className="grid grid-cols-2 gap-4">
-                            <Button variant="outline" onClick={handleBackToCart} className="h-12 border-gray-300 hover:bg-gray-50">
+                            <Button type="button" variant="outline" onClick={handleBackToCart} className="h-12 border-gray-300 hover:bg-gray-50">
                                 <ArrowLeft className="mr-2 h-5 w-5" />
                                 {t('cart.back')}
                             </Button>
                             <Button
-                                onClick={proceedToPayment}
+                                type="submit"
+                                form="checkout-form"
                                 disabled={isProcessing || belowMinimum}
                                 className="h-12 bg-black font-semibold text-white hover:bg-gray-800"
                             >

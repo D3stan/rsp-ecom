@@ -21,8 +21,8 @@ class DashboardController extends Controller
             ->latest()
             ->get()
             ->map(function ($order) {
-                // Format order data for frontend
-                $orderData = $order->toArray();
+                // Whitelisted fields only: the order row also holds internal notes and Stripe ids
+                $orderData = $order->toCustomerArray();
                 $orderData['total'] = $order->total_amount; // Add alias for backward compatibility
                 $orderData['tracking_number'] = $order->tracking_number; // Ensure tracking number is included
                 $orderData['order_items'] = $order->orderItems->map(function ($item) {

@@ -34,6 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'google_id',
         'avatar',
         'email_verified_at',
+        'notify_back_in_stock',
     ];
 
     /**
@@ -57,6 +58,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'notify_back_in_stock' => 'boolean',
         ];
     }
 
@@ -139,6 +141,22 @@ class User extends Authenticatable implements MustVerifyEmail
         });
 
         VerifyEmail::toMailUsing(fn (object $notifiable, string $url) => AccountMailMessages::verifyEmail($notifiable, $url));
+
+        // Orders outlive the account (the FK sets orders.user_id to NULL). Copy who bought onto them first,
+        // so the shop still knows whom to contact; the name stays on the order's billing address.
+        // Address-book entries no order uses go with the account; addresses on orders are kept.
+        static::deleting(function (User $user) {
+            $user->orders()->whereNull('guest_email')->update(['guest_email' => $user->email]);
+
+            if (filled($user->phone)) {
+                $user->orders()->whereNull('guest_phone')->update(['guest_phone' => mb_substr($user->phone, 0, 20)]);
+            }
+
+            $user->addresses()
+                ->whereDoesntHave('billingOrders')
+                ->whereDoesntHave('shippingOrders')
+                ->delete();
+        });
     }
 
     /**
