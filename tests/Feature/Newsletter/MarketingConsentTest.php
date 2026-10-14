@@ -59,7 +59,7 @@ it('keeps a confirmed subscriber confirmed when they subscribe again', function 
     expect($again->id)->toBe($subscriber->id)
         ->and($again->status)->toBe(NewsletterSubscriber::STATUS_CONFIRMED)
         ->and($again->confirmed_at)->not->toBeNull()
-        ->and(ConsentEvent::where('subscriber_id', $subscriber->id)->pluck('event')->all())
+        ->and(ConsentEvent::where('subscriber_id', $subscriber->id)->orderBy('id')->pluck('event')->all())
         ->toBe([ConsentEvent::EVENT_REQUESTED, ConsentEvent::EVENT_CONFIRMED]);
 });
 

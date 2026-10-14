@@ -76,6 +76,7 @@ return [
         'email' => ['icon' => 'Mail'],
         'tracking' => ['icon' => 'MapPin'],
         'seo' => ['icon' => 'Search'],
+        'newsletter' => ['icon' => 'Newspaper'],
         'system' => ['icon' => 'Server', 'readonly_panel' => true],
     ],
 
@@ -164,6 +165,12 @@ return [
         // Overlaid on seotools.* at boot (the package builds its singletons lazily, after our provider has booted).
         ['key' => 'seo.default_description', 'type' => 'text', 'default' => (string) config('seotools.meta.defaults.description', ''), 'max' => 320, 'public' => false, 'config_bridge' => ['seotools.meta.defaults.description', 'seotools.opengraph.defaults.description'], 'seed' => false],
         ['key' => 'seo.keywords', 'type' => 'list', 'default' => array_values((array) config('seotools.meta.defaults.keywords', [])), 'max' => 30, 'item_max' => 60, 'config_bridge' => 'seotools.meta.defaults.keywords', 'seed' => false],
+
+        // ------------------------------------------------------------- newsletter
+        // Off hides every sign-up form (footer, registration, account, checkout). Empty sender name = the store name.
+        ['key' => 'newsletter.enabled', 'type' => 'bool', 'default' => false, 'public' => true],
+        ['key' => 'newsletter.sender_name', 'type' => 'string', 'default' => '', 'max' => 120],
+        ['key' => 'newsletter.send_rate_per_minute', 'type' => 'int', 'default' => 60, 'required' => true, 'min' => 1, 'max' => 600, 'unit' => '/min'],
     ],
 
     /*
