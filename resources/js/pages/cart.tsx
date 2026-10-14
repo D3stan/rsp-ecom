@@ -23,6 +23,14 @@ interface CartItem {
         image: string;
         category?: string;
     };
+    variant: {
+        id: number;
+        name: string;
+        price: number;
+        image: string | null;
+        /** Stock of the variant */
+        max_quantity: number;
+    } | null;
     quantity: number;
     price: number;
     total: number;
@@ -57,6 +65,13 @@ export default function Cart() {
     // Admin settings (Settings > Orders): minimum order amount (products only, 0 = off) and guest checkout switch
     const minAmount = useSetting('orders.min_amount', 0);
     const guestCheckoutEnabled = useSetting('orders.guest_checkout_enabled', true);
+    const maxQtyPerLine = useSetting('orders.max_qty_per_line', 0);
+
+    // Highest quantity a line can reach: its variant's stock, capped by orders.max_qty_per_line (0 = unlimited)
+    const lineMax = (item: CartItem): number => {
+        const stock = item.variant ? item.variant.max_quantity : Infinity;
+        return maxQtyPerLine > 0 ? Math.min(stock, maxQtyPerLine) : stock;
+    };
     const belowMinimum = minAmount > 0 && subtotal < minAmount;
     const needsSignIn = !auth?.user && !guestCheckoutEnabled;
 
@@ -310,11 +325,7 @@ export default function Cart() {
                                                     </p>
                                                 )}
 
-                                                {item.size && (
-                                                    <p className="text-sm text-gray-600">
-                                                        {t('cart.size')}: {item.size}
-                                                    </p>
-                                                )}
+                                                {item.variant?.name && <p className="text-sm text-gray-600">{item.variant.name}</p>}
                                             </div>
 
                                             {/* Quantity Controls */}
@@ -335,7 +346,7 @@ export default function Cart() {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                        disabled={isUpdating === item.id}
+                                                        disabled={item.quantity >= lineMax(item) || isUpdating === item.id}
                                                         className="h-8 w-8 p-0"
                                                     >
                                                         <Plus className="h-4 w-4" />

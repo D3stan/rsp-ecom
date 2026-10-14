@@ -24,7 +24,7 @@ class GuestOrderController extends Controller
         }
 
         $model = Order::where('order_number', $order)
-            ->with(['orderItems.product.defaultVariant', 'orderItems.size', 'shippingAddress'])
+            ->with(['orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant', 'shippingAddress'])
             ->first();
 
         // Same answer as a bad signature, so the page never confirms whether an order number exists
@@ -51,6 +51,8 @@ class GuestOrderController extends Controller
                 'items' => $model->orderItems->map(fn ($item) => [
                     'id' => $item->id,
                     'name' => $item->product_name ?: $item->product?->name,
+                    // The chosen variant (null when it has since been deleted)
+                    'variant_name' => $item->productVariant?->name,
                     'size' => $item->size?->name,
                     'quantity' => $item->quantity,
                     'price' => (float) $item->price,

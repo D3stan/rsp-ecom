@@ -161,7 +161,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         // Get recent orders with items and products
         $recentOrders = $user->orders()
-            ->with(['orderItems.product', 'orderItems.size'])
+            ->with(['orderItems.product', 'orderItems.size', 'orderItems.productVariant'])
             ->latest()
             ->limit(5)
             ->get()
@@ -174,6 +174,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'order_id' => $item->order_id,
                         'product_id' => $item->product_id,
                         'product_name' => $item->product_name,
+                        'variant_name' => $item->productVariant?->name,
                         'quantity' => $item->quantity,
                         'price' => (float) $item->price,
                         'total' => (float) $item->total,

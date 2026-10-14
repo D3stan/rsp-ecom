@@ -208,11 +208,6 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                                         <div className="flex-1">
                                                             <h4 className="font-medium">{item.product.name}</h4>
                                                             {item.variant?.name && <p className="text-sm text-gray-600">{item.variant.name}</p>}
-                                                            {item.size && (
-                                                                <p className="text-sm text-gray-600">
-                                                                    {t('checkout.success.size')}: {item.size.name}
-                                                                </p>
-                                                            )}
                                                             <p className="text-sm text-gray-600">
                                                                 {t('checkout.success.qty')}: {item.quantity}
                                                             </p>

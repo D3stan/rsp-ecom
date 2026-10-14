@@ -94,10 +94,8 @@ export const LatestOrderCard = () => {
                                     <div key={item.id} className="flex items-center justify-between text-sm gap-4">
                                         <div className="flex-1 min-w-0">
                                             <span className="font-medium truncate block">{item.product.name}</span>
-                                            {item.size && (
-                                                <span className="text-muted-foreground truncate block">
-                                                    • {t('orders.size')}: {item.size.name}
-                                                </span>
+                                            {item.variant_name && (
+                                                <span className="text-muted-foreground truncate block">• {item.variant_name}</span>
                                             )}
                                         </div>
                                         <div className="text-muted-foreground flex-shrink-0">
