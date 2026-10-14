@@ -264,7 +264,7 @@ Sitemap: " . url('/sitemap.xml');
         ->header('Content-Type', 'text/plain');
 })->name('robots');
 
-// Fallback route for 404 errors - must be last
-Route::fallback(function () {
-    return Inertia::render('Errors/NotFound');
+// Fallback route for 404 errors - must be last. The status is 404 (not a soft 404), for Inertia visits too.
+Route::fallback(function (Request $request) {
+    return Inertia::render('Errors/NotFound')->toResponse($request)->setStatusCode(404);
 });
