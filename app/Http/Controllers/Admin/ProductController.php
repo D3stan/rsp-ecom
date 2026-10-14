@@ -8,6 +8,7 @@ use App\Models\ProductVariant;
 use App\Models\Category;
 use App\Models\Size;
 use App\Services\FileUploadConfigService;
+use App\Services\StockService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -366,7 +367,7 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Product $product)
+    public function update(Request $request, Product $product, StockService $stockService)
     {
         try {
             $this->checkStorageSetup();
@@ -399,6 +400,8 @@ class ProductController extends Controller
                 'variants.*.sku_suffix' => 'nullable|string|max:50',
                 'variants.*.price' => 'required|numeric|min:0',
                 'variants.*.stock_quantity' => 'required|integer|min:0',
+                // The stock the form loaded: the save applies (typed - loaded) to the current stock (concurrent sales)
+                'variants.*.stock_quantity_original' => 'nullable|integer|min:0',
                 'variants.*.description' => 'nullable|string',
                 'variants.*.is_default' => 'boolean',
                 'variants.*.sort_order' => 'integer',
@@ -442,7 +445,7 @@ class ProductController extends Controller
             $defaultVariantData = collect($validated['variants'])->firstWhere('is_default', true)
                 ?? $validated['variants'][0];
             $productData['price'] = $defaultVariantData['price'];
-            $productData['stock_quantity'] = $defaultVariantData['stock_quantity'];
+            // products.stock_quantity mirrors the default variant: synced once the variants are saved
 
             $product->update($productData);
             \Log::info('Product updated', ['product_id' => $product->id]);
@@ -466,6 +469,7 @@ class ProductController extends Controller
 
             // Sync/create variants
             $hasDefault = false;
+            $concurrentStock = [];
             foreach ($validated['variants'] as $index => $variantData) {
                 \Log::info("Processing variant {$index}", ['variant_id' => $variantData['id'] ?? 'new']);
 
@@ -518,9 +522,27 @@ class ProductController extends Controller
                             $variantAttributes['images'] = $currentImages;
                         }
 
+                        // The stock is applied as a delta below (a plain write would undo sales made while the form was
+                        // open). Without the loaded value (an older form) the typed stock is written as before.
+                        $loadedStock = $variantData['stock_quantity_original'] ?? null;
+                        if ($loadedStock !== null) {
+                            unset($variantAttributes['stock_quantity']);
+                        }
+
                         \Log::info("Updating variant", ['variant_id' => $variant->id, 'attributes' => $variantAttributes]);
                         $variant->update($variantAttributes);
                         \Log::info("Variant updated successfully", ['variant_id' => $variant->id]);
+
+                        if ($loadedStock !== null) {
+                            $delta = (int) $variantData['stock_quantity'] - (int) $loadedStock;
+                            [$stockBefore, $stockAfter] = $delta !== 0
+                                ? $stockService->adjustVariantStock($variant->id, $delta)
+                                : [(int) $variant->stock_quantity, (int) $variant->stock_quantity];
+
+                            if ($stockBefore !== (int) $loadedStock) {
+                                $concurrentStock[] = "{$variant->name}: now {$stockAfter}";
+                            }
+                        }
                     }
                 } else {
                     // Create new variant
@@ -545,12 +567,21 @@ class ProductController extends Controller
                 \Log::info("Finished processing variant", ['variant_id' => $variant->id ?? 'new']);
             }
 
+            $product->syncStockMirror();
+
             \Log::info('All variants processed, committing transaction');
             DB::commit();
             \Log::info('Transaction committed successfully');
 
-            return redirect()->route('admin.products.index')
+            $redirect = redirect()->route('admin.products.index')
                 ->with('success', 'Product updated with ' . count($validated['variants']) . ' variant(s).');
+
+            if ($concurrentStock !== []) {
+                $redirect->with('warning', 'Stock changed while you were editing (orders placed meanwhile); your changes were applied on top. '
+                    . implode(', ', $concurrentStock) . '.');
+            }
+
+            return $redirect;
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Re-throw so Laravel handles it natively (422 + Inertia error props)

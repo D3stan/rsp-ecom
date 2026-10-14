@@ -79,6 +79,8 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
             sku_suffix: v.sku_suffix,
             price: v.price.toString(),
             stock_quantity: v.stock_quantity.toString(),
+            // The stock as loaded: the server applies (typed - loaded) so orders placed meanwhile are kept
+            stock_quantity_original: v.stock_quantity,
             description: v.description || '',
             is_default: v.is_default,
             sort_order: v.sort_order,
@@ -183,6 +185,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
             sku_suffix: v.sku_suffix,
             price: v.price,
             stock_quantity: v.stock_quantity,
+            stock_quantity_original: v.stock_quantity_original, // undefined (omitted) for new variants
             description: v.description,
             is_default: v.is_default,
             sort_order: v.sort_order,
