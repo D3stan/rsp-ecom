@@ -43,3 +43,25 @@ it('reports why the login page was shown as flash.error, not as an error prop', 
             ->where('flash.error', __('checkout.guest_checkout_disabled'))
             ->missing('error'));
 });
+
+it('does not toast a cart quantity change (the new quantity is visible on screen)', function () {
+    $user = User::factory()->create();
+    $product = \Tests\Support\CatalogFixtures::product(['stock_quantity' => 10]);
+    $variant = \Tests\Support\CatalogFixtures::variant($product, ['stock_quantity' => 10, 'price' => 10]);
+    $cart = \App\Models\Cart::create(['user_id' => $user->id]);
+    $item = $cart->cartItems()->create([
+        'product_id' => $product->id,
+        'product_variant_id' => $variant->id,
+        'quantity' => 1,
+        'price' => 10,
+        'size_id' => $product->size_id,
+    ]);
+
+    // As the cart page sends it: an Inertia visit, not JSON
+    $this->actingAs($user)->from(route('cart'))
+        ->put(route('cart.update', $item), ['quantity' => 2], ['X-Inertia' => 'true'])
+        ->assertRedirect(route('cart'))
+        ->assertSessionMissing('success');
+
+    expect($item->fresh()->quantity)->toBe(2);
+});
