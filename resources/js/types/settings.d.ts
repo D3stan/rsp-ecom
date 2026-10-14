@@ -37,6 +37,7 @@ export interface PublicSettings {
     'orders.order_notes_max': number;
     'inventory.low_stock_threshold': number;
     'catalog.per_page': number;
+    'newsletter.enabled': boolean;
 }
 
 /** Catalogue key of a setting shared with the frontend (`settings` Inertia prop). */

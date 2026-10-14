@@ -1,3 +1,4 @@
+import MarketingConsentCheckbox from '@/components/checkout/MarketingConsentCheckbox';
 import Header from '@/components/header';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
@@ -121,6 +122,7 @@ export default function CheckoutDetails() {
 
     const [couponCode, setCouponCode] = useState(initialCouponCode || '');
     const [orderNotes, setOrderNotes] = useState('');
+    const [marketingConsent, setMarketingConsent] = useState(false);
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -244,6 +246,7 @@ export default function CheckoutDetails() {
             shipping_address: shippingAddress,
             order_notes: orderNotes,
             coupon_code: couponCode,
+            marketing_consent: marketingConsent,
         };
 
         if (auth?.user) {
@@ -655,6 +658,8 @@ export default function CheckoutDetails() {
                                 </CollapsibleContent>
                             </Collapsible>
                         </Card>
+
+                        <MarketingConsentCheckbox checked={marketingConsent} onCheckedChange={setMarketingConsent} disabled={isProcessing} />
 
                         {/* Action Buttons - Hidden on mobile, only show on desktop */}
                         <div className="grid hidden grid-cols-1 gap-4 pt-6 md:grid md:grid-cols-2">

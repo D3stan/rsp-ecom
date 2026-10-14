@@ -12,6 +12,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\GuestOrderController;
 use App\Http\Controllers\Api\PromotionController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\Newsletter\NewsletterController;
 use App\Shipping\Tracking\Http\TrackingWebhookController;
 use App\Support\Locales;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
@@ -114,6 +115,13 @@ Route::get('/shipping-returns', [PageController::class, 'shippingReturns'])->nam
 Route::get('/terms', [PageController::class, 'terms'])->name('terms');
 
 Route::get('/faq', [PageController::class, 'faq'])->name('faq');
+
+// Newsletter: sign-up + double opt-in (only while newsletter.enabled), unsubscribe (always; signed link from every
+// marketing email; the POST is also the RFC 8058 one-click target, CSRF-exempt in bootstrap/app.php)
+Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->middleware('throttle:5,1')->name('newsletter.subscribe');
+Route::get('/newsletter/confirm/{token}', [NewsletterController::class, 'confirm'])->middleware('throttle:30,1')->name('newsletter.confirm');
+Route::get('/newsletter/unsubscribe/{subscriber}', [NewsletterController::class, 'showUnsubscribe'])->middleware(['signed', 'throttle:60,1'])->name('newsletter.unsubscribe');
+Route::post('/newsletter/unsubscribe/{subscriber}', [NewsletterController::class, 'unsubscribe'])->middleware(['signed', 'throttle:60,1'])->name('newsletter.unsubscribe.store');
 
 // API routes for AJAX calls
 Route::prefix('api')->group(function () {

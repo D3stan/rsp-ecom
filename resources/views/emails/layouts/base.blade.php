@@ -9,6 +9,7 @@
       internal    true for alerts to the shop owner: no footer links, no automatic-message notice
       noReply     false to leave the automatic-message notice out of a customer email
       logoUrl     override of the logo
+      senderIdentity  true for consent and marketing emails: the footer adds the legal name and address of the sender
 --}}
 @php
     $appName = settings('store.name');
@@ -17,6 +18,9 @@
     $showNoReply = ! $internal && ($noReply ?? true);
     $htmlLang = str_replace('_', '-', app()->getLocale());
     $font = "Arial, Helvetica, sans-serif";
+    $senderLines = ($senderIdentity ?? false)
+        ? array_values(array_filter(array_map('trim', array_merge([(string) settings('store.legal_name')], preg_split('/\R/', (string) settings('store.address')))), fn ($line) => $line !== ''))
+        : [];
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $htmlLang }}" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -105,6 +109,9 @@
                             <br>
 @endunless
                             <span style="color: #555555;">{{ $appName }}</span>
+@foreach($senderLines as $line)
+                            <br><span style="color: #555555;">{{ $line }}</span>
+@endforeach
                         </td>
                     </tr>
                 </table>

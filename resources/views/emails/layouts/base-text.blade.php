@@ -1,6 +1,6 @@
 {{--
     Plain-text layout (twin of base.blade.php). Output is not HTML-escaped on purpose.
-    Sections: title, content. Options: internal (no notice, no footer links), noReply.
+    Sections: title, content. Options: internal (no notice, no footer links), noReply, senderIdentity (legal name + address).
 --}}
 {!! settings('store.name') !!}
 ============================================================
@@ -19,3 +19,13 @@
 {!! __('emails.links.privacy') !!}: {!! route('privacy') !!}
 {!! __('emails.links.contact') !!}: {!! route('contact') !!}
 @endunless
+@if($senderIdentity ?? false)
+
+{!! settings('store.name') !!}
+@if(trim((string) settings('store.legal_name')) !== '')
+{!! settings('store.legal_name') !!}
+@endif
+@if(trim((string) settings('store.address')) !== '')
+{!! settings('store.address') !!}
+@endif
+@endif

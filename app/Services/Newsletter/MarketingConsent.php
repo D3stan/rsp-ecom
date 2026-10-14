@@ -2,15 +2,19 @@
 
 namespace App\Services\Newsletter;
 
+use App\Mail\NewsletterConfirm;
 use App\Models\ConsentEvent;
 use App\Models\NewsletterSubscriber;
 use App\Models\User;
 use App\Support\Locales;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use LogicException;
+use Throwable;
 
 /**
  * Marketing (newsletter) consent: the only place that changes a subscriber's status, and it writes the consent
@@ -30,6 +34,9 @@ class MarketingConsent
     /** How long the double opt-in link stays valid. */
     public const CONFIRM_TOKEN_TTL_DAYS = 7;
 
+    /** A pending subscriber who asks again gets a new confirmation mail at most this often. */
+    public const RESEND_AFTER_MINUTES = 10;
+
     /** Source of the event written when the emailed confirmation link is used. */
     public const SOURCE_CONFIRM_LINK = 'confirm_link';
 
@@ -45,8 +52,10 @@ class MarketingConsent
     }
 
     /**
-     * Record a subscription request. Idempotent: a pending subscriber stays pending and a confirmed one stays
-     * confirmed (no new event); an unsubscribed one becomes pending again with a `resubscribed` event.
+     * Record a subscription request and queue the double opt-in mail. Idempotent: a pending subscriber stays pending
+     * (the mail is sent again at most every RESEND_AFTER_MINUTES) and a confirmed one stays confirmed (no mail, no
+     * event); an unsubscribed one becomes pending again with a `resubscribed` event and a new mail.
+     * Callers give the same answer whatever happened, so the response never reveals whether an address is known.
      *
      * @param  string  $source  one of NewsletterSubscriber::SOURCES
      *
@@ -71,7 +80,7 @@ class MarketingConsent
 
         $locale = Locales::isSupported($locale) ? $locale : Locales::fallback();
 
-        return DB::transaction(function () use ($email, $source, $locale, $user, $ip, $userAgent) {
+        [$subscriber, $token] = DB::transaction(function () use ($email, $source, $locale, $user, $ip, $userAgent) {
             $subscriber = NewsletterSubscriber::query()->createOrFirst(['email' => $email], [
                 'user_id' => $user?->id,
                 'locale' => $locale,
@@ -82,7 +91,7 @@ class MarketingConsent
             if ($subscriber->wasRecentlyCreated) {
                 $this->record($subscriber, ConsentEvent::EVENT_REQUESTED, $source, $ip, $userAgent);
 
-                return $subscriber;
+                return [$subscriber, $this->issueConfirmationToken($subscriber)];
             }
 
             $subscriber = NewsletterSubscriber::query()->lockForUpdate()->findOrFail($subscriber->id);
@@ -104,13 +113,23 @@ class MarketingConsent
 
                 $this->record($subscriber, ConsentEvent::EVENT_RESUBSCRIBED, $source, $ip, $userAgent);
 
-                return $subscriber;
+                return [$subscriber, $this->issueConfirmationToken($subscriber)];
             }
 
             $subscriber->save();
 
-            return $subscriber;
+            $resend = $subscriber->status === NewsletterSubscriber::STATUS_PENDING
+                && ($subscriber->confirmation_sent_at === null
+                    || $subscriber->confirmation_sent_at->lte(now()->subMinutes(self::RESEND_AFTER_MINUTES)));
+
+            return [$subscriber, $resend ? $this->issueConfirmationToken($subscriber) : null];
         });
+
+        if ($token !== null) {
+            $this->sendConfirmation($subscriber, $token);
+        }
+
+        return $subscriber;
     }
 
     /**
@@ -206,6 +225,23 @@ class MarketingConsent
         $name = trim((string) settings('newsletter.sender_name', ''));
 
         return $name !== '' ? $name : (string) settings('store.name', config('app.name'));
+    }
+
+    /**
+     * Queue the double opt-in mail. A failure is logged and clears confirmation_sent_at, so the next request
+     * can send it again straight away instead of waiting out the resend interval.
+     */
+    private function sendConfirmation(NewsletterSubscriber $subscriber, string $token): void
+    {
+        try {
+            Mail::to($subscriber->email)
+                ->locale($subscriber->locale ?: Locales::fallback())
+                ->queue(new NewsletterConfirm($subscriber, $token));
+        } catch (Throwable $e) {
+            Log::error('Failed to queue newsletter confirmation: '.$e->getMessage(), ['subscriber_id' => $subscriber->id]);
+
+            $subscriber->forceFill(['confirmation_sent_at' => null])->save();
+        }
     }
 
     private static function hashToken(string $token): string

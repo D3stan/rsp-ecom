@@ -6,8 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PendingUserVerification;
 use App\Models\User;
 use App\Notifications\PendingUserEmailVerification;
-use App\Services\EmailService;
-use Illuminate\Auth\Events\Registered;
+use App\Services\Newsletter\MarketingConsent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -37,6 +36,7 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class.'|unique:'.PendingUserVerification::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'newsletter' => ['sometimes', 'boolean'],
         ]);
 
         // Create pending verification record instead of user
@@ -51,6 +51,11 @@ class RegisteredUserController extends Controller
         // Send verification email
         Notification::route('mail', $pendingUser->email)
             ->notify(new PendingUserEmailVerification($pendingUser));
+
+        // Unticked by default; the double opt-in mail goes out next to the account verification mail
+        if ($request->boolean('newsletter') && settings('newsletter.enabled', false)) {
+            app(MarketingConsent::class)->subscribe($pendingUser->email, 'register', app()->getLocale(), null, $request->ip(), $request->userAgent());
+        }
 
         return redirect()->route('verification.pending')->with('email', $pendingUser->email);
     }

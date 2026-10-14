@@ -45,9 +45,7 @@ function confirmedSubscriber(string $email = 'known@example.com'): NewsletterSub
 // ------------------------------------------------------------------ subscribe
 
 it('creates a pending subscriber and queues one double opt-in mail in the visitor locale', function () {
-    app()->setLocale('de');
-
-    $this->from('/')->post('/newsletter/subscribe', ['email' => 'Rider@Example.com', 'source' => 'footer'])
+    $this->withSession(['locale' => 'de'])->from('/')->post('/newsletter/subscribe', ['email' => 'Rider@Example.com', 'source' => 'footer'])
         ->assertRedirect('/')
         ->assertSessionHas('success', __('newsletter.check_inbox'));
 
