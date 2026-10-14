@@ -10,6 +10,8 @@
       noReply     false to leave the automatic-message notice out of a customer email
       logoUrl     override of the logo
       senderIdentity  true for consent and marketing emails: the footer adds the legal name and address of the sender
+      unsubscribeUrl  marketing emails: the footer says why the mail arrives and links to the (signed) unsubscribe page
+      hideHeading     true when the content brings its own heading (newsletter campaigns): no <h1> from the title
 --}}
 @php
     $appName = settings('store.name');
@@ -81,7 +83,9 @@
                     {{-- Body --}}
                     <tr>
                         <td class="px" bgcolor="#ffffff" style="padding: 32px 32px 8px; background-color: #ffffff; color: #222222; font-family: {{ $font }}; font-size: 16px; line-height: 24px;">
+@unless($hideHeading ?? false)
                             <h1 class="h1" style="margin: 0 0 20px; color: #111111; font-family: {{ $font }}; font-size: 26px; line-height: 32px; font-weight: bold;">@yield('title')</h1>
+@endunless
                             @yield('content')
                         </td>
                     </tr>
@@ -112,6 +116,10 @@
 @foreach($senderLines as $line)
                             <br><span style="color: #555555;">{{ $line }}</span>
 @endforeach
+@if(! empty($unsubscribeUrl))
+                            <br><br><span style="color: #555555;">{{ __('newsletter.campaign.footer_reason', ['store' => $appName]) }}</span>
+                            <br><a href="{{ $unsubscribeUrl }}" style="color: #333333; text-decoration: underline;">{{ __('newsletter.campaign.unsubscribe') }}</a>
+@endif
                         </td>
                     </tr>
                 </table>

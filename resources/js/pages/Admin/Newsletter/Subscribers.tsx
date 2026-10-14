@@ -1,3 +1,4 @@
+import NewsletterTabs from '@/components/admin/newsletter/NewsletterTabs';
 import { ConfirmDialog } from '@/components/admin/settings/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -104,6 +105,8 @@ export default function Subscribers({ subscribers, counts, filters }: Subscriber
                         </a>
                     </Button>
                 </div>
+
+                <NewsletterTabs active="subscribers" />
 
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     {(['confirmed', 'pending', 'unsubscribed', 'total'] as const).map((key) => (

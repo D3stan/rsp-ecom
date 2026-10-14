@@ -281,12 +281,19 @@ it('sends a scheduled campaign from the scheduler tick once it is due', function
 
     expect($campaign->fresh()->status)->toBe(NewsletterCampaign::STATUS_SCHEDULED);
 
-    $this->artisan('schedule:run');
+    // The scheduler runs the command every minute (schedule:run starts it in a separate process, which cannot
+    // see the in-memory test database, so the tick is the command itself)
+    $event = collect(app(Illuminate\Console\Scheduling\Schedule::class)->events())
+        ->first(fn ($event) => str_contains((string) $event->command, 'newsletter:dispatch-scheduled'));
+    expect($event)->not->toBeNull()
+        ->and($event->expression)->toBe('* * * * *');
+
+    $this->artisan('newsletter:dispatch-scheduled')->assertSuccessful();
     expect(campaignRecipients())->toBe([]);
 
     $this->travel(2)->hours();
     $this->travel(1)->minutes();
-    $this->artisan('schedule:run');
+    $this->artisan('newsletter:dispatch-scheduled')->assertSuccessful();
 
     expect(campaignRecipients())->toBe(['a@example.com'])
         ->and($campaign->fresh()->status)->toBe(NewsletterCampaign::STATUS_SENT);

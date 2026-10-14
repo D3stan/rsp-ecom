@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\CategoriesAndSizesController;
 use App\Http\Controllers\Admin\ReviewsController;
 use App\Http\Controllers\Admin\NewsletterSubscribersController;
+use App\Http\Controllers\Admin\NewsletterCampaignsController;
 use App\Http\Controllers\Admin\SettingsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -62,6 +63,16 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/newsletter/subscribers/export', [NewsletterSubscribersController::class, 'export'])->name('newsletter.subscribers.export');
     Route::post('/newsletter/subscribers/{subscriber}/unsubscribe', [NewsletterSubscribersController::class, 'unsubscribe'])->name('newsletter.subscribers.unsubscribe');
     Route::delete('/newsletter/subscribers/{subscriber}', [NewsletterSubscribersController::class, 'destroy'])->name('newsletter.subscribers.destroy');
+    // Before the resource, so "preview" is not taken for a campaign id
+    Route::post('/newsletter/campaigns/preview', [NewsletterCampaignsController::class, 'preview'])->name('newsletter.campaigns.preview');
+    Route::resource('newsletter/campaigns', NewsletterCampaignsController::class)
+        ->only(['index', 'create', 'store', 'show', 'edit', 'update'])
+        ->parameters(['campaigns' => 'campaign'])
+        ->names('newsletter.campaigns');
+    Route::post('/newsletter/campaigns/{campaign}/test', [NewsletterCampaignsController::class, 'test'])->middleware('throttle:10,1')->name('newsletter.campaigns.test');
+    Route::post('/newsletter/campaigns/{campaign}/send', [NewsletterCampaignsController::class, 'send'])->name('newsletter.campaigns.send');
+    Route::post('/newsletter/campaigns/{campaign}/schedule', [NewsletterCampaignsController::class, 'schedule'])->name('newsletter.campaigns.schedule');
+    Route::post('/newsletter/campaigns/{campaign}/cancel', [NewsletterCampaignsController::class, 'cancel'])->name('newsletter.campaigns.cancel');
 
     // TODO: Add other admin routes as they are implemented
     // Route::resource('customers', CustomersController::class);
