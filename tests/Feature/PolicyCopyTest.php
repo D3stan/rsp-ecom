@@ -86,6 +86,7 @@ class PolicyCopyTest extends TestCase
         'app/Http/Controllers/CheckoutController.php',
         'config/settings.php',
         'resources/js/components/checkout/ShippingLine.tsx',
+        'resources/js/components/checkout/OrderSummary.tsx',
         'resources/js/pages/cart.tsx',
         'resources/js/pages/Checkout/Details.tsx',
         'resources/js/types/settings.d.ts',

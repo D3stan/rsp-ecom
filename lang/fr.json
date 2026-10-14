@@ -288,7 +288,11 @@
             "pending_timeout": "Cela prend plus de temps que d'habitude. Votre paiement a bien été reçu : si l'e-mail de confirmation n'arrive pas rapidement, contactez-nous.",
             "pending_contact": "Contacter le support",
             "pending_reference": "Référence du paiement"
-        }
+        },
+        "field_required": "Ce champ est obligatoire.",
+        "email_invalid": "Saisissez une adresse e-mail valide, par ex. nom@exemple.fr.",
+        "summary_show": "Afficher le récapitulatif de commande ({amount})",
+        "summary_hide": "Masquer le récapitulatif de commande"
     },
     "shipping_returns": {
         "title": "Livraison et Retours",

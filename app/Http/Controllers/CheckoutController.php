@@ -289,8 +289,8 @@ class CheckoutController extends Controller
         $appliedCoupon = session('applied_coupon');
 
         return [
-            'cart' => $cart,
-            'cartItems' => $cart->cartItems,
+            'cart' => ['id' => $cart->id],
+            'cartItems' => $this->summaryLines($cart),
             'subtotal' => $totals['items'],
             'shippingCost' => $totals['shipping'],
             'taxAmount' => $totals['vat']['amount'],
@@ -302,6 +302,33 @@ class CheckoutController extends Controller
             'totalItems' => $cart->cartItems->sum('quantity'),
             'freeShippingRemaining' => $totals['free_shipping_remaining'],
         ];
+    }
+
+    /**
+     * The lines of the order summary: what the customer sees, as plain values (no catalogue internals). The variant is
+     * the line's own one, else the product's default (as in the checkout snapshot).
+     *
+     * @return array<int, array{id: int, name: string, variant_name: string|null, image: string, quantity: int, price: float, total: float}>
+     */
+    private function summaryLines(\App\Models\Cart $cart): array
+    {
+        return $cart->cartItems->map(function ($item) {
+            $variant = $item->productVariant ?? $item->product?->defaultVariant;
+            $price = round((float) $item->price, 2);
+
+            return [
+                'id' => $item->id,
+                'name' => (string) ($item->product?->name ?? ''),
+                'variant_name' => $variant?->name,
+                // the variant's own photo when it has one, else the product's
+                'image' => ! empty($item->productVariant?->images)
+                    ? $item->productVariant->main_image_url
+                    : ($item->product?->image_url ?? '/images/product.png'),
+                'quantity' => (int) $item->quantity,
+                'price' => $price,
+                'total' => round($price * (int) $item->quantity, 2),
+            ];
+        })->values()->all();
     }
 
     /**

@@ -288,7 +288,11 @@
             "pending_timeout": "Ci vuole più del solito. Il pagamento è stato ricevuto: se l'email di conferma non arriva a breve, contattaci.",
             "pending_contact": "Contatta l'assistenza",
             "pending_reference": "Riferimento del pagamento"
-        }
+        },
+        "field_required": "Campo obbligatorio.",
+        "email_invalid": "Inserisci un indirizzo email valido, ad es. nome@esempio.it.",
+        "summary_show": "Mostra il riepilogo dell'ordine ({amount})",
+        "summary_hide": "Nascondi il riepilogo dell'ordine"
     },
     "shipping_returns": {
         "title": "Spedizioni e Resi",

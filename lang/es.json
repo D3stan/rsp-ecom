@@ -288,7 +288,11 @@
             "pending_timeout": "Esto está tardando más de lo habitual. Su pago se ha recibido: si el correo de confirmación no llega pronto, póngase en contacto con nosotros.",
             "pending_contact": "Contactar con soporte",
             "pending_reference": "Referencia del pago"
-        }
+        },
+        "field_required": "Este campo es obligatorio.",
+        "email_invalid": "Introduzca una dirección de correo electrónico válida, p. ej. nombre@ejemplo.es.",
+        "summary_show": "Mostrar resumen del pedido ({amount})",
+        "summary_hide": "Ocultar resumen del pedido"
     },
     "shipping_returns": {
         "title": "Envío y Devoluciones",

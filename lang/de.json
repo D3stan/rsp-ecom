@@ -288,7 +288,11 @@
             "pending_timeout": "Das dauert länger als üblich. Ihre Zahlung ist eingegangen: Wenn die Bestätigungs-E-Mail nicht in Kürze ankommt, kontaktieren Sie uns bitte.",
             "pending_contact": "Support kontaktieren",
             "pending_reference": "Zahlungsreferenz"
-        }
+        },
+        "field_required": "Dieses Feld ist erforderlich.",
+        "email_invalid": "Geben Sie eine gültige E-Mail-Adresse ein, z. B. name@beispiel.de.",
+        "summary_show": "Bestellübersicht anzeigen ({amount})",
+        "summary_hide": "Bestellübersicht ausblenden"
     },
     "shipping_returns": {
         "title": "Versand & Rücksendungen",
