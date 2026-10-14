@@ -153,6 +153,20 @@ class MarketingConsent
     }
 
     /**
+     * The pending subscriber a still-valid token belongs to (read only: showing the confirm button changes nothing).
+     */
+    public function pendingForToken(string $token): ?NewsletterSubscriber
+    {
+        if ($token === '') {
+            return null;
+        }
+
+        $subscriber = NewsletterSubscriber::query()->where('confirm_token_hash', self::hashToken($token))->first();
+
+        return $subscriber !== null && $this->tokenIsUsable($subscriber) ? $subscriber : null;
+    }
+
+    /**
      * Confirm the subscription the token was issued for. Single use; null when the token is unknown, already used
      * or older than CONFIRM_TOKEN_TTL_DAYS.
      */
@@ -168,10 +182,7 @@ class MarketingConsent
                 ->lockForUpdate()
                 ->first();
 
-            if ($subscriber === null
-                || $subscriber->status !== NewsletterSubscriber::STATUS_PENDING
-                || $subscriber->confirmation_sent_at === null
-                || $subscriber->confirmation_sent_at->lte(now()->subDays(self::CONFIRM_TOKEN_TTL_DAYS))) {
+            if ($subscriber === null || ! $this->tokenIsUsable($subscriber)) {
                 return null;
             }
 
@@ -242,6 +253,13 @@ class MarketingConsent
 
             $subscriber->forceFill(['confirmation_sent_at' => null])->save();
         }
+    }
+
+    private function tokenIsUsable(NewsletterSubscriber $subscriber): bool
+    {
+        return $subscriber->status === NewsletterSubscriber::STATUS_PENDING
+            && $subscriber->confirmation_sent_at !== null
+            && $subscriber->confirmation_sent_at->gt(now()->subDays(self::CONFIRM_TOKEN_TTL_DAYS));
     }
 
     private static function hashToken(string $token): string

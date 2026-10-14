@@ -3,12 +3,14 @@
 use App\Mail\NewsletterConfirm;
 use App\Models\ConsentEvent;
 use App\Models\NewsletterSubscriber;
+use App\Models\PendingUserVerification;
 use App\Models\User;
 use App\Services\Newsletter\MarketingConsent;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\URL;
 use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
@@ -123,20 +125,55 @@ it('throttles the subscribe endpoint to 5 requests a minute', function () {
 
 // -------------------------------------------------------------------- confirm
 
-it('confirms through the emailed link exactly once', function () {
+it('shows a confirm button on the emailed link without confirming (link scanners prefetch GETs)', function () {
     $this->from('/')->post('/newsletter/subscribe', ['email' => 'rider@example.com']);
     $url = queuedConfirmUrl('rider@example.com');
 
     $this->get($url)->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->component('Newsletter/Confirm')
+        ->where('status', 'pending')
+        ->where('action', $url));
+    $this->get($url)->assertOk()->assertInertia(fn (Assert $page) => $page->where('status', 'pending'));
+
+    expect(NewsletterSubscriber::sole()->status)->toBe(NewsletterSubscriber::STATUS_PENDING)
+        ->and(ConsentEvent::where('event', ConsentEvent::EVENT_CONFIRMED)->count())->toBe(0);
+});
+
+it('confirms with the POST of the button exactly once, logging the IP and user agent of that POST', function () {
+    $this->from('/')->post('/newsletter/subscribe', ['email' => 'rider@example.com']);
+    $url = queuedConfirmUrl('rider@example.com');
+
+    $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.50', 'HTTP_USER_AGENT' => 'Confirming Browser'])
+        ->post($url)->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('Newsletter/Confirm')
         ->where('status', 'confirmed'));
 
     expect(NewsletterSubscriber::sole()->status)->toBe(NewsletterSubscriber::STATUS_CONFIRMED)
         ->and(app(MarketingConsent::class)->allows('rider@example.com'))->toBeTrue();
 
-    $this->get($url)->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->component('Newsletter/Confirm')
-        ->where('status', 'invalid'));
+    $event = ConsentEvent::where('event', ConsentEvent::EVENT_CONFIRMED)->sole();
+    expect($event->ip)->toBe('203.0.113.50')
+        ->and($event->user_agent)->toBe('Confirming Browser');
+
+    $this->post($url)->assertOk()->assertInertia(fn (Assert $page) => $page->where('status', 'invalid'));
+    $this->get($url)->assertOk()->assertInertia(fn (Assert $page) => $page->where('status', 'invalid'));
+});
+
+it('protects the confirm POST with CSRF and throttles it', function () {
+    $middleware = new class(app(), app('encrypter')) extends ValidateCsrfToken
+    {
+        public function excludes(Request $request): bool
+        {
+            return $this->inExceptArray($request);
+        }
+    };
+
+    expect($middleware->excludes(Request::create('/newsletter/confirm/abc', 'POST')))->toBeFalse();
+
+    foreach (range(1, 10) as $i) {
+        $this->post('/newsletter/confirm/nope')->assertOk();
+    }
+    $this->post('/newsletter/confirm/nope')->assertStatus(429);
 });
 
 it('refuses a confirmation link older than 7 days and offers to resend', function () {
@@ -149,6 +186,7 @@ it('refuses a confirmation link older than 7 days and offers to resend', functio
     $this->get($url)->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('Newsletter/Confirm')
         ->where('status', 'invalid'));
+    $this->post($url)->assertOk()->assertInertia(fn (Assert $page) => $page->where('status', 'invalid'));
 
     expect(NewsletterSubscriber::sole()->status)->toBe(NewsletterSubscriber::STATUS_PENDING);
 });
@@ -248,6 +286,49 @@ it('subscribes on registration only when the box is ticked', function () {
     Mail::assertQueued(NewsletterConfirm::class, fn ($mail) => $mail->hasTo('withbox@example.com'));
 });
 
+it('links the subscriber to the account when the registration is verified', function () {
+    Notification::fake();
+    $existing = User::factory()->create(['email' => 'other@example.com']);
+
+    $this->post('/register', [
+        'name' => 'With Box',
+        'email' => 'withbox@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+        'newsletter' => true,
+    ]);
+
+    expect(NewsletterSubscriber::sole()->user_id)->toBeNull();
+
+    $pending = PendingUserVerification::where('email', 'withbox@example.com')->sole();
+    $verifyUrl = URL::temporarySignedRoute('verification.verify.pending', now()->addHour(), [
+        'token' => $pending->verification_token,
+        'email' => $pending->email,
+    ]);
+
+    $this->get($verifyUrl)->assertRedirect();
+
+    $user = User::where('email', 'withbox@example.com')->sole();
+    expect(NewsletterSubscriber::sole()->user_id)->toBe($user->id);
+
+    // An already linked subscriber is never re-assigned
+    $linked = NewsletterSubscriber::create(['email' => 'taken@example.com', 'user_id' => $existing->id, 'status' => 'confirmed', 'source' => 'footer']);
+    auth()->logout();
+    $this->post('/register', [
+        'name' => 'Taken',
+        'email' => 'taken@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+    $pending = PendingUserVerification::where('email', 'taken@example.com')->sole();
+    $this->get(URL::temporarySignedRoute('verification.verify.pending', now()->addHour(), [
+        'token' => $pending->verification_token,
+        'email' => $pending->email,
+    ]))->assertRedirect();
+
+    expect($linked->fresh()->user_id)->toBe($existing->id);
+});
+
 // ------------------------------------------------------------------- account
 
 it('shows the newsletter status on the profile page and toggles it', function () {
@@ -289,6 +370,7 @@ it('hides everything while the newsletter is switched off', function () {
 
     $this->post('/newsletter/subscribe', ['email' => 'rider@example.com'])->assertNotFound();
     $this->get('/newsletter/confirm/whatever')->assertNotFound();
+    $this->post('/newsletter/confirm/whatever')->assertNotFound();
     $this->actingAs($user)->put('/settings/newsletter', ['subscribed' => true])->assertNotFound();
 
     $this->actingAs($user)->get('/settings/profile')->assertInertia(fn (Assert $page) => $page

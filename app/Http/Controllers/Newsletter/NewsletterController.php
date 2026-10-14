@@ -52,18 +52,26 @@ class NewsletterController extends Controller
     }
 
     /**
-     * Target of the link in the double opt-in mail.
+     * Target of the link in the double opt-in mail: a page with a confirm button. Opening it changes nothing,
+     * so mail scanners that prefetch links cannot confirm on the person's behalf.
+     */
+    public function showConfirm(Request $request, string $token): Response
+    {
+        self::ensureEnabled();
+
+        return $this->confirmPage($request, $this->consent->pendingForToken($token) !== null ? 'pending' : 'invalid');
+    }
+
+    /**
+     * The confirm button (CSRF-protected): only this confirms, and its IP / user agent go into the consent proof.
      */
     public function confirm(Request $request, string $token): Response
     {
         self::ensureEnabled();
-        SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
 
         $subscriber = $this->consent->confirm($token, $request->ip(), $request->userAgent());
 
-        return Inertia::render('Newsletter/Confirm', [
-            'status' => $subscriber !== null ? 'confirmed' : 'invalid',
-        ]);
+        return $this->confirmPage($request, $subscriber !== null ? 'confirmed' : 'invalid');
     }
 
     /**
@@ -90,6 +98,16 @@ class NewsletterController extends Controller
     public static function ensureEnabled(): void
     {
         abort_unless((bool) settings('newsletter.enabled', false), 404);
+    }
+
+    private function confirmPage(Request $request, string $status): Response
+    {
+        SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
+
+        return Inertia::render('Newsletter/Confirm', [
+            'status' => $status,
+            'action' => $request->url(),
+        ]);
     }
 
     private function unsubscribePage(Request $request, NewsletterSubscriber $subscriber, bool $done): Response

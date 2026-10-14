@@ -119,7 +119,8 @@ Route::get('/faq', [PageController::class, 'faq'])->name('faq');
 // Newsletter: sign-up + double opt-in (only while newsletter.enabled), unsubscribe (always; signed link from every
 // marketing email; the POST is also the RFC 8058 one-click target, CSRF-exempt in bootstrap/app.php)
 Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->middleware('throttle:5,1')->name('newsletter.subscribe');
-Route::get('/newsletter/confirm/{token}', [NewsletterController::class, 'confirm'])->middleware('throttle:30,1')->name('newsletter.confirm');
+Route::get('/newsletter/confirm/{token}', [NewsletterController::class, 'showConfirm'])->middleware('throttle:30,1')->name('newsletter.confirm');
+Route::post('/newsletter/confirm/{token}', [NewsletterController::class, 'confirm'])->middleware('throttle:10,1')->name('newsletter.confirm.store');
 Route::get('/newsletter/unsubscribe/{subscriber}', [NewsletterController::class, 'showUnsubscribe'])->middleware(['signed', 'throttle:60,1'])->name('newsletter.unsubscribe');
 Route::post('/newsletter/unsubscribe/{subscriber}', [NewsletterController::class, 'unsubscribe'])->middleware(['signed', 'throttle:60,1'])->name('newsletter.unsubscribe.store');
 
