@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Orders\OrderFinancialEdit;
 use App\Exceptions\InvalidOrderTransition;
+use App\Exceptions\OrderEditRefused;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\OrderItem;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -145,12 +147,16 @@ class OrdersController extends Controller
         return Inertia::render('Admin/Orders/Edit', [
             'order' => $order->toFrontendArray(),
             'allowed_transitions' => $order->allowedTransitions(),
+            // paid: lines, prices and totals are read-only (money goes back through a refund)
+            'financials_locked' => $order->hasCapturedPayment(),
             'carriers' => app(TrackingManager::class)->carriers(),
         ]);
     }
 
     /**
-     * Update the specified order
+     * Update the specified order. Always editable: notes, tracking, addresses, and the status (through the order
+     * lifecycle). Money (lines, shipping, totals) only while the order is unpaid, and the payment status never:
+     * OrderFinancialEdit decides. Everything is written in one transaction, or nothing is.
      */
     public function update(Request $request, Order $order)
     {
@@ -163,7 +169,7 @@ class OrdersController extends Controller
             $request->validate([
                 'status' => 'sometimes|string|in:pending,processing,shipped,delivered,cancelled',
                 'reason' => 'sometimes|nullable|string|max:500',
-                'payment_status' => 'sometimes|string|in:pending,processing,succeeded,failed,cancelled',
+                'payment_status' => 'sometimes|string',
                 'notes' => 'sometimes|nullable|string|max:1000',
                 'tracking_number' => 'sometimes|nullable|string|max:100',
                 'tracking_carrier' => ['sometimes', 'nullable', 'string', 'max:50', Rule::in(app(TrackingManager::class)->carrierCodes())],
@@ -171,14 +177,16 @@ class OrdersController extends Controller
                 'tax_amount' => 'sometimes|numeric|min:0',
                 'subtotal' => 'sometimes|numeric|min:0',
                 'total_amount' => 'sometimes|numeric|min:0',
+                'discount_amount' => 'sometimes|numeric|min:0',
                 'order_items' => 'sometimes|string', // JSON string
                 'billing_address' => 'sometimes|nullable|string', // JSON string
                 'shipping_address' => 'sometimes|nullable|string', // JSON string
             ]);
 
-            \Log::info('Validation passed, updating order', [
-                'order_id' => $order->id
-            ]);
+            // Refused (paid order, payment status, invalid lines) before anything is written
+            $financial = OrderFinancialEdit::plan($order, $request->only([
+                'payment_status', 'order_items', 'subtotal', 'shipping_amount', 'tax_amount', 'discount_amount', 'total_amount',
+            ]));
 
             // Get original status and tracking number to detect changes
             $originalStatus = $order->status;
@@ -191,37 +199,39 @@ class OrdersController extends Controller
 
             // Scenario 2: a tracking number added for the first time ships the order, when the admin did not ask for
             // another status and the order may ship now (OrderTransitions)
-            $trackingNumberAdded = $newTrackingNumber && !$originalTrackingNumber;
+            $trackingNumberAdded = $newTrackingNumber && ! $originalTrackingNumber;
             if ($trackingNumberAdded && $newStatus === $originalStatus && in_array('shipped', $order->allowedTransitions(), true)) {
                 $newStatus = 'shipped';
             }
 
-            // Everything but the status, then one save: through transitionTo() when the status changes (refused moves
-            // throw before anything is written)
-            $order->fill([
-                'payment_status' => $request->input('payment_status', $order->payment_status),
-                'notes' => $request->input('notes', $order->notes),
-                'tracking_number' => $newTrackingNumber,
-                'tracking_carrier' => $request->input('tracking_carrier', $order->tracking_carrier),
-                'shipping_amount' => $request->input('shipping_amount', $order->shipping_amount),
-                'tax_amount' => $request->input('tax_amount', $order->tax_amount),
-                'subtotal' => $request->input('subtotal', $order->subtotal),
-                'total_amount' => $request->input('total_amount', $order->total_amount),
-            ]);
+            DB::transaction(function () use ($request, $order, $financial, $newStatus, $newTrackingNumber, $originalStatus) {
+                $order->fill([
+                    'notes' => $request->input('notes', $order->notes),
+                    'tracking_number' => $newTrackingNumber,
+                    'tracking_carrier' => $request->input('tracking_carrier', $order->tracking_carrier),
+                ]);
 
-            if ($newStatus !== $originalStatus) {
-                $order->transitionTo($newStatus, $request->user(), $request->input('reason'));
-            } else {
-                $order->save();
-            }
+                if ($financial !== null) {
+                    OrderFinancialEdit::apply($order, $financial);
+                }
+
+                // One save: through transitionTo() when the status changes (a refused move rolls everything back)
+                if ($newStatus !== $originalStatus) {
+                    $order->transitionTo($newStatus, $request->user(), $request->input('reason'));
+                } else {
+                    $order->save();
+                }
+
+                foreach (['billing_address' => $order->billingAddress, 'shipping_address' => $order->shippingAddress] as $field => $address) {
+                    $data = $request->filled($field) ? json_decode((string) $request->input($field), true) : null;
+
+                    if (is_array($data) && $address) {
+                        $address->update($data);
+                    }
+                }
+            });
 
             $newStatus = $order->status;
-
-            // The stored VAT portion follows the edited total (orders created with a VAT rate snapshot only):
-            // an admin who changes shipping or the total must not leave a stale "of which VAT" behind.
-            if ($order->tax_rate !== null && $order->wasChanged(['total_amount', 'shipping_amount', 'subtotal'])) {
-                $order->update(['tax_amount' => \App\Support\Vat::portion((float) $order->total_amount, (float) $order->tax_rate)]);
-            }
 
             // Send shipping notification email
             $statusChangedToShipped = $originalStatus !== 'shipped' && $newStatus === 'shipped';
@@ -268,43 +278,12 @@ class OrdersController extends Controller
                 ]);
             }
 
-            // Update order items if provided
-        if ($request->has('order_items')) {
-            $orderItems = json_decode($request->order_items, true);
-            if (is_array($orderItems)) {
-                foreach ($orderItems as $itemData) {
-                    $orderItem = OrderItem::find($itemData['id']);
-                    if ($orderItem && $orderItem->order_id === $order->id) {
-                        $orderItem->update([
-                            'quantity' => $itemData['quantity'],
-                            'price' => $itemData['price'],
-                            'total' => $itemData['total'],
-                        ]);
-                    }
-                }
-            }
-        }
+            Log::info('Order updated successfully', ['order_id' => $order->id]);
+            $response = back()->with('success', 'Order updated successfully.');
 
-        // Update addresses if provided
-        if ($request->has('billing_address') && $request->billing_address) {
-            $billingAddress = json_decode($request->billing_address, true);
-            if (is_array($billingAddress) && $order->billingAddress) {
-                $order->billingAddress->update($billingAddress);
-            }
-        }
-
-        if ($request->has('shipping_address') && $request->shipping_address) {
-            $shippingAddress = json_decode($request->shipping_address, true);
-            if (is_array($shippingAddress) && $order->shippingAddress) {
-                $order->shippingAddress->update($shippingAddress);
-            }
-        }
-
-        Log::info('Order updated successfully', ['order_id' => $order->id]);
-        $response = back()->with('success', 'Order updated successfully.');
-
-        return $emailWarning ? $response->with('warning', $emailWarning) : $response;
-        
+            return $emailWarning ? $response->with('warning', $emailWarning) : $response;
+        } catch (OrderEditRefused $e) {
+            return back()->withErrors(['order' => $e->getMessage()])->with('error', $e->getMessage());
         } catch (InvalidOrderTransition $e) {
             return $this->refusedTransition($e);
         } catch (\Exception $e) {
@@ -313,7 +292,8 @@ class OrdersController extends Controller
                 'exception' => get_class($e),
                 'error' => $e->getMessage(),
             ]);
-            return back()->with('error', 'Failed to update order: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to update order: '.$e->getMessage());
         }
     }
 

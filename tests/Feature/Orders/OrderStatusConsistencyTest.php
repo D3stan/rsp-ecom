@@ -106,16 +106,16 @@ class OrderStatusConsistencyTest extends TestCase
         $this->assertSame('cancelled', $order->payment_status);
     }
 
-    public function test_admin_update_accepts_the_cancelled_payment_status(): void
+    public function test_admin_update_never_edits_the_payment_status(): void
     {
+        // the payment status follows Stripe and refunds only (D3)
         $order = $this->order('pending', 'pending');
 
         $this->actingAs($this->admin())
             ->patch(route('admin.orders.update', $order), ['payment_status' => 'cancelled'])
-            ->assertSessionHasNoErrors()
-            ->assertSessionHas('success');
+            ->assertSessionHas('error');
 
-        $this->assertSame('cancelled', $order->fresh()->payment_status);
+        $this->assertSame('pending', $order->fresh()->payment_status);
     }
 
     public function test_admin_update_rejects_payment_statuses_outside_the_enum(): void

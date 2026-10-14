@@ -372,6 +372,14 @@ class Order extends Model
         return in_array($this->payment_status, ['pending', 'processing']);
     }
 
+    /** Payment states in which money was captured: the order's lines and totals are then locked (refunds only). */
+    public const CAPTURED_PAYMENT_STATUSES = ['succeeded', 'partially_refunded', 'refunded'];
+
+    public function hasCapturedPayment(): bool
+    {
+        return in_array($this->payment_status, self::CAPTURED_PAYMENT_STATUSES, true);
+    }
+
     public function isPaymentFailed(): bool
     {
         return $this->payment_status === 'failed';

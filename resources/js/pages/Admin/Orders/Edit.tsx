@@ -62,6 +62,7 @@ interface Order {
     tax_amount: number;
     // VAT rate stored with the order: when set, tax_amount is already part of the prices and of the total
     tax_rate?: number | null;
+    discount_amount?: number;
     total_amount: number;
     notes?: string;
     created_at: string;
@@ -78,11 +79,7 @@ interface Order {
 
 interface FormData {
     status: string;
-    payment_status: string;
-    subtotal: number;
     shipping_amount: number;
-    tax_amount: number;
-    total_amount: number;
     notes: string;
     order_items: OrderItem[];
     billing_address: Address | null;
@@ -100,6 +97,8 @@ interface Props {
     order: Order;
     // statuses this order may move to next (server-side order lifecycle)
     allowed_transitions?: string[];
+    // paid order: lines, prices and amounts are read-only (money goes back through a refund)
+    financials_locked?: boolean;
     carriers?: Carrier[];
 }
 
@@ -114,26 +113,14 @@ const statusOptions = [
     { value: 'cancelled', label: 'Cancelled' },
 ];
 
-const paymentStatusOptions = [
-    { value: 'pending', label: 'Pending' },
-    { value: 'processing', label: 'Processing' },
-    { value: 'succeeded', label: 'Paid' },
-    { value: 'failed', label: 'Failed' },
-    { value: 'cancelled', label: 'Cancelled' },
-];
-
-export default function Edit({ order, allowed_transitions = [], carriers = [] }: Props) {
+export default function Edit({ order, allowed_transitions = [], financials_locked = false, carriers = [] }: Props) {
     const { addToast } = useToast();
     const { t } = useTranslation();
     const [processing, setProcessing] = useState(false);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [formData, setFormData] = useState<FormData>({
         status: order.status,
-        payment_status: order.payment_status,
-        subtotal: order.subtotal,
-        shipping_amount: order.shipping_amount,
-        tax_amount: order.tax_amount,
-        total_amount: order.total_amount,
+        shipping_amount: Number(order.shipping_amount),
         notes: order.notes || '',
         order_items: order.order_items,
         billing_address: order.billing_address || null,
@@ -182,17 +169,21 @@ export default function Edit({ order, allowed_transitions = [], carriers = [] }:
         clearValidationErrors();
     };
 
-    const calculateTotals = () => {
-        const itemsTotal = formData.order_items.reduce((sum, item) => sum + item.total, 0);
-        const newSubtotal = itemsTotal;
-        const newTotal = newSubtotal + formData.shipping_amount + (order.tax_rate != null ? 0 : formData.tax_amount);
+    // Amounts as the server stores them after saving (OrderFinancialEdit): derived from the lines, shipping and discount.
+    // A paid order keeps its stored amounts.
+    const preview = (() => {
+        if (financials_locked) {
+            return { subtotal: Number(order.subtotal), tax: Number(order.tax_amount), total: Number(order.total_amount) };
+        }
 
-        setFormData((prev) => ({
-            ...prev,
-            subtotal: newSubtotal,
-            total_amount: newTotal,
-        }));
-    };
+        const cents = (value: number | string | undefined) => Math.round(Number(value ?? 0) * 100);
+        const subtotal = formData.order_items.reduce((sum, item) => sum + item.quantity * cents(item.price), 0);
+        const taxOnTop = order.tax_rate != null ? 0 : cents(order.tax_amount);
+        const total = Math.max(0, subtotal + cents(formData.shipping_amount) - cents(order.discount_amount) + taxOnTop);
+        const tax = order.tax_rate != null ? Math.round((total * order.tax_rate) / (100 + order.tax_rate)) : cents(order.tax_amount);
+
+        return { subtotal: subtotal / 100, tax: tax / 100, total: total / 100 };
+    })();
 
     const removeOrderItem = (itemId: number) => {
         setFormData((prev) => ({
@@ -217,10 +208,6 @@ export default function Edit({ order, allowed_transitions = [], carriers = [] }:
             errors.push('Order status is required');
         }
 
-        if (!formData.payment_status || formData.payment_status.trim() === '') {
-            errors.push('Payment status is required');
-        }
-
         // Check if at least one order item exists
         if (!formData.order_items || formData.order_items.length === 0) {
             errors.push('At least one order item is required');
@@ -231,8 +218,8 @@ export default function Edit({ order, allowed_transitions = [], carriers = [] }:
             if (!item.quantity || item.quantity <= 0) {
                 errors.push(`Item ${index + 1}: Quantity must be greater than 0`);
             }
-            if (!item.price || item.price <= 0) {
-                errors.push(`Item ${index + 1}: Price must be greater than 0`);
+            if (Number(item.price) < 0) {
+                errors.push(`Item ${index + 1}: Price cannot be negative`);
             }
         });
 
@@ -300,28 +287,21 @@ export default function Edit({ order, allowed_transitions = [], carriers = [] }:
     };
 
     const submitForm = () => {
-        calculateTotals();
-
+        // Never the payment status, and no totals: the server derives them. Lines and shipping only while unpaid.
         const updateData = {
             status: formData.status,
-            payment_status: formData.payment_status,
-            subtotal: formData.subtotal,
-            shipping_amount: formData.shipping_amount,
-            tax_amount: formData.tax_amount,
-            total_amount: formData.total_amount,
             notes: formData.notes,
             tracking_number: formData.tracking_number,
             // only sent when carriers are configured, so nothing changes for installations without any
             ...(carriers.length > 0 ? { tracking_carrier: formData.tracking_carrier || null } : {}),
-            order_items: JSON.stringify(
-                formData.order_items.map((item) => ({
-                    id: item.id,
-                    product_id: item.product_id,
-                    quantity: item.quantity,
-                    price: item.price,
-                    total: item.total,
-                })),
-            ),
+            ...(financials_locked
+                ? {}
+                : {
+                      shipping_amount: formData.shipping_amount,
+                      order_items: JSON.stringify(
+                          formData.order_items.map((item) => ({ id: item.id, quantity: item.quantity, price: Number(item.price) })),
+                      ),
+                  }),
             billing_address: formData.billing_address ? JSON.stringify(formData.billing_address) : null,
             shipping_address: formData.shipping_address ? JSON.stringify(formData.shipping_address) : null,
         };
@@ -441,28 +421,11 @@ export default function Edit({ order, allowed_transitions = [], carriers = [] }:
                                             )}
                                         </div>
                                         <div>
-                                            <Label htmlFor="payment_status">Payment Status</Label>
-                                            <Select
-                                                value={formData.payment_status}
-                                                onValueChange={(value: string) => {
-                                                    setFormData((prev) => ({ ...prev, payment_status: value }));
-                                                    clearValidationErrors();
-                                                }}
-                                            >
-                                                <SelectTrigger className={hasValidationError('payment status') ? 'border-red-500' : ''}>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {paymentStatusOptions.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {hasValidationError('payment status') && (
-                                                <p className="mt-1 text-sm text-red-500">Payment status is required</p>
-                                            )}
+                                            <Label>Payment Status</Label>
+                                            {/* read-only: it follows Stripe and refunds */}
+                                            <div className="mt-2">
+                                                <Badge variant="secondary">{order.payment_status}</Badge>
+                                            </div>
                                         </div>
                                     </div>
                                     <div>
@@ -530,6 +493,7 @@ export default function Edit({ order, allowed_transitions = [], carriers = [] }:
                             <CollapsibleContent>
                                 <CardContent>
                                     <div className="space-y-4">
+                                        {financials_locked && <p className="text-sm text-muted-foreground">{t('admin.orders.financials_locked')}</p>}
                                         {formData.order_items.map((item) => (
                                             <div
                                                 key={item.id}
@@ -557,23 +521,28 @@ export default function Edit({ order, allowed_transitions = [], carriers = [] }:
                                                             id={`quantity-${item.id}`}
                                                             type="number"
                                                             min="1"
+                                                            step="1"
                                                             value={item.quantity}
                                                             onChange={(e) => updateOrderItemQuantity(item.id, parseInt(e.target.value) || 1)}
                                                             className="w-20"
+                                                            disabled={financials_locked}
                                                         />
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="font-medium">{formatCurrency(item.total)}</p>
+                                                        <p className="font-medium">{formatCurrency(item.quantity * Number(item.price))}</p>
                                                     </div>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => removeOrderItem(item.id)}
-                                                        className="whitespace-nowrap text-red-600 hover:text-red-800"
-                                                    >
-                                                        Remove
-                                                    </Button>
+                                                    {/* the server deletes a removed line (unpaid orders only) */}
+                                                    {!financials_locked && formData.order_items.length > 1 && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => removeOrderItem(item.id)}
+                                                            className="whitespace-nowrap text-red-600 hover:text-red-800"
+                                                        >
+                                                            Remove
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -613,44 +582,43 @@ export default function Edit({ order, allowed_transitions = [], carriers = [] }:
                                                     id="shipping_amount"
                                                     type="number"
                                                     step="0.01"
+                                                    min="0"
+                                                    disabled={financials_locked}
                                                     value={formData.shipping_amount}
                                                     onChange={(e) =>
                                                         setFormData((prev) => ({ ...prev, shipping_amount: parseFloat(e.target.value) || 0 }))
                                                     }
                                                 />
                                             </div>
-                                            <div>
-                                                <Label htmlFor="tax_amount">Tax Amount</Label>
-                                                <Input
-                                                    id="tax_amount"
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={formData.tax_amount}
-                                                    onChange={(e) =>
-                                                        setFormData((prev) => ({ ...prev, tax_amount: parseFloat(e.target.value) || 0 }))
-                                                    }
-                                                />
-                                            </div>
+                                            {financials_locked && (
+                                                <p className="text-sm text-muted-foreground">{t('admin.orders.financials_locked')}</p>
+                                            )}
                                         </div>
                                         <div>
                                             <h3 className="mb-4 font-medium">Order Summary</h3>
                                             <div className="space-y-2 rounded-lg p-4">
                                                 <div className="flex justify-between text-sm">
                                                     <span>Subtotal:</span>
-                                                    <span>{formatCurrency(formData.subtotal)}</span>
+                                                    <span>{formatCurrency(preview.subtotal)}</span>
                                                 </div>
                                                 <div className="flex justify-between text-sm">
                                                     <span>Shipping:</span>
                                                     <span>{formatCurrency(formData.shipping_amount)}</span>
                                                 </div>
+                                                {Number(order.discount_amount ?? 0) > 0 && (
+                                                    <div className="flex justify-between text-sm">
+                                                        <span>Discount:</span>
+                                                        <span>-{formatCurrency(Number(order.discount_amount))}</span>
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-between text-sm">
                                                     <span>{order.tax_rate != null ? `Included VAT (${order.tax_rate}%):` : 'Tax:'}</span>
-                                                    <span>{formatCurrency(formData.tax_amount)}</span>
+                                                    <span>{formatCurrency(preview.tax)}</span>
                                                 </div>
                                                 <Separator />
                                                 <div className="flex justify-between text-lg font-medium">
                                                     <span>Total:</span>
-                                                    <span>{formatCurrency(formData.total_amount)}</span>
+                                                    <span>{formatCurrency(preview.total)}</span>
                                                 </div>
                                             </div>
                                         </div>

@@ -769,6 +769,7 @@
     "admin.orders.reason_required": "Grund (Pflichtfeld)",
     "admin.orders.reason_optional": "Grund (optional)",
     "admin.orders.keep_as_is": "Unverändert lassen",
+    "admin.orders.financials_locked": "Diese Bestellung ist bezahlt: Artikel, Preise und Beträge können nicht mehr geändert werden. Nutze eine Erstattung, um Geld zurückzuzahlen.",
     "admin.orders.status.pending": "Ausstehend",
     "admin.orders.status.cancelled": "Storniert",
     "admin.orders.timeline.placed": "Bestellung aufgegeben",
