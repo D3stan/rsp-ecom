@@ -156,6 +156,8 @@ return [
         ['key' => 'email.order_delivered', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
         ['key' => 'email.order_cancelled', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
         ['key' => 'email.order_refunded', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
+        // Back-in-stock emails for items in carts and wishlists (customers can also opt out themselves)
+        ['key' => 'email.back_in_stock', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
 
         // --------------------------------------------------------------- tracking
         ['key' => 'tracking.auto_deliver', 'type' => 'bool', 'default' => (bool) $shipping['tracking']['auto_deliver'], 'config_bridge' => 'shipping.tracking.auto_deliver', 'seed' => false],

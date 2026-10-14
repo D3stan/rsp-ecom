@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Support\CatalogFixtures;
 
 /*
@@ -423,7 +424,10 @@ it('points cart notifications to the cart', function () {
 it('unsubscribes through the signed link without logging in', function () {
     $user = User::factory()->create();
 
-    $this->get(URL::signedRoute('restock.unsubscribe', ['user' => $user->id]))->assertOk();
+    $this->get(URL::signedRoute('restock.unsubscribe', ['user' => $user->id]))
+        ->assertOk()
+        ->assertHeader('Referrer-Policy', 'no-referrer')
+        ->assertInertia(fn (Assert $page) => $page->component('Restock/Unsubscribed')->where('unsubscribed', true));
 
     expect($user->fresh()->notify_back_in_stock)->toBeFalse();
 });
@@ -441,7 +445,10 @@ it('refuses an unsigned or tampered unsubscribe link', function () {
     $user = User::factory()->create();
     $other = User::factory()->create();
 
-    $this->get(route('restock.unsubscribe', ['user' => $user->id]))->assertForbidden();
+    $this->get(route('restock.unsubscribe', ['user' => $user->id]))
+        ->assertForbidden()
+        ->assertInertia(fn (Assert $page) => $page->component('Restock/Unsubscribed')->where('unsubscribed', false));
+    $this->post(route('restock.unsubscribe', ['user' => $user->id]))->assertForbidden();
     $tampered = str_replace('/unsubscribe/'.$user->id, '/unsubscribe/'.$other->id, URL::signedRoute('restock.unsubscribe', ['user' => $user->id]));
     $this->get($tampered)->assertForbidden();
 
@@ -452,6 +459,10 @@ it('refuses an unsigned or tampered unsubscribe link', function () {
 it('opts new users in and lets them switch it in their account settings', function () {
     $user = User::factory()->create();
     expect($user->fresh()->notify_back_in_stock)->toBeTrue();
+
+    // A real request loads the user from the database (the factory instance lacks the column default)
+    $this->actingAs($user->fresh())->get(route('profile.edit'))
+        ->assertInertia(fn (Assert $page) => $page->where('auth.user.notify_back_in_stock', true));
 
     $this->actingAs($user)
         ->patch(route('notification-preferences.update'), ['notify_back_in_stock' => false])

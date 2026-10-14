@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\VariantRestocked;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -169,6 +170,38 @@ class StockService
 
             return [$before, $after];
         });
+    }
+
+    /**
+     * The single entry point of back-in-stock notifications: announce a variant that became sellable (active with
+     * stock > 0) after being out of stock or inactive. The event is dispatched after the surrounding transaction
+     * commits. Called by ProductVariantObserver for every Eloquent write; code that updates product_variants with a
+     * query-builder UPDATE (no model events) must call it itself with the values before and after its change.
+     *
+     * Wishlists are per product, so their owners are only told when no other variant of the product could be bought
+     * at this moment (read here, inside the writer's transaction, so two variants restocked in one save notify the
+     * wishlists once).
+     *
+     * @return bool whether a restock was announced
+     */
+    public function announceIfRestocked(int $variantId, int $stockBefore, int $stockAfter, bool $wasActive = true, bool $isActive = true): bool
+    {
+        if (($wasActive && $stockBefore > 0) || ! ($isActive && $stockAfter > 0)) {
+            return false;
+        }
+
+        $productId = ProductVariant::query()->whereKey($variantId)->value('product_id');
+
+        $otherSellable = $productId !== null && ProductVariant::query()
+            ->where('product_id', $productId)
+            ->whereKeyNot($variantId)
+            ->where('status', 'active')
+            ->where('stock_quantity', '>', 0)
+            ->exists();
+
+        VariantRestocked::dispatch($variantId, ! $otherSellable);
+
+        return true;
     }
 
     /**
