@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Domain\Orders\OrderTransitions;
+use App\Exceptions\InvalidOrderTransition;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
@@ -69,6 +72,7 @@ class Order extends Model
         'stock_deducted_at' => 'datetime',
         'stock_restored_at' => 'datetime',
         'has_oversold_items' => 'boolean',
+        'delivered_at' => 'datetime',
     ];
 
     /**
@@ -216,32 +220,108 @@ class Order extends Model
 
     public function getCanBeCancelledAttribute(): bool
     {
-        return in_array($this->status, ['pending', 'processing']);
+        return OrderTransitions::allows($this->status, 'cancelled');
+    }
+
+    /**
+     * @return list<string> the statuses this order may move to next (OrderTransitions)
+     */
+    public function allowedTransitions(): array
+    {
+        return OrderTransitions::allowedFrom($this->status);
+    }
+
+    /**
+     * The one way to change the status. Checks the move against OrderTransitions on the stored (locked) status, so two
+     * admins, or an admin and the tracking sync, cannot both move the order from the same starting point. Sets
+     * delivered_at when the order enters "delivered" and saves the model, together with any other attribute the caller
+     * changed on it before. The OrderObserver then reacts as for any save (stock restore on cancel, status emails).
+     *
+     * Moving to the status the order already has is a no-op for the status (other pending changes are still saved).
+     *
+     * @param  array<string, mixed>  $meta  context of the change (source, ids) for the audit trail
+     *
+     * @throws InvalidOrderTransition when the lifecycle does not allow the move, or it needs a reason and has none
+     */
+    public function transitionTo(string $to, ?User $actor = null, ?string $reason = null, array $meta = []): void
+    {
+        if (! $this->exists) {
+            throw new \LogicException('Only a saved order can change status.');
+        }
+
+        DB::transaction(function () use ($to, $reason) {
+            $stored = static::query()->whereKey($this->getKey())->lockForUpdate()->value('status');
+
+            // Decide on what is stored, not on what this instance remembers
+            if ($stored !== null && $stored !== $this->getOriginal('status')) {
+                $this->setAttribute('status', $stored);
+                $this->syncOriginalAttribute('status');
+            }
+
+            $from = $this->getOriginal('status');
+            $reason = trim((string) $reason) !== '' ? trim((string) $reason) : null;
+
+            if ($from === $to) {
+                if ($this->isDirty()) {
+                    $this->save();
+                }
+
+                return;
+            }
+
+            if (! OrderTransitions::allows($from, $to)) {
+                throw InvalidOrderTransition::notAllowed((string) $this->order_number, $from, $to);
+            }
+
+            if ($reason === null && OrderTransitions::requiresReason($from, $to)) {
+                throw InvalidOrderTransition::reasonRequired((string) $this->order_number, $from, $to);
+            }
+
+            $this->status = $to;
+
+            if ($to === 'delivered') {
+                $this->delivered_at = now();
+            }
+
+            $this->save();
+        });
     }
 
     // Helper methods
-    public function cancel(): bool
+    public function cancel(?User $actor = null, ?string $reason = null): bool
     {
-        if (!$this->can_be_cancelled) {
+        if (! $this->can_be_cancelled) {
             return false;
         }
 
-        return $this->update(['status' => 'cancelled']);
+        try {
+            $this->transitionTo('cancelled', $actor, $reason);
+        } catch (InvalidOrderTransition) {
+            return false; // the stored status moved on meanwhile
+        }
+
+        return true;
     }
 
-    public function markAsProcessing(): bool
+    public function markAsProcessing(?User $actor = null): bool
     {
-        return $this->update(['status' => 'processing']);
+        $this->transitionTo('processing', $actor);
+
+        return true;
     }
 
-    public function markAsShipped(): bool
+    public function markAsShipped(?User $actor = null): bool
     {
-        return $this->update(['status' => 'shipped']);
+        $this->transitionTo('shipped', $actor);
+
+        return true;
     }
 
-    public function markAsDelivered(): bool
+    public function markAsDelivered(?User $actor = null): bool
     {
-        return $this->update(['status' => 'delivered']);
+        $this->transitionTo('delivered', $actor);
+
+        return true;
     }
 
     // Generate unique order number

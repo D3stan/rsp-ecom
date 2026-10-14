@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\InvalidOrderTransition;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -55,7 +56,9 @@ class OrdersController extends Controller
 
         // Transform the pagination response to ensure proper structure
         $ordersData = [
-            'data' => $orders->items(),
+            'data' => collect($orders->items())
+                ->map(fn (Order $order) => $order->toArray() + ['allowed_transitions' => $order->allowedTransitions()])
+                ->all(),
             'meta' => [
                 'total' => $orders->total(),
                 'per_page' => $orders->perPage(),
@@ -112,6 +115,7 @@ class OrdersController extends Controller
 
         return Inertia::render('Admin/Orders/Show', [
             'order' => $order->toFrontendArray(),
+            'allowed_transitions' => $order->allowedTransitions(),
             'carriers' => app(TrackingManager::class)->carriers(),
             // Internal stock bookkeeping (hidden from every customer-facing array): units sold beyond the stock
             'stock' => [
@@ -138,6 +142,7 @@ class OrdersController extends Controller
 
         return Inertia::render('Admin/Orders/Edit', [
             'order' => $order->toFrontendArray(),
+            'allowed_transitions' => $order->allowedTransitions(),
             'carriers' => app(TrackingManager::class)->carriers(),
         ]);
     }
@@ -155,6 +160,7 @@ class OrdersController extends Controller
 
             $request->validate([
                 'status' => 'sometimes|string|in:pending,processing,shipped,delivered,cancelled',
+                'reason' => 'sometimes|nullable|string|max:500',
                 'payment_status' => 'sometimes|string|in:pending,processing,succeeded,failed,cancelled',
                 'notes' => 'sometimes|nullable|string|max:1000',
                 'tracking_number' => 'sometimes|nullable|string|max:100',
@@ -181,15 +187,16 @@ class OrdersController extends Controller
             $newStatus = $request->input('status', $order->status);
             $newTrackingNumber = $request->input('tracking_number', $order->tracking_number);
 
-            // Scenario 2: If tracking number is being added for the first time, auto-change status to shipped
+            // Scenario 2: a tracking number added for the first time ships the order, when the admin did not ask for
+            // another status and the order may ship now (OrderTransitions)
             $trackingNumberAdded = $newTrackingNumber && !$originalTrackingNumber;
-            if ($trackingNumberAdded && $newStatus !== 'shipped') {
+            if ($trackingNumberAdded && $newStatus === $originalStatus && in_array('shipped', $order->allowedTransitions(), true)) {
                 $newStatus = 'shipped';
             }
 
-            // Update order with all data (including potentially modified status)
-            $order->update([
-                'status' => $newStatus,
+            // Everything but the status, then one save: through transitionTo() when the status changes (refused moves
+            // throw before anything is written)
+            $order->fill([
                 'payment_status' => $request->input('payment_status', $order->payment_status),
                 'notes' => $request->input('notes', $order->notes),
                 'tracking_number' => $newTrackingNumber,
@@ -199,6 +206,14 @@ class OrdersController extends Controller
                 'subtotal' => $request->input('subtotal', $order->subtotal),
                 'total_amount' => $request->input('total_amount', $order->total_amount),
             ]);
+
+            if ($newStatus !== $originalStatus) {
+                $order->transitionTo($newStatus, $request->user(), $request->input('reason'));
+            } else {
+                $order->save();
+            }
+
+            $newStatus = $order->status;
 
             // The stored VAT portion follows the edited total (orders created with a VAT rate snapshot only):
             // an admin who changes shipping or the total must not leave a stale "of which VAT" behind.
@@ -288,6 +303,8 @@ class OrdersController extends Controller
 
         return $emailWarning ? $response->with('warning', $emailWarning) : $response;
         
+        } catch (InvalidOrderTransition $e) {
+            return $this->refusedTransition($e);
         } catch (\Exception $e) {
             Log::error('Failed to update order', [
                 'order_id' => $order->id ?? 'unknown',
@@ -305,11 +322,16 @@ class OrdersController extends Controller
     {
         $request->validate([
             'status' => 'required|string|in:pending,processing,shipped,delivered,cancelled',
+            'reason' => 'nullable|string|max:500',
         ]);
 
         $wasShipped = $order->status === 'shipped';
 
-        $order->update(['status' => $request->status]);
+        try {
+            $order->transitionTo($request->status, $request->user(), $request->input('reason'));
+        } catch (InvalidOrderTransition $e) {
+            return $this->refusedTransition($e);
+        }
 
         $response = back()->with('success', 'Order status updated successfully.');
 
@@ -339,24 +361,41 @@ class OrdersController extends Controller
 
         $emailService = app(\App\Services\EmailService::class);
         $emailFailures = 0;
+        $updated = 0;
+        $skipped = [];
 
-        // Per model (not a bulk query) so model events keep status/payment_status consistent
-        Order::with('user')->whereIn('id', $request->order_ids)->get()
-            ->each(function (Order $order) use ($request, $emailService, &$emailFailures) {
-                $wasShipped = $order->status === 'shipped';
+        // Per model (not a bulk query) so model events keep status/payment_status consistent. Each order moves only if
+        // the lifecycle allows it; the others are reported back and left untouched.
+        Order::with('user')->whereIn('id', $request->order_ids)->orderBy('id')->get()
+            ->each(function (Order $order) use ($request, $emailService, &$emailFailures, &$updated, &$skipped) {
+                $from = $order->status;
 
-                $order->update(['status' => $request->status]);
+                if ($from === $request->status) {
+                    $skipped[] = "{$order->order_number} (already {$from})";
+
+                    return;
+                }
+
+                try {
+                    $order->transitionTo($request->status, $request->user());
+                } catch (InvalidOrderTransition) {
+                    $skipped[] = "{$order->order_number} ({$from} → {$request->status} not allowed)";
+
+                    return;
+                }
+
+                $updated++;
 
                 // Same deduped path as update()/processShip(): no tracking number -> fingerprint without tracking
-                if ($request->status === 'shipped' && ! $wasShipped
+                if ($request->status === 'shipped'
                     && $emailService->isEnabled(\App\Models\OrderEmail::TYPE_SHIPPED)
                     && ! $emailService->sendOrderShipped($order, $order->tracking_number)) {
                     $emailFailures++;
                 }
             });
 
-        $count = count($request->order_ids);
-        $response = back()->with('success', "{$count} orders updated successfully.");
+        $summary = "{$updated} updated, ".count($skipped).' skipped'.($skipped ? ': '.implode(', ', $skipped) : '').'.';
+        $response = back()->with($updated > 0 ? 'success' : 'error', $summary);
 
         return $emailFailures > 0
             ? $response->with('warning', "{$emailFailures} shipping email(s) could not be queued. Please check the application logs.")
@@ -366,13 +405,13 @@ class OrdersController extends Controller
     /**
      * Cancel an order
      */
-    public function cancel(Order $order)
+    public function cancel(Request $request, Order $order)
     {
-        if (!$order->can_be_cancelled) {
-            return back()->withErrors(['error' => 'This order cannot be cancelled.']);
-        }
+        $request->validate(['reason' => 'nullable|string|max:500']);
 
-        $order->cancel();
+        if (! $order->cancel($request->user(), $request->input('reason'))) {
+            return back()->with('error', "Order {$order->order_number} cannot be cancelled from \"{$order->status}\".");
+        }
 
         return back()->with('success', 'Order cancelled successfully.');
     }
@@ -474,9 +513,8 @@ class OrdersController extends Controller
         ]);
 
         try {
-            // Update order with shipping information
+            // Shipping information, saved together with the move to "shipped" (refused unless the order may ship)
             $updateData = [
-                'status' => 'shipped',
                 'notes' => $this->buildShippingNotes($order, $request->all()),
             ];
 
@@ -485,7 +523,7 @@ class OrdersController extends Controller
                 $updateData['tracking_carrier'] = $request->input('tracking_carrier');
             }
 
-            $order->update($updateData);
+            $order->fill($updateData)->transitionTo('shipped', $request->user());
 
             // Queue the shipping notification (deduped per status + tracking number)
             $emailService = app(\App\Services\EmailService::class);
@@ -504,6 +542,8 @@ class OrdersController extends Controller
                 ? $response
                 : $response->with('warning', 'The order was marked as shipped, but the shipping email could not be queued. Please check the application logs.');
 
+        } catch (InvalidOrderTransition $e) {
+            return $this->refusedTransition($e);
         } catch (\Exception $e) {
             Log::error('Failed to process order shipping', [
                 'order_id' => $order->id,
@@ -513,6 +553,15 @@ class OrdersController extends Controller
 
             return back()->with('error', 'Failed to process shipping: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * A status change the order lifecycle refused: nothing was written. The message goes to the toast (flash) and to
+     * the status field of the form that sent it.
+     */
+    private function refusedTransition(InvalidOrderTransition $e)
+    {
+        return back()->withErrors(['status' => $e->getMessage()])->with('error', $e->getMessage());
     }
 
     /**

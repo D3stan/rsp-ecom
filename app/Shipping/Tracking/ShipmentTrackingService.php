@@ -208,12 +208,12 @@ class ShipmentTrackingService
             ]);
         }
 
-        if ($moves && $new === TrackingStatus::Delivered && $this->autoDeliver()) {
-            // Same path as the admin action: a regular save, so the OrderObserver sends the delivered email.
-            $order->status = 'delivered';
+        if ($moves && $new === TrackingStatus::Delivered && $this->autoDeliver() && $order->status === 'shipped') {
+            // Same path as the admin action (saves the tracking fields too), so the OrderObserver sends the delivered email
+            $order->transitionTo('delivered', null, null, ['source' => 'tracking', 'provider' => $provider]);
+        } else {
+            $order->save();
         }
-
-        $order->save();
 
         Log::info('Tracking update applied', [
             'order_id' => $order->id,

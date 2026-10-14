@@ -1,3 +1,4 @@
+import OrderStatusActions, { forwardTransitions } from '@/components/admin/orders/OrderStatusActions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -106,6 +107,8 @@ interface StockInfo {
 
 interface Props {
     order: Order;
+    // statuses this order may move to next (server-side order lifecycle)
+    allowed_transitions: string[];
     carriers?: Carrier[];
     stock?: StockInfo;
 }
@@ -142,7 +145,7 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-export default function OrderShow({ order, carriers = [], stock }: Props) {
+export default function OrderShow({ order, allowed_transitions = [], carriers = [], stock }: Props) {
     const { t } = useTranslation();
     const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
     const [isUpdating, setIsUpdating] = useState(false);
@@ -239,11 +242,7 @@ export default function OrderShow({ order, carriers = [], stock }: Props) {
         }
     };
 
-    const getNextStatus = () => {
-        const statusFlow = ['pending', 'processing', 'shipped', 'delivered'];
-        const currentIndex = statusFlow.indexOf(order.status);
-        return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
-    };
+    const getNextStatus = () => forwardTransitions(order.status, allowed_transitions)[0] ?? null;
 
     const navigateToCustomer = () => {
         // TODO: Implement customer navigation when customer management is ready
@@ -335,31 +334,14 @@ export default function OrderShow({ order, carriers = [], stock }: Props) {
                                         </div>
                                     </div>
 
-                                    {/* Quick Status Update */}
-                                    <div className="flex flex-wrap gap-2">
-                                        {['pending', 'processing', 'shipped', 'delivered'].map((status) => (
-                                            <Button
-                                                key={status}
-                                                variant={order.status === status ? 'default' : 'outline'}
-                                                size="sm"
-                                                onClick={() => updateOrderStatus(status)}
-                                                disabled={isUpdating}
-                                            >
-                                                {status.charAt(0).toUpperCase() + status.slice(1)}
-                                            </Button>
-                                        ))}
-                                        {order.status !== 'cancelled' && order.status !== 'delivered' && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => updateOrderStatus('cancelled')}
-                                                disabled={isUpdating}
-                                                className="text-red-600 hover:text-red-700"
-                                            >
-                                                Cancel
-                                            </Button>
-                                        )}
-                                    </div>
+                                    {/* Quick Status Update: only the moves the order lifecycle allows */}
+                                    <OrderStatusActions
+                                        orderId={order.id}
+                                        status={order.status}
+                                        allowedTransitions={allowed_transitions}
+                                        disabled={isUpdating}
+                                        onAdvance={updateOrderStatus}
+                                    />
                                 </CollapsibleContent>
                             </Card>
                         </Collapsible>

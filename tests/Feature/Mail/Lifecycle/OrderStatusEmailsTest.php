@@ -71,7 +71,8 @@ it('never emails for orders created already delivered or cancelled (factories, s
 });
 
 it('does not email delivered for an order whose customer was never told about it', function () {
-    $order = Fx::unpaidOrder();
+    // shipped: the only status an order may be delivered from (OrderTransitions)
+    $order = Fx::unpaidOrder(['status' => 'shipped']);
 
     $order->markAsDelivered();
 

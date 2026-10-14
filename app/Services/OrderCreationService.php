@@ -124,13 +124,13 @@ class OrderCreationService
                 return $order;
             }
 
-            $attributes = ['payment_status' => $outcome === 'expired' ? 'cancelled' : 'failed'];
+            $order->payment_status = $outcome === 'expired' ? 'cancelled' : 'failed';
 
             if ($order->can_be_cancelled) {
-                $attributes['status'] = 'cancelled';
+                $order->transitionTo('cancelled', null, null, ['source' => 'stripe', 'outcome' => $outcome]);
+            } else {
+                $order->save();
             }
-
-            $order->update($attributes);
 
             Log::info('Order closed: its checkout did not end in a payment', ['order_id' => $order->id, 'outcome' => $outcome]);
 
@@ -233,12 +233,11 @@ class OrderCreationService
         $becamePaid = $this->isPaid($session) && $order->isPaymentPending();
         if ($becamePaid) {
             $updates['payment_status'] = 'succeeded';
-            if ($order->status === 'pending') {
-                $updates['status'] = 'processing';
-            }
         }
 
-        if ($updates) {
+        if ($becamePaid && $order->status === 'pending') {
+            $order->fill($updates)->transitionTo('processing', null, null, ['source' => 'stripe']);
+        } elseif ($updates) {
             $order->update($updates);
         }
 

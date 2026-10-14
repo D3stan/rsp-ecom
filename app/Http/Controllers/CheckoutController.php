@@ -193,11 +193,17 @@ class CheckoutController extends Controller
         if ($sessionId) {
             $order = Order::where('stripe_checkout_session_id', $sessionId)->first();
             if ($order && $order->isPaymentPending()) {
-                $attributes = ['payment_status' => 'cancelled'];
-                if ($order->can_be_cancelled) {
-                    $attributes['status'] = 'cancelled';
+                $order->payment_status = 'cancelled';
+                try {
+                    if ($order->can_be_cancelled) {
+                        $order->transitionTo('cancelled', null, null, ['source' => 'checkout_cancel']);
+                    } else {
+                        $order->save();
+                    }
+                } catch (\App\Exceptions\InvalidOrderTransition $e) {
+                    // the order moved on meanwhile (e.g. the payment webhook): leave it as it is
+                    Log::info('Checkout cancel left an order that can no longer be cancelled', ['order_id' => $order->id]);
                 }
-                $order->update($attributes);
             } elseif ($order) {
                 Log::info('Ignoring checkout cancel for an order whose payment is not pending', [
                     'order_id' => $order->id,

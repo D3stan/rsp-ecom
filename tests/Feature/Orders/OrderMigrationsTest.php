@@ -86,4 +86,27 @@ class OrderMigrationsTest extends TestCase
         $migration->up();
         $this->assertTrue(Schema::hasColumn('orders', 'locale'));
     }
+
+    public function test_delivered_at_is_backfilled_from_the_delivered_scan_else_from_updated_at(): void
+    {
+        $migration = $this->migration('2026_10_15_400000_add_delivered_at_to_orders_table');
+        $migration->down();
+
+        $scanned = Order::factory()->create(['status' => 'delivered', 'updated_at' => '2026-05-10 12:00:00']);
+        $unscanned = Order::factory()->create(['status' => 'delivered', 'updated_at' => '2026-05-11 08:00:00']);
+        $shipped = Order::factory()->create(['status' => 'shipped']);
+
+        foreach (['2026-05-03 09:00:00' => 'in_transit', '2026-05-04 15:30:00' => 'delivered'] as $at => $status) {
+            \App\Models\ShipmentTrackingEvent::query()->insert([
+                'order_id' => $scanned->id, 'provider' => 'fake', 'tracking_number' => 'T1', 'status' => $status,
+                'occurred_at' => $at, 'event_hash' => md5($at), 'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
+
+        $migration->up();
+
+        $this->assertSame('2026-05-04 15:30:00', $scanned->fresh()->delivered_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-05-11 08:00:00', $unscanned->fresh()->delivered_at->format('Y-m-d H:i:s'));
+        $this->assertNull($shipped->fresh()->delivered_at);
+    }
 }

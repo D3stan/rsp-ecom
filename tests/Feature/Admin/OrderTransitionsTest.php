@@ -1,11 +1,13 @@
 <?php
 
+use App\Exceptions\InvalidOrderTransition;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Size;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
+use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
     Queue::fake();
@@ -110,4 +112,98 @@ it('bulk-cancels only the orders that may be cancelled and reports the skipped o
         ->and($flash)->toContain('2 skipped')
         ->and($flash)->toContain($shipped->order_number)
         ->and($flash)->toContain($delivered->order_number);
+});
+
+dataset('every status move', function () {
+    $statuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    $allowed = ['pending>processing', 'pending>cancelled', 'processing>shipped', 'processing>cancelled', 'shipped>delivered', 'shipped>processing'];
+
+    foreach ($statuses as $from) {
+        foreach ($statuses as $to) {
+            if ($from !== $to) {
+                yield "{$from} -> {$to}" => [$from, $to, in_array("{$from}>{$to}", $allowed, true)];
+            }
+        }
+    }
+});
+
+it('allows exactly the moves of the lifecycle map', function (string $from, string $to, bool $allowed) {
+    $order = Order::factory()->create(['status' => $from, 'payment_status' => 'succeeded']);
+
+    try {
+        $order->transitionTo($to, $this->admin, 'checked by the test');
+        $moved = true;
+    } catch (InvalidOrderTransition) {
+        $moved = false;
+    }
+
+    expect($moved)->toBe($allowed)
+        ->and($order->fresh()->status)->toBe($allowed ? $to : $from);
+})->with('every status move');
+
+it('undoes a shipment when a reason is given', function () {
+    $order = transitionsOrder('shipped');
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.orders.update-status', $order), ['status' => 'processing', 'reason' => 'Parcel came back to the warehouse'])
+        ->assertSessionHas('success');
+
+    expect($order->fresh()->status)->toBe('processing');
+});
+
+it('stamps delivered_at when the order enters delivered', function () {
+    $order = transitionsOrder('shipped');
+
+    $this->actingAs($this->admin)->patch(route('admin.orders.update-status', $order), ['status' => 'delivered']);
+
+    expect($order->fresh()->delivered_at)->not->toBeNull();
+});
+
+it('decides on the stored status, not on a stale copy of the order', function () {
+    $order = transitionsOrder('processing');
+    $stale = Order::find($order->id);
+
+    $order->transitionTo('shipped');
+
+    expect(fn () => $stale->transitionTo('cancelled'))->toThrow(InvalidOrderTransition::class);
+    expect($order->fresh()->status)->toBe('shipped')
+        ->and(transitionsStock($order))->toBe(10);
+});
+
+it('treats a move to the current status as a no-op that still saves the other changes', function () {
+    $order = transitionsOrder('delivered');
+
+    $order->notes = 'checked';
+    $order->transitionTo('delivered');
+
+    expect($order->fresh()->notes)->toBe('checked')
+        ->and($order->fresh()->delivered_at)->toBeNull(); // not re-entered
+});
+
+it('refuses to ship an unpaid pending order from the ship form', function () {
+    $order = Order::factory()->create(['status' => 'pending', 'payment_status' => 'pending']);
+
+    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $order), [
+        'sender_info' => ['company_name' => 'Shop', 'address' => 'Via Roma 1', 'phone' => '123', 'email' => 'shop@example.test'],
+        'customer_info' => ['name' => 'Mario Rossi', 'email' => 'mario@example.test'],
+        'shipping_address' => [
+            'first_name' => 'Mario', 'last_name' => 'Rossi', 'address_line_1' => 'Via Verdi 2',
+            'city' => 'Milano', 'state' => 'MI', 'postal_code' => '20100', 'country' => 'IT',
+        ],
+    ])->assertSessionHas('error');
+
+    expect($order->fresh()->status)->toBe('pending');
+});
+
+it('passes the allowed next statuses to the admin order pages', function () {
+    $order = transitionsOrder('shipped');
+
+    $this->actingAs($this->admin)->get(route('admin.orders.show', $order))
+        ->assertInertia(fn (Assert $page) => $page->where('allowed_transitions', ['delivered', 'processing']));
+
+    $this->actingAs($this->admin)->get(route('admin.orders.edit', $order))
+        ->assertInertia(fn (Assert $page) => $page->where('allowed_transitions', ['delivered', 'processing']));
+
+    $this->actingAs($this->admin)->get(route('admin.orders.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('orders.data.0.allowed_transitions', ['delivered', 'processing']));
 });

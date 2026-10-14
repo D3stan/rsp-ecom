@@ -20,6 +20,8 @@ interface Order {
     guest_email?: string;
     status: string;
     payment_status: string;
+    // statuses this order may move to next (server-side order lifecycle)
+    allowed_transitions?: string[];
     total_amount: number;
     created_at: string;
     orderItems?: Array<{
@@ -353,7 +355,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                 </td>
                                                 <td className="p-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        {order.status === 'pending' && (
+                                                        {order.allowed_transitions?.includes('shipped') && (
                                                             <Button asChild size="sm" variant="outline">
                                                                 <Link href={`/admin/orders/${order.id}/ship`}>
                                                                     <Truck className="mr-1 h-4 w-4" />
@@ -418,7 +420,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                 <Badge className={statusColors[order.status as keyof typeof statusColors]} variant="secondary">
                                                     {order.status}
                                                 </Badge>
-                                                {order.status === 'pending' && (
+                                                {order.allowed_transitions?.includes('shipped') && (
                                                     <Button asChild size="sm" variant="outline">
                                                         <Link href={`/admin/orders/${order.id}/ship`}>
                                                             <Truck className="mr-1 h-4 w-4" />

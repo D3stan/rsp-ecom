@@ -83,6 +83,7 @@ it('marks a shipped order delivered and sends exactly one delivered email, howev
     $this->service->apply($order, 'fake', $result);   // e.g. the poll right after
 
     expect($order->fresh()->status)->toBe('delivered')
+        ->and($order->fresh()->delivered_at)->not->toBeNull()
         ->and($order->fresh()->tracking_status)->toBe('delivered')
         ->and($order->fresh()->tracking_next_sync_at)->toBeNull()
         ->and(trkDeliveredEmails())->toBe(1);

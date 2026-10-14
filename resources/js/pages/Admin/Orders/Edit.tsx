@@ -1,3 +1,4 @@
+import { forwardTransitions } from '@/components/admin/orders/OrderStatusActions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,6 +98,8 @@ interface Carrier {
 
 interface Props {
     order: Order;
+    // statuses this order may move to next (server-side order lifecycle)
+    allowed_transitions?: string[];
     carriers?: Carrier[];
 }
 
@@ -119,7 +122,7 @@ const paymentStatusOptions = [
     { value: 'cancelled', label: 'Cancelled' },
 ];
 
-export default function Edit({ order, carriers = [] }: Props) {
+export default function Edit({ order, allowed_transitions = [], carriers = [] }: Props) {
     const { addToast } = useToast();
     const { t } = useTranslation();
     const [processing, setProcessing] = useState(false);
@@ -419,11 +422,18 @@ export default function Edit({ order, carriers = [] }: Props) {
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {statusOptions.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            {option.label}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {/* current status + forward moves; cancel and "undo ship" are confirmed actions on the order page */}
+                                                    {statusOptions
+                                                        .filter(
+                                                            (option) =>
+                                                                option.value === order.status ||
+                                                                forwardTransitions(order.status, allowed_transitions).includes(option.value),
+                                                        )
+                                                        .map((option) => (
+                                                            <SelectItem key={option.value} value={option.value}>
+                                                                {option.label}
+                                                            </SelectItem>
+                                                        ))}
                                                 </SelectContent>
                                             </Select>
                                             {hasValidationError('order status') && (
