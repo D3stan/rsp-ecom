@@ -281,7 +281,13 @@
             "restricted_body": "Wir haben die Bestellbestätigung an die beim Bezahlen angegebene E-Mail-Adresse gesendet. Über den Link in dieser E-Mail können Sie Ihre Bestellung verfolgen.",
             "discount": "Rabatt",
             "vat_included": "inkl. MwSt.",
-            "processing": "Wird verarbeitet..."
+            "processing": "Wird verarbeitet...",
+            "pending_title": "Zahlung erhalten",
+            "pending_body": "Wir schließen Ihre Bestellung ab und senden Ihnen die Bestätigung per E-Mail.",
+            "pending_checking": "Ihre Bestellung wird abgerufen …",
+            "pending_timeout": "Das dauert länger als üblich. Ihre Zahlung ist eingegangen: Wenn die Bestätigungs-E-Mail nicht in Kürze ankommt, kontaktieren Sie uns bitte.",
+            "pending_contact": "Support kontaktieren",
+            "pending_reference": "Zahlungsreferenz"
         }
     },
     "shipping_returns": {

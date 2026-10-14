@@ -1,5 +1,5 @@
+import PendingOrderNotice from '@/components/checkout/PendingOrderNotice';
 import Header from '@/components/header';
-import LoadingOverlay from '@/components/LoadingOverlay';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -77,8 +77,8 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
     const { t, locale } = useTranslation();
     const { dispatch } = usePolicyValues();
 
-    // Add loading state for when order is still being processed
-    const isLoading = order.id === 'pending';
+    // Paid, but the order is not created yet (CheckoutController::createFallbackOrderData)
+    const isPending = order.id === 'pending';
 
     // Amounts in the viewer's language and the order's currency
     const formatMoney = (value: number) => {
@@ -105,12 +105,22 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
         return item.product.image_url || '/images/product.png';
     };
 
+    if (isPending) {
+        return (
+            <>
+                <Head title="Order Confirmation" />
+                <Header />
+                <PendingOrderNotice total={formatMoney(session.amount_total ?? order.total_amount ?? 0)} reference={session.id} />
+            </>
+        );
+    }
+
     return (
         <>
             <Head title="Order Confirmation" />
             <Header />
 
-            <LoadingOverlay isLoading={isLoading}>
+            <>
                 <div className="min-h-screen bg-white">
                     <div className="container mx-auto max-w-4xl px-4 py-8">
                         {/* Success Header */}
@@ -142,7 +152,7 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-600">{t('checkout.success.order_number')}</span>
                                                 <span className="font-mono text-sm text-black">
-                                                    {isLoading || !order.order_number ? t('checkout.success.processing') : order.order_number}
+                                                    {!order.order_number ? t('checkout.success.processing') : order.order_number}
                                                 </span>
                                             </div>
                                             <div className="flex items-center justify-between">
@@ -358,7 +368,7 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                         </div>
                     </div>
                 </div>
-            </LoadingOverlay>
+            </>
         </>
     );
 }

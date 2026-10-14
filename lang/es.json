@@ -281,7 +281,13 @@
             "restricted_body": "Hemos enviado la confirmación del pedido a la dirección de correo utilizada en el pago. Use el enlace de ese correo para seguir su pedido.",
             "discount": "Descuento",
             "vat_included": "IVA incluido",
-            "processing": "Procesando..."
+            "processing": "Procesando...",
+            "pending_title": "Pago recibido",
+            "pending_body": "Estamos finalizando su pedido y le enviaremos la confirmación por correo electrónico.",
+            "pending_checking": "Comprobando su pedido…",
+            "pending_timeout": "Esto está tardando más de lo habitual. Su pago se ha recibido: si el correo de confirmación no llega pronto, póngase en contacto con nosotros.",
+            "pending_contact": "Contactar con soporte",
+            "pending_reference": "Referencia del pago"
         }
     },
     "shipping_returns": {

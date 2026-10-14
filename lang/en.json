@@ -281,7 +281,13 @@
             "restricted_body": "We have sent the order confirmation to the email address used at checkout. Use the link in that email to follow your order.",
             "discount": "Discount",
             "vat_included": "VAT included",
-            "processing": "Processing..."
+            "processing": "Processing...",
+            "pending_title": "Payment received",
+            "pending_body": "We're finalising your order and will email you the confirmation.",
+            "pending_checking": "Checking for your order…",
+            "pending_timeout": "This is taking longer than usual. Your payment has been received: if the confirmation email doesn't arrive shortly, please contact us.",
+            "pending_contact": "Contact support",
+            "pending_reference": "Payment reference"
         }
     },
     "shipping_returns": {

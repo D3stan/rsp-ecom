@@ -281,7 +281,13 @@
             "restricted_body": "Nous avons envoyé la confirmation de commande à l'adresse e-mail utilisée lors du paiement. Utilisez le lien contenu dans cet e-mail pour suivre votre commande.",
             "discount": "Réduction",
             "vat_included": "TVA incluse",
-            "processing": "Traitement en cours..."
+            "processing": "Traitement en cours...",
+            "pending_title": "Paiement reçu",
+            "pending_body": "Nous finalisons votre commande et vous enverrons la confirmation par e-mail.",
+            "pending_checking": "Vérification de votre commande…",
+            "pending_timeout": "Cela prend plus de temps que d'habitude. Votre paiement a bien été reçu : si l'e-mail de confirmation n'arrive pas rapidement, contactez-nous.",
+            "pending_contact": "Contacter le support",
+            "pending_reference": "Référence du paiement"
         }
     },
     "shipping_returns": {

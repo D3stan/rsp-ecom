@@ -281,7 +281,13 @@
             "restricted_body": "Abbiamo inviato la conferma d'ordine all'indirizzo email usato al checkout. Usa il link contenuto nell'email per seguire il tuo ordine.",
             "discount": "Sconto",
             "vat_included": "IVA inclusa",
-            "processing": "In elaborazione..."
+            "processing": "In elaborazione...",
+            "pending_title": "Pagamento ricevuto",
+            "pending_body": "Stiamo finalizzando il tuo ordine e ti invieremo la conferma via email.",
+            "pending_checking": "Verifica dell'ordine in corso…",
+            "pending_timeout": "Ci vuole più del solito. Il pagamento è stato ricevuto: se l'email di conferma non arriva a breve, contattaci.",
+            "pending_contact": "Contatta l'assistenza",
+            "pending_reference": "Riferimento del pagamento"
         }
     },
     "shipping_returns": {
