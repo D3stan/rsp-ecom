@@ -670,7 +670,8 @@
         "sign_up": "S'inscrire",
         "failed": "Ces identifiants ne correspondent pas à nos enregistrements.",
         "password_incorrect": "Le mot de passe fourni est incorrect.",
-        "throttle": "Trop de tentatives de connexion. Veuillez réessayer dans {seconds} secondes."
+        "throttle": "Trop de tentatives de connexion. Veuillez réessayer dans {seconds} secondes.",
+        "verified_log_in": "Votre adresse e-mail est vérifiée. Veuillez vous connecter pour continuer."
     },
     "flash": {
         "success": "Succès",

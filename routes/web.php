@@ -166,7 +166,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->limit(5)
             ->get()
             ->map(function ($order) {
-                $orderData = $order->toArray();
+                // Whitelisted fields only: the order row also holds internal notes and Stripe ids
+                $orderData = $order->toCustomerArray();
                 $orderData['total'] = $order->total_amount; // Add alias for backward compatibility
                 $orderData['order_items'] = $order->orderItems->map(function ($item) {
                     return [

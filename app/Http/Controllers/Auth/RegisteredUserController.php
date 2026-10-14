@@ -7,6 +7,7 @@ use App\Models\PendingUserVerification;
 use App\Models\User;
 use App\Notifications\PendingUserEmailVerification;
 use App\Services\EmailService;
+use App\Support\RegistrationAutoLogin;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,9 @@ class RegisteredUserController extends Controller
             'verification_token' => PendingUserVerification::generateToken(),
             'token_expires_at' => now()->addHours(24),
         ]);
+
+        // This browser is the one the "verification pending" page may log in once the email is verified
+        RegistrationAutoLogin::remember($request, $pendingUser->email);
 
         // Send verification email
         Notification::route('mail', $pendingUser->email)

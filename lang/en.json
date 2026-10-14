@@ -687,7 +687,8 @@
         "sign_up": "Sign up",
         "failed": "These credentials do not match our records.",
         "password_incorrect": "The provided password is incorrect.",
-        "throttle": "Too many login attempts. Please try again in {seconds} seconds."
+        "throttle": "Too many login attempts. Please try again in {seconds} seconds.",
+        "verified_log_in": "Your email is verified. Please log in to continue."
     },
     "flash": {
         "success": "Success",

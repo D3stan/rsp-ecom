@@ -64,7 +64,6 @@ class CheckoutController extends Controller
 
                 $order->load(['orderItems.product', 'orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant']);
                 $orderData = $order->toFrontendArray();
-                unset($orderData['guest_session_id']);
 
                 if ($order->isPaymentCompleted()) {
                     session()->forget('applied_coupon');
@@ -97,12 +96,12 @@ class CheckoutController extends Controller
             $isOwner = $order !== null
                 && ($order->isOwnedBy($request->user(), session()->getId()) || $request->hasValidSignature());
 
-            if (! $isOwner) {
-                $orderData = Arr::only($orderData, [
-                    'id', 'order_number', 'status', 'payment_status', 'created_at', 'currency',
-                    'subtotal', 'tax_amount', 'tax_rate', 'shipping_amount', 'discount_amount', 'total_amount', 'orderItems',
-                ]);
-            }
+            // The page shows the same order summary to everyone: the owner only gets the email in `session`.
+            // Whitelisted for the owner too, since the order row also holds internal notes and Stripe ids.
+            $orderData = Arr::only($orderData, [
+                'id', 'order_number', 'status', 'payment_status', 'created_at', 'currency',
+                'subtotal', 'tax_amount', 'tax_rate', 'shipping_amount', 'discount_amount', 'total_amount', 'orderItems',
+            ]);
 
             return Inertia::render('Checkout/Success', [
                 'order' => $orderData,

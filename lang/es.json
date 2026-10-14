@@ -670,7 +670,8 @@
         "sign_up": "Regístrate",
         "failed": "Estas credenciales no coinciden con nuestros registros.",
         "password_incorrect": "La contraseña proporcionada es incorrecta.",
-        "throttle": "Demasiados intentos de inicio de sesión. Por favor, inténtalo de nuevo en {seconds} segundos."
+        "throttle": "Demasiados intentos de inicio de sesión. Por favor, inténtalo de nuevo en {seconds} segundos.",
+        "verified_log_in": "Tu correo electrónico está verificado. Inicia sesión para continuar."
     },
     "flash": {
         "success": "Correcto",

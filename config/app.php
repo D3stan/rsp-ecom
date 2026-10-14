@@ -130,4 +130,21 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Seeded Admin Account (production)
+    |--------------------------------------------------------------------------
+    |
+    | `php artisan db:seed` in production creates an admin only when both the
+    | email and the password are set (Database\Seeders\UserSeeder); demo
+    | users are never seeded there. Other environments seed the demo admin.
+    |
+    */
+
+    'admin_seed' => [
+        'email' => env('ADMIN_EMAIL'),
+        'password' => env('ADMIN_PASSWORD'),
+        'name' => env('ADMIN_NAME', 'Admin'),
+    ],
+
 ];
