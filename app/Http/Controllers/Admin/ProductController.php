@@ -401,7 +401,7 @@ class ProductController extends Controller
                 'variants.*.price' => 'required|numeric|min:0',
                 'variants.*.stock_quantity' => 'required|integer|min:0',
                 // The stock the form loaded: the save applies (typed - loaded) to the current stock (concurrent sales)
-                'variants.*.stock_quantity_original' => 'nullable|integer|min:0',
+                'variants.*.stock_quantity_original' => 'required_with:variants.*.id|nullable|integer|min:0',
                 'variants.*.description' => 'nullable|string',
                 'variants.*.is_default' => 'boolean',
                 'variants.*.sort_order' => 'integer',
@@ -420,7 +420,9 @@ class ProductController extends Controller
                 }
             }
 
-            $validated = $request->validate($validationRules);
+            $validated = $request->validate($validationRules, [
+                'variants.*.stock_quantity_original.required_with' => 'This form is out of date: reload the page and try again.',
+            ]);
 
             \Log::info('Update validation passed', ['variant_count' => count($validated['variants'])]);
 
@@ -522,26 +524,21 @@ class ProductController extends Controller
                             $variantAttributes['images'] = $currentImages;
                         }
 
-                        // The stock is applied as a delta below (a plain write would undo sales made while the form was
-                        // open). Without the loaded value (an older form) the typed stock is written as before.
-                        $loadedStock = $variantData['stock_quantity_original'] ?? null;
-                        if ($loadedStock !== null) {
-                            unset($variantAttributes['stock_quantity']);
-                        }
+                        // The stock is applied as a delta below: a plain write would undo sales made while the form was open
+                        unset($variantAttributes['stock_quantity']);
+                        $loadedStock = (int) $variantData['stock_quantity_original'];
 
                         \Log::info("Updating variant", ['variant_id' => $variant->id, 'attributes' => $variantAttributes]);
                         $variant->update($variantAttributes);
                         \Log::info("Variant updated successfully", ['variant_id' => $variant->id]);
 
-                        if ($loadedStock !== null) {
-                            $delta = (int) $variantData['stock_quantity'] - (int) $loadedStock;
-                            [$stockBefore, $stockAfter] = $delta !== 0
-                                ? $stockService->adjustVariantStock($variant->id, $delta)
-                                : [(int) $variant->stock_quantity, (int) $variant->stock_quantity];
+                        $delta = (int) $variantData['stock_quantity'] - $loadedStock;
+                        [$stockBefore, $stockAfter] = $delta !== 0
+                            ? $stockService->adjustVariantStock($variant->id, $delta)
+                            : [(int) $variant->stock_quantity, (int) $variant->stock_quantity];
 
-                            if ($stockBefore !== (int) $loadedStock) {
-                                $concurrentStock[] = "{$variant->name}: now {$stockAfter}";
-                            }
+                        if ($stockBefore !== $loadedStock) {
+                            $concurrentStock[] = "{$variant->name}: now {$stockAfter}";
                         }
                     }
                 } else {

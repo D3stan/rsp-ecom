@@ -228,6 +228,9 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
                     alert('Error: ' + errors.error);
                 } else if (errors.variants) {
                     alert('Variant error: ' + errors.variants);
+                } else if (Object.keys(errors).some((key) => key.endsWith('.stock_quantity_original'))) {
+                    // The page was loaded before the stock-delta form existed: the server asks for a reload
+                    alert(Object.entries(errors).find(([key]) => key.endsWith('.stock_quantity_original'))?.[1]);
                 } else {
                     alert('An error occurred. Check console for details.');
                 }

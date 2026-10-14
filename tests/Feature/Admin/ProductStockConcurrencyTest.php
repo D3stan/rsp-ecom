@@ -172,15 +172,15 @@ it('creates a new variant with the typed stock as is', function () {
         ->and($variant->fresh()->stock_quantity)->toBe(10);
 });
 
-it('writes the typed stock as is when the form did not send the loaded value (older form)', function () {
+it('refuses a save of an existing variant without the loaded stock (out-of-date form)', function () {
     [$admin, $product, $variant] = stockEditFixture(10);
     $row = stockEditVariant($variant, 10, 4);
     unset($row['stock_quantity_original']);
 
     $this->actingAs($admin)
         ->put(route('admin.products.update', $product), stockEditPayload($product, [$row]))
-        ->assertSessionHasNoErrors();
+        ->assertSessionHasErrors(['variants.0.stock_quantity_original' => 'This form is out of date: reload the page and try again.']);
 
-    expect($variant->fresh()->stock_quantity)->toBe(4)
-        ->and($product->fresh()->stock_quantity)->toBe(4);
+    expect($variant->fresh()->stock_quantity)->toBe(10)
+        ->and($product->fresh()->stock_quantity)->toBe(10);
 });
