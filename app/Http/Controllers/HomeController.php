@@ -21,7 +21,7 @@ class HomeController extends Controller
     public function index(): Response
     {
         // Set SEO for homepage based on current locale
-        $appName = config('app.name');
+        $appName = settings('store.name');
         $locale = app()->getLocale();
         
         // Language-specific SEO content

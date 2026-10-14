@@ -7,7 +7,8 @@
 |
 | To certify a new adapter add ONE row to the 'tracking providers' dataset:
 |   'name' => [fn () => new ExampleCarrierProvider([...]), $webhookRequestFactoryOrNull, $knownCarrierCode]
-| Use Http::fake() inside the factory/arrange step for HTTP adapters: no real network is ever allowed.
+| Use Http::fake() inside the factory/arrange step for HTTP adapters (see the spediamo row, which uses
+| trkContractFake() to script the numbers below): no real network is ever allowed.
 | The test then checks supports(), trackingUrl() null-safety, track() output normalisation and, when the
 | adapter implements SupportsWebhooks, that parse() is pure and applying its updates is idempotent.
 */
@@ -26,9 +27,32 @@ use App\Shipping\Tracking\DTO\TrackingUpdate;
 use App\Shipping\Tracking\Enums\TrackingStatus;
 use App\Shipping\Tracking\Exceptions\TrackingException;
 use App\Shipping\Tracking\ShipmentTrackingService;
+use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\Feature\Shipping\Support\TrackingFixtures as Fx;
+use Tests\Support\Shipping\RehearsalProvider;
+
+/**
+ * Fake HTTP API for the contract numbers: answers like a carrier would for each scripted tracking number.
+ *
+ * @param  Closure  $numberOf  extracts the tracking number from the outgoing request
+ * @param  Closure  $success  builds the 200 answer from (number, kind: delivered|exception|transit, scan time)
+ */
+function trkContractFake(Closure $numberOf, Closure $success): void
+{
+    Http::fake(function ($request) use ($numberOf, $success) {
+        $number = $numberOf($request);
+
+        return match ($number) {
+            'X-UNAVAILABLE' => Http::response('down', 503),
+            'X-REJECTED' => Http::response('bad request', 400),
+            'ZZ-DELIVERED' => $success($number, 'delivered', now()->subHour()->toImmutable()),
+            'ZZ-EXCEPTION' => $success($number, 'exception', now()->subHour()->toImmutable()),
+            default => $success($number, 'transit', now()->subHour()->toImmutable()),
+        };
+    });
+}
 
 dataset('tracking providers', function () {
     $signed = function (): Request {
@@ -48,6 +72,36 @@ dataset('tracking providers', function () {
         'manual' => [fn () => new ManualProvider, null, 'acme'],
         'null' => [fn () => new NullProvider, null, 'acme'],
         'fake' => [fn () => new FakeProvider(['webhook_secret' => 'contract-secret']), $signed, 'acme'],
+        'spediamo' => [function () {
+            config(['shipping.tracking.drivers.spediamo' => ['base_url' => 'https://spediamo.contract.test', 'token' => 'contract-token', 'retries' => 1, 'retry_sleep_ms' => 0]]);
+            trkContractFake(
+                fn ($request) => (string) ($request->data()['code'] ?? ''),
+                function (string $number, string $kind, $at) {
+                    $local = $at->setTimezone('Europe/Rome');
+                    $status = ['delivered' => 'DELIVERED', 'exception' => 'ON_HOLD', 'transit' => 'CURRENT'][$kind];
+
+                    return Http::response([
+                        'code' => $number, 'trackingNumber' => $number, 'courier' => 'SDA', 'status' => $status,
+                        'tracking' => [['date' => $local->format('Y-m-d'), 'time' => ['hour' => (int) $local->format('G'), 'minute' => (int) $local->format('i'), 'second' => 0],
+                            'description' => 'Scan', 'longDescription' => 'Scan at hub', 'site' => 'Hub A', 'status' => $status]],
+                    ], 200, ['ETag' => '"contract"']);
+                },
+            );
+
+            return app(TrackingManager::class)->driver('spediamo');
+        }, null, 'acme'],
+        'rehearsal' => [function () {
+            trkContractFake(
+                fn ($request) => rawurldecode(basename(parse_url($request->url(), PHP_URL_PATH))),
+                function (string $number, string $kind, $at) {
+                    $state = ['delivered' => 'CLOSED', 'exception' => 'DELAYED', 'transit' => 'MOVING'][$kind];
+
+                    return Http::response(['state' => $state, 'scans' => [['at' => $at->utc()->format('d/m/Y H:i'), 'what' => 'Scan', 'where' => 'Hub A', 'state' => $state]]]);
+                },
+            );
+
+            return new RehearsalProvider(['base_url' => 'https://rehearsal.contract.test', 'api_key' => 'contract-key', 'retries' => 1, 'retry_sleep_ms' => 0]);
+        }, null, 'acme'],
     ];
 });
 

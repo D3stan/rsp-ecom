@@ -1,154 +1,43 @@
-# Checkout and Email Fixes - Implementation Guide
+# Checkout and email flow: what to check when something is off
 
-## Issues Fixed
+Short, current notes. The earlier "fixes" write-up referenced commands and events that no longer exist; the authoritative documents are
+`docs/reports/email-operations.md` (mail pipeline and runbook) and `docs/reports/email-audit/order-flow.md` (how an order is created).
 
-### 1. Stripe Checkout Success Page Redirect Issue
-- **Problem**: Users were being redirected to homepage instead of success page after payment
-- **Root Cause**: The checkout success route was correctly configured, but there might have been issues with session handling or error cases
-- **Solution**: Enhanced error handling and logging in the success method to better track issues
+## How a paid order appears
 
-### 2. Order Confirmation Email Not Being Sent
-- **Problem**: Confirmation emails were not being sent for both registered users and guest orders
-- **Root Cause**: The `WebhookServiceProvider` was not registered, so Stripe webhooks weren't being processed
-- **Solution**: 
-  - Registered `WebhookServiceProvider` in `bootstrap/providers.php`
-  - Enhanced email sending logic with better error handling
-  - Added fallback email sending in the success page controller
-  - Improved logging for debugging
+1. The customer pays on Stripe Checkout (`POST /checkout/cart` or `POST /guest/checkout/cart` create the session).
+2. Two things race, and either one is enough: the **webhook** (`POST /stripe/webhook`, event `checkout.session.completed`)
+   and the **success page** (`GET /checkout/success?session_id=...`). Both call `OrderCreationService`, which creates exactly one order per Stripe session.
+3. The confirmation email is queued by `EmailService` once the order is committed; a queue worker sends it
+   (`php artisan queue:work`; in Docker the `queue` service). The scheduler's `orders:send-pending-emails --force` (every 10 minutes) is the safety net
+   for confirmations whose job was lost.
 
-## Changes Made
+## Stripe webhook
 
-### 1. Provider Registration
-```php
-// File: bootstrap/providers.php
-return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\WebhookServiceProvider::class, // Added this line
-];
-```
+- URL: `https://<your domain>/stripe/webhook` (route name `cashier.webhook`, declared in `routes/web.php`; Cashier's own routes are disabled
+  with `Cashier::ignoreRoutes()` so the package's public `/stripe/payment/{id}` page does not exist).
+- Events to enable (handled by `App\Listeners\StripeWebhookListener`; every other event is ignored):
+  - `checkout.session.completed` (required): creates the order (paid, or pending for delayed payment methods).
+  - `checkout.session.async_payment_succeeded`: pays the pending order (needed when delayed payment methods such as SEPA debit are enabled).
+  - `checkout.session.async_payment_failed` and `checkout.session.expired`: close a still-pending order and retire its checkout snapshot.
+  - `payment_intent.succeeded` is no longer used (removed); unsubscribe it if it was selected earlier.
+- `STRIPE_WEBHOOK_SECRET` must be set. The signature is checked by Cashier's `VerifyWebhookSignature`; in production a missing secret makes the
+  endpoint answer 403 (fail closed). The route is excluded from CSRF in `bootstrap/app.php`.
+- Troubleshooting: `docs/reports/stripe-webhook-troubleshooting.md`; Stripe Dashboard -> Developers -> Webhooks shows each delivery and its response code.
 
-### 2. Enhanced CheckoutController
-- Improved error handling in `success()` method
-- Added fallback order creation for edge cases
-- Enhanced logging for debugging
-- Added email sending fallback in success page
-
-### 3. Enhanced EmailService
-- Better error handling and logging
-- Relationship loading before email sending
-- More detailed logging for troubleshooting
-
-### 4. Enhanced StripeWebhookListener
-- Better error handling
-- Improved logging for webhook processing
-
-### 5. New Commands for Testing and Maintenance
-- `TestCheckoutEmail`: Test email functionality
-- `SendPendingOrderEmails`: Send emails for orders that missed them
-
-## Testing the Fixes
-
-### Test Email Configuration
-```bash
-php artisan test:checkout-email your-email@example.com
-```
-
-### Test with Existing Order
-```bash
-php artisan test:checkout-email your-email@example.com --order-id=123
-```
-
-### Send Pending Emails (Dry Run)
-```bash
-php artisan orders:send-pending-emails --dry-run
-```
-
-### Send Pending Emails (Actually Send)
-```bash
-php artisan orders:send-pending-emails
-```
-
-### Create Test Order Email
-```bash
-php artisan send:test-order-confirmation your-email@example.com
-```
-
-## Debugging Tips
-
-### 1. Check Logs
-```bash
-tail -f storage/logs/laravel.log
-```
-
-### 2. Check Order Status
-In database, check the `orders` table:
-- `confirmation_email_sent` should be `true` after email is sent
-- `confirmation_email_sent_at` should have a timestamp
-- `payment_status` should be `succeeded` for successful payments
-
-### 3. Check Stripe Webhook Events
-- Go to Stripe Dashboard → Webhooks
-- Check if events are being received
-- Look for `checkout.session.completed` and `payment_intent.succeeded` events
-
-### 4. Test Stripe Checkout Flow
-1. Add items to cart
-2. Go through checkout process
-3. Use Stripe test card: `4242 4242 4242 4242`
-4. Complete payment
-5. Check if redirected to success page with order details
-6. Check if confirmation email is received
-
-## Common Issues and Solutions
-
-### Issue: Webhook not being called
-- **Check**: Ensure webhook URL is correctly configured in Stripe Dashboard
-- **URL should be**: `https://yourdomain.com/stripe/webhook`
-- **Events to enable**: `checkout.session.completed`, `payment_intent.succeeded`
-
-### Issue: Email not being sent
-- **Check mail configuration** in `.env` file
-- **Test mail config**: `php artisan test:checkout-email test@example.com`
-- **Check mail logs**: Look in `storage/logs/laravel.log` for email errors
-
-### Issue: Order not found on success page
-- **Check**: Session ID is being passed correctly in URL
-- **Check**: Stripe session exists and is valid
-- **Fallback**: System will create fallback order data if database order creation fails
-
-### Issue: Success page redirects to home
-- **Check logs** for error messages
-- **Common causes**: Invalid session ID, expired session, Stripe API errors
-- **Solution**: Enhanced error messages now provide more context
-
-## Email Template Customization
-
-The email template is located at:
-```
-resources/views/emails/order-confirmation.blade.php
-```
-
-Variables available in the template:
-- `$order` - The order object
-- `$customer` - The customer (user or guest)
-- `$items` - Order items with product details
-
-## Monitoring
-
-Consider setting up monitoring for:
-- Failed webhook events
-- Orders without confirmation emails
-- Email sending failures
-
-Use the `orders:send-pending-emails` command as a daily cron job to catch any missed emails:
+## Useful commands
 
 ```bash
-# Add to crontab
-0 9 * * * cd /path/to/your/project && php artisan orders:send-pending-emails
+php artisan stripe:check-config                       # which Stripe keys are visible (masked); reads config('cashier.*')
+php artisan orders:send-pending-emails --dry-run      # list paid orders that never got a confirmation
+php artisan orders:send-pending-emails --force        # queue them (what the scheduler does)
+php artisan email:test-order-confirmation <email>     # send a sample confirmation
+php artisan ops:check-queue                           # worker/backlog health check (also scheduled every 5 minutes)
 ```
 
-## Security Notes
+## When something goes wrong
 
-- All webhook events are verified using Stripe's signature verification (handled by Laravel Cashier)
-- Email sending is rate-limited by Laravel's built-in mechanisms
-- Sensitive data is logged with appropriate redaction
+- **No confirmation email:** check `order_emails` (see the runbook), that the worker is running, and `storage/logs/laravel.log` for `Order email queued/sent/permanently failed`.
+- **Paid but no order:** the admin gets a "paid order missing" alert; search the log for `Stripe payment succeeded but the order could not be created` (it has the session id).
+- **Success page redirects home:** invalid or expired `session_id`, or a Stripe API error; the log has the exception class and message (never a stack trace or the customer's address).
+- **Webhook answers 403:** wrong or missing `STRIPE_WEBHOOK_SECRET`, or the secret belongs to another endpoint/mode (test vs live).

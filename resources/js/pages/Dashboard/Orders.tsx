@@ -22,6 +22,7 @@ import {
     MapPin
 } from 'lucide-react';
 import React from 'react';
+import { useMoney } from '@/hooks/use-money';
 
 interface OrdersPageProps {
     orders: Order[];
@@ -87,12 +88,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
             href: route('orders.index'),
         },
     ];
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', { 
-            style: 'currency', 
-            currency: 'EUR' 
-        }).format(amount);
-    };
+    const formatCurrency = useMoney();
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -106,11 +102,12 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
         switch (status.toLowerCase()) {
             case 'pending':
                 return <Clock className="h-4 w-4" />;
-            case 'completed':
-            case 'delivered':
-                return <CheckCircle className="h-4 w-4" />;
+            case 'processing':
+                return <Package className="h-4 w-4" />;
             case 'shipped':
                 return <Truck className="h-4 w-4" />;
+            case 'delivered':
+                return <CheckCircle className="h-4 w-4" />;
             default:
                 return <Package className="h-4 w-4" />;
         }
@@ -120,11 +117,12 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
         switch (status.toLowerCase()) {
             case 'pending':
                 return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'completed':
-            case 'delivered':
-                return 'bg-green-100 text-green-800 border-green-200';
+            case 'processing':
+                return 'bg-indigo-100 text-indigo-800 border-indigo-200';
             case 'shipped':
                 return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'delivered':
+                return 'bg-green-100 text-green-800 border-green-200';
             case 'cancelled':
                 return 'bg-red-100 text-red-800 border-red-200';
             default:
@@ -137,7 +135,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
     };
 
     const canReviewOrder = (order: Order) => {
-        return ['completed', 'delivered'].includes(order.status.toLowerCase());
+        return order.status.toLowerCase() === 'delivered';
     };
 
     const getUnreviewedProducts = (order: Order) => {

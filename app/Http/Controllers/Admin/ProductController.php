@@ -53,11 +53,10 @@ class ProductController extends Controller
         if ($stockFilter = $request->get('stock_filter')) {
             switch ($stockFilter) {
                 case 'in-stock':
-                    $query->where('stock_quantity', '>', 10);
+                    $query->wellStocked();
                     break;
                 case 'low-stock':
-                    $query->where('stock_quantity', '>', 0)
-                          ->where('stock_quantity', '<=', 10);
+                    $query->lowStock();
                     break;
                 case 'out-of-stock':
                     $query->where('stock_quantity', 0);
@@ -89,8 +88,7 @@ class ProductController extends Controller
         $stats = [
             'total_products' => Product::count(),
             'active_products' => Product::where('status', 'active')->count(),
-            'low_stock_count' => Product::where('stock_quantity', '>', 0)
-                                       ->where('stock_quantity', '<=', 10)->count(),
+            'low_stock_count' => Product::lowStock()->count(),
             'total_value' => Product::where('status', 'active')
                                    ->sum(DB::raw('price * stock_quantity')),
         ];
@@ -576,8 +574,8 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Product update failed (Exception)', [
+                'exception' => get_class($e),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
                 'product_id' => $product->id,
             ]);
             return back()->withInput()->withErrors(['error' => 'Error: ' . $e->getMessage()]);
@@ -674,8 +672,8 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             \Log::error('Image upload failed', [
                 'product_id' => $product->id,
+                'exception' => get_class($e),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
             ]);
             throw $e;
         }
@@ -700,12 +698,21 @@ class ProductController extends Controller
             'increment' => 'required|boolean',
         ]);
 
-        if ($request->increment) {
-            $product->increment('stock_quantity');
-        } else {
-            if ($product->stock_quantity > 0) {
-                $product->decrement('stock_quantity');
+        // The stock lives on the default variant; products.stock_quantity is its mirror (Product::syncStockMirror)
+        $variant = $product->defaultVariant;
+
+        if ($variant) {
+            if ($request->increment) {
+                $variant->incrementStock(1);
+            } else {
+                $variant->decrementStock(1);
             }
+
+            $product->syncStockMirror();
+        } elseif ($request->increment) {
+            $product->increment('stock_quantity');
+        } elseif ($product->stock_quantity > 0) {
+            $product->decrement('stock_quantity');
         }
 
         return back()->with('success', 'Stock updated successfully.');

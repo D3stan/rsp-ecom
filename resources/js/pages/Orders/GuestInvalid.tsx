@@ -1,6 +1,7 @@
 import Header from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useSetting } from '@/hooks/use-setting';
 import useTranslation from '@/hooks/useTranslation';
 import { Head, Link } from '@inertiajs/react';
 import { LinkIcon } from 'lucide-react';
@@ -11,6 +12,7 @@ interface Props {
 
 export default function GuestOrderInvalid({ supportEmail }: Props) {
     const { t } = useTranslation();
+    const days = useSetting('orders.public_link_days', 30);
 
     return (
         <>
@@ -25,7 +27,7 @@ export default function GuestOrderInvalid({ supportEmail }: Props) {
                                 <LinkIcon className="h-8 w-8 text-gray-600" />
                             </div>
                             <h1 className="text-2xl font-bold text-gray-900">{t('guest_order.invalid_title')}</h1>
-                            <p className="text-gray-600">{t('guest_order.invalid_body')}</p>
+                            <p className="text-gray-600">{t('guest_order.invalid_body', { days })}</p>
                             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
                                 <Button asChild>
                                     <Link href={route('contact')}>{t('guest_order.contact_us')}</Link>

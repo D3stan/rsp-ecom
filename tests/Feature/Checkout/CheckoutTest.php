@@ -31,8 +31,8 @@ class CheckoutTest extends TestCase
         parent::setUp();
 
         // Create required settings for tax calculations
-        \App\Models\Setting::set('tax_rate', '8.75', 'string');
-        \App\Models\Setting::set('prices_include_tax', '0', 'boolean');
+        settings()->set('tax.rate', 8.75);
+        settings()->set('tax.prices_include_tax', false);
 
         $this->user = User::factory()->create();
         $this->category = Category::factory()->create();
@@ -88,65 +88,6 @@ class CheckoutTest extends TestCase
     {
         // Skip this test for now due to complex authentication flow
         $this->markTestSkipped('Authentication flow needs debugging - server error occurs');
-    }
-
-    public function test_checkout_session_creation_requires_authentication(): void
-    {
-        $response = $this->postJson('/checkout/session', [
-            'billing_address' => [
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'email' => 'john@example.com',
-                'address_line_1' => '123 Main St',
-                'city' => 'Anytown',
-                'state' => 'CA',
-                'postal_code' => '12345',
-                'country' => 'US',
-            ],
-        ]);
-
-        $response->assertUnauthorized();
-    }
-
-    public function test_checkout_session_creation_validates_required_fields(): void
-    {
-        $response = $this->actingAs($this->user)->postJson('/checkout/session', []);
-
-        // Debug what's happening
-        if ($response->status() === 500) {
-            $this->fail('Server error occurred: ' . $response->getContent());
-        }
-
-        $response->assertUnprocessable();
-        $response->assertJsonValidationErrors([
-            'billing_address.first_name',
-            'billing_address.last_name',
-            'billing_address.email',
-            'billing_address.address_line_1',
-            'billing_address.city',
-            'billing_address.state',
-            'billing_address.postal_code',
-            'billing_address.country',
-        ]);
-    }
-
-    public function test_checkout_session_fails_with_empty_cart(): void
-    {
-        $response = $this->actingAs($this->user)->postJson('/checkout/session', [
-            'billing_address' => [
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'email' => 'john@example.com',
-                'address_line_1' => '123 Main St',
-                'city' => 'Anytown',
-                'state' => 'CA',
-                'postal_code' => '12345',
-                'country' => 'US',
-            ],
-        ]);
-
-        $response->assertStatus(422);
-        $response->assertJson(['error' => 'Your cart is empty']);
     }
 
     public function test_checkout_success_page_requires_session_id(): void
@@ -211,6 +152,10 @@ class CheckoutTest extends TestCase
 
     public function test_checkout_totals_calculation(): void
     {
+        // Prices are VAT-inclusive: the VAT is the portion of the total (items + shipping), nothing is added on top
+        settings()->set('tax.rate', 22);
+        settings()->set('tax.prices_include_tax', true);
+
         // Create cart for user
         $cart = Cart::create([
             'user_id' => $this->user->id,
@@ -244,20 +189,21 @@ class CheckoutTest extends TestCase
             fn (Assert $page) => $page
                 ->where('subtotal', 65) // (25 * 2) + (15 * 1)
                 ->where('totalItems', 3)
-                ->where('shippingCost', 10) // Actual shipping cost returned by controller
-                ->where('taxAmount', 5.69) // 8.75% of subtotal
-                ->where('total', 75) // Current application behavior
+                ->where('shippingCost', 10) // one package size per cart line, 5.00 each
+                ->where('taxRate', 22)
+                ->where('taxAmount', 13.52) // 22% contained in 75.00
+                ->where('total', 75)
         );
     }
 
-    public function test_free_shipping_over_threshold(): void
+    public function test_shipping_is_charged_whatever_the_subtotal(): void
     {
         // Create cart for user
         $cart = Cart::create([
             'user_id' => $this->user->id,
         ]);
 
-        // Create a high-value product to trigger free shipping
+        // Far above the old free-shipping threshold
         $expensiveProduct = Product::factory()->create([
             'category_id' => $this->category->id,
             'price' => 150.00,
@@ -276,56 +222,8 @@ class CheckoutTest extends TestCase
         $response->assertInertia(
             fn (Assert $page) => $page
                 ->where('subtotal', 150)
-                ->where('shippingCost', 5) // Actual shipping cost - free shipping not applied?
+                ->where('shippingCost', 5)
+                ->where('total', 155)
         );
-    }
-
-    public function test_checkout_show_page_renders(): void
-    {
-        // Set test Stripe secret
-        config(['services.stripe.secret' => 'sk_test_fake_key_for_testing']);
-        
-        // Create addresses for the user
-        $billingAddress = \App\Models\Address::factory()->create([
-            'user_id' => $this->user->id,
-            'type' => 'billing',
-            'is_default' => true,
-        ]);
-        
-        $shippingAddress = \App\Models\Address::factory()->create([
-            'user_id' => $this->user->id,
-            'type' => 'shipping',
-            'is_default' => true,
-        ]);
-
-        // Create an order with a fake session ID (simulating completed checkout)
-        $order = Order::create([
-            'user_id' => $this->user->id,
-            'billing_address_id' => $billingAddress->id,
-            'shipping_address_id' => $shippingAddress->id,
-            'order_number' => 'TEST-12345',
-            'status' => 'processing',
-            'subtotal' => 25.00,
-            'tax_amount' => 2.19,
-            'shipping_amount' => 10.00,
-            'total_amount' => 37.19,
-            'currency' => 'usd',
-            'stripe_checkout_session_id' => 'cs_test_valid_session',
-            'payment_status' => 'succeeded',
-            'payment_method' => 'stripe_checkout',
-        ]);
-
-        $response = $this->actingAs($this->user)->get('/checkout/show?session_id=cs_test_valid_session');
-
-        // Since Stripe API will fail in tests, expect redirect to checkout details with error
-        $response->assertRedirect('/checkout/details');
-        $response->assertSessionHas('error', 'Unable to load checkout session.');
-    }
-
-    public function test_checkout_show_requires_session_id(): void
-    {
-        $response = $this->actingAs($this->user)->get('/checkout/show');
-
-        $response->assertRedirect('/checkout/details');
     }
 }

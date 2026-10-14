@@ -675,7 +675,7 @@ export default function OrderShip({ order, adminSettings, sizes, carriers = [] }
                                                             carrier: e.target.value,
                                                         }))
                                                     }
-                                                    placeholder="DHL, UPS, FedEx, etc."
+                                                    placeholder={t('tracking_admin.carrier')}
                                                 />
                                             )}
                                         </div>

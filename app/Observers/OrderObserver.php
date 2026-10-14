@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Order;
 use App\Services\EmailService;
+use App\Services\StockService;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -13,6 +14,7 @@ use Throwable;
  * seeders with a delivered/cancelled status must never email anyone.
  *
  * Idempotency lives in EmailService/order_emails, so saving the same status again never re-sends.
+ * A move to "cancelled" also returns the order's stock (StockService, idempotent).
  */
 class OrderObserver
 {
@@ -20,6 +22,10 @@ class OrderObserver
     {
         if (! $order->wasChanged('status')) {
             return;
+        }
+
+        if ($order->status === 'cancelled') {
+            $this->restoreStock($order);
         }
 
         try {
@@ -36,6 +42,22 @@ class OrderObserver
             Log::error('Order lifecycle email could not be requested', [
                 'order_id' => $order->id,
                 'status' => $order->status,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * A cancelled order gives its stock back, once, and only if it was ever deducted (StockService decides: an unpaid
+     * or legacy order has no stock_deducted_at, so a cancellation restores nothing). Never breaks the status change.
+     */
+    private function restoreStock(Order $order): void
+    {
+        try {
+            app(StockService::class)->restoreForOrder($order);
+        } catch (Throwable $e) {
+            Log::critical('Stock of a cancelled order could not be restored', [
+                'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);
         }

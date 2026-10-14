@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             // Master data first (no dependencies)
             CategorySeeder::class,
             SizeSeeder::class,
-            SettingSeeder::class,
+            SettingsSeeder::class,
             PageSeeder::class,
             
             // Users (no dependencies)

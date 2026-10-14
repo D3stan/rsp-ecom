@@ -80,18 +80,7 @@ export default function ReviewShow({ review, navigation }: Props) {
                 },
                 {
                     preserveState: true,
-                    onSuccess: () => {
-                        addToast({
-                            type: 'success',
-                            title: `Review ${isApproved ? 'approved' : 'rejected'} successfully`,
-                        });
-                    },
-                    onError: () => {
-                        addToast({
-                            type: 'error',
-                            title: 'Failed to update review status',
-                        });
-                    },
+                    // success/failure is the controller flash, toasted by the layout
                     onFinish: () => {
                         setIsUpdating(false);
                     },
@@ -108,21 +97,8 @@ export default function ReviewShow({ review, navigation }: Props) {
 
     const handleDelete = async () => {
         try {
-            await router.delete(`/admin/reviews/${review.id}`, {
-                onSuccess: () => {
-                    addToast({
-                        type: 'success',
-                        title: 'Review deleted successfully',
-                    });
-                    router.visit('/admin/reviews');
-                },
-                onError: () => {
-                    addToast({
-                        type: 'error',
-                        title: 'Failed to delete review',
-                    });
-                },
-            });
+            // the controller redirects to the reviews index with the flash, toasted by the layout
+            await router.delete(`/admin/reviews/${review.id}`);
         } catch {
             addToast({
                 type: 'error',

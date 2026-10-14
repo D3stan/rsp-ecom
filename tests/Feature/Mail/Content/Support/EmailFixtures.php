@@ -45,6 +45,9 @@ class EmailFixtures
             'discount_amount' => 0,
             'coupon_code' => null,
             'total_amount' => 65.00,
+            // no stored VAT rate by default (older orders): the plain "VAT included" sentence
+            'tax_amount' => 0,
+            'tax_rate' => null,
             'tracking_number' => null,
             'shipping_address_id' => Address::factory()->shipping()->create([
                 'first_name' => 'Maria Giovanna', 'last_name' => 'Rossi-De Santis',

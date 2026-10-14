@@ -1,10 +1,12 @@
 import { Button } from '@/components/ui/button';
+import { usePolicyValues } from '@/hooks/use-policy-values';
 import useTranslation from '@/hooks/useTranslation';
 import PublicLayout from '@/layouts/public-layout';
 import { Head, Link } from '@inertiajs/react';
 
 export default function About() {
     const { t } = useTranslation();
+    const { days } = usePolicyValues();
     return (
         <PublicLayout currentPage="about">
             <Head title="About Us - Your Store" />
@@ -39,7 +41,7 @@ export default function About() {
                             </li>
                             <li className="flex items-start">
                                 <span className="mr-2 font-semibold text-black">•</span>
-                                {t('about.return_policy')}
+                                {t('about.return_policy', { days })}
                             </li>
                             <li className="flex items-start">
                                 <span className="mr-2 font-semibold text-black">•</span>

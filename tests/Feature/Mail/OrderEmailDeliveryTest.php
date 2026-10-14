@@ -5,7 +5,6 @@ use App\Mail\OrderConfirmation;
 use App\Mail\OrderShipped;
 use App\Models\Order;
 use App\Models\OrderEmail;
-use App\Models\Setting;
 use App\Models\User;
 use App\Services\EmailService;
 use Illuminate\Support\Facades\Mail;
@@ -260,21 +259,21 @@ it('honors the master and per-type settings and defaults to enabled', function (
     expect($service->isEnabled(OrderEmail::TYPE_CONFIRMATION))->toBeTrue();
     expect($service->isEnabled(OrderEmail::TYPE_SHIPPED))->toBeTrue();
 
-    Setting::set('order_confirmation_enabled', false, 'boolean');
+    settings()->set('email.order_confirmation', false);
     $order = makeOrder();
     expect($service->sendOrderConfirmation($order))->toBeTrue();
     Queue::assertNothingPushed();
     expect(OrderEmail::count())->toBe(0);
     expect($service->isEnabled(OrderEmail::TYPE_SHIPPED))->toBeTrue();
 
-    Setting::set('order_confirmation_enabled', true, 'boolean');
-    Setting::set('email_notifications_enabled', false, 'boolean');
+    settings()->set('email.order_confirmation', true);
+    settings()->set('email.enabled', false);
     expect($service->isEnabled(OrderEmail::TYPE_SHIPPED))->toBeFalse();
     $service->sendOrderShipped($order, 'TRK1');
     Queue::assertNothingPushed();
 
-    Setting::set('email_notifications_enabled', true, 'boolean');
-    Setting::set('order_shipped_enabled', false, 'boolean');
+    settings()->set('email.enabled', true);
+    settings()->set('email.order_shipped', false);
     $service->sendOrderShipped($order, 'TRK1');
     Queue::assertNothingPushed();
 });

@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { useSetting } from '@/hooks/use-setting';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import {
@@ -107,6 +108,7 @@ const statusColors = {
 };
 
 export default function ProductsIndex({ products, categories, filters, stats }: Props) {
+    const lowStockThreshold = useSetting('inventory.low_stock_threshold', 10);
     const [search, setSearch] = useState(filters.search || '');
     const [categoryFilter, setCategoryFilter] = useState(filters.category || '');
     const [statusFilter, setStatusFilter] = useState(filters.status || '');
@@ -179,7 +181,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                 </Badge>
             );
         }
-        if (stock < 10) {
+        if (stock <= lowStockThreshold) {
             return (
                 <Badge className="bg-orange-100 text-orange-800" variant="secondary">
                     Low Stock

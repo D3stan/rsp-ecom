@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
 import { type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
@@ -78,19 +79,28 @@ interface ProductsPageProps extends SharedData {
     pagination: PaginationData;
 }
 
+/** Whole-unit amounts in the shop currency (setting store.currency) and the visitor's language: "25 €", "$25". */
+function useWholeMoney(): (amount: number) => string {
+    const { locale } = useTranslation();
+    const currency = useSetting('store.currency', 'EUR');
+
+    return (amount: number) => new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
+}
+
 export default function Products() {
     const { products, categories, priceRange, filters, pagination } = usePage<ProductsPageProps>().props;
     const { t } = useTranslation();
+    const formatWhole = useWholeMoney();
 
     // Predefined price ranges with translations
     const PRICE_RANGES = [
         { label: t('products.price_ranges.all_prices'), min: null, max: null },
-        { label: t('products.price_ranges.under_25'), min: 0, max: 25 },
-        { label: t('products.price_ranges.25_50'), min: 25, max: 50 },
-        { label: t('products.price_ranges.50_100'), min: 50, max: 100 },
-        { label: t('products.price_ranges.100_200'), min: 100, max: 200 },
-        { label: t('products.price_ranges.200_500'), min: 200, max: 500 },
-        { label: t('products.price_ranges.over_500'), min: 500, max: null },
+        { label: t('products.price_ranges.under_25', { min: formatWhole(0), max: formatWhole(25) }), min: 0, max: 25 },
+        { label: t('products.price_ranges.25_50', { min: formatWhole(25), max: formatWhole(50) }), min: 25, max: 50 },
+        { label: t('products.price_ranges.50_100', { min: formatWhole(50), max: formatWhole(100) }), min: 50, max: 100 },
+        { label: t('products.price_ranges.100_200', { min: formatWhole(100), max: formatWhole(200) }), min: 100, max: 200 },
+        { label: t('products.price_ranges.200_500', { min: formatWhole(200), max: formatWhole(500) }), min: 200, max: 500 },
+        { label: t('products.price_ranges.over_500', { min: formatWhole(500) }), min: 500, max: null },
     ];
 
     // Local state for filters
@@ -110,7 +120,6 @@ export default function Products() {
                 min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
                 max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
                 sort: sortBy,
-                per_page: filters.per_page,
                 ...overrides,
             };
 
@@ -127,7 +136,7 @@ export default function Products() {
                 preserveScroll: true,
             });
         },
-        [searchTerm, selectedCategory, priceMin, priceMax, sortBy, filters.per_page, priceRange?.min, priceRange?.max],
+        [searchTerm, selectedCategory, priceMin, priceMax, sortBy, priceRange?.min, priceRange?.max],
     );
 
     // Only debounce search, don't auto-apply other filters
@@ -141,7 +150,6 @@ export default function Products() {
                     min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
                     max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
                     sort: sortBy,
-                    per_page: filters.per_page,
                 };
 
                 // Remove empty parameters
@@ -159,7 +167,7 @@ export default function Products() {
             }
         }, 500);
         return () => clearTimeout(timer);
-    }, [searchTerm, filters.search, selectedCategory, priceMin, priceMax, sortBy, filters.per_page, priceRange?.min, priceRange?.max]);
+    }, [searchTerm, filters.search, selectedCategory, priceMin, priceMax, sortBy, priceRange?.min, priceRange?.max]);
 
     const handleApplyFilters = () => {
         const params: Record<string, string | number> = {
@@ -168,7 +176,6 @@ export default function Products() {
             min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
             max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
             sort: sortBy,
-            per_page: filters.per_page,
         };
 
         // Remove empty parameters
@@ -558,6 +565,7 @@ function FilterSection({
     priceRanges,
 }: FilterSectionProps) {
     const { t } = useTranslation();
+    const formatWhole = useWholeMoney();
 
     return (
         <div className="space-y-6 bg-white">
@@ -629,7 +637,6 @@ function FilterSection({
                                             min_price: newMin !== priceRange?.min ? newMin.toString() : '',
                                             max_price: newMax !== priceRange?.max ? newMax.toString() : '',
                                             sort: 'name',
-                                            per_page: 12,
                                         };
 
                                         // Remove empty parameters
@@ -672,7 +679,6 @@ function FilterSection({
                                         min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
                                         max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
                                         sort: 'name',
-                                        per_page: 12,
                                     };
 
                                     Object.keys(params).forEach((key) => {
@@ -706,7 +712,6 @@ function FilterSection({
                                         min_price: priceMin !== priceRange?.min ? priceMin.toString() : '',
                                         max_price: priceMax !== priceRange?.max ? priceMax.toString() : '',
                                         sort: 'name',
-                                        per_page: 12,
                                     };
 
                                     Object.keys(params).forEach((key) => {
@@ -729,7 +734,7 @@ function FilterSection({
                         </div>
                     </div>
                     <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-center text-sm font-medium text-gray-700">
-                        ${priceMin.toLocaleString()} - ${priceMax.toLocaleString()}
+                        {formatWhole(priceMin)} - {formatWhole(priceMax)}
                     </div>
                 </div>
             </div>

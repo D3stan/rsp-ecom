@@ -27,8 +27,8 @@ class CheckStripeConfig extends Command
         
         // Check environment variables
         $this->info("\n--- Environment Variables ---");
-        $envSecret = env('STRIPE_SECRET');
-        $envKey = env('STRIPE_KEY');
+        $envSecret = config('cashier.secret');
+        $envKey = config('cashier.key');
         
         $this->info('STRIPE_SECRET: ' . ($envSecret ? (substr($envSecret, 0, 7) . '***') : 'NOT SET'));
         $this->info('STRIPE_KEY: ' . ($envKey ? (substr($envKey, 0, 7) . '***') : 'NOT SET'));

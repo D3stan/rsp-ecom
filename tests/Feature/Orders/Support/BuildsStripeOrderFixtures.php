@@ -31,8 +31,8 @@ trait BuildsStripeOrderFixtures
         ApiRequestor::setHttpClient($this->stripeHttp);
         Setting::set('stripe_secret_key', 'sk_test_fake_for_tests');
 
-        Setting::set('tax_rate', '22', 'string');
-        Setting::set('prices_include_tax', '1', 'boolean');
+        settings()->set('tax.rate', 22);
+        settings()->set('tax.prices_include_tax', true);
 
         $this->category = Category::factory()->create();
         $this->size = Size::factory()->create(['shipping_cost' => 5.00]);
@@ -68,6 +68,9 @@ trait BuildsStripeOrderFixtures
             'category_id' => $this->category->id,
             'size_id' => $this->size->id,
             'price' => $price,
+            // The factory randomises both; tests that care about stock set it explicitly
+            'stock_quantity' => 100,
+            'status' => 'active',
         ];
 
         if ($name) {

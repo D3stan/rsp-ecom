@@ -3,7 +3,6 @@
 use App\Jobs\SendOrderEmail;
 use App\Models\Order;
 use App\Models\OrderEmail;
-use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
 
@@ -86,7 +85,7 @@ it('an update after processShip with unchanged data does not send a second email
 });
 
 it('sends nothing and shows no warning when the shipped toggle is off', function () {
-    Setting::set('order_shipped_enabled', false, 'boolean');
+    settings()->set('email.order_shipped', false);
 
     $this->actingAs($this->admin)->put(route('admin.orders.update', $this->order), ['status' => 'shipped'])
         ->assertSessionMissing('warning');
@@ -139,7 +138,7 @@ it('bulk status other than shipped, or with the toggle off, queues nothing', fun
     Queue::assertNotPushed(SendOrderEmail::class, fn ($job) => $job->type === OrderEmail::TYPE_SHIPPED);
 
     $this->order->update(['status' => 'processing']);
-    Setting::set('order_shipped_enabled', false, 'boolean');
+    settings()->set('email.order_shipped', false);
     callBulkStatus([$this->order->id], 'shipped');
     expect(session('warning'))->toBeNull();
     Queue::assertNotPushed(SendOrderEmail::class, fn ($job) => $job->type === OrderEmail::TYPE_SHIPPED);
@@ -162,4 +161,64 @@ it('the single status endpoint also queues the shipped email once', function () 
     $this->actingAs($this->admin)->patch($url, ['status' => 'shipped']);
 
     Queue::assertPushed(SendOrderEmail::class, 1);
+});
+
+describe('carrier in the shipped fingerprint', function () {
+    beforeEach(function () {
+        config(['shipping.carriers' => [
+            'acme' => ['name' => 'Acme Courier', 'tracking_url' => 'https://track.example.test/?n={number}'],
+            'zeta' => ['name' => 'Zeta Express'],
+        ]]);
+        $this->url = route('admin.orders.update', $this->order);
+    });
+
+    it('sends one new mail when a carrier is added to an already shipped order, and none when it is saved again', function () {
+        $this->actingAs($this->admin)->put($this->url, ['tracking_number' => 'TRK1']);       // first mail, no carrier
+        $this->actingAs($this->admin)->put($this->url, ['tracking_number' => 'TRK1', 'tracking_carrier' => 'acme']);  // carrier added
+        $this->actingAs($this->admin)->put($this->url, ['tracking_number' => 'TRK1', 'tracking_carrier' => 'acme']);  // unchanged
+
+        Queue::assertPushed(SendOrderEmail::class, 2);
+        expect(OrderEmail::pluck('fingerprint')->all())->toEqualCanonicalizing([
+            OrderEmail::shippedFingerprint('TRK1'),
+            OrderEmail::shippedFingerprint('TRK1', 'acme'),
+        ]);
+    });
+
+    it('sends a new mail when the carrier changes to another one', function () {
+        $this->actingAs($this->admin)->put($this->url, ['tracking_number' => 'TRK1', 'tracking_carrier' => 'acme']);
+        $this->actingAs($this->admin)->put($this->url, ['tracking_number' => 'TRK1', 'tracking_carrier' => 'zeta']);
+
+        Queue::assertPushed(SendOrderEmail::class, 2);
+    });
+
+    it('keeps the legacy fingerprint for an order without a carrier and sends nothing extra', function () {
+        $this->actingAs($this->admin)->put($this->url, ['tracking_number' => 'TRK1']);
+        $this->actingAs($this->admin)->put($this->url, ['tracking_number' => 'TRK1', 'tracking_carrier' => null]);
+        $this->actingAs($this->admin)->put($this->url, ['tracking_number' => 'TRK1', 'tracking_carrier' => '']);
+
+        Queue::assertPushed(SendOrderEmail::class, 1);
+        expect(OrderEmail::pluck('fingerprint')->all())->toBe([OrderEmail::shippedFingerprint('TRK1')])
+            ->and(OrderEmail::shippedFingerprint('TRK1'))->toBe(substr(sha1('shipped|TRK1'), 0, 40));
+    });
+
+    it('still sends for a changed tracking number on an order with a carrier', function () {
+        $this->actingAs($this->admin)->put($this->url, ['tracking_number' => 'TRK1', 'tracking_carrier' => 'acme']);
+        $this->actingAs($this->admin)->put($this->url, ['tracking_number' => 'TRK2', 'tracking_carrier' => 'acme']);
+
+        Queue::assertPushed(SendOrderEmail::class, 2);
+        expect(OrderEmail::pluck('fingerprint')->unique())->toHaveCount(2);
+    });
+
+    it('sends nothing when the carrier changes on an order that is not shipped', function () {
+        $this->actingAs($this->admin)->put($this->url, ['tracking_carrier' => 'acme'])->assertSessionHas('success');
+
+        expect($this->order->fresh())->status->toBe('processing')->tracking_carrier->toBe('acme');
+        Queue::assertNothingPushed();
+    });
+
+    it('processShip uses the carrier it just stored in the fingerprint', function () {
+        $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), array_merge(shipPayload(), ['tracking_carrier' => 'zeta']));
+
+        expect(OrderEmail::pluck('fingerprint')->all())->toBe([OrderEmail::shippedFingerprint(null, 'zeta')]);
+    });
 });

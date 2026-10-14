@@ -82,6 +82,13 @@ return [
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
+    /*
+    | Locales the shop is translated into (one lang/<code>.json each). The ORDER matters: the first entry is what
+    | Symfony's Accept-Language matching returns when the browser sends no usable preference. Read it through
+    | App\Support\Locales; the React side receives it as the shared `supportedLocales` Inertia prop.
+    */
+    'supported_locales' => ['en', 'es', 'fr', 'de', 'it'],
+
     'faker_locale' => env('APP_FAKER_LOCALE', 'it_IT'),
 
     /*

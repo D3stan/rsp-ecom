@@ -1,764 +1,176 @@
-import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler, useState } from 'react';
+// Admin -> Settings. Everything is generated from the catalogue in config/settings.php (docs/admin-settings.md).
+import { ConfirmDialog } from '@/components/admin/settings/ConfirmDialog';
+import { groupIcon } from '@/components/admin/settings/group-icon';
+import { GroupForm } from '@/components/admin/settings/GroupForm';
+import { GroupNav } from '@/components/admin/settings/GroupNav';
+import { readGroupHash, restoreGroupHash } from '@/components/admin/settings/hash';
+import { SystemPanel } from '@/components/admin/settings/SystemPanel';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import useTranslation from '@/hooks/useTranslation';
+import AdminLayout from '@/layouts/admin-layout';
+import { type SettingsPageProps } from '@/types';
+import { Head, router } from '@inertiajs/react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/contexts/ToastContext';
-import AppLayout from '@/layouts/app-layout';
-import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronUp, CreditCard, Mail, Receipt, Save, Settings, Truck } from 'lucide-react';
+export default function SettingsIndex({ groups, system }: SettingsPageProps) {
+    const { t } = useTranslation();
+    const keys = useMemo(() => groups.map((group) => group.key), [groups]);
+    const keyList = keys.join('|');
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Admin', href: '/admin/dashboard' },
-    { title: 'Settings', href: '/admin/settings' },
-];
+    const [activeKey, setActiveKey] = useState(() => {
+        const fromHash = readGroupHash();
 
-interface SettingsData {
-    // General Settings
-    site_name: string;
-    site_description: string;
-    contact_email: string;
-    contact_phone: string;
-    company_address: string;
-    default_currency: string;
-    timezone: string;
-
-    // Payment Settings
-    stripe_enabled: boolean;
-    stripe_public_key: string;
-    stripe_secret_key: string;
-    stripe_webhook_secret: string;
-    paypal_enabled: boolean;
-    paypal_client_id: string;
-    paypal_client_secret: string;
-    minimum_order_amount: number;
-
-    // Shipping Settings
-    shipping_enabled: boolean;
-    free_shipping_threshold: number;
-    default_shipping_cost: number;
-    shipping_calculation_method: string;
-    allow_international_shipping: boolean;
-    processing_time_days: number;
-    shipping_zones: Record<string, unknown>[];
-
-    // Tax Settings
-    tax_enabled: boolean;
-    default_tax_rate: number;
-    prices_include_tax: boolean;
-    tax_calculation_method: string;
-    collect_tax_for_digital_products: boolean;
-    tax_number: string;
-
-    // Email Settings
-    email_notifications_enabled: boolean;
-    order_confirmation_enabled: boolean;
-    order_shipped_enabled: boolean;
-    order_delivered_enabled: boolean;
-    order_cancelled_enabled: boolean;
-    order_refunded_enabled: boolean;
-    newsletter_enabled: boolean;
-    from_email: string;
-    from_name: string;
-    admin_notification_email: string;
-}
-
-interface Props {
-    settings: SettingsData;
-}
-
-export default function AdminSettings({ settings }: Props) {
-    const { addToast } = useToast();
-    const [expandedSection, setExpandedSection] = useState<string>('general');
-
-    // Form handlers for each section
-    const generalForm = useForm({
-        site_name: settings.site_name,
-        site_description: settings.site_description,
-        contact_email: settings.contact_email,
-        contact_phone: settings.contact_phone,
-        company_address: settings.company_address,
-        default_currency: settings.default_currency,
-        timezone: settings.timezone,
+        return keys.includes(fromHash) ? fromHash : (keys[0] ?? '');
     });
+    const [dirty, setDirty] = useState(false);
+    const [pendingKey, setPendingKey] = useState<string | null>(null);
+    // an Inertia navigation to another page (sidebar link...) held back while the form has unsaved changes
+    const [pendingUrl, setPendingUrl] = useState<string | null>(null);
 
-    const paymentForm = useForm({
-        stripe_enabled: settings.stripe_enabled,
-        stripe_public_key: settings.stripe_public_key,
-        stripe_secret_key: settings.stripe_secret_key,
-        stripe_webhook_secret: settings.stripe_webhook_secret,
-        paypal_enabled: settings.paypal_enabled,
-        paypal_client_id: settings.paypal_client_id,
-        paypal_client_secret: settings.paypal_client_secret,
-        minimum_order_amount: settings.minimum_order_amount,
-    });
+    // refs, so the hashchange listener always sees the latest state
+    const activeRef = useRef(activeKey);
+    const dirtyRef = useRef(false);
+    const forceRef = useRef(false);
+    const forceNavigateRef = useRef(false);
 
-    const shippingForm = useForm({
-        shipping_enabled: settings.shipping_enabled,
-        free_shipping_threshold: settings.free_shipping_threshold,
-        default_shipping_cost: settings.default_shipping_cost,
-        shipping_calculation_method: settings.shipping_calculation_method,
-        allow_international_shipping: settings.allow_international_shipping,
-        processing_time_days: settings.processing_time_days,
-    });
+    useEffect(() => {
+        activeRef.current = activeKey;
+    }, [activeKey]);
 
-    const taxForm = useForm({
-        tax_enabled: settings.tax_enabled,
-        default_tax_rate: settings.default_tax_rate,
-        prices_include_tax: settings.prices_include_tax,
-        tax_calculation_method: settings.tax_calculation_method,
-        collect_tax_for_digital_products: settings.collect_tax_for_digital_products,
-        tax_number: settings.tax_number,
-    });
+    const handleDirtyChange = useCallback((next: boolean) => {
+        dirtyRef.current = next;
+        setDirty(next);
+    }, []);
 
-    const emailForm = useForm({
-        email_notifications_enabled: settings.email_notifications_enabled,
-        order_confirmation_enabled: settings.order_confirmation_enabled,
-        order_shipped_enabled: settings.order_shipped_enabled,
-        order_delivered_enabled: settings.order_delivered_enabled,
-        order_cancelled_enabled: settings.order_cancelled_enabled,
-        order_refunded_enabled: settings.order_refunded_enabled,
-        newsletter_enabled: settings.newsletter_enabled,
-        from_email: settings.from_email,
-        from_name: settings.from_name,
-        admin_notification_email: settings.admin_notification_email,
-    });
+    // back/forward or a typed #hash: switch group, unless there are unsaved changes (then ask first)
+    useEffect(() => {
+        const onHashChange = () => {
+            const next = readGroupHash();
+            if (!keyList.split('|').includes(next) || next === activeRef.current) return;
 
-    const submitGeneral: FormEventHandler = (e) => {
-        e.preventDefault();
-        generalForm.patch(route('admin.settings.update-general'), {
-            preserveScroll: true,
-            onSuccess: () =>
-                addToast({
-                    type: 'success',
-                    title: 'General settings updated successfully',
-                }),
+            if (dirtyRef.current && !forceRef.current) {
+                restoreGroupHash(activeRef.current);
+                setPendingKey(next);
+
+                return;
+            }
+
+            forceRef.current = false;
+            dirtyRef.current = false;
+            setDirty(false);
+            setActiveKey(next);
+        };
+
+        window.addEventListener('hashchange', onHashChange);
+
+        return () => window.removeEventListener('hashchange', onHashChange);
+    }, [keyList]);
+
+    // Inertia navigation to another page (sidebar link): ask first. Saves, resets and reloads of this page are not navigations.
+    useEffect(() => {
+        return router.on('before', (event) => {
+            const { visit } = event.detail;
+
+            if (!dirtyRef.current || forceNavigateRef.current) return;
+            if (visit.method !== 'get' || visit.url.pathname === window.location.pathname) return;
+
+            setPendingUrl(visit.url.href);
+
+            return false;
         });
+    }, []);
+
+    const handleSelect = useCallback(
+        (key: string) => {
+            if (key === activeKey) return;
+
+            if (dirty) {
+                setPendingKey(key);
+            } else {
+                window.location.hash = key;
+            }
+        },
+        [activeKey, dirty],
+    );
+
+    const confirmSwitch = () => {
+        if (pendingKey) {
+            forceRef.current = true;
+            window.location.hash = pendingKey;
+        }
+        if (pendingUrl) {
+            forceNavigateRef.current = true;
+            router.visit(pendingUrl, { onFinish: () => (forceNavigateRef.current = false) });
+        }
+        setPendingKey(null);
+        setPendingUrl(null);
     };
 
-    const submitPayment: FormEventHandler = (e) => {
-        e.preventDefault();
-        paymentForm.patch(route('admin.settings.update-payment'), {
-            preserveScroll: true,
-            onSuccess: () =>
-                addToast({
-                    type: 'success',
-                    title: 'Payment settings updated successfully',
-                }),
-        });
+    const cancelSwitch = () => {
+        setPendingKey(null);
+        setPendingUrl(null);
     };
 
-    const submitShipping: FormEventHandler = (e) => {
-        e.preventDefault();
-        shippingForm.patch(route('admin.settings.update-shipping'), {
-            preserveScroll: true,
-            onSuccess: () =>
-                addToast({
-                    type: 'success',
-                    title: 'Shipping settings updated successfully',
-                }),
-        });
-    };
-
-    const submitTax: FormEventHandler = (e) => {
-        e.preventDefault();
-        taxForm.patch(route('admin.settings.update-tax'), {
-            preserveScroll: true,
-            onSuccess: () =>
-                addToast({
-                    type: 'success',
-                    title: 'Tax settings updated successfully',
-                }),
-        });
-    };
-
-    const submitEmail: FormEventHandler = (e) => {
-        e.preventDefault();
-        emailForm.patch(route('admin.settings.update-email'), {
-            preserveScroll: true,
-            onSuccess: () =>
-                addToast({
-                    type: 'success',
-                    title: 'Email settings updated successfully',
-                }),
-        });
-    };
-
-    const toggleSection = (section: string) => {
-        setExpandedSection(expandedSection === section ? '' : section);
-    };
-
-    const SectionCard = ({
-        id,
-        title,
-        description,
-        icon: Icon,
-        children,
-    }: {
-        id: string;
-        title: string;
-        description: string;
-        icon: React.ElementType;
-        children: React.ReactNode;
-    }) => {
-        const isExpanded = expandedSection === id;
-
-        return (
-            <Card className="rounded-2xl shadow-sm">
-                <CardHeader className="cursor-pointer p-4 md:p-6" onClick={() => toggleSection(id)}>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Icon className="h-5 w-5 shrink-0 text-primary" />
-                            <div className="min-w-0">
-                                <CardTitle className="text-base md:text-lg">{title}</CardTitle>
-                                <CardDescription className="hidden text-sm text-muted-foreground sm:block">{description}</CardDescription>
-                            </div>
-                        </div>
-                        {isExpanded ? (
-                            <ChevronUp className="h-5 w-5 shrink-0 text-muted-foreground" />
-                        ) : (
-                            <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground" />
-                        )}
-                    </div>
-                </CardHeader>
-                {isExpanded && <CardContent className="px-4 pb-4 md:px-6 md:pb-6">{children}</CardContent>}
-            </Card>
-        );
-    };
+    const group = groups.find((candidate) => candidate.key === activeKey) ?? groups[0];
+    const Icon = groupIcon(group?.icon ?? null);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Admin Settings" />
+        <AdminLayout
+            breadcrumbs={[
+                { title: 'Admin', href: '/admin/dashboard' },
+                { title: t('settings.ui.title'), href: '/admin/settings' },
+            ]}
+        >
+            <Head title={t('settings.ui.title')} />
 
             <div className="space-y-6 p-4 md:p-6">
-                <div className="mb-6">
-                    <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Settings</h1>
-                    <p className="text-sm text-muted-foreground md:text-base">Manage your store configuration and preferences</p>
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('settings.ui.title')}</h1>
+                    <p className="text-muted-foreground">{t('settings.ui.description')}</p>
                 </div>
 
-                <div className="space-y-4">
-                    {/* General Settings */}
-                    <SectionCard
-                        id="general"
-                        title="General Settings"
-                        description="Configure basic store information and global settings"
-                        icon={Settings}
-                    >
-                        <form onSubmit={submitGeneral} className="space-y-4">
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="site_name">Store Name</Label>
-                                    <Input
-                                        id="site_name"
-                                        value={generalForm.data.site_name}
-                                        onChange={(e) => generalForm.setData('site_name', e.target.value)}
-                                        className={cn(generalForm.errors.site_name && 'border-red-500')}
-                                    />
-                                    {generalForm.errors.site_name && <p className="text-sm text-red-500">{generalForm.errors.site_name}</p>}
-                                </div>
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+                    <aside className="lg:w-60 lg:shrink-0">
+                        <GroupNav groups={groups} activeKey={group?.key ?? ''} dirtyKey={dirty ? activeKey : null} onSelect={handleSelect} />
+                    </aside>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="contact_email">Contact Email</Label>
-                                    <Input
-                                        id="contact_email"
-                                        type="email"
-                                        value={generalForm.data.contact_email}
-                                        onChange={(e) => generalForm.setData('contact_email', e.target.value)}
-                                        className={cn(generalForm.errors.contact_email && 'border-red-500')}
-                                    />
-                                    {generalForm.errors.contact_email && <p className="text-sm text-red-500">{generalForm.errors.contact_email}</p>}
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="site_description">Store Description</Label>
-                                <Textarea
-                                    id="site_description"
-                                    value={generalForm.data.site_description}
-                                    onChange={(e) => generalForm.setData('site_description', e.target.value)}
-                                    rows={3}
-                                    className={cn(generalForm.errors.site_description && 'border-red-500')}
-                                />
-                            </div>
-
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="contact_phone">Contact Phone</Label>
-                                    <Input
-                                        id="contact_phone"
-                                        value={generalForm.data.contact_phone}
-                                        onChange={(e) => generalForm.setData('contact_phone', e.target.value)}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="default_currency">Default Currency</Label>
-                                    <Select
-                                        value={generalForm.data.default_currency}
-                                        onValueChange={(value) => generalForm.setData('default_currency', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="EUR">EUR (€)</SelectItem>
-                                            <SelectItem value="USD">USD ($)</SelectItem>
-                                            <SelectItem value="GBP">GBP (£)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label htmlFor="company_address">Company Address</Label>
-                                <Textarea
-                                    id="company_address"
-                                    value={generalForm.data.company_address}
-                                    onChange={(e) => generalForm.setData('company_address', e.target.value)}
-                                    rows={3}
-                                />
-                            </div>
-
-                            <div className="flex justify-end pt-4">
-                                <Button type="submit" disabled={generalForm.processing}>
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Save General Settings
-                                </Button>
-                            </div>
-                        </form>
-                    </SectionCard>
-
-                    {/* Payment Settings */}
-                    <SectionCard id="payment" title="Payment Settings" description="Configure payment gateways and options" icon={CreditCard}>
-                        <form onSubmit={submitPayment} className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="stripe_enabled">Enable Stripe</Label>
-                                    <p className="text-sm text-muted-foreground">Allow customers to pay with credit cards via Stripe</p>
-                                </div>
-                                <Switch
-                                    id="stripe_enabled"
-                                    checked={paymentForm.data.stripe_enabled}
-                                    onCheckedChange={(checked) => paymentForm.setData('stripe_enabled', checked)}
-                                />
-                            </div>
-
-                            {paymentForm.data.stripe_enabled && (
-                                <>
-                                    <Separator />
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="stripe_public_key">Stripe Public Key</Label>
-                                            <Input
-                                                id="stripe_public_key"
-                                                value={paymentForm.data.stripe_public_key}
-                                                onChange={(e) => paymentForm.setData('stripe_public_key', e.target.value)}
-                                                placeholder="pk_..."
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="stripe_secret_key">Stripe Secret Key</Label>
-                                            <Input
-                                                id="stripe_secret_key"
-                                                type="password"
-                                                value={paymentForm.data.stripe_secret_key}
-                                                onChange={(e) => paymentForm.setData('stripe_secret_key', e.target.value)}
-                                                placeholder="sk_..."
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="stripe_webhook_secret">Stripe Webhook Secret</Label>
-                                        <Input
-                                            id="stripe_webhook_secret"
-                                            type="password"
-                                            value={paymentForm.data.stripe_webhook_secret}
-                                            onChange={(e) => paymentForm.setData('stripe_webhook_secret', e.target.value)}
-                                            placeholder="whsec_..."
-                                        />
-                                        <p className="text-sm text-muted-foreground">Required for webhook signature verification</p>
-                                    </div>
-                                </>
-                            )}
-
-                            <Separator />
-
-                            <div className="space-y-2">
-                                <Label htmlFor="minimum_order_amount">Minimum Order Amount</Label>
-                                <Input
-                                    id="minimum_order_amount"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={paymentForm.data.minimum_order_amount}
-                                    onChange={(e) => paymentForm.setData('minimum_order_amount', parseFloat(e.target.value) || 0)}
-                                />
-                                <p className="text-sm text-muted-foreground">Set to 0 to disable minimum order requirement</p>
-                            </div>
-
-                            <div className="flex justify-end pt-4">
-                                <Button type="submit" disabled={paymentForm.processing}>
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Save Payment Settings
-                                </Button>
-                            </div>
-                        </form>
-                    </SectionCard>
-
-                    {/* Shipping Settings */}
-                    <SectionCard id="shipping" title="Shipping Settings" description="Configure shipping options and costs" icon={Truck}>
-                        <form onSubmit={submitShipping} className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="shipping_enabled">Enable Shipping</Label>
-                                    <p className="text-sm text-muted-foreground">Allow customers to have products shipped</p>
-                                </div>
-                                <Switch
-                                    id="shipping_enabled"
-                                    checked={shippingForm.data.shipping_enabled as boolean}
-                                    onCheckedChange={(checked) => shippingForm.setData('shipping_enabled', checked)}
-                                />
-                            </div>
-
-                            {shippingForm.data.shipping_enabled && (
-                                <>
-                                    <Separator />
-
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="default_shipping_cost">Default Shipping Cost</Label>
-                                            <Input
-                                                id="default_shipping_cost"
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                value={shippingForm.data.default_shipping_cost as number}
-                                                onChange={(e) => shippingForm.setData('default_shipping_cost', parseFloat(e.target.value) || 0)}
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="free_shipping_threshold">Free Shipping Threshold</Label>
-                                            <Input
-                                                id="free_shipping_threshold"
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                value={shippingForm.data.free_shipping_threshold as number}
-                                                onChange={(e) => shippingForm.setData('free_shipping_threshold', parseFloat(e.target.value) || 0)}
-                                            />
-                                            <p className="text-sm text-muted-foreground">Set to 0 to disable free shipping</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="shipping_calculation_method">Calculation Method</Label>
-                                            <Select
-                                                value={shippingForm.data.shipping_calculation_method as string}
-                                                onValueChange={(value) => shippingForm.setData('shipping_calculation_method', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="flat_rate">Flat Rate</SelectItem>
-                                                    <SelectItem value="weight_based">Weight Based</SelectItem>
-                                                    <SelectItem value="zone_based">Zone Based</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="processing_time_days">Processing Time (Days)</Label>
-                                            <Input
-                                                id="processing_time_days"
-                                                type="number"
-                                                min="1"
-                                                max="30"
-                                                value={shippingForm.data.processing_time_days as number}
-                                                onChange={(e) => shippingForm.setData('processing_time_days', parseInt(e.target.value) || 1)}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-0.5">
-                                            <Label htmlFor="allow_international_shipping">International Shipping</Label>
-                                            <p className="text-sm text-muted-foreground">Allow shipping to international destinations</p>
-                                        </div>
-                                        <Switch
-                                            id="allow_international_shipping"
-                                            checked={shippingForm.data.allow_international_shipping as boolean}
-                                            onCheckedChange={(checked) => shippingForm.setData('allow_international_shipping', checked)}
-                                        />
-                                    </div>
-                                </>
-                            )}
-
-                            <div className="flex justify-end pt-4">
-                                <Button type="submit" disabled={shippingForm.processing}>
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Save Shipping Settings
-                                </Button>
-                            </div>
-                        </form>
-                    </SectionCard>
-
-                    {/* Tax Settings */}
-                    <SectionCard id="tax" title="Tax Settings" description="Configure tax rates and calculation methods" icon={Receipt}>
-                        <form onSubmit={submitTax} className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="tax_enabled">Enable Tax Calculation</Label>
-                                    <p className="text-sm text-muted-foreground">Calculate and collect taxes on orders</p>
-                                </div>
-                                <Switch
-                                    id="tax_enabled"
-                                    checked={taxForm.data.tax_enabled as boolean}
-                                    onCheckedChange={(checked) => taxForm.setData('tax_enabled', checked)}
-                                />
-                            </div>
-
-                            {taxForm.data.tax_enabled && (
-                                <>
-                                    <Separator />
-
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="default_tax_rate">Default Tax Rate (%)</Label>
-                                            <Input
-                                                id="default_tax_rate"
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                max="100"
-                                                value={taxForm.data.default_tax_rate as number}
-                                                onChange={(e) => taxForm.setData('default_tax_rate', parseFloat(e.target.value) || 0)}
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="tax_calculation_method">Calculation Based On</Label>
-                                            <Select
-                                                value={taxForm.data.tax_calculation_method as string}
-                                                onValueChange={(value) => taxForm.setData('tax_calculation_method', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="destination">Customer Address</SelectItem>
-                                                    <SelectItem value="origin">Store Address</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="tax_number">Tax Number / VAT ID</Label>
-                                        <Input
-                                            id="tax_number"
-                                            value={taxForm.data.tax_number as string}
-                                            onChange={(e) => taxForm.setData('tax_number', e.target.value)}
-                                            placeholder="IT12345678901"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="space-y-0.5">
-                                                <Label htmlFor="prices_include_tax">Prices Include Tax</Label>
-                                                <p className="text-sm text-muted-foreground">Product prices already include tax</p>
-                                            </div>
-                                            <Switch
-                                                id="prices_include_tax"
-                                                checked={taxForm.data.prices_include_tax as boolean}
-                                                onCheckedChange={(checked) => taxForm.setData('prices_include_tax', checked)}
-                                            />
-                                        </div>
-
-                                        <div className="flex items-center justify-between">
-                                            <div className="space-y-0.5">
-                                                <Label htmlFor="collect_tax_for_digital_products">Tax Digital Products</Label>
-                                                <p className="text-sm text-muted-foreground">Collect tax on digital products and services</p>
-                                            </div>
-                                            <Switch
-                                                id="collect_tax_for_digital_products"
-                                                checked={taxForm.data.collect_tax_for_digital_products as boolean}
-                                                onCheckedChange={(checked) => taxForm.setData('collect_tax_for_digital_products', checked)}
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            <div className="flex justify-end pt-4">
-                                <Button type="submit" disabled={taxForm.processing}>
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Save Tax Settings
-                                </Button>
-                            </div>
-                        </form>
-                    </SectionCard>
-
-                    {/* Email Settings */}
-                    <SectionCard id="email" title="Email Settings" description="Configure email notifications and settings" icon={Mail}>
-                        <form onSubmit={submitEmail} className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label htmlFor="email_notifications_enabled">Enable Email Notifications</Label>
-                                    <p className="text-sm text-muted-foreground">Send automated email notifications to customers</p>
-                                </div>
-                                <Switch
-                                    id="email_notifications_enabled"
-                                    checked={emailForm.data.email_notifications_enabled}
-                                    onCheckedChange={(checked) => emailForm.setData('email_notifications_enabled', checked)}
-                                />
-                            </div>
-
-                            {emailForm.data.email_notifications_enabled && (
-                                <>
-                                    <Separator />
-
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="from_email">From Email Address</Label>
-                                            <Input
-                                                id="from_email"
-                                                type="email"
-                                                value={emailForm.data.from_email}
-                                                onChange={(e) => emailForm.setData('from_email', e.target.value)}
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="from_name">From Name</Label>
-                                            <Input
-                                                id="from_name"
-                                                value={emailForm.data.from_name}
-                                                onChange={(e) => emailForm.setData('from_name', e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="admin_notification_email">Admin Notification Email</Label>
-                                        <Input
-                                            id="admin_notification_email"
-                                            type="email"
-                                            value={emailForm.data.admin_notification_email}
-                                            onChange={(e) => emailForm.setData('admin_notification_email', e.target.value)}
-                                            placeholder="admin@yourstore.com"
-                                        />
-                                        <p className="text-sm text-muted-foreground">
-                                            Receives new-order alerts and urgent payment alerts. If empty, the contact email from the environment is used.
-                                        </p>
-                                    </div>
-
-                                    <Separator />
-
-                                    <div className="space-y-4">
-                                        <h4 className="text-sm font-medium">Customer Email Notifications</h4>
-
-                                        <div className="space-y-3">
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="order_confirmation_enabled">Order Confirmation</Label>
-                                                    <p className="text-sm text-muted-foreground">Send confirmation when order is placed</p>
+                    <div className="min-w-0 flex-1">
+                        {group &&
+                            (group.panel ? (
+                                <div className="space-y-4">
+                                    <Card>
+                                        <CardHeader>
+                                            <div className="flex items-start gap-3">
+                                                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                                                    <Icon className="size-5" aria-hidden="true" />
+                                                </span>
+                                                <div className="min-w-0 space-y-1">
+                                                    <CardTitle className="text-lg" role="heading" aria-level={2}>
+                                                        {group.label}
+                                                    </CardTitle>
+                                                    <CardDescription>{group.description}</CardDescription>
                                                 </div>
-                                                <Switch
-                                                    id="order_confirmation_enabled"
-                                                    checked={emailForm.data.order_confirmation_enabled}
-                                                    onCheckedChange={(checked) => emailForm.setData('order_confirmation_enabled', checked)}
-                                                />
                                             </div>
-
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="order_shipped_enabled">Order Shipped</Label>
-                                                    <p className="text-sm text-muted-foreground">Send notification when order is shipped</p>
-                                                </div>
-                                                <Switch
-                                                    id="order_shipped_enabled"
-                                                    checked={emailForm.data.order_shipped_enabled}
-                                                    onCheckedChange={(checked) => emailForm.setData('order_shipped_enabled', checked)}
-                                                />
-                                            </div>
-
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="order_delivered_enabled">Order Delivered</Label>
-                                                    <p className="text-sm text-muted-foreground">Send notification when order is delivered</p>
-                                                </div>
-                                                <Switch
-                                                    id="order_delivered_enabled"
-                                                    checked={emailForm.data.order_delivered_enabled}
-                                                    onCheckedChange={(checked) => emailForm.setData('order_delivered_enabled', checked)}
-                                                />
-                                            </div>
-
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="order_cancelled_enabled">Order Cancelled</Label>
-                                                    <p className="text-sm text-muted-foreground">Send notification when order is cancelled</p>
-                                                </div>
-                                                <Switch
-                                                    id="order_cancelled_enabled"
-                                                    checked={emailForm.data.order_cancelled_enabled}
-                                                    onCheckedChange={(checked) => emailForm.setData('order_cancelled_enabled', checked)}
-                                                />
-                                            </div>
-
-                                            <div className="flex items-center justify-between">
-                                                <div className="space-y-0.5">
-                                                    <Label htmlFor="order_refunded_enabled">Order Refunded</Label>
-                                                    <p className="text-sm text-muted-foreground">Send notification when a refund has been issued</p>
-                                                </div>
-                                                <Switch
-                                                    id="order_refunded_enabled"
-                                                    checked={emailForm.data.order_refunded_enabled}
-                                                    onCheckedChange={(checked) => emailForm.setData('order_refunded_enabled', checked)}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <Separator />
-
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-0.5">
-                                            <Label htmlFor="newsletter_enabled">Newsletter Subscriptions</Label>
-                                            <p className="text-sm text-muted-foreground">Allow customers to subscribe to marketing emails</p>
-                                        </div>
-                                        <Switch
-                                            id="newsletter_enabled"
-                                            checked={emailForm.data.newsletter_enabled}
-                                            onCheckedChange={(checked) => emailForm.setData('newsletter_enabled', checked)}
-                                        />
-                                    </div>
-                                </>
-                            )}
-
-                            <div className="flex justify-end pt-4">
-                                <Button type="submit" disabled={emailForm.processing}>
-                                    <Save className="mr-2 h-4 w-4" />
-                                    Save Email Settings
-                                </Button>
-                            </div>
-                        </form>
-                    </SectionCard>
+                                        </CardHeader>
+                                    </Card>
+                                    <SystemPanel system={system} />
+                                </div>
+                            ) : (
+                                <GroupForm key={group.key} group={group} onDirtyChange={handleDirtyChange} />
+                            ))}
+                    </div>
                 </div>
             </div>
-        </AppLayout>
+
+            <ConfirmDialog
+                open={pendingKey !== null || pendingUrl !== null}
+                title={t('settings.ui.unsaved_changes')}
+                description={t('settings.ui.switch_group_body')}
+                confirmLabel={t('settings.ui.discard')}
+                destructive
+                onConfirm={confirmSwitch}
+                onCancel={cancelSwitch}
+            />
+        </AdminLayout>
     );
 }

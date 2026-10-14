@@ -190,6 +190,23 @@ class Product extends Model
         return $query->where('stock_quantity', '>', 0);
     }
 
+    /**
+     * The one definition of "low stock": 0 < stock <= inventory.low_stock_threshold.
+     */
+    public function scopeLowStock($query)
+    {
+        return $query->where('stock_quantity', '>', 0)
+            ->where('stock_quantity', '<=', (int) settings('inventory.low_stock_threshold', 10));
+    }
+
+    /**
+     * Stock above the low-stock threshold (in stock and not low).
+     */
+    public function scopeWellStocked($query)
+    {
+        return $query->where('stock_quantity', '>', max(0, (int) settings('inventory.low_stock_threshold', 10)));
+    }
+
     // Additional helper methods
     public function getAverageRatingAttribute(): float
     {
@@ -223,6 +240,28 @@ class Product extends Model
     public function incrementStock(int $quantity): bool
     {
         return $this->increment('stock_quantity', $quantity);
+    }
+
+    /**
+     * Keep the legacy mirror products.stock_quantity equal to the stock of the default variant (the single source of
+     * truth is product_variants.stock_quantity). The one place that writes the mirror after variant stock moved
+     * (orders, cancellations, admin quick adjustments). Returns the mirrored quantity, null without a default variant.
+     */
+    public function syncStockMirror(): ?int
+    {
+        $stock = $this->defaultVariant()->value('stock_quantity');
+
+        if ($stock === null) {
+            return null;
+        }
+
+        // Query update: the mirror is bookkeeping, not an edit of the product (no model events, no sitemap regeneration)
+        static::query()->whereKey($this->getKey())->update(['stock_quantity' => (int) $stock]);
+
+        $this->setAttribute('stock_quantity', (int) $stock);
+        $this->syncOriginalAttribute('stock_quantity');
+
+        return (int) $stock;
     }
 
     /**

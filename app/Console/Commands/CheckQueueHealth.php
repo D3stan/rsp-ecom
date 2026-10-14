@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Settings\SystemInfo;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -46,6 +48,8 @@ class CheckQueueHealth extends Command
             $problems[] = 'Queue health check could not query the database: '.$e->getMessage();
         }
 
+        $this->rememberResult($problems === []);
+
         if ($problems === []) {
             $this->info('Queue looks healthy.');
 
@@ -59,6 +63,21 @@ class CheckQueueHealth extends Command
         Log::critical('Queue health check failed: '.implode(' | ', $problems));
 
         return self::FAILURE;
+    }
+
+    /**
+     * Last result, shown read-only in Admin -> Settings -> System (App\Settings\SystemInfo).
+     */
+    private function rememberResult(bool $healthy): void
+    {
+        try {
+            Cache::put(SystemInfo::QUEUE_HEALTH_CACHE_KEY, [
+                'status' => $healthy ? 'ok' : 'problem',
+                'checked_at' => now()->toIso8601String(),
+            ], now()->addDay());
+        } catch (Throwable) {
+            // informational only
+        }
     }
 
     /**

@@ -41,6 +41,8 @@ interface Order {
     payment_status: string;
     subtotal: number;
     tax_amount: number;
+    // VAT rate stored with the order: when set, tax_amount is already part of the prices and of the total
+    tax_rate?: number | null;
     shipping_amount: number;
     total_amount: number;
     currency: string;
@@ -120,7 +122,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
     };
 
     const calculateTotal = () => {
-        return calculateSubtotal() + formData.shipping_amount + formData.tax_amount;
+        return calculateSubtotal() + formData.shipping_amount + (order.tax_rate != null ? 0 : formData.tax_amount);
     };
 
     const handleSubmit = () => {
@@ -295,7 +297,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                 <span>{formatCurrency(formData.shipping_amount)}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span>Tax</span>
+                                <span>{order.tax_rate != null ? `Included VAT (${order.tax_rate}%)` : 'Tax'}</span>
                                 <span>{formatCurrency(formData.tax_amount)}</span>
                             </div>
                             <Separator />

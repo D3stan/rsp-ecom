@@ -43,6 +43,8 @@ class GuestOrderController extends Controller
                 'tracking_number' => $model->tracking_number,
                 'currency' => $model->currency,
                 'subtotal' => (float) $model->subtotal,
+                'tax_amount' => (float) $model->tax_amount,
+                'tax_rate' => $model->tax_rate !== null ? (float) $model->tax_rate : null,
                 'shipping_amount' => (float) $model->shipping_amount,
                 'discount_amount' => (float) $model->discount_amount,
                 'total_amount' => (float) $model->total_amount,

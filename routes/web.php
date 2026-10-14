@@ -13,6 +13,8 @@ use App\Http\Controllers\GuestOrderController;
 use App\Http\Controllers\Api\PromotionController;
 use App\Http\Controllers\ReviewController;
 use App\Shipping\Tracking\Http\TrackingWebhookController;
+use App\Support\Locales;
+use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
@@ -43,17 +45,6 @@ Route::get('/csrf-token', function () {
     return response()->json(['token' => csrf_token()]);
 })->name('csrf.token');
 
-// Cashier-based Checkout routes (authenticated users)
-Route::middleware(['auth', 'verified'])->group(function () {
-    // Product checkout using Cashier methods
-    Route::get('/checkout/product/{priceId}', [CheckoutController::class, 'productCheckout'])->name('checkout.product');
-    Route::get('/checkout/product/{priceId}/promo', [CheckoutController::class, 'productCheckoutWithPromo'])->name('checkout.product.promo');
-    Route::get('/checkout/product/{priceId}/tax', [CheckoutController::class, 'productCheckoutWithTax'])->name('checkout.product.tax');
-    
-    // Single charge checkout
-    Route::get('/checkout/charge/{amount}/{name}', [CheckoutController::class, 'singleChargeCheckout'])->name('checkout.charge');
-});
-
 // Generic checkout route - redirects to checkout details page
 Route::get('/checkout', function (Request $request) {
     if ($request->user()) {
@@ -66,7 +57,6 @@ Route::get('/checkout', function (Request $request) {
 // Checkout details pages (new intermediate step)
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/checkout/details', [CheckoutController::class, 'showDetails'])->name('checkout.details');
-    Route::get('/checkout/show', [CheckoutController::class, 'show'])->name('checkout.show');
 });
 
 Route::get('/guest/checkout/details', [CheckoutController::class, 'showGuestDetails'])->name('guest.checkout.details');
@@ -79,7 +69,6 @@ Route::get('/guest/checkout', function (Request $request) {
 // Cart-based checkout routes (bridges cart workflow with Cashier)
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/checkout/cart', [CheckoutController::class, 'cartCheckout'])->name('checkout.cart');
-    Route::post('/checkout/session', [CheckoutController::class, 'createSession'])->name('checkout.session');
 });
 
 // Guest cart checkout
@@ -96,13 +85,15 @@ Route::get('/orders/{order}', [GuestOrderController::class, 'show'])
 
 // Remove test route since it was causing Inertia issues
 
-// Individual product checkout routes using Cashier
-Route::get('/guest/checkout/{priceId}', [CheckoutController::class, 'guestCheckout'])->name('guest.checkout');
-Route::get('/guest/checkout/{priceId}/promo/{promoCode}', [CheckoutController::class, 'guestCheckoutWithPromo'])->name('guest.checkout.promo');
-
-// Stripe webhook (Cashier handles this automatically)
-// Configure in Stripe Dashboard to point to: /stripe/webhook
-// Cashier registers this route automatically and uses our custom webhook controller
+// Stripe webhook. Cashier's own routes are disabled (Cashier::ignoreRoutes() in AppServiceProvider::register) so that
+// its public payment page (/stripe/payment/{id}) does not exist; only the webhook is declared here, exactly as the
+// package does (same controller; its constructor adds VerifyWebhookSignature when STRIPE_WEBHOOK_SECRET is set, and
+// StripeWebhookListener refuses every event in production without a secret). Like the package's route it runs without
+// the web group (no session / cookies); it is also listed in the CSRF exceptions in bootstrap/app.php.
+// Configure in the Stripe Dashboard to point to: /stripe/webhook
+Route::post('stripe/webhook', [CashierWebhookController::class, 'handleWebhook'])
+    ->withoutMiddleware('web')
+    ->name('cashier.webhook');
 
 // Carrier tracking webhooks. Only drivers implementing SupportsWebhooks answer (404 otherwise), the driver
 // authenticates the request; CSRF-exempt in bootstrap/app.php. See docs/shipping-tracking-module.md.
@@ -130,10 +121,8 @@ Route::prefix('api')->group(function () {
 });
 
 Route::get('/api/translations/{locale}', function ($locale) {
-    $supportedLocales = ['en', 'es', 'fr', 'de', 'it'];
-    
-    if (!in_array($locale, $supportedLocales)) {
-        $locale = 'en'; // fallback to English
+    if (!Locales::isSupported($locale)) {
+        $locale = Locales::fallback();
     }
     
     $translationFile = base_path("lang/{$locale}.json");
@@ -149,9 +138,7 @@ Route::get('/api/translations/{locale}', function ($locale) {
 // Language switching route
 Route::post('/change-language', function (Request $request) {
     $locale = $request->input('locale');
-    $supportedLocales = ['en', 'es', 'fr', 'de', 'it'];
-    
-    if (in_array($locale, $supportedLocales)) {
+    if (Locales::isSupported($locale)) {
         Session::put('locale', $locale);
         App::setLocale($locale);
     }
@@ -163,7 +150,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         // Set noindex for user dashboard
         \Artesaos\SEOTools\Facades\SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        \Artesaos\SEOTools\Facades\SEOMeta::setTitle('Dashboard – ' . config('app.name'));
+        \Artesaos\SEOTools\Facades\SEOMeta::setTitle('Dashboard – ' . settings('store.name'));
         
         // Redirect admin users to admin dashboard
         if (auth()->user()->isAdmin()) {

@@ -1,9 +1,11 @@
 import Header from '@/components/header';
+import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Head } from '@inertiajs/react';
 
 export default function Terms() {
     const { t } = useTranslation();
+    const email = useSetting('contact.support_email', '');
 
     return (
         <>
@@ -69,7 +71,7 @@ export default function Terms() {
                                 <h2 className="mb-4 text-2xl font-bold text-black">{t('contact.contact_us')}</h2>
                                 <p className="mb-4 text-gray-600">{t('terms.contact_terms')}</p>
                                 <ul className="list-none space-y-2 text-gray-600">
-                                    <li>{t('terms.contact_email')}</li>
+                                    <li>{t('terms.contact_email', { email })}</li>
                                 </ul>
                             </section>
                         </div>

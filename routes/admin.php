@@ -49,13 +49,11 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('reviews/{review}/reject', [ReviewsController::class, 'reject'])->name('reviews.reject');
     Route::resource('reviews', ReviewsController::class)->only(['index', 'show', 'update', 'destroy']);
 
-    // Settings Management
+    // Settings Management (registry-driven, docs/admin-settings.md)
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
-    Route::patch('/settings/general', [SettingsController::class, 'updateGeneral'])->name('settings.update-general');
-    Route::patch('/settings/payment', [SettingsController::class, 'updatePayment'])->name('settings.update-payment');
-    Route::patch('/settings/shipping', [SettingsController::class, 'updateShipping'])->name('settings.update-shipping');
-    Route::patch('/settings/tax', [SettingsController::class, 'updateTax'])->name('settings.update-tax');
-    Route::patch('/settings/email', [SettingsController::class, 'updateEmail'])->name('settings.update-email');
+    Route::get('/settings/{group}/history', [SettingsController::class, 'history'])->name('settings.history');
+    Route::patch('/settings/{group}', [SettingsController::class, 'update'])->name('settings.update');
+    Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->name('settings.reset');
 
     // TODO: Add other admin routes as they are implemented
     // Route::resource('customers', CustomersController::class);

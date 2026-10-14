@@ -4,9 +4,11 @@ namespace Tests\Feature\Security;
 
 use App\Models\Order;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Tests\Feature\Orders\Support\BuildsStripeOrderFixtures;
+use Laravel\Cashier\Events\WebhookReceived;
 use Tests\TestCase;
 
 class StripeWebhookSecurityTest extends TestCase
@@ -86,5 +88,34 @@ class StripeWebhookSecurityTest extends TestCase
         $this->post_webhook($body, ['HTTP_STRIPE_SIGNATURE' => $this->signature($body, 'whsec_test_secret')])->assertSuccessful();
 
         $this->assertSame(1, Order::count());
+    }
+
+    public function test_the_app_declared_webhook_route_verifies_the_signature_in_every_environment(): void
+    {
+        config(['cashier.webhook.secret' => 'whsec_test_secret']);
+        Event::fake([WebhookReceived::class]);
+        $body = $this->forgedPaidEvent();
+
+        $this->post_webhook($body)->assertStatus(403);
+        $this->post_webhook($body, ['HTTP_STRIPE_SIGNATURE' => $this->signature($body, 'whsec_someone_else')])->assertStatus(403);
+
+        Event::assertNotDispatched(WebhookReceived::class);
+        $this->assertSame(0, Order::count());
+    }
+
+    public function test_a_signed_event_still_dispatches_the_cashier_webhook_received_event(): void
+    {
+        config(['cashier.webhook.secret' => 'whsec_test_secret']);
+        Event::fake([WebhookReceived::class]);
+        $body = $this->forgedPaidEvent();
+
+        $this->post_webhook($body, ['HTTP_STRIPE_SIGNATURE' => $this->signature($body, 'whsec_test_secret')])->assertSuccessful();
+
+        Event::assertDispatched(WebhookReceived::class, fn (WebhookReceived $e) => $e->payload['id'] === 'evt_forged');
+    }
+
+    public function test_the_webhook_url_is_the_one_configured_in_the_stripe_dashboard(): void
+    {
+        $this->assertSame(url('/stripe/webhook'), route('cashier.webhook'));
     }
 }

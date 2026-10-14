@@ -31,8 +31,8 @@ Inventory of log statements that carried personal data or full payloads (before)
 | `CheckoutController::success` | `all_params` (whole query), full URL and `Referer` when `session_id` missing; `customer_email` + `amount_total` per success hit; `getTraceAsString()` on both error paths | removed / trimmed (class + message + session id kept) |
 | `EmailService::sendCustomEmail`, `testEmailConfiguration`, `sendSimpleTestEmail` | full recipient address | masked via `App\Support\Privacy::maskEmail()` (`m***@example.com`) |
 | `OrderCreationService`, `StripeWebhookListener`, `Jobs/*`, `SendPendingOrderEmails` | ids, session ids, hashes, exception class + message only | already clean, unchanged. `critical`/`error` keep session id, event id, payment intent id, cart id |
-| NOT my files (report only) | `CheckoutController::cartCheckout/createSession/createGuestSession/Admin\OrdersController` log `getTraceAsString()`; `CheckoutService.php:260,297,327,365` log `customer_email`; `GoogleAuthController:147`, `Admin\ReviewsController:153`, `Admin\ProductController:580,678` traces | see report |
-- Retention: `config/logging.php` default channel is `stack` -> `single` (`LOG_STACK=single` in `.env.example`): one file that never rotates, so personal data stays forever. `daily` with `LOG_DAILY_DAYS` (default 14) already exists. Not changed (env decision); documented in the deliverability checklist, section 8.
+| NOT my files (report only) | `CheckoutController::cartCheckout/createSession/createGuestSession/Admin\OrdersController` log `getTraceAsString()`; `CheckoutService.php:260,297,327,365` log `customer_email`; `GoogleAuthController:147`, `Admin\ReviewsController:153`, `Admin\ProductController:580,678` traces | see report. **RESOLVED (cleanup round 2):** all traces removed, `createSession`/`createGuestSession` deleted, raw `request_data` logs removed; `CheckoutService` no longer logs addresses |
+- Retention: `config/logging.php` default channel is `stack` -> `single` (`LOG_STACK=single` in `.env.example`): one file that never rotates, so personal data stays forever. `daily` with `LOG_DAILY_DAYS` (default 14) already exists. Not changed at the time (env decision); **cleanup round 2 changed the `.env.example` defaults to `LOG_STACK=daily`, `LOG_LEVEL=info`, `APP_DEBUG=false`** (production must still set its own env).
 
 ### (e) Unauthenticated routes exposing order data
 | Route | Exposure | Status |
@@ -41,8 +41,8 @@ Inventory of log statements that carried personal data or full payloads (before)
 | `GET /checkout/cancel?session_id=` | no order data rendered; mutates only unpaid orders (A) | OK |
 | `GET /orders/{order}` (new) | signed link only | new, tested |
 | `POST stripe/webhook` | see (b) | fixed |
-| `GET stripe/payment/{id}` (Cashier `PaymentController`) | public by design for SCA flows; shows the payment intent `client_secret` for an unguessable `pi_` id. The shop never creates payment intents of its own, so it is unused. Cannot be disabled without also removing the webhook route (`Cashier::ignoreRoutes()`). | report only |
-| `GET /checkout/show` (auth) | any logged-in user with a Stripe session id gets the Stripe session object + order (no owner check) | report only (not `success()`) |
+| `GET stripe/payment/{id}` (Cashier `PaymentController`) | public by design for SCA flows; shows the payment intent `client_secret` for an unguessable `pi_` id. The shop never creates payment intents of its own, so it is unused. Cannot be disabled without also removing the webhook route (`Cashier::ignoreRoutes()`). | **RESOLVED (cleanup round 2):** `Cashier::ignoreRoutes()` in `AppServiceProvider::register`, the webhook is re-declared in `routes/web.php` as `cashier.webhook` (CSRF-exempt, same controller and signature check); `/stripe/payment/x` no longer exists |
+| `GET /checkout/show` (auth) | any logged-in user with a Stripe session id gets the Stripe session object + order (no owner check) | **RESOLVED (cleanup round 2):** route, `show()`, `Checkout/Show.tsx` and its tests removed |
 | `POST /guest/checkout/session` (legacy) | trusted a client-supplied `cart_session_id` (another guest's cart/session id) | route removed (unreachable `Checkout/GuestIndex.tsx` was its only caller) |
 
 ### (f) Guest session / cookie situation on return from Stripe
@@ -80,12 +80,12 @@ Props added/changed on `Checkout/Success`:
 
 ## Out-of-scope findings (for the orchestrator)
 
-1. `routes/web.php`: `POST /checkout/session` (authenticated legacy) was **kept**: `tests/Feature/Checkout/CheckoutTest.php` lines 95, 113, 135 exercise it (3 tests) and `Checkout/Index.tsx` (orphan page) posts to it. It uses `CheckoutService::createCheckoutSession` (USD-era code, lump-sum differences with the live flow). Recommended: remove route + `createSession()` + those 3 tests + `Checkout/Index.tsx`/`GuestIndex.tsx` together. `CheckoutController::createGuestSession()` is now dead code (route removed).
-2. Dashboard frontend still has `completed` (not a DB status) in status switches: `Dashboard/components/LatestOrderCard.tsx:33,46`, `pages/dashboard.tsx:62,75` don't handle `delivered` at all (delivered orders render with the neutral colour/icon); `Dashboard/Orders.tsx` handles both. Cosmetic.
-3. `docs/reports/email-logo-setup.md:14-16` documents the removed `X-Brand-*` headers; `.env.example` has `APP_DEBUG=true`.
+1. `routes/web.php`: `POST /checkout/session` (authenticated legacy) was **kept**: `tests/Feature/Checkout/CheckoutTest.php` lines 95, 113, 135 exercise it (3 tests) and `Checkout/Index.tsx` (orphan page) posts to it. It uses `CheckoutService::createCheckoutSession` (USD-era code, lump-sum differences with the live flow). Recommended: remove route + `createSession()` + those 3 tests + `Checkout/Index.tsx`/`GuestIndex.tsx` together. `CheckoutController::createGuestSession()` is now dead code (route removed). **RESOLVED (cleanup round 2, see cleanup-round2.md).**
+2. Dashboard frontend still has `completed` (not a DB status) in status switches: `Dashboard/components/LatestOrderCard.tsx:33,46`, `pages/dashboard.tsx:62,75` don't handle `delivered` at all (delivered orders render with the neutral colour/icon); `Dashboard/Orders.tsx` handles both. Cosmetic. **RESOLVED (cleanup round 2, see cleanup-round2.md).**
+3. `docs/reports/email-logo-setup.md:14-16` documents the removed `X-Brand-*` headers; `.env.example` has `APP_DEBUG=true`. **RESOLVED (cleanup round 2, see cleanup-round2.md).**
 4. `app/Console/Commands/SendTestEmail.php` (`email:send-test`) sends the text "EMERGENZA CATANZARO" to whichever address it is given - not safe for deliverability testing.
-5. Log PII outside the files I may touch: `CheckoutService.php:260,297,327,365` (`customer_email`), `getTraceAsString()` in `CheckoutController` (cartCheckout, createSession, createGuestSession), `Admin\OrdersController:271,479`, `GoogleAuthController:147`, `Admin\ReviewsController:153`, `Admin\ProductController:580,678`.
-6. `CheckoutController::show()` (`/checkout/show`, auth) renders any order/Stripe session by id without an ownership check.
+5. Log PII outside the files I may touch: `CheckoutService.php:260,297,327,365` (`customer_email`), `getTraceAsString()` in `CheckoutController` (cartCheckout, createSession, createGuestSession), `Admin\OrdersController:271,479`, `GoogleAuthController:147`, `Admin\ReviewsController:153`, `Admin\ProductController:580,678`. **RESOLVED (cleanup round 2, see cleanup-round2.md).**
+6. `CheckoutController::show()` (`/checkout/show`, auth) renders any order/Stripe session by id without an ownership check. **RESOLVED (cleanup round 2, see cleanup-round2.md).**
 7. `public/build` is gitignored; `npm run build` succeeded, `npm run types` only reports pre-existing errors in `Admin/Products/Create.tsx`.
 8. Composer's optimized classmap still lists the deleted `MailServiceProvider` until `composer dump-autoload` runs (harmless: no provider references it; Docker image build regenerates it).
 

@@ -40,7 +40,8 @@ function orderScenarios(): array
         'registered, no discount' => fn () => Fx::order([], registered: true),
         'registered, discount' => fn () => Fx::discountedOrder([], registered: true),
         'guest, no billing name' => fn () => Fx::order([], withBillingName: false),
-        'free shipping' => fn () => Fx::order(['shipping_amount' => 0, 'total_amount' => 60.00]),
+        'zero shipping' => fn () => Fx::order(['shipping_amount' => 0, 'total_amount' => 60.00]),
+        'with stored VAT' => fn () => Fx::order(['tax_rate' => 22, 'tax_amount' => 11.72]),
         'everything discounted' => fn () => Fx::order(['discount_amount' => 65.00, 'coupon_code' => 'FREE100', 'total_amount' => 0]),
     ];
 }
@@ -53,7 +54,7 @@ function visibleLeaks(string $output): array
         $leaks[] = 'raw translation key: '.$m[0];
     }
 
-    if (preg_match('/(?<![\w\/]):(number|amount|total|address|name|code|days|hours|minutes|dispatch|delivery|min|max|app|carrier|price|quantity|size|variant|sku|value)\b/', $output, $m)) {
+    if (preg_match('/(?<![\w\/]):(number|amount|total|address|name|code|days|hours|minutes|dispatch|delivery|min|max|app|carrier|price|quantity|size|variant|sku|value|rate)\b/', $output, $m)) {
         $leaks[] = 'unreplaced placeholder: '.$m[0];
     }
 

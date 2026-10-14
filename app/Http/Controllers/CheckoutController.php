@@ -7,153 +7,20 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response as HttpResponse;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
-use Laravel\Cashier\Checkout;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use App\Support\Money;
+use App\Support\Vat;
+use App\Models\CheckoutSnapshot;
 use App\Models\Order;
-use App\Models\Cart;
 use Artesaos\SEOTools\Facades\SEOMeta;
-use App\Services\CheckoutService;
 use App\Services\OrderCreationService;
 use App\Services\StripeService;
 
 class CheckoutController extends Controller
 {
-    /**
-     * Product checkout using Cashier's built-in method
-     */
-    public function productCheckout(Request $request, string $priceId): RedirectResponse
-    {
-        try {
-            $user = $request->user();
-            
-            // Use Cashier's built-in checkout method
-            $checkoutSession = $user->checkout([$priceId => 1], [
-                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('checkout.cancel'),
-            ]);
-            
-            return redirect($checkoutSession->url);
-            
-        } catch (\Exception $e) {
-            Log::error('Product checkout failed: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Unable to create checkout session. Please try again.');
-        }
-    }
-
-    /**
-     * Product checkout with promotion codes
-     */
-    public function productCheckoutWithPromo(Request $request, string $priceId): RedirectResponse
-    {
-        try {
-            $user = $request->user();
-            
-            // Use Cashier's built-in promotion code support
-            $checkoutSession = $user
-                ->allowPromotionCodes()
-                ->checkout([$priceId => 1], [
-                    'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                    'cancel_url' => route('checkout.cancel'),
-                ]);
-            
-            return redirect($checkoutSession->url);
-            
-        } catch (\Exception $e) {
-            Log::error('Product checkout with promo failed: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Unable to create checkout session. Please try again.');
-        }
-    }
-
-    /**
-     * Product checkout with tax ID collection
-     */
-    public function productCheckoutWithTax(Request $request, string $priceId): RedirectResponse
-    {
-        try {
-            $user = $request->user();
-            
-            // Use Cashier's built-in tax ID collection
-            $checkoutSession = $user
-                ->collectTaxIds()
-                ->checkout([$priceId => 1], [
-                    'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                    'cancel_url' => route('checkout.cancel'),
-                ]);
-            
-            return redirect($checkoutSession->url);
-            
-        } catch (\Exception $e) {
-            Log::error('Product checkout with tax failed: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Unable to create checkout session. Please try again.');
-        }
-    }
-
-    /**
-     * Single charge checkout using Cashier's built-in method
-     */
-    public function singleChargeCheckout(Request $request, int $amount, string $name): RedirectResponse
-    {
-        try {
-            $user = $request->user();
-            
-            // Use Cashier's built-in checkoutCharge method
-            $checkoutSession = $user->checkoutCharge($amount, $name, 1, [
-                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('checkout.cancel'),
-            ]);
-            
-            return redirect($checkoutSession->url);
-            
-        } catch (\Exception $e) {
-            Log::error('Single charge checkout failed: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Unable to create checkout session. Please try again.');
-        }
-    }
-
-    /**
-     * Guest checkout using Cashier's built-in method
-     */
-    public function guestCheckout(Request $request, string $priceId): RedirectResponse
-    {
-        try {
-            // Use Cashier's built-in guest checkout
-            $checkoutSession = Checkout::guest()->create($priceId, [
-                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('checkout.cancel'),
-            ]);
-            
-            return redirect($checkoutSession->url);
-            
-        } catch (\Exception $e) {
-            Log::error('Guest checkout failed: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Unable to process guest checkout. Please try again.');
-        }
-    }
-
-    /**
-     * Guest checkout with promotion code
-     */
-    public function guestCheckoutWithPromo(Request $request, string $priceId, string $promoCode): RedirectResponse
-    {
-        try {
-            // Use Cashier's built-in guest checkout with promotion
-            $checkoutSession = Checkout::guest()
-                ->withPromotionCode($promoCode)
-                ->create($priceId, [
-                    'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                    'cancel_url' => route('checkout.cancel'),
-                ]);
-            
-            return redirect($checkoutSession->url);
-            
-        } catch (\Exception $e) {
-            Log::error('Guest checkout with promo failed: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Unable to process guest checkout. Please try again.');
-        }
-    }
-
     /**
      * Handle successful checkout - works for both authenticated and guest users
      */
@@ -195,7 +62,7 @@ class CheckoutController extends Controller
                     throw new \RuntimeException('Checkout session does not belong to this shop');
                 }
 
-                $order->load(['orderItems.product', 'orderItems.product.defaultVariant']);
+                $order->load(['orderItems.product', 'orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant']);
                 $orderData = $order->toFrontendArray();
                 unset($orderData['guest_session_id']);
 
@@ -233,7 +100,7 @@ class CheckoutController extends Controller
             if (! $isOwner) {
                 $orderData = Arr::only($orderData, [
                     'id', 'order_number', 'status', 'payment_status', 'created_at', 'currency',
-                    'subtotal', 'tax_amount', 'shipping_amount', 'discount_amount', 'total_amount', 'orderItems',
+                    'subtotal', 'tax_amount', 'tax_rate', 'shipping_amount', 'discount_amount', 'total_amount', 'orderItems',
                 ]);
             }
 
@@ -345,58 +212,13 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Show completed checkout session details
-     */
-    public function show(Request $request): Response|RedirectResponse
-    {
-        // Set noindex for checkout pages
-        SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('Checkout – ' . config('app.name'));
-        
-        $sessionId = $request->get('session_id');
-
-        if (!$sessionId) {
-            return redirect()->route('checkout.details');
-        }
-
-        try {
-            // Initialize Stripe client
-            $stripe = StripeService::getClient();
-            
-            if (!$stripe) {
-                Log::error('Stripe secret key not configured for checkout cancel');
-                return redirect()->route('home')->with('error', 'Payment system not configured. Please contact support.');
-            }
-            
-            // Retrieve the checkout session
-            $session = $stripe->checkout->sessions->retrieve($sessionId);
-            
-            // Find the corresponding order
-            $order = Order::where('stripe_checkout_session_id', $sessionId)->first();
-            
-            if (!$order) {
-                return redirect()->route('checkout.details')->with('error', 'Order not found.');
-            }
-
-            return Inertia::render('Checkout/Show', [
-                'session' => $session,
-                'order' => $order,
-            ]);
-            
-        } catch (\Exception $e) {
-            Log::error('Failed to show checkout session: ' . $e->getMessage());
-            return redirect()->route('checkout.details')->with('error', 'Unable to load checkout session.');
-        }
-    }
-
-    /**
      * Show checkout details page for authenticated users
      */
     public function showDetails(Request $request): Response|RedirectResponse
     {
         // Set noindex for checkout pages
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('Checkout Details – ' . config('app.name'));
+        SEOMeta::setTitle('Checkout Details – ' . settings('store.name'));
         
         try {
             $user = $request->user();
@@ -406,56 +228,16 @@ class CheckoutController extends Controller
             }
 
             // Get user's cart
-            $cart = $user->carts()->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->latest()->first();
+            $cart = $user->carts()->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.productVariant', 'cartItems.size'])->latest()->first();
             
             if (!$cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
-            // Fix any cart items that have shipping cost incorrectly added to price
-            foreach ($cart->cartItems as $item) {
-                if ($item->price != $item->product->price) {
-                    $item->update(['price' => $item->product->price]);
-                }
-            }
-            $cart->load(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size']); // Reload cart items with corrected prices and relationships
+            // Charge every line at the current catalogue price of ITS OWN variant (never the default variant's price)
+            $cart->refreshPrices();
 
-            // Calculate totals (cart prices are tax-inclusive)
-            $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
-                return $item->price * $item->quantity;
-            });
-
-            // Calculate tax-exclusive subtotal and tax amount
-            $subtotal = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
-            $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
-            $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
-
-            // Get applied coupon from session
-            $appliedCoupon = session('applied_coupon');
-            $discountAmount = 0;
-            if ($appliedCoupon) {
-                // Recalculate discount based on current subtotal for percentage discounts
-                if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
-                    $discountAmount = round($taxInclusiveSubtotal * ($appliedCoupon['discount_percentage'] / 100), 2);
-                } else {
-                    $discountAmount = min($appliedCoupon['discount_amount'], $taxInclusiveSubtotal);
-                }
-            }
-            $total = max(0, $taxInclusiveSubtotal + $shippingCost - $discountAmount);
-            $totalItems = $cart->cartItems->sum('quantity');
-
-            return Inertia::render('Checkout/Details', [
-                'cart' => $cart,
-                'cartItems' => $cart->cartItems,
-                'subtotal' => $subtotal,
-                'shippingCost' => $shippingCost,
-                'taxAmount' => $taxAmount,
-                'couponCode' => $appliedCoupon['code'] ?? null,
-                'discountDescription' => $appliedCoupon['description'] ?? null,
-                'discountAmount' => $discountAmount,
-                'total' => $total,
-                'totalItems' => $totalItems,
-            ]);
+            return Inertia::render('Checkout/Details', $this->detailsProps($cart));
             
         } catch (\Exception $e) {
             Log::error('Failed to show checkout details: ' . $e->getMessage());
@@ -470,64 +252,25 @@ class CheckoutController extends Controller
     {
         // Set noindex for checkout pages
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('Guest Checkout – ' . config('app.name'));
+        SEOMeta::setTitle('Guest Checkout – ' . settings('store.name'));
+
+        if ($response = $this->guestCheckoutDisabledResponse()) {
+            return $response;
+        }
         
         try {
             // Get guest cart from database using session ID
             $guestSessionId = session()->getId();
-            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->first();
+            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.productVariant', 'cartItems.size'])->first();
             
             if (!$cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
-            // Fix any cart items that have shipping cost incorrectly added to price
-            foreach ($cart->cartItems as $item) {
-                if ($item->price != $item->product->price) {
-                    $item->update(['price' => $item->product->price]);
-                }
-            }
-            $cart->load(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size']); // Reload cart items with corrected prices and relationships
+            // Charge every line at the current catalogue price of ITS OWN variant (never the default variant's price)
+            $cart->refreshPrices();
 
-            // Calculate totals (cart prices are tax-inclusive)
-            $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
-                return $item->price * $item->quantity;
-            });
-            
-            // Calculate tax-exclusive subtotal and tax amount
-            $subtotal = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
-            $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
-            
-            // Apply free shipping logic for orders over $100
-            $baseShippingCost = $cart->shipping_cost; // Size-based shipping
-            $shippingCost = $taxInclusiveSubtotal >= 100 ? 0 : $baseShippingCost;
-
-            // Get applied coupon from session
-            $appliedCoupon = session('applied_coupon');
-            $discountAmount = 0;
-            if ($appliedCoupon) {
-                // Recalculate discount based on current subtotal for percentage discounts
-                if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
-                    $discountAmount = round($taxInclusiveSubtotal * ($appliedCoupon['discount_percentage'] / 100), 2);
-                } else {
-                    $discountAmount = min($appliedCoupon['discount_amount'], $taxInclusiveSubtotal);
-                }
-            }
-            $total = max(0, $taxInclusiveSubtotal + $shippingCost - $discountAmount);
-            $totalItems = $cart->cartItems->sum('quantity');
-
-            return Inertia::render('Checkout/Details', [
-                'cart' => $cart,
-                'cartItems' => $cart->cartItems,
-                'subtotal' => $subtotal,
-                'shippingCost' => $shippingCost,
-                'taxAmount' => $taxAmount,
-                'discountAmount' => $discountAmount,
-                'couponCode' => $appliedCoupon['code'] ?? null,
-                'discountDescription' => $appliedCoupon['description'] ?? null,
-                'total' => $total,
-                'totalItems' => $totalItems,
-            ]);
+            return Inertia::render('Checkout/Details', $this->detailsProps($cart));
             
         } catch (\Exception $e) {
             Log::error('Failed to show guest checkout details: ' . $e->getMessage());
@@ -536,225 +279,164 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Calculate shipping cost based on subtotal
+     * Props of the checkout details page. The amounts come from checkoutTotals(), the same computation that
+     * decides what Stripe charges and what the order stores.
      */
-    private function calculateShippingCost(float $subtotal): float
+    private function detailsProps(\App\Models\Cart $cart): array
     {
-        // Free shipping for orders over $100
-        if ($subtotal >= 100) {
-            return 0;
-        }
-        
-        // Standard shipping rate
-        return 9.99;
+        $totals = $this->checkoutTotals($cart);
+        $appliedCoupon = session('applied_coupon');
+
+        return [
+            'cart' => $cart,
+            'cartItems' => $cart->cartItems,
+            'subtotal' => $totals['items'],
+            'shippingCost' => $totals['shipping'],
+            'taxAmount' => $totals['vat']['amount'],
+            'taxRate' => $totals['vat']['rate'],
+            'couponCode' => $appliedCoupon['code'] ?? null,
+            'discountDescription' => $appliedCoupon['description'] ?? null,
+            'discountAmount' => $totals['discount'],
+            'total' => $totals['total'],
+            'totalItems' => $cart->cartItems->sum('quantity'),
+        ];
     }
 
     /**
-     * Calculate tax amount based on subtotal
+     * What the customer pays, in one place (used by both details pages and both Stripe checkouts):
+     * items (VAT-inclusive) - coupon discount + shipping, where shipping is the sum of the package sizes' own
+     * shipping_cost (Cart::shipping_cost); it is never waived or capped by the order value. VAT is the portion contained in the total.
+     *
+     * @return array{items: float, shipping: float, discount: float, total: float, vat: array{rate: float|null, amount: float}}
      */
-    /**
-     * Create a checkout session from form data
-     * This handles the POST request from the checkout form
-     */
-    public function createSession(Request $request): RedirectResponse|HttpResponse|JsonResponse
+    private function checkoutTotals(\App\Models\Cart $cart): array
     {
-        $user = $request->user();
-        
-        if (!$user) {
-            return response()->json(['error' => 'Authentication required'], 401);
+        $items = round((float) $cart->cartItems->sum(fn ($item) => $item->price * $item->quantity), 2);
+        $shipping = round((float) $cart->shipping_cost, 2);
+        $discount = $this->couponDiscount($items);
+        $total = round(max(0, $items + $shipping - $discount), 2);
+
+        return [
+            'items' => $items,
+            'shipping' => $shipping,
+            'discount' => $discount,
+            'total' => $total,
+            'vat' => Vat::includedIn($total),
+        ];
+    }
+
+    /**
+     * Discount of the coupon stored in the session on a VAT-inclusive items total
+     */
+    private function couponDiscount(float $itemsTotal): float
+    {
+        $appliedCoupon = session('applied_coupon');
+
+        if (! $appliedCoupon) {
+            return 0.0;
         }
 
-        // Validate the checkout details using the CheckoutRequest - this should be outside try-catch
-        $validated = $request->validate([
-            'billing_address' => 'required|array',
-            'billing_address.first_name' => 'required|string|max:255',
-            'billing_address.last_name' => 'required|string|max:255',
-            'billing_address.email' => 'required|email|max:255',
-            'billing_address.phone' => 'nullable|string|max:20',
-            'billing_address.company' => 'nullable|string|max:255',
-            'billing_address.address_line_1' => 'required|string|max:255',
-            'billing_address.address_line_2' => 'nullable|string|max:255',
-            'billing_address.city' => 'required|string|max:255',
-            'billing_address.state' => 'required|string|max:255',
-            'billing_address.postal_code' => 'required|string|max:20',
-            'billing_address.country' => 'required|string|size:2',
-            'shipping_same_as_billing' => 'boolean',
-            'shipping_address' => 'nullable|array',
-            'payment_method_id' => 'nullable|string',
-            'save_payment_method' => 'boolean',
-            'promotion_code' => 'nullable|string|max:50',
-            'allow_promotion_codes' => 'boolean',
-            'collect_tax_id' => 'boolean',
-            'checkout_mode' => 'in:payment,subscription',
-        ]);
+        // Recalculate discount based on current subtotal for percentage discounts
+        if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
+            return round($itemsTotal * ($appliedCoupon['discount_percentage'] / 100), 2);
+        }
 
+        return (float) min($appliedCoupon['discount_amount'], $itemsTotal);
+    }
+
+    /**
+     * Validation of the details form, shared by both checkouts. Destinations and the order-note length are settings.
+     */
+    private function checkoutRules(): array
+    {
+        return [
+            'email' => 'required|email|max:255',
+            'shipping_address' => 'required|array',
+            'shipping_address.first_name' => 'required|string|max:255',
+            'shipping_address.last_name' => 'required|string|max:255',
+            'shipping_address.address_line_1' => 'required|string|max:255',
+            'shipping_address.city' => 'required|string|max:255',
+            'shipping_address.state' => 'required|string|max:255',
+            'shipping_address.postal_code' => 'required|string|max:20',
+            'shipping_address.country' => ['required', 'string', 'size:2', Rule::in((array) settings('shipping.destinations', ['IT']))],
+            'shipping_address.phone' => 'nullable|string|max:20',
+            'order_notes' => ['nullable', 'string', 'max:'.(int) settings('orders.order_notes_max', 500)],
+            'coupon_code' => 'nullable|string|max:50',
+        ];
+    }
+
+    /**
+     * orders.min_amount (0 = off): the items of the cart (before discount, without shipping) must reach it.
+     *
+     * @throws ValidationException
+     */
+    private function assertMinimumAmount(float $itemsTotal): void
+    {
+        $minimum = (float) settings('orders.min_amount', 0);
+
+        if ($minimum > 0 && $itemsTotal < $minimum) {
+            throw ValidationException::withMessages([
+                'cart' => __('checkout.min_amount_error', ['amount' => Money::format($minimum, (string) settings('store.currency', 'EUR'))]),
+            ]);
+        }
+    }
+
+    /**
+     * orders.guest_checkout_enabled: while off, the guest checkout pages send visitors to the login page.
+     */
+    private function guestCheckoutDisabledResponse(): ?RedirectResponse
+    {
+        if (settings('orders.guest_checkout_enabled', true)) {
+            return null;
+        }
+
+        return redirect()->route('login')->with('error', __('checkout.guest_checkout_disabled'));
+    }
+
+    /**
+     * Remember which Stripe session the snapshot belongs to. A failure here must not fail the checkout: the session
+     * metadata carries the snapshot id, and order creation binds the snapshot itself when it is still unbound.
+     */
+    private function bindSnapshotToSession(CheckoutSnapshot $snapshot, string $sessionId): void
+    {
         try {
-            // Get user's cart with cart items
-            $cart = $user->carts()->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->latest()->first();
-            
-            if (!$cart || $cart->cartItems->isEmpty()) {
-                return response()->json(['error' => 'Your cart is empty'], 422);
-            }
+            $snapshot->update(['stripe_session_id' => $sessionId]);
+        } catch (\Throwable $e) {
+            Log::warning('Could not bind the checkout snapshot to the Stripe session', [
+                'snapshot_id' => $snapshot->id,
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
 
-            // Use the CheckoutService to create a proper checkout session
-            $checkoutService = app(\App\Services\CheckoutService::class);
-            
-            // Prepare checkout data
-            $checkoutData = [
-                'billing_address' => $validated['billing_address'],
-                'shipping_same_as_billing' => $validated['shipping_same_as_billing'] ?? true,
-                'shipping_address' => $validated['shipping_same_as_billing'] ?? true 
-                    ? $validated['billing_address'] 
-                    : $validated['shipping_address'] ?? $validated['billing_address'],
-                'save_payment_method' => $validated['save_payment_method'] ?? false,
-                'promotion_code' => $validated['promotion_code'] ?? null,
-                'allow_promotion_codes' => $validated['allow_promotion_codes'] ?? true,
-                'collect_tax_id' => $validated['collect_tax_id'] ?? false,
-                'checkout_mode' => $validated['checkout_mode'] ?? 'payment',
-                'locale' => $validated['locale'] ?? 'en',
-                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('checkout.cancel'),
-            ];
+    /**
+     * Stripe rejects metadata values longer than 500 characters.
+     */
+    private function metadataValue(string $value): string
+    {
+        return mb_substr($value, 0, 500);
+    }
 
-            // Create the checkout session using proper line items from cart
-            $checkoutSession = $checkoutService->createCheckoutSession($user, $cart->cartItems, $checkoutData, $cart);
+    /**
+     * Shrink the oversell window: every line must be available in the requested quantity right now (its variant is
+     * active and has the stock; the default variant for legacy lines). The paid order is still never rejected later.
+     *
+     * @throws ValidationException
+     */
+    private function assertAvailability(\App\Models\Cart $cart): void
+    {
+        foreach ($cart->cartItems as $item) {
+            $variant = $item->productVariant ?? $item->product?->defaultVariant;
+            $available = $variant
+                ? $variant->canAddToCart((int) $item->quantity)
+                : (bool) $item->product?->canAddToCart((int) $item->quantity);
 
-            // For API requests, return JSON with the URL
-            if ($request->expectsJson() || $request->header('X-Inertia')) {
-                return response()->json([
-                    'sessionId' => $checkoutSession->id,
-                    'url' => $checkoutSession->url
+            if (! $available) {
+                throw ValidationException::withMessages([
+                    'cart' => __('checkout.insufficient_stock_error', ['product' => $item->product?->name ?? '']),
                 ]);
             }
-
-            // For standard requests, redirect
-            return redirect($checkoutSession->url);
-            
-        } catch (\Exception $e) {
-            Log::error('Checkout session creation failed: ' . $e->getMessage(), [
-                'user_id' => $request->user()?->id,
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            if ($request->expectsJson()) {
-                return response()->json(['error' => 'Unable to create checkout session. Please try again.'], 500);
-            }
-            
-            return redirect()->back()->with('error', 'Unable to create checkout session. Please try again.');
-        }
-    }
-
-    /**
-     * Create a guest checkout session from form data
-     */
-    public function createGuestSession(Request $request): RedirectResponse|HttpResponse
-    {
-        try {
-            // Validate the guest checkout details
-            $validated = $request->validate([
-                'guest_email' => 'required|email|max:255',
-                'guest_phone' => 'nullable|string|max:20',
-                'billing_address' => 'required|array',
-                'billing_address.first_name' => 'required|string|max:255',
-                'billing_address.last_name' => 'required|string|max:255',
-                'billing_address.address_line_1' => 'required|string|max:255',
-                'billing_address.address_line_2' => 'nullable|string|max:255',
-                'billing_address.city' => 'required|string|max:255',
-                'billing_address.state' => 'required|string|max:255',
-                'billing_address.postal_code' => 'required|string|max:20',
-                'billing_address.country' => 'required|string|size:2',
-                'shipping_same_as_billing' => 'boolean',
-                'shipping_address' => 'nullable|array',
-                'cart_session_id' => 'required|string',
-                'accept_terms' => 'required|accepted',
-            ]);
-
-            // Get guest cart from session
-            $guestSessionId = $validated['cart_session_id'];
-            $cart = Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->first();
-            
-            if (!$cart || $cart->cartItems->isEmpty()) {
-                return response()->json(['error' => 'Your cart is empty'], 422);
-            }
-
-            // Convert cart items to array format expected by CheckoutService
-            $cartItems = $cart->cartItems->map(function ($item) {
-                return [
-                    'product' => $item->product,
-                    'size' => $item->size,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                    'total' => $item->total,
-                ];
-            })->toArray();
-
-            // Prepare guest checkout data
-            $guestData = [
-                'guest_email' => $validated['guest_email'],
-                'guest_phone' => $validated['guest_phone'] ?? null,
-                'billing_address' => $validated['billing_address'],
-                'shipping_same_as_billing' => $validated['shipping_same_as_billing'] ?? true,
-                'shipping_address' => $validated['shipping_same_as_billing'] ?? true 
-                    ? $validated['billing_address'] 
-                    : $validated['shipping_address'] ?? $validated['billing_address'],
-            ];
-
-            // Use the CheckoutService to create a guest checkout session
-            $checkoutService = app(\App\Services\CheckoutService::class);
-            $checkoutSession = $checkoutService->createGuestCheckoutSession($cartItems, $guestData, $guestSessionId, $cart);
-
-            // For API requests, return JSON with the URL
-            if ($request->expectsJson() || $request->header('X-Inertia')) {
-                return response()->json([
-                    'sessionId' => $checkoutSession->id,
-                    'checkout_url' => $checkoutSession->url
-                ]);
-            }
-
-            // For standard requests, redirect
-            return redirect($checkoutSession->url);
-            
-        } catch (\Exception $e) {
-            Log::error('Guest checkout session creation failed: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            if ($request->expectsJson()) {
-                return response()->json(['error' => 'Unable to create checkout session. Please try again.'], 500);
-            }
-            
-            return redirect()->back()->with('error', 'Unable to create checkout session. Please try again.');
-        }
-    }
-
-    private function calculateTaxAmount(float $subtotal): float
-    {
-        $taxRate = \App\Models\Setting::getTaxRate() / 100; // Convert percentage to decimal
-        $pricesIncludeTax = \App\Models\Setting::getPricesIncludeTax();
-        
-        if ($pricesIncludeTax) {
-            // If prices include tax, calculate the tax portion from the tax-inclusive price
-            // Formula: tax_amount = (tax_inclusive_price * tax_rate) / (1 + tax_rate)
-            return round(($subtotal * $taxRate) / (1 + $taxRate), 2);
-        } else {
-            // If prices exclude tax, add tax to the price
-            return round($subtotal * $taxRate, 2);
-        }
-    }
-
-    /**
-     * Calculate subtotal excluding tax when prices include tax
-     */
-    private function calculateSubtotalExcludingTax(float $taxInclusiveSubtotal): float
-    {
-        $taxRate = \App\Models\Setting::getTaxRate() / 100;
-        $pricesIncludeTax = \App\Models\Setting::getPricesIncludeTax();
-        
-        if ($pricesIncludeTax) {
-            // Formula: subtotal_excluding_tax = tax_inclusive_price / (1 + tax_rate)
-            return round($taxInclusiveSubtotal / (1 + $taxRate), 2);
-        } else {
-            return $taxInclusiveSubtotal;
         }
     }
 
@@ -772,60 +454,25 @@ class CheckoutController extends Controller
             }
 
             // Validate the checkout details
-            $validated = $request->validate([
-                'email' => 'required|email|max:255',
-                'shipping_address' => 'required|array',
-                'shipping_address.first_name' => 'required|string|max:255',
-                'shipping_address.last_name' => 'required|string|max:255',
-                'shipping_address.address_line_1' => 'required|string|max:255',
-                'shipping_address.city' => 'required|string|max:255',
-                'shipping_address.state' => 'required|string|max:255',
-                'shipping_address.postal_code' => 'required|string|max:20',
-                'shipping_address.country' => 'required|string|max:2',
-                'shipping_address.phone' => 'nullable|string|max:20',
-                'order_notes' => 'nullable|string|max:500',
-                'coupon_code' => 'nullable|string|max:50',
-            ]);
+            $validated = $request->validate($this->checkoutRules());
 
             // Get user's cart (using the correct relationship method)
-            $cart = $user->carts()->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->latest()->first();
+            $cart = $user->carts()->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.productVariant', 'cartItems.size'])->latest()->first();
             
             if (!$cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
-            // Fix any cart items that have shipping cost incorrectly added to price
-            foreach ($cart->cartItems as $item) {
-                if ($item->price != $item->product->price) {
-                    $item->update(['price' => $item->product->price]);
-                }
-            }
-            $cart->load(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size']); // Reload cart items with corrected prices and relationships
+            // Charge every line at the current catalogue price of ITS OWN variant (never the default variant's price);
+            // lines whose price moved since they were added are flagged in the checkout snapshot
+            $priceChanges = $cart->refreshPrices();
 
-            // Calculate total amount for the entire cart (prices are tax-inclusive)
-            $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
-                return $item->price * $item->quantity;
-            });
-
-            $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
-            $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
-            $subtotalExcludingTax = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
-
-            // Get applied coupon from session and calculate discount
-            $appliedCoupon = session('applied_coupon');
-            $discountAmount = 0;
-            if ($appliedCoupon) {
-                if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
-                    $discountAmount = round($taxInclusiveSubtotal * ($appliedCoupon['discount_percentage'] / 100), 2);
-                } else {
-                    $discountAmount = min($appliedCoupon['discount_amount'], $taxInclusiveSubtotal);
-                }
-            }
-
-            $totalAmount = max(0, $taxInclusiveSubtotal + $shippingCost - $discountAmount);
+            $totals = $this->checkoutTotals($cart);
+            $this->assertMinimumAmount($totals['items']);
+            $this->assertAvailability($cart);
 
             // Convert to cents for Stripe
-            $totalAmountCents = (int) round($totalAmount * 100);
+            $totalAmountCents = (int) round($totals['total'] * 100);
 
             // Create description of cart contents
             $description = $cart->cartItems->map(function($item) {
@@ -843,8 +490,13 @@ class CheckoutController extends Controller
                 $shippingAddress['country']
             ]);
 
+            // What is charged, frozen and committed BEFORE the Stripe call (no transaction around the call): the order
+            // is built from it, whatever the customer does to the cart while paying
+            $snapshot = CheckoutSnapshot::capture($cart, $totals, $user->id, null, $validated['coupon_code'] ?? null, $priceChanges);
+
             // Use Cashier's checkoutCharge for the entire cart
-            $checkoutSession = $user->checkoutCharge($totalAmountCents, 'Cart Purchase', 1, [
+            try {
+                $checkoutSession = $user->checkoutCharge($totalAmountCents, 'Cart Purchase', 1, [
                 'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('checkout.cancel'),
                 'metadata' => [
@@ -852,8 +504,9 @@ class CheckoutController extends Controller
                     'user_id' => $user->id,
                     'user_email' => $validated['email'],
                     'type' => 'cart_checkout',
-                    'description' => $description,
-                    'shipping_address' => $shippingAddressString,
+                    'snapshot_id' => $snapshot->id,
+                    'description' => $this->metadataValue($description),
+                    'shipping_address' => $this->metadataValue($shippingAddressString),
                     'customer_phone' => $validated['shipping_address']['phone'] ?? '',
                     'order_notes' => $validated['order_notes'] ?? '',
                     'coupon_code' => $validated['coupon_code'] ?? '',
@@ -861,7 +514,14 @@ class CheckoutController extends Controller
                     'source' => OrderCreationService::SESSION_SOURCE,
                     'cart_hash' => $cart->contentHash(),
                 ]
-            ]);
+                ]);
+            } catch (\Throwable $e) {
+                $snapshot->delete();
+
+                throw $e;
+            }
+
+            $this->bindSnapshotToSession($snapshot, (string) $checkoutSession->id);
             
             // For Inertia.js requests, return the URL as props instead of redirecting
             if ($request->header('X-Inertia')) {
@@ -870,10 +530,13 @@ class CheckoutController extends Controller
             
             return redirect($checkoutSession->url);
             
+        } catch (ValidationException $e) {
+            // The form errors (e.g. the minimum order amount) go back to the page as they are
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Cart checkout failed: ' . $e->getMessage(), [
                 'user_id' => $request->user()?->id,
-                'trace' => $e->getTraceAsString()
+                'exception' => get_class($e),
             ]);
             return redirect()->back()->with('error', 'Unable to create checkout session. Please try again.');
         }
@@ -884,74 +547,43 @@ class CheckoutController extends Controller
      */
     public function guestCartCheckout(Request $request): RedirectResponse|HttpResponse
     {
+        if ($response = $this->guestCheckoutDisabledResponse()) {
+            return $response;
+        }
+
         // Check if Stripe is properly configured
         if (!StripeService::isConfigured()) {
             Log::error('Stripe not properly configured for guest checkout', [
                 'secret_key_exists' => !empty(StripeService::getSecretKey()),
                 'public_key_exists' => !empty(StripeService::getPublicKey()),
-                'env_secret' => !empty(env('STRIPE_SECRET')),
-                'env_public' => !empty(env('STRIPE_KEY')),
+                'env_secret' => !empty(config('cashier.secret')),
+                'env_public' => !empty(config('cashier.key')),
             ]);
             return redirect()->back()->with('error', 'Payment system not configured. Please contact support.');
         }
         
         try {
             // Validate the checkout details
-            $validated = $request->validate([
-                'email' => 'required|email|max:255',
-                'shipping_address' => 'required|array',
-                'shipping_address.first_name' => 'required|string|max:255',
-                'shipping_address.last_name' => 'required|string|max:255',
-                'shipping_address.address_line_1' => 'required|string|max:255',
-                'shipping_address.city' => 'required|string|max:255',
-                'shipping_address.state' => 'required|string|max:255',
-                'shipping_address.postal_code' => 'required|string|max:20',
-                'shipping_address.country' => 'required|string|max:2',
-                'shipping_address.phone' => 'nullable|string|max:20',
-                'order_notes' => 'nullable|string|max:500',
-                'coupon_code' => 'nullable|string|max:50',
-            ]);
+            $validated = $request->validate($this->checkoutRules());
 
             // Get guest cart from database using session ID
             $guestSessionId = session()->getId();
-            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size'])->first();
+            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.productVariant', 'cartItems.size'])->first();
             
             if (!$cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
-            // Fix any cart items that have shipping cost incorrectly added to price
-            foreach ($cart->cartItems as $item) {
-                if ($item->price != $item->product->price) {
-                    $item->update(['price' => $item->product->price]);
-                }
-            }
-            $cart->load(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.size']); // Reload cart items with corrected prices and relationships
+            // Charge every line at the current catalogue price of ITS OWN variant (never the default variant's price);
+            // lines whose price moved since they were added are flagged in the checkout snapshot
+            $priceChanges = $cart->refreshPrices();
 
-            // Calculate total amount from cart items (prices are tax-inclusive)
-            $taxInclusiveSubtotal = $cart->cartItems->sum(function ($item) {
-                return $item->price * $item->quantity;
-            });
-
-            $shippingCost = $cart->shipping_cost; // Use cart's size-based shipping cost
-            $taxAmount = $this->calculateTaxAmount($taxInclusiveSubtotal);
-            $subtotalExcludingTax = $this->calculateSubtotalExcludingTax($taxInclusiveSubtotal);
-
-            // Get applied coupon from session and calculate discount
-            $appliedCoupon = session('applied_coupon');
-            $discountAmount = 0;
-            if ($appliedCoupon) {
-                if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
-                    $discountAmount = round($taxInclusiveSubtotal * ($appliedCoupon['discount_percentage'] / 100), 2);
-                } else {
-                    $discountAmount = min($appliedCoupon['discount_amount'], $taxInclusiveSubtotal);
-                }
-            }
-
-            $totalAmount = max(0, $taxInclusiveSubtotal + $shippingCost - $discountAmount);
+            $totals = $this->checkoutTotals($cart);
+            $this->assertMinimumAmount($totals['items']);
+            $this->assertAvailability($cart);
 
             // Convert to cents for Stripe
-            $totalAmountCents = (int) round($totalAmount * 100);
+            $totalAmountCents = (int) round($totals['total'] * 100);
 
             // Create description from cart items
             $description = $cart->cartItems->map(function($item) {
@@ -978,13 +610,17 @@ class CheckoutController extends Controller
                 return redirect()->back()->with('error', 'Payment system not configured. Please contact support.');
             }
             
+            // What is charged, frozen and committed BEFORE the Stripe call (no transaction around the call)
+            $snapshot = CheckoutSnapshot::capture($cart, $totals, null, $guestSessionId, $validated['coupon_code'] ?? null, $priceChanges);
+
+            try {
             $checkoutSession = $stripe->checkout->sessions->create([
                 'line_items' => [[
                     'price_data' => [
-                        'currency' => env('CASHIER_CURRENCY', 'eur'),
+                        'currency' => config('cashier.currency'),
                         'product_data' => [
                             'name' => 'Cart Purchase',
-                            'description' => $description,
+                            'description' => $this->metadataValue($description),
                         ],
                         'unit_amount' => $totalAmountCents,
                     ],
@@ -998,8 +634,9 @@ class CheckoutController extends Controller
                     'guest_session_id' => $guestSessionId,
                     'guest_email' => $validated['email'],
                     'type' => 'guest_cart_checkout',
-                    'description' => $description,
-                    'shipping_address' => $shippingAddressString,
+                    'snapshot_id' => $snapshot->id,
+                    'description' => $this->metadataValue($description),
+                    'shipping_address' => $this->metadataValue($shippingAddressString),
                     'customer_phone' => $validated['shipping_address']['phone'] ?? '',
                     'order_notes' => $validated['order_notes'] ?? '',
                     'coupon_code' => $validated['coupon_code'] ?? '',
@@ -1008,6 +645,13 @@ class CheckoutController extends Controller
                     'cart_hash' => $cart->contentHash(),
                 ]
             ]);
+            } catch (\Throwable $e) {
+                $snapshot->delete();
+
+                throw $e;
+            }
+
+            $this->bindSnapshotToSession($snapshot, (string) $checkoutSession->id);
 
             // For Inertia.js requests, return the URL as props instead of redirecting
             if ($request->header('X-Inertia')) {
@@ -1016,6 +660,9 @@ class CheckoutController extends Controller
             
             return redirect($checkoutSession->url);
             
+        } catch (ValidationException $e) {
+            // The form errors (e.g. the minimum order amount) go back to the page as they are
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Guest cart checkout failed: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Unable to process guest checkout. Please try again.');
@@ -1030,14 +677,18 @@ class CheckoutController extends Controller
         // Try to extract line items from the session for fallback display
         $orderItems = $this->extractLineItemsFromSession($checkoutSession);
         
+        $total = (float) ($checkoutSession->amount_total / 100);
+        $vat = Vat::includedIn($total);
+
         return [
             'id' => 'pending',
             'order_number' => 'PENDING',
-            'total_amount' => (float) ($checkoutSession->amount_total / 100),
+            'total_amount' => $total,
             'status' => 'processing',
             'payment_status' => 'succeeded',
             'subtotal' => (float) (($checkoutSession->amount_subtotal ?? $checkoutSession->amount_total) / 100),
-            'tax_amount' => (float) (($checkoutSession->total_details->amount_tax ?? 0) / 100),
+            'tax_amount' => $vat['amount'],
+            'tax_rate' => $vat['rate'],
             'shipping_amount' => (float) (($checkoutSession->total_details->amount_shipping ?? 0) / 100),
             'currency' => strtoupper($checkoutSession->currency),
             'created_at' => now()->toISOString(),

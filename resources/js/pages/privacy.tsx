@@ -1,9 +1,11 @@
 import Header from '@/components/header';
+import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Head } from '@inertiajs/react';
 
 export default function Privacy() {
     const { t } = useTranslation();
+    const email = useSetting('contact.support_email', '');
 
     return (
         <>
@@ -83,7 +85,7 @@ export default function Privacy() {
                                 <h2 className="mb-4 text-2xl font-bold text-black">{t('contact.contact_us')}</h2>
                                 <p className="mb-4 text-gray-600">{t('privacy.contact_privacy')}</p>
                                 <ul className="list-none space-y-2 text-gray-600">
-                                    <li>{t('privacy.contact_email')}</li>
+                                    <li>{t('privacy.contact_email', { email })}</li>
                                 </ul>
                             </section>
                         </div>

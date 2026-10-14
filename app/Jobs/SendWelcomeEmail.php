@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Mail\WelcomeEmail;
 use App\Models\User;
-use App\Services\OrderCreationService;
+use App\Support\Locales;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -37,7 +37,7 @@ class SendWelcomeEmail implements ShouldQueue
     {
         $locale ??= app()->getLocale();
 
-        $this->locale = in_array($locale, OrderCreationService::SUPPORTED_LOCALES, true) ? $locale : config('app.locale');
+        $this->locale = Locales::isSupported($locale) ? $locale : Locales::fallback();
         $this->afterCommit();
     }
 

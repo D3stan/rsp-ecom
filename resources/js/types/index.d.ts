@@ -1,10 +1,12 @@
 import { LucideIcon } from 'lucide-react';
 import type { Config } from 'ziggy-js';
+import type { PublicSettings } from './settings';
 
 export * from './category';
 export * from './order';
 export * from './product';
 export * from './review';
+export * from './settings';
 export * from './size';
 export * from './wishlist';
 
@@ -32,11 +34,13 @@ export interface NavItem {
 
 export interface SharedData {
     name: string;
+    supportedLocales: string[];
+    settings: PublicSettings;
     quote: { message: string; author: string };
     auth: Auth;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
-    flash?: { success: string | null; error: string | null; warning: string | null };
+    flash?: { success: string | null; error: string | null; warning: string | null; id: string | null };
     [key: string]: unknown;
 }
 

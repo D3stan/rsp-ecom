@@ -51,20 +51,27 @@ class CartItem extends Model
         return $this->quantity * $this->price;
     }
 
-    // Check if product price has changed since adding to cart
-    public function getHasPriceChangedAttribute(): bool
-    {
-        return $this->price != $this->product->price;
-    }
-
+    /**
+     * Current catalogue price of the thing this line is for: its own variant's price (CartController::add copies it
+     * into the line), else the product's default variant for legacy lines without a variant. Never the default
+     * variant's price for a line that has another variant.
+     */
     public function getCurrentPriceAttribute(): float
     {
-        return $this->product->price;
+        $variant = $this->productVariant ?? $this->product?->defaultVariant;
+
+        return (float) ($variant?->price ?? $this->product->price);
     }
 
-    // Update price to current product price
+    // Check if the catalogue price of the line's variant has changed since adding to cart
+    public function getHasPriceChangedAttribute(): bool
+    {
+        return abs((float) $this->price - $this->current_price) >= 0.005;
+    }
+
+    // Update price to the current catalogue price of the line's variant
     public function updatePrice(): bool
     {
-        return $this->update(['price' => $this->product->price]);
+        return $this->update(['price' => $this->current_price]);
     }
 }

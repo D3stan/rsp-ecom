@@ -23,10 +23,6 @@ class OrderRefunded extends Mailable
     {
         return new Envelope(
             subject: __('emails.order_refunded.subject', ['number' => '#'.$this->order->order_number]),
-            tags: ['order-refunded'],
-            metadata: [
-                'order_id' => $this->order->id,
-            ],
         );
     }
 

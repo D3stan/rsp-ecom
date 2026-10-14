@@ -101,8 +101,11 @@ The shop relies on one Stripe webhook to create orders even when the customer cl
 1. Dashboard -> Developers -> **Webhooks** -> *Add endpoint* (live mode, and again in test mode if you test with test keys).
 2. Endpoint URL: `https://shop.example/stripe/webhook`
 3. Events to send (select exactly these, nothing else is used):
-   - `checkout.session.completed` - **required**: this creates the order and triggers the confirmation email.
-   - `payment_intent.succeeded` - accepted by the app; currently a no-op for orders created by checkout sessions (it only acts when the payment intent carries a `checkout_session_id`). Optional.
+   - `checkout.session.completed` - **required**: creates the order (paid, or pending for delayed payment methods) and triggers the confirmation email.
+   - `checkout.session.async_payment_succeeded` - **required if delayed payment methods (SEPA debit, bank transfer...) are enabled**: pays the pending order, then confirmation email, admin alert and stock deduction.
+   - `checkout.session.async_payment_failed` - closes a still-pending order (payment failed, order cancelled; no customer email).
+   - `checkout.session.expired` - closes the pending order of an abandoned checkout and retires its checkout snapshot.
+   - `payment_intent.succeeded` is **no longer used**: unsubscribe it if it was selected earlier (the app ignores it).
 4. Open the endpoint -> **Signing secret** -> reveal -> copy `whsec_...` into `STRIPE_WEBHOOK_SECRET` in Dokploy and redeploy.
    - **In production the shop refuses every webhook while `STRIPE_WEBHOOK_SECRET` is empty** (otherwise anybody could post a fake "paid" event). If orders stop being created after a deploy, this is the first thing to check: the log shows `Stripe webhook refused: STRIPE_WEBHOOK_SECRET is not set`.
 5. After the first real payment, open the endpoint in Stripe and check that deliveries show `200`. Stripe retries non-2xx answers for up to 3 days; the app creates each order only once even when an event is delivered several times.

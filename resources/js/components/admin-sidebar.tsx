@@ -85,7 +85,6 @@ const footerNavItems: NavItem[] = [
 
 export function AdminSidebar() {
     const pendingOrders = 8; // This would come from props in real implementation
-    const lowStockCount = 3; // This would come from props in real implementation
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -124,9 +123,9 @@ export function AdminSidebar() {
                             </Button>
 
                             <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                                <Link href="/admin/products?filter=low-stock">
+                                <Link href="/admin/products?stock_filter=low-stock">
                                     <Package className="mr-2 h-4 w-4" />
-                                    Low Stock ({lowStockCount})
+                                    Low Stock
                                 </Link>
                             </Button>
 

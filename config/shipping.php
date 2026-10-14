@@ -60,8 +60,12 @@ return [
     |--------------------------------------------------------------------------
     |
     | driver  manual (default: tracking links from the templates above, no API),
-    |         null (tracking disabled) or the name of a registered adapter.
+    |         null (tracking disabled) or the name of a registered adapter (spediamo).
     |         fake exists for tests/demos and is refused in production.
+    |
+    | auto_deliver  When a carrier reports Delivered, move the shipped order to `delivered`
+    |         (which sends the delivered email). When false, events and the tracking status are
+    |         still stored and shown, but the order status is left to the admin.
     |
     | poll    Used only by drivers that contact a carrier. Minutes between polls of
     |         a shipped order; the slower interval applies after slow_after_days;
@@ -77,12 +81,19 @@ return [
     |       'webhook_secret' => env('SHIPPING_TRACKING_EXAMPLE_WEBHOOK_SECRET'),
     |       'timeout' => 10,
     |       'retries' => 1,
+    |       // our neutral carrier code => the provider's courier string (empty = accept every carrier)
+    |       'carrier_map' => ['sda' => 'SDA'],
     |   ],
+    |
+    | Carrier codes in `carriers` above are provider-neutral and stay the same whatever driver is
+    | active; each driver translates them with its own carrier_map (see Support\CarrierCodeMap).
     |
     */
 
     'tracking' => [
         'driver' => env('SHIPPING_TRACKING_DRIVER', 'manual'),
+
+        'auto_deliver' => (bool) env('SHIPPING_TRACKING_AUTO_DELIVER', true),
 
         'poll' => [
             'interval_minutes' => (int) env('SHIPPING_TRACKING_POLL_MINUTES', 120),
@@ -97,6 +108,22 @@ return [
         'drivers' => [
             'fake' => [
                 'webhook_secret' => env('SHIPPING_TRACKING_FAKE_WEBHOOK_SECRET'),
+            ],
+
+            // Polling adapter for a shipping platform's API (tracking only). Needs a bearer token.
+            'spediamo' => [
+                'base_url' => env('SHIPPING_TRACKING_SPEDIAMO_URL', 'https://api.spediamo.it'),
+                'token' => env('SHIPPING_TRACKING_SPEDIAMO_TOKEN'),
+                'timeout' => (int) env('SHIPPING_TRACKING_SPEDIAMO_TIMEOUT', 10),
+                'retries' => 1,
+                // Timezone of the event dates the API returns (converted to UTC when stored).
+                'timezone' => 'Europe/Rome',
+                // Our neutral carrier code => the API's `courier` string. Empty = every carrier is accepted.
+                // Example: ['sda' => 'SDA']. Fill it once the contracted couriers are known.
+                'carrier_map' => [],
+                // Overrides for the built-in status map: API status => TrackingStatus value
+                // (info_received, in_transit, out_for_delivery, delivered, exception, returned, unknown).
+                'status_map' => [],
             ],
         ],
     ],

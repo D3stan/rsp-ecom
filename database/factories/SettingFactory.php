@@ -5,54 +5,33 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
+ * Storage rows of the settings table. Values are JSON, as App\Settings\Settings writes them.
+ *
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Setting>
  */
 class SettingFactory extends Factory
 {
     /**
-     * Define the model's default state.
-     *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
         return [
-            'key' => $this->faker->unique()->slug(2),
-            'value' => $this->faker->word(),
-            'type' => $this->faker->randomElement(['string', 'boolean', 'json']),
+            'key' => 'store.name',
+            'value' => json_encode($this->faker->company()),
+            'type' => 'string',
         ];
     }
 
     /**
-     * Create a string setting
+     * A row for a catalogue key, e.g. Setting::factory()->forKey('tax.rate', 8.75)->create().
      */
-    public function string(): static
+    public function forKey(string $key, mixed $value, string $type = 'string'): static
     {
-        return $this->state(fn (array $attributes) => [
-            'type' => 'string',
-            'value' => $this->faker->sentence(),
-        ]);
-    }
-
-    /**
-     * Create a boolean setting
-     */
-    public function boolean(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'type' => 'boolean',
-            'value' => $this->faker->boolean() ? '1' : '0',
-        ]);
-    }
-
-    /**
-     * Create a JSON setting
-     */
-    public function json(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'type' => 'json',
-            'value' => json_encode(['key' => $this->faker->word()]),
+        return $this->state(fn () => [
+            'key' => $key,
+            'value' => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION),
+            'type' => $type,
         ]);
     }
 }

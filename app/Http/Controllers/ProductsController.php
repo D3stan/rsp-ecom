@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Category;
+use App\Support\CatalogPagination;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -38,7 +39,7 @@ class ProductsController extends Controller
             }
         }
         
-        SEOMeta::setTitle($pageTitle . ' – ' . config('app.name'));
+        SEOMeta::setTitle($pageTitle . ' – ' . settings('store.name'));
         SEOMeta::setDescription(Str::limit($metaDescription, 160));
         SEOMeta::setCanonical(route('products', $request->except('page')));
         
@@ -49,11 +50,11 @@ class ProductsController extends Controller
         
         OpenGraph::setType('website');
         OpenGraph::setUrl(route('products', $request->except('page')));
-        OpenGraph::setTitle($pageTitle . ' – ' . config('app.name'));
+        OpenGraph::setTitle($pageTitle . ' – ' . settings('store.name'));
         OpenGraph::setDescription(Str::limit($metaDescription, 300));
         
         TwitterCard::setType('summary');
-        TwitterCard::setTitle($pageTitle . ' – ' . config('app.name'));
+        TwitterCard::setTitle($pageTitle . ' – ' . settings('store.name'));
         TwitterCard::setDescription(Str::limit($metaDescription, 200));
         
         $query = Product::with(['category', 'approvedReviews', 'defaultVariant'])
@@ -118,7 +119,7 @@ class ProductsController extends Controller
         }
 
         // Pagination
-        $perPage = $request->get('per_page', 9); // Set to 9 products per page for optimal grid layout
+        $perPage = CatalogPagination::perPage($request);
         $products = $query->paginate($perPage)->withQueryString();
 
         // Transform products for frontend
@@ -202,7 +203,7 @@ class ProductsController extends Controller
                 'max_price' => $request->get('max_price', ''),
                 'sort' => $request->get('sort', 'name'),
                 'direction' => $request->get('direction', 'asc'),
-                'per_page' => $request->get('per_page', 24),
+                'per_page' => $perPage,
             ],
             'pagination' => [
                 'total' => $products->total(),
@@ -229,14 +230,14 @@ class ProductsController extends Controller
         $pageTitle = $product->seo_title ?: $product->name;
         $metaDescription = $product->seo_description ?: strip_tags($product->description);
 
-        SEOMeta::setTitle($pageTitle . ' – ' . config('app.name'));
+        SEOMeta::setTitle($pageTitle . ' – ' . settings('store.name'));
         SEOMeta::setDescription(Str::limit($metaDescription, 160));
         SEOMeta::setCanonical(route('products.show', $product));
 
         // Open Graph for product
         OpenGraph::setType('product');
         OpenGraph::setUrl(route('products.show', $product));
-        OpenGraph::setTitle($pageTitle . ' – ' . config('app.name'));
+        OpenGraph::setTitle($pageTitle . ' – ' . settings('store.name'));
         OpenGraph::setDescription(Str::limit($metaDescription, 300));
 
         // Get the main product image for social sharing
@@ -252,7 +253,7 @@ class ProductsController extends Controller
 
         // Twitter Card
         TwitterCard::setType('summary_large_image');
-        TwitterCard::setTitle($pageTitle . ' – ' . config('app.name'));
+        TwitterCard::setTitle($pageTitle . ' – ' . settings('store.name'));
         TwitterCard::setDescription(Str::limit($metaDescription, 200));
 
         // JSON-LD Product structured data
@@ -295,7 +296,7 @@ class ProductsController extends Controller
             'url' => route('products.show', $product),
             'seller' => [
                 '@type' => 'Organization',
-                'name' => config('app.name')
+                'name' => settings('store.name')
             ]
         ]);
 

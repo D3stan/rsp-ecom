@@ -11,23 +11,24 @@ Artisan::command('inspire', function () {
 
 // Schedule sitemap generation daily at 2 AM
 // Use the index version for better performance with large product catalogs
+// sendOutputTo (not appendOutputTo): the file holds only the last run, so it can never grow without bound.
 Schedule::command('generate:sitemap-index')
     ->dailyAt('02:00')
     ->withoutOverlapping()
-    ->appendOutputTo(storage_path('logs/sitemap.log'));
+    ->sendOutputTo(storage_path('logs/sitemap.log'));
 
 // Also keep the simple sitemap command for manual generation if needed
 Schedule::command('generate:sitemap')
     ->weeklyOn(7, '03:00') // Run weekly on Sunday at 3 AM as backup
     ->withoutOverlapping()
-    ->appendOutputTo(storage_path('logs/sitemap-simple.log'));
+    ->sendOutputTo(storage_path('logs/sitemap-simple.log'));
 
 // Safety net for confirmation emails whose queue job was lost or never created (7-day window).
-// Goes through EmailService, so it can never produce a duplicate mail.
+// Goes through EmailService, so it can never produce a duplicate mail. Its console output is not kept (it ran
+// every ten minutes and the file grew without rotation); failures and backlog warnings go to the application log.
 Schedule::command('orders:send-pending-emails --force')
     ->everyTenMinutes()
-    ->withoutOverlapping()
-    ->appendOutputTo(storage_path('logs/pending-order-emails.log'));
+    ->withoutOverlapping();
 
 // Drop expired pending registrations daily
 Schedule::command('auth:cleanup-pending --force')
@@ -51,3 +52,8 @@ Schedule::command('tracking:sync')
     ->everyFifteenMinutes()
     ->withoutOverlapping()
     ->when(fn () => app(TrackingManager::class)->canPoll());
+
+// Checkout snapshots: drop abandoned ones after 7 days and consumed ones after 90 days (see CheckoutSnapshot::prunable)
+Schedule::command('model:prune', ['--model' => \App\Models\CheckoutSnapshot::class])
+    ->daily()
+    ->withoutOverlapping();

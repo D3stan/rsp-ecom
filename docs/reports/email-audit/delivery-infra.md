@@ -83,8 +83,8 @@ Signature `auth:cleanup-pending {--force}`; `handle()` returns void (exit 0). It
 
 - `docs/reports/contact-form-setup.md`: `MAIL_CONTACT_EMAIL` does not exist; the config reads `CONTACT_EMAIL`. FIXED.
 - `docs/reports/email-implementation-guide.md`: `MAIL_ENCRYPTION` was removed in Laravel 11 (`MAIL_SCHEME`); sender was an SMTP login address. FIXED.
-- OPEN: `docs/reports/email-logo-setup.md` still shows `MAIL_ENCRYPTION=tls` and a personal From address (not in B's ownership).
-- OPEN: `docs/reports/email-testing-guide.md` / `checkout-fixes-implementation.md` reference `test:checkout-email`, which no longer exists (see section 8).
+- FIXED (cleanup round 2): `docs/reports/email-logo-setup.md` rewritten (no `MAIL_ENCRYPTION`, no personal address, no removed headers).
+- OPEN: `docs/reports/email-testing-guide.md` / `checkout-fixes-implementation.md` reference `test:checkout-email`, which no longer exists (see section 8). `checkout-fixes-implementation.md` was rewritten in cleanup round 2; `email-testing-guide.md` is still OPEN.
 
 ## 7. Queued mailable pitfalls
 
@@ -107,9 +107,9 @@ Signature `auth:cleanup-pending {--force}`; `handle()` returns void (exit 0). It
 4. `mail.failover` ended in `log`, i.e. a failing SMTP would silently "succeed" by writing to the log. Removed.
 5. `HandleInertiaRequests::share()` does not share flash messages and no Admin page reads `flash`, so the `success`/`error` session flashes of the admin
    controllers are never displayed (pages toast client-side). The new `warning` flash is set but will only be visible once flash sharing is added. OPEN (frontend, outside B).
-6. `MailServiceProvider` adds `List-Unsubscribe: <APP_URL/unsubscribe>` and `X-Brand-*` headers to every message (bogus unsubscribe URL). OPEN: Category D.
+6. `MailServiceProvider` adds `List-Unsubscribe: <APP_URL/unsubscribe>` and `X-Brand-*` headers to every message (bogus unsubscribe URL). FIXED earlier (provider deleted); cleanup round 2 also dropped the `tags:`/`metadata:` envelope fields, which emitted `X-Tag` / `X-Metadata-*` headers (internal order/user ids) on plain SMTP.
 7. `deploy.php` (legacy Deployer) restarts only `laravel.service`; it has no queue/schedule handling. The Docker/Dokploy path is the one in use. OPEN/FYI.
-8. `Dockerfile` keeps config caching off because `StripeService` reads `env()` directly; irrelevant to workers but means each worker boot parses `.env` (fine).
+8. `Dockerfile` keeps config caching off because `StripeService` read `env()` directly; irrelevant to workers but means each worker boot parses `.env` (fine). Cleanup round 2 replaced every `env()` outside `config/` with `config('cashier.*')`; caching is still left off until it is verified end to end.
 9. Cache locks (`WithoutOverlapping` in the job and in the scheduler) need a lock-capable cache: `CACHE_STORE=database` (as in `.env.example`) works; `file` works for
    a single container only; do not use `array` in production.
 10. Dokploy: three services build the same Dockerfile (cached layers, but three build steps); acceptable.

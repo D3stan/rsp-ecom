@@ -15,11 +15,6 @@ class Order extends Model
 {
     use HasFactory;
 
-    /**
-     * Validity (days) of the signed order-status link sent in emails.
-     */
-    public const PUBLIC_URL_DAYS = 30;
-
     protected $fillable = [
         'order_number',
         'user_id',
@@ -28,6 +23,7 @@ class Order extends Model
         'status',
         'subtotal',
         'tax_amount',
+        'tax_rate',
         'shipping_amount',
         'discount_amount',
         'coupon_code',
@@ -61,6 +57,7 @@ class Order extends Model
     protected $casts = [
         'subtotal' => 'decimal:2',
         'tax_amount' => 'decimal:2',
+        'tax_rate' => 'decimal:2',
         'shipping_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
@@ -69,7 +66,16 @@ class Order extends Model
         'tracking_last_synced_at' => 'datetime',
         'tracking_next_sync_at' => 'datetime',
         'tracking_started_at' => 'datetime',
+        'stock_deducted_at' => 'datetime',
+        'stock_restored_at' => 'datetime',
+        'has_oversold_items' => 'boolean',
     ];
+
+    /**
+     * Stock bookkeeping is internal: it never reaches a customer-facing page through toArray()/toFrontendArray().
+     * The admin order page receives it as its own prop (Admin\OrdersController::show).
+     */
+    protected $hidden = ['stock_deducted_at', 'stock_restored_at', 'has_oversold_items'];
 
     // Boot method to generate order number
     protected static function boot()
@@ -349,7 +355,15 @@ class Order extends Model
      */
     public function publicUrl(): string
     {
-        return URL::temporarySignedRoute('orders.guest.show', now()->addDays(self::PUBLIC_URL_DAYS), ['order' => $this->order_number]);
+        return URL::temporarySignedRoute('orders.guest.show', now()->addDays(static::publicUrlDays()), ['order' => $this->order_number]);
+    }
+
+    /**
+     * Validity (days) of the signed order-status link sent in emails: the orders.public_link_days setting.
+     */
+    public static function publicUrlDays(): int
+    {
+        return max(1, (int) settings('orders.public_link_days', 30));
     }
 
     /**
@@ -453,6 +467,7 @@ class Order extends Model
         // Convert decimal strings to floats for frontend
         $data['subtotal'] = (float) $this->subtotal;
         $data['tax_amount'] = (float) $this->tax_amount;
+        $data['tax_rate'] = $this->tax_rate !== null ? (float) $this->tax_rate : null;
         $data['shipping_amount'] = (float) $this->shipping_amount;
         $data['discount_amount'] = (float) $this->discount_amount;
         $data['total_amount'] = (float) $this->total_amount;
@@ -471,7 +486,8 @@ class Order extends Model
                         'price' => (float) $item->price,
                         'image_url' => $product ? $product->image_url : null,
                     ],
-                    'size' => null, // OrderItem model doesn't have size relation currently
+                    'size' => $item->size ? ['id' => $item->size->id, 'name' => $item->size->name] : null,
+                    'variant' => $item->productVariant ? ['id' => $item->productVariant->id, 'name' => $item->productVariant->name] : null,
                     'quantity' => $item->quantity,
                     'price' => (float) $item->price,
                     'total' => (float) $item->total,

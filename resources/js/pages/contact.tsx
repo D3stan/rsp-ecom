@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useSetting } from '@/hooks/use-setting';
 import useTranslation from '@/hooks/useTranslation';
 import { type SharedData } from '@/types';
-import { AlertCircle, CheckCircle, Clock, Mail } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Mail, Phone } from 'lucide-react';
 
 interface ContactPageProps extends SharedData {
     errors: Record<string, string>;
@@ -19,6 +20,9 @@ interface ContactPageProps extends SharedData {
 export default function Contact() {
     const { errors, success, error } = usePage<ContactPageProps>().props;
     const { t } = useTranslation();
+    const supportEmail = useSetting('contact.support_email', '');
+    const phone = useSetting('contact.phone', '');
+    const businessHours = useSetting('contact.business_hours', '');
 
     const { data, setData, post, processing, reset } = useForm({
         firstName: '',
@@ -171,27 +175,51 @@ export default function Contact() {
                                     </div>
                                     <div>
                                         <h3 className="mb-1 font-semibold text-black">{t('contact.email_us')}</h3>
-                                        <p className="text-gray-600">support@rsp-industries.com</p>
+                                        <p className="text-gray-600">
+                                            <a href={`mailto:${supportEmail}`} className="hover:underline">
+                                                {supportEmail}
+                                            </a>
+                                        </p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className="border border-gray-200 bg-white shadow-sm">
-                            <CardContent className="p-6">
-                                <div className="flex items-start space-x-4">
-                                    <div className="rounded-full bg-black p-3 text-white">
-                                        <Clock className="h-5 w-5" />
+                        {phone.trim() !== '' && (
+                            <Card className="border border-gray-200 bg-white shadow-sm">
+                                <CardContent className="p-6">
+                                    <div className="flex items-start space-x-4">
+                                        <div className="rounded-full bg-black p-3 text-white">
+                                            <Phone className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="mb-1 font-semibold text-black">{t('contact.call_us')}</h3>
+                                            <p className="text-gray-600">
+                                                <a href={`tel:${phone.replace(/[^+\d]/g, '')}`} className="hover:underline">
+                                                    {phone}
+                                                </a>
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="mb-1 font-semibold text-black">{t('contact.business_hours')}</h3>
-                                        <p className="text-gray-600">{t('contact.monday_friday')}</p>
-                                        <p className="text-gray-600">{t('contact.saturday')}</p>
-                                        <p className="text-gray-600">{t('contact.sunday')}</p>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {businessHours.trim() !== '' && (
+                            <Card className="border border-gray-200 bg-white shadow-sm">
+                                <CardContent className="p-6">
+                                    <div className="flex items-start space-x-4">
+                                        <div className="rounded-full bg-black p-3 text-white">
+                                            <Clock className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="mb-1 font-semibold text-black">{t('contact.business_hours')}</h3>
+                                            <p className="text-gray-600">{businessHours}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+                        )}
                     </div>
                 </div>
             </div>

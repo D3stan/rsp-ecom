@@ -122,7 +122,7 @@ class GoogleAuthController extends Controller
                 $pendingUser->delete();
 
                 Auth::login($user);
-                return redirect()->intended('/dashboard')->with('success', 'Account verified via Google! Welcome to ' . config('app.name') . '!');
+                return redirect()->intended('/dashboard')->with('success', 'Account verified via Google! Welcome to ' . settings('store.name') . '!');
             }
             
             // Create new user
@@ -142,9 +142,9 @@ class GoogleAuthController extends Controller
             
         } catch (\Exception $e) {
             \Log::error('Google OAuth callback error', [
+                'exception' => get_class($e),
                 'error' => $e->getMessage(),
                 'code' => $e->getCode(),
-                'trace' => $e->getTraceAsString(),
             ]);
             
             // Handle specific Google OAuth errors

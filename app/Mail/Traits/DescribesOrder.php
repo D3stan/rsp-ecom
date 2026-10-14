@@ -5,6 +5,7 @@ namespace App\Mail\Traits;
 use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Support\Money;
 use Carbon\CarbonInterface;
 
 /**
@@ -91,7 +92,7 @@ trait DescribesOrder
             'shippingAddress' => $this->addressLines($order->shippingAddress),
             'orderUrl' => $this->orderUrl($order),
             'isGuest' => $order->user_id === null,
-            'publicUrlDays' => Order::PUBLIC_URL_DAYS,
+            'publicUrlDays' => Order::publicUrlDays(),
             'supportAddress' => config('mail.support_address'),
         ];
     }
@@ -134,13 +135,16 @@ trait DescribesOrder
     }
 
     /**
-     * Items → discount (with coupon) → shipping → total, always summing to the stored total.
+     * Items → discount (with coupon) → shipping → total, always summing to the stored total. Shipping is always
+     * an amount (a zero amount is printed as such, never as a word).
      *
      * Orders store subtotal, discount and shipping separately; if a legacy row does not add up,
      * the discount is derived from the charged total so the customer sees consistent lines.
-     * VAT is never shown as an amount: prices are VAT-inclusive and orders.tax_amount is not populated.
+     * Prices are VAT-inclusive: orders that stored their VAT rate (orders.tax_rate) get a last, muted row
+     * "of which VAT (22%) €x" (the amount contained in the total, orders.tax_amount); older orders have no rate
+     * and keep the plain "VAT included" sentence in `vat_note`.
      *
-     * @return array{rows: array<int, array{label: string, value: string, bold: bool}>, vat_note: string}
+     * @return array{rows: array<int, array{label: string, value: string, bold: bool, muted?: bool}>, vat_note: string|null}
      */
     protected function orderTotals(Order $order, bool $withBreakdown = true): array
     {
@@ -175,14 +179,35 @@ trait DescribesOrder
 
             $rows[] = [
                 'label' => __('emails.common.shipping'),
-                'value' => $shipping > 0 ? $this->money($shipping, $currency) : __('emails.common.shipping_free'),
+                'value' => $this->money($shipping, $currency),
                 'bold' => false,
             ];
         }
 
         $rows[] = ['label' => __('emails.common.total'), 'value' => $this->money($total, $currency), 'bold' => true];
 
-        return ['rows' => $rows, 'vat_note' => __('emails.common.vat_included')];
+        if ($order->tax_rate === null) {
+            return ['rows' => $rows, 'vat_note' => __('emails.common.vat_included')];
+        }
+
+        $rows[] = [
+            'label' => __('emails.common.vat_portion', ['rate' => $this->formatRate((float) $order->tax_rate)]),
+            'value' => $this->money((float) $order->tax_amount, $currency),
+            'bold' => false,
+            'muted' => true,
+        ];
+
+        return ['rows' => $rows, 'vat_note' => null];
+    }
+
+    /**
+     * "22" / "5,5" (decimal separator of the locale being rendered)
+     */
+    protected function formatRate(float $rate): string
+    {
+        $separator = app()->getLocale() === 'en' ? '.' : ',';
+
+        return rtrim(rtrim(number_format($rate, 2, $separator, ''), '0'), $separator);
     }
 
     /**
@@ -235,38 +260,11 @@ trait DescribesOrder
     }
 
     /**
-     * Currency-aware amount in the locale being rendered (the mailable's locale is already applied).
-     *
-     * it/de/es "1.234,56 €", fr "1 234,56 €" (narrow no-break space), en "€1,234.56".
-     * Does not rely on the intl extension.
+     * Currency-aware amount in the locale being rendered (the mailable's locale is already applied). See App\Support\Money.
      */
     protected function money(float|string|null $amount, ?string $currency): string
     {
-        $currency = strtoupper($currency ?: 'EUR');
-        $amount = (float) $amount;
-        $locale = app()->getLocale();
-
-        [$decimal, $thousands] = match ($locale) {
-            'en' => ['.', ','],
-            'fr' => [',', "\u{202F}"],
-            default => [',', '.'],
-        };
-
-        $digits = number_format(abs($amount), 2, $decimal, $thousands);
-
-        // Spanish does not group four-digit numbers ("1234,56 €")
-        if ($locale === 'es' && abs($amount) < 10000) {
-            $digits = number_format(abs($amount), 2, $decimal, '');
-        }
-
-        $symbol = ['EUR' => '€', 'USD' => '$', 'GBP' => '£'][$currency] ?? $currency;
-        $sign = $amount < 0 ? '-' : '';
-
-        if ($locale === 'en') {
-            return $sign.$symbol.(mb_strlen($symbol) > 1 ? "\u{00A0}" : '').$digits;
-        }
-
-        return $sign.$digits."\u{00A0}".$symbol;
+        return Money::format($amount, $currency);
     }
 
     /**

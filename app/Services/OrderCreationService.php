@@ -4,12 +4,14 @@ namespace App\Services;
 
 use App\Models\Address;
 use App\Models\Cart;
+use App\Models\CheckoutSnapshot;
 use App\Models\Order;
 use App\Models\User;
+use App\Support\Locales;
+use App\Support\Vat;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 use Stripe\StripeObject;
 use Throwable;
 
@@ -21,7 +23,11 @@ use Throwable;
  */
 class OrderCreationService
 {
-    public const SUPPORTED_LOCALES = ['it', 'en', 'de', 'es', 'fr'];
+    /**
+     * @deprecated Alias kept for existing callers; the source of truth is config('app.supported_locales')
+     *             (App\Support\Locales). A test pins both lists to the same set.
+     */
+    public const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'it'];
 
     public const FALLBACK_LOCALE = 'it';
 
@@ -35,20 +41,21 @@ class OrderCreationService
      *
      * Returns null (and creates nothing) for a session that does not belong to this shop.
      *
+     * The order is built from the checkout snapshot named in metadata.snapshot_id (what the customer was charged
+     * for), falling back to the live cart and then to the Stripe line items for sessions without one.
+     *
      * @param  array|object  $session  Stripe checkout session (webhook payload array or Stripe object)
-     * @param  array|object|null  $paymentIntent  Stripe payment intent, when the caller has one
      */
-    public function createFromStripeSession(array|object $session, array|object|null $paymentIntent = null): ?Order
+    public function createFromStripeSession(array|object $session): ?Order
     {
         $session = $this->toArray($session);
-        $paymentIntent = $paymentIntent === null ? null : $this->toArray($paymentIntent);
 
         $sessionId = $session['id'] ?? null;
         if (! $sessionId) {
             throw new \InvalidArgumentException('Stripe checkout session without an id');
         }
 
-        $order = $this->findOrCreate($sessionId, $session, $paymentIntent);
+        $order = $this->findOrCreate($sessionId, $session);
 
         if (! $order) {
             return null;
@@ -64,26 +71,74 @@ class OrderCreationService
             if ($order->wasRecentlyCreated || $order->wasChanged('payment_status')) {
                 $this->requestNewOrderAlert($order);
             }
+
+            // The shop sold units it did not have: tell the owner (once per order, EmailService dedupes)
+            if ($order->has_oversold_items) {
+                $this->requestOversoldAlert($order);
+            }
         }
 
         return $order;
     }
 
     /**
-     * Retrieve a checkout session from Stripe as a plain array.
+     * Close the order of a checkout that did not end in a payment (checkout.session.async_payment_failed,
+     * checkout.session.expired). Only an order whose payment is still pending is touched: a paid order is never
+     * downgraded. The customer is not emailed (the OrderObserver stays silent for an order that was never confirmed),
+     * the cart stays as it is, and the checkout snapshot is marked as used up.
+     *
+     * @param  array|object  $session  Stripe checkout session
+     * @param  string  $outcome  'failed' (async payment failed) or 'expired' (the customer never paid)
      */
-    public function retrieveSession(string $sessionId): array
+    public function closeUnpaidSession(array|object $session, string $outcome): ?Order
     {
-        $stripe = StripeService::getClient();
+        $session = $this->toArray($session);
+        $sessionId = $session['id'] ?? null;
 
-        if (! $stripe) {
-            throw new RuntimeException('Stripe secret key not configured');
+        if (! $sessionId) {
+            throw new \InvalidArgumentException('Stripe checkout session without an id');
         }
 
-        return $this->toArray($stripe->checkout->sessions->retrieve($sessionId));
+        if (! $this->belongsToShop($session)) {
+            Log::warning('Ignoring Stripe checkout session that does not belong to this shop', ['session_id' => $sessionId]);
+
+            return null;
+        }
+
+        return DB::transaction(function () use ($sessionId, $session, $outcome) {
+            $this->retireSnapshot($this->metadata($session), $sessionId);
+
+            $order = $this->lockedLookup($sessionId);
+
+            if (! $order) {
+                return null;
+            }
+
+            if (! $order->isPaymentPending()) {
+                Log::info('Not closing an order whose payment is not pending', [
+                    'order_id' => $order->id,
+                    'payment_status' => $order->payment_status,
+                    'outcome' => $outcome,
+                ]);
+
+                return $order;
+            }
+
+            $attributes = ['payment_status' => $outcome === 'expired' ? 'cancelled' : 'failed'];
+
+            if ($order->can_be_cancelled) {
+                $attributes['status'] = 'cancelled';
+            }
+
+            $order->update($attributes);
+
+            Log::info('Order closed: its checkout did not end in a payment', ['order_id' => $order->id, 'outcome' => $outcome]);
+
+            return $order;
+        });
     }
 
-    protected function findOrCreate(string $sessionId, array $session, ?array $paymentIntent): ?Order
+    protected function findOrCreate(string $sessionId, array $session): ?Order
     {
         $attempt = 0;
 
@@ -92,7 +147,7 @@ class OrderCreationService
 
             try {
                 return DB::transaction(
-                    fn () => $this->findOrCreateInTransaction($sessionId, $session, $paymentIntent),
+                    fn () => $this->findOrCreateInTransaction($sessionId, $session),
                     3 // retried on deadlocks only
                 );
             } catch (UniqueConstraintViolationException $e) {
@@ -116,14 +171,14 @@ class OrderCreationService
         }
     }
 
-    protected function findOrCreateInTransaction(string $sessionId, array $session, ?array $paymentIntent): ?Order
+    protected function findOrCreateInTransaction(string $sessionId, array $session): ?Order
     {
         $order = $this->lockedLookup($sessionId);
 
         if ($order) {
             Log::info('Order already exists for session', ['session_id' => $sessionId, 'order_id' => $order->id]);
 
-            return $this->syncPaymentState($order, $session, $paymentIntent);
+            return $this->syncPaymentState($order, $session);
         }
 
         if (! $this->belongsToShop($session)) {
@@ -134,7 +189,7 @@ class OrderCreationService
             return null;
         }
 
-        return $this->createOrder($sessionId, $session, $paymentIntent);
+        return $this->createOrder($sessionId, $session);
     }
 
     /**
@@ -166,16 +221,16 @@ class OrderCreationService
     /**
      * An order created from a not-yet-paid session becomes paid when a later event confirms it.
      */
-    protected function syncPaymentState(Order $order, array $session, ?array $paymentIntent): Order
+    protected function syncPaymentState(Order $order, array $session): Order
     {
         $updates = [];
-        $paymentIntentId = $paymentIntent['id'] ?? $this->stringOrNull($session['payment_intent'] ?? null);
+        $paymentIntentId = $this->stringOrNull($session['payment_intent'] ?? null);
 
         if (empty($order->stripe_payment_intent_id) && $paymentIntentId) {
             $updates['stripe_payment_intent_id'] = $paymentIntentId;
         }
 
-        $becamePaid = $this->isPaid($session, $paymentIntent) && $order->isPaymentPending();
+        $becamePaid = $this->isPaid($session) && $order->isPaymentPending();
         if ($becamePaid) {
             $updates['payment_status'] = 'succeeded';
             if ($order->status === 'pending') {
@@ -189,30 +244,33 @@ class OrderCreationService
 
         if ($becamePaid) {
             Log::info('Order payment status updated to succeeded', ['order_id' => $order->id]);
-            $this->clearCart($this->trustedCart($this->metadata($session), $session['id'] ?? null));
+            $this->clearCartAfterPayment($this->metadata($session), $session['id'] ?? null);
+            app(StockService::class)->deductForOrder($order);
         }
 
         return $order;
     }
 
-    protected function createOrder(string $sessionId, array $session, ?array $paymentIntent): Order
+    protected function createOrder(string $sessionId, array $session): Order
     {
         $metadata = $this->metadata($session);
-        $paid = $this->isPaid($session, $paymentIntent);
+        $paid = $this->isPaid($session);
 
         $userId = $this->resolveUserId($metadata);
         $isGuestOrder = $userId === null;
 
-        $cart = $this->trustedCart($metadata, $sessionId);
+        // What the customer was charged for, frozen before the Stripe session existed; else the live cart
+        $snapshot = $this->consumeSnapshot($metadata, $sessionId);
+        $cart = $snapshot ? null : $this->trustedCart($metadata, $sessionId);
         $cartItems = $cart ? $cart->cartItems : collect();
 
         $addressParts = $this->parseShippingAddress($metadata['shipping_address'] ?? '');
         $billingAddress = $this->createAddress($session, $addressParts, 'billing');
         $shippingAddress = $this->createAddress($session, $addressParts, 'shipping');
 
-        $totals = $this->calculateTotals($session, $cart);
+        $totals = $snapshot ? $this->totalsFromSnapshot($snapshot, $session) : $this->calculateTotals($session, $cart);
 
-        $couponCode = trim((string) ($metadata['coupon_code'] ?? ''));
+        $couponCode = trim((string) ($snapshot?->coupon_code ?? $metadata['coupon_code'] ?? ''));
         $phone = ($metadata['customer_phone'] ?? null) ?: ($session['customer_details']['phone'] ?? null);
 
         $orderData = [
@@ -223,6 +281,7 @@ class OrderCreationService
             'status' => $paid ? 'processing' : 'pending',
             'subtotal' => $totals['subtotal'],
             'tax_amount' => $totals['tax'],
+            'tax_rate' => $totals['tax_rate'],
             'shipping_amount' => $totals['shipping'],
             'discount_amount' => $totals['discount'],
             'coupon_code' => $couponCode !== '' ? $couponCode : null,
@@ -231,7 +290,7 @@ class OrderCreationService
             'locale' => $this->resolveLocale($metadata['locale'] ?? null),
             'notes' => ($metadata['order_notes'] ?? '') !== '' ? $metadata['order_notes'] : null,
             'stripe_checkout_session_id' => $sessionId,
-            'stripe_payment_intent_id' => $paymentIntent['id'] ?? $this->stringOrNull($session['payment_intent'] ?? null),
+            'stripe_payment_intent_id' => $this->stringOrNull($session['payment_intent'] ?? null),
             'payment_status' => $paid ? 'succeeded' : 'processing',
             'payment_method' => 'stripe',
         ];
@@ -244,7 +303,19 @@ class OrderCreationService
 
         $order = Order::create($orderData);
 
-        if ($cartItems->isNotEmpty()) {
+        if ($snapshot) {
+            foreach ($snapshot->lines as $line) {
+                $order->orderItems()->create([
+                    'product_id' => $line['product_id'] ?? null,
+                    'product_variant_id' => $line['product_variant_id'] ?? null,
+                    'size_id' => $line['size_id'] ?? null,
+                    'product_name' => mb_substr((string) ($line['product_name'] ?? 'Unknown Product'), 0, 255),
+                    'quantity' => (int) $line['quantity'],
+                    'price' => $line['price'],
+                    'total' => round($line['price'] * (int) $line['quantity'], 2),
+                ]);
+            }
+        } elseif ($cartItems->isNotEmpty()) {
             foreach ($cartItems as $cartItem) {
                 $order->orderItems()->create([
                     'product_id' => $cartItem->product_id,
@@ -267,9 +338,15 @@ class OrderCreationService
             $this->createOrderItemsFromSession($order, $session);
         }
 
-        // Only a paid session consumes the cart; an unpaid one keeps it until payment is confirmed.
+        // Only a paid session consumes the cart and the stock; an unpaid one keeps both until payment is confirmed.
         if ($paid) {
-            $this->clearCart($cart);
+            if ($snapshot) {
+                $this->clearCartAfterPayment($metadata, $sessionId, $snapshot);
+            } else {
+                $this->clearCart($cart);
+            }
+
+            app(StockService::class)->deductForOrder($order);
         }
 
         Log::info('Order created from Stripe session', [
@@ -287,14 +364,17 @@ class OrderCreationService
      * Totals as charged by Stripe: the paid total is authoritative. The discount is Stripe's own
      * discount when present, otherwise whatever the cart (items + shipping) exceeds the paid total by.
      *
-     * @return array{subtotal: float, shipping: float, tax: float, discount: float, total: float}
+     * VAT is computed here, once: the portion contained in the paid total (which already reflects any discount and
+     * includes shipping) at the current `tax.rate`, stored together with that rate. Stripe's own tax figure is not
+     * used: the checkout charges one VAT-inclusive amount and Stripe calculates no tax on it.
+     *
+     * @return array{subtotal: float, shipping: float, tax: float, tax_rate: float|null, discount: float, total: float}
      */
     protected function calculateTotals(array $session, ?Cart $cart): array
     {
         $details = $session['total_details'] ?? [];
 
         $total = round(($session['amount_total'] ?? 0) / 100, 2);
-        $tax = round(($details['amount_tax'] ?? 0) / 100, 2);
         $stripeDiscount = round(($details['amount_discount'] ?? 0) / 100, 2);
 
         if ($cart && $cart->cartItems->isNotEmpty()) {
@@ -320,10 +400,13 @@ class OrderCreationService
             ]);
         }
 
+        $vat = Vat::includedIn($total);
+
         return [
             'subtotal' => $subtotal,
             'shipping' => $shipping,
-            'tax' => $tax,
+            'tax' => $vat['amount'],
+            'tax_rate' => $vat['rate'],
             'discount' => $discount,
             'total' => $total,
         ];
@@ -374,6 +457,143 @@ class OrderCreationService
         return $cart;
     }
 
+    /**
+     * The snapshot named by metadata.snapshot_id, when it may be used for this session: it exists, and it is either
+     * unbound / bound to this very session. A snapshot of another session is never used (logged, fallback chain).
+     */
+    protected function resolveSnapshot(array $metadata, string $sessionId): ?CheckoutSnapshot
+    {
+        $id = $metadata['snapshot_id'] ?? null;
+
+        if (empty($id) || ! is_string($id)) {
+            return null;
+        }
+
+        $snapshot = CheckoutSnapshot::query()->lockForUpdate()->find($id);
+
+        if (! $snapshot) {
+            Log::warning('Checkout snapshot not found; falling back to the cart', ['session_id' => $sessionId, 'snapshot_id' => $id]);
+
+            return null;
+        }
+
+        $boundElsewhere = $snapshot->stripe_session_id !== null && $snapshot->stripe_session_id !== $sessionId;
+
+        if ($boundElsewhere || ($snapshot->isConsumed() && $snapshot->stripe_session_id !== $sessionId)) {
+            Log::error('Checkout snapshot belongs to another session; falling back to the cart', [
+                'session_id' => $sessionId,
+                'snapshot_id' => $id,
+            ]);
+
+            return null;
+        }
+
+        return $snapshot;
+    }
+
+    /**
+     * Use the snapshot for a new order: bind it to the session and mark it consumed (same transaction as the order).
+     */
+    protected function consumeSnapshot(array $metadata, string $sessionId): ?CheckoutSnapshot
+    {
+        $snapshot = $this->resolveSnapshot($metadata, $sessionId);
+
+        if (! $snapshot) {
+            return null;
+        }
+
+        $snapshot->forceFill([
+            'stripe_session_id' => $sessionId,
+            'consumed_at' => $snapshot->consumed_at ?? now(),
+        ])->save();
+
+        return $snapshot;
+    }
+
+    /**
+     * A checkout that ended without a payment: its snapshot is used up (bound to the session when it was not yet).
+     */
+    protected function retireSnapshot(array $metadata, string $sessionId): void
+    {
+        $snapshot = CheckoutSnapshot::query()
+            ->where(function ($query) use ($metadata, $sessionId) {
+                $query->where('stripe_session_id', $sessionId);
+
+                if (! empty($metadata['snapshot_id']) && is_string($metadata['snapshot_id'])) {
+                    $query->orWhere('id', $metadata['snapshot_id']);
+                }
+            })
+            ->whereNull('consumed_at')
+            ->lockForUpdate()
+            ->first();
+
+        if ($snapshot && ($snapshot->stripe_session_id === null || $snapshot->stripe_session_id === $sessionId)) {
+            $snapshot->forceFill([
+                'stripe_session_id' => $sessionId,
+                'consumed_at' => now(),
+            ])->save();
+        }
+    }
+
+    /**
+     * Totals exactly as charged (the snapshot); VAT is the portion contained in that total.
+     *
+     * @return array{subtotal: float, shipping: float, tax: float, tax_rate: float|null, discount: float, total: float}
+     */
+    protected function totalsFromSnapshot(CheckoutSnapshot $snapshot, array $session): array
+    {
+        if (isset($session['amount_total']) && (int) $session['amount_total'] !== (int) $snapshot->total_cents) {
+            Log::error('Paid amount differs from the checkout snapshot', [
+                'session_id' => $session['id'] ?? null,
+                'snapshot_id' => $snapshot->id,
+                'paid_cents' => (int) $session['amount_total'],
+                'snapshot_cents' => (int) $snapshot->total_cents,
+            ]);
+        }
+
+        $total = round((float) $snapshot->total, 2);
+        $vat = Vat::includedIn($total);
+
+        return [
+            'subtotal' => round((float) $snapshot->subtotal, 2),
+            'shipping' => round((float) $snapshot->shipping, 2),
+            'tax' => $vat['amount'],
+            'tax_rate' => $vat['rate'],
+            'discount' => round((float) $snapshot->discount, 2),
+            'total' => $total,
+        ];
+    }
+
+    /**
+     * Remove the cart a paid checkout was started from, unless the customer changed it since: with a snapshot the cart
+     * is only cleared when its content hash still equals the snapshot's (an edited cart is left untouched), without one
+     * the hash stored in the session metadata decides (trustedCart).
+     */
+    protected function clearCartAfterPayment(array $metadata, ?string $sessionId, ?CheckoutSnapshot $snapshot = null): void
+    {
+        $snapshot ??= $sessionId ? $this->resolveSnapshot($metadata, $sessionId) : null;
+
+        if (! $snapshot) {
+            $this->clearCart($this->trustedCart($metadata, $sessionId));
+
+            return;
+        }
+
+        $cart = $this->findCart($metadata);
+
+        if (! $cart) {
+            return;
+        }
+
+        if (hash_equals((string) $snapshot->cart_hash, $cart->contentHash())) {
+            $this->clearCart($cart);
+
+            return;
+        }
+
+        Log::info('Cart edited after checkout started; leaving it untouched', ['session_id' => $sessionId, 'cart_id' => $cart->id]);
+    }
+
     protected function clearCart(?Cart $cart): void
     {
         if ($cart) {
@@ -409,12 +629,12 @@ class OrderCreationService
 
         $locale = strtolower(explode('-', str_replace('_', '-', trim($locale)))[0]);
 
-        return in_array($locale, self::SUPPORTED_LOCALES, true) ? $locale : self::FALLBACK_LOCALE;
+        return Locales::isSupported($locale) ? $locale : self::FALLBACK_LOCALE;
     }
 
-    protected function isPaid(array $session, ?array $paymentIntent): bool
+    protected function isPaid(array $session): bool
     {
-        return ($session['payment_status'] ?? null) === 'paid' || $paymentIntent !== null;
+        return ($session['payment_status'] ?? null) === 'paid';
     }
 
     /**
@@ -548,6 +768,19 @@ class OrderCreationService
         } catch (Throwable $e) {
             // Internal courtesy mail: never fail order creation because of it.
             Log::error('New order alert could not be requested', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    protected function requestOversoldAlert(Order $order): void
+    {
+        try {
+            app(EmailService::class)->sendOversoldAlert($order);
+        } catch (Throwable $e) {
+            // Internal courtesy mail: never fail order creation because of it.
+            Log::error('Oversold order alert could not be requested', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);

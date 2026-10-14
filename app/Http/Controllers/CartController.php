@@ -23,7 +23,7 @@ class CartController extends Controller
     {
         // Set noindex for cart page
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('Shopping Cart – ' . config('app.name'));
+        SEOMeta::setTitle('Shopping Cart – ' . settings('store.name'));
         
         $cart = $this->getOrCreateCart();
         
@@ -45,8 +45,9 @@ class CartController extends Controller
         foreach ($cartItems as $item) {
             $updated = false;
 
-            if ($item->price != $item->product->price) {
-                $item->price = $item->product->price;
+            // The line's own variant decides the price (the default variant's price is not the price of another variant)
+            if ($item->has_price_changed) {
+                $item->price = $item->current_price;
                 $updated = true;
             }
 
@@ -141,6 +142,11 @@ class CartController extends Controller
             ], 422);
         }
 
+        // Check the per-line limit (orders.max_qty_per_line)
+        if ($exceeded = $this->maxQuantityExceeded($validated['quantity'])) {
+            return $exceeded;
+        }
+
         // Get or create cart
         $cart = $this->getOrCreateCart();
 
@@ -158,6 +164,9 @@ class CartController extends Controller
                     'error' => 'Not enough stock for total quantity',
                     'available' => $variant->stock_quantity,
                 ], 422);
+            }
+            if ($exceeded = $this->maxQuantityExceeded($newQuantity)) {
+                return $exceeded;
             }
             $cartItem->update(['quantity' => $newQuantity]);
         } else {
@@ -204,20 +213,26 @@ class CartController extends Controller
             return back()->withErrors(['message' => 'Cart item not found.']);
         }
 
-        // Check stock availability
-        if ($request->quantity > $cartItem->product->stock_quantity) {
+        // Check stock availability (the variant's stock when the line has one, as in add())
+        $availableStock = (int) ($cartItem->productVariant?->stock_quantity ?? $cartItem->product->stock_quantity);
+        if ($request->quantity > $availableStock) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Insufficient stock available.',
-                    'maxQuantity' => $cartItem->product->stock_quantity,
+                    'maxQuantity' => $availableStock,
                 ], 400);
             }
             
             return back()->withErrors([
                 'message' => 'Insufficient stock available.',
-                'maxQuantity' => $cartItem->product->stock_quantity,
+                'maxQuantity' => $availableStock,
             ]);
+        }
+
+        // Check the per-line limit (orders.max_qty_per_line)
+        if ($exceeded = $this->maxQuantityExceeded((int) $request->quantity, $request->expectsJson())) {
+            return $exceeded;
         }
 
         $cartItem->update([
@@ -378,6 +393,31 @@ class CartController extends Controller
             'success' => true,
             'message' => 'Coupon removed successfully.',
         ]);
+    }
+
+    /**
+     * orders.max_qty_per_line (0 = unlimited): the response to send when a line would hold more than the limit.
+     */
+    private function maxQuantityExceeded(int $quantity, bool $json = true)
+    {
+        $max = (int) settings('orders.max_qty_per_line', 0);
+
+        if ($max <= 0 || $quantity <= $max) {
+            return null;
+        }
+
+        $message = __('cart.max_qty_exceeded', ['max' => $max]);
+
+        if ($json) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Maximum quantity per item exceeded',
+                'message' => $message,
+                'max' => $max,
+            ], 422);
+        }
+
+        return back()->withErrors(['message' => $message, 'maxQuantity' => $max]);
     }
 
     /**

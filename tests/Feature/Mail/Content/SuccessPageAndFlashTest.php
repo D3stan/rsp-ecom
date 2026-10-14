@@ -81,7 +81,23 @@ class SuccessPageAndFlashTest extends TestCase
                 ->where('flash.success', 'Order shipped.')
                 ->where('flash.warning', '1 shipping email could not be queued.')
                 ->where('flash.error', null)
+                ->where('flash.id', fn ($id) => is_string($id) && Str::isUuid($id))
             );
+    }
+
+    public function test_every_flash_gets_its_own_id_so_the_client_shows_each_one_once(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $ids = [];
+
+        foreach (['first', 'second'] as $message) {
+            $this->actingAs($admin)->withSession(['success' => $message])->get(route('admin.orders.index'))
+                ->assertInertia(function (Assert $page) use (&$ids) {
+                    $ids[] = $page->toArray()['props']['flash']['id'];
+                });
+        }
+
+        $this->assertCount(2, array_unique($ids));
     }
 
     public function test_flashes_are_empty_without_a_message_and_ignore_non_text_values(): void
@@ -90,11 +106,11 @@ class SuccessPageAndFlashTest extends TestCase
 
         $this->actingAs($admin)->get(route('admin.orders.index'))
             ->assertInertia(fn (Assert $page) => $page
-                ->where('flash.success', null)->where('flash.error', null)->where('flash.warning', null));
+                ->where('flash.success', null)->where('flash.error', null)->where('flash.warning', null)->where('flash.id', null));
 
         $this->actingAs($admin)->withSession(['error' => ['not' => 'a string'], 'success' => ''])
             ->get(route('admin.orders.index'))
-            ->assertInertia(fn (Assert $page) => $page->where('flash.error', null)->where('flash.success', null));
+            ->assertInertia(fn (Assert $page) => $page->where('flash.error', null)->where('flash.success', null)->where('flash.id', null));
     }
 
     public function test_a_flash_set_by_an_admin_action_reaches_the_next_page(): void
@@ -105,6 +121,40 @@ class SuccessPageAndFlashTest extends TestCase
         $this->actingAs($admin)->followingRedirects()
             ->from(route('admin.orders.index'))
             ->put(route('admin.orders.update', $order), ['status' => 'cancelled'])
-            ->assertInertia(fn (Assert $page) => $page->whereNot('flash.success', null));
+            ->assertInertia(fn (Assert $page) => $page->whereNot('flash.success', null)->whereNot('flash.id', null));
+    }
+
+    public function test_the_success_page_shows_the_real_size_and_variant_of_each_item(): void
+    {
+        $sid = Str::random(40);
+        $cart = $this->makeCart(guestSessionId: $sid);
+        $variantName = $cart->cartItems->first()->product->defaultVariant->name;
+        $this->stripeHttp->responses['/v1/checkout/sessions/cs_test_123'] = $this->guestSessionPayload($cart) + ['created' => 1760000000];
+
+        $this->withCookie(config('session.cookie'), $sid)
+            ->get('/checkout/success?session_id=cs_test_123')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('order.orderItems.0.size', ['id' => $this->size->id, 'name' => $this->size->name])
+                ->where('order.orderItems.0.variant.name', $variantName)
+            );
+    }
+
+    public function test_an_item_without_size_or_variant_has_null_for_both(): void
+    {
+        $sid = Str::random(40);
+        $cart = $this->makeCart(guestSessionId: $sid);
+        $this->stripeHttp->responses['/v1/checkout/sessions/cs_test_123'] = $this->guestSessionPayload($cart) + ['created' => 1760000000];
+
+        $this->withCookie(config('session.cookie'), $sid)->get('/checkout/success?session_id=cs_test_123')->assertOk();
+        Order::sole()->orderItems()->update(['size_id' => null, 'product_variant_id' => null]);
+
+        $this->withCookie(config('session.cookie'), $sid)
+            ->get('/checkout/success?session_id=cs_test_123')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('order.orderItems.0.size', null)
+                ->where('order.orderItems.0.variant', null)
+            );
     }
 }

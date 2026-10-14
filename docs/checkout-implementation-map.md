@@ -1,5 +1,7 @@
 # Checkout Implementation Map - Laravel Cashier with Stripe
 
+> Historical plan. The Cashier demo routes it describes (`checkout.product*`, `checkout.charge`, `guest.checkout*` with a price id) were removed: the shop only uses the cart checkout (`checkout.cart`, `guest.cart.checkout`). Shipping is the sum of the package sizes' `shipping_cost` (never waived), and VAT is the portion of the total at `tax.rate` (`App\Support\Vat`).
+
 ## Overview
 This document outlines the comprehensive implementation plan for the checkout feature using Laravel Cashier with Stripe integration. The implementation includes extensive testing capabilities as documented in `stripe-test.md`.
 
@@ -226,17 +228,16 @@ tests/Unit/Models/
 ### 9. Webhook Handlers
 
 #### 9.1 Event Handlers
-**File**: `app/Listeners/StripeEventListener.php`
+**File**: `app/Listeners/StripeWebhookListener.php` (listens to Cashier's `WebhookReceived`; every other event is ignored)
 
 **Handled Events**:
-- `checkout.session.completed`
-- `payment_intent.succeeded`
-- `payment_intent.payment_failed`
-- `invoice.payment_succeeded`
-- `invoice.payment_failed`
-- `payment_intent.succeeded`
-- `payment_intent.payment_failed`
-- `checkout.session.completed`
+- `checkout.session.completed` (creates the order: paid, or pending for delayed payment methods)
+- `checkout.session.async_payment_succeeded` (pays the pending order)
+- `checkout.session.async_payment_failed` (closes a still-pending order)
+- `checkout.session.expired` (closes a still-pending order of an abandoned checkout)
+
+`payment_intent.*` and `invoice.*` events are not handled (`payment_intent.succeeded` was removed). See
+`docs/reports/email-deliverability-checklist.md` and `docs/reports/email-audit/order-flow.md`.
 
 ### 10. Security Considerations
 

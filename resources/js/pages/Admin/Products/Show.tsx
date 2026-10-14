@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useSetting } from '@/hooks/use-setting';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { DollarSign, Edit2, MessageSquare, Package, Percent, Plus, Star, TrendingUp } from 'lucide-react';
@@ -57,6 +58,7 @@ interface Props {
 }
 
 export default function ProductsShow({ product }: Props) {
+    const lowStockThreshold = useSetting('inventory.low_stock_threshold', 10);
     const [isRestocking, setIsRestocking] = useState(false);
     const [isDiscounting, setIsDiscounting] = useState(false);
     const [isAddingReview, setIsAddingReview] = useState(false);
@@ -125,7 +127,7 @@ export default function ProductsShow({ product }: Props) {
         if (stock === 0) {
             return <Badge variant="destructive">Out of Stock</Badge>;
         }
-        if (stock < 10) {
+        if (stock <= lowStockThreshold) {
             return (
                 <Badge variant="outline" className="border-orange-600 text-orange-600">
                     Low Stock

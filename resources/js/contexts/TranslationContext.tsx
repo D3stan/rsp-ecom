@@ -17,11 +17,12 @@ const TranslationContext = createContext<TranslationContextType | undefined>(und
 // Global cache for translations - persists across component remounts
 const globalTranslationCache: { [locale: string]: Translations } = {};
 
-// Available locales
-const availableLocales = ['en', 'es', 'fr', 'de', 'it'];
+// Static fallback only: the server shares the real list (config('app.supported_locales')) as the `supportedLocales`
+// Inertia prop, which app.tsx passes to the provider. Keep in sync via tests/Feature/LocalesTest.php.
+export const DEFAULT_SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'it'];
 
 // Detect browser language
-function detectBrowserLanguage(): string | null {
+function detectBrowserLanguage(availableLocales: string[]): string | null {
     if (typeof window === 'undefined') return null;
 
     // Cast navigator to a type that includes the non-standard userLanguage property
@@ -41,9 +42,17 @@ interface TranslationProviderProps {
     children: React.ReactNode;
     initialTranslations?: Translations;
     initialLocale?: string;
+    supportedLocales?: string[];
 }
 
-export function TranslationProvider({ children, initialTranslations = {}, initialLocale = 'en' }: TranslationProviderProps) {
+export function TranslationProvider({
+    children,
+    initialTranslations = {},
+    initialLocale = 'en',
+    supportedLocales = DEFAULT_SUPPORTED_LOCALES,
+}: TranslationProviderProps) {
+    const availableLocales = supportedLocales.length > 0 ? supportedLocales : DEFAULT_SUPPORTED_LOCALES;
+
     const [locale, setLocale] = useState(() => {
         // Try to get from localStorage first, then detect from browser, then use initialLocale
         if (typeof window !== 'undefined') {
@@ -53,7 +62,7 @@ export function TranslationProvider({ children, initialTranslations = {}, initia
             }
             
             // Detect browser language
-            const browserLocale = detectBrowserLanguage();
+            const browserLocale = detectBrowserLanguage(availableLocales);
             if (browserLocale) {
                 return browserLocale;
             }
@@ -128,6 +137,14 @@ export function TranslationProvider({ children, initialTranslations = {}, initia
     };
 
     const t = (key: string, replacements?: { [key: string]: string | number }): string => {
+        // Flat keys (e.g. "settings.ui.save", "emails.*") are stored as one top-level entry, shared with the PHP side
+        const direct = translations[key] ?? globalTranslationCache[locale]?.[key];
+        if (typeof direct === 'string') {
+            return replacements
+                ? direct.replace(/\{\{?(\w+)\}?\}/g, (match, placeholder) => replacements[placeholder]?.toString() || match)
+                : direct;
+        }
+
         const keys = key.split('.');
         let value: unknown = translations;
 

@@ -13,7 +13,7 @@ class DashboardController extends Controller
     {
         // Set noindex for user account pages
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('My Orders – ' . config('app.name'));
+        SEOMeta::setTitle('My Orders – ' . settings('store.name'));
         
         $user = Auth::user();
         $orders = $user->orders()
@@ -61,7 +61,7 @@ class DashboardController extends Controller
     {
         // Set noindex for user account pages
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('My Wishlist – ' . config('app.name'));
+        SEOMeta::setTitle('My Wishlist – ' . settings('store.name'));
         
         $user = Auth::user();
         $wishlist = $user->wishlist()

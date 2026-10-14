@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/contexts/ToastContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { formatRate, useMoney } from '@/hooks/use-money';
+import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
-import { formatCurrency } from '@/lib/utils';
 import { SharedData } from '@/types';
 import { Page } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -60,6 +61,8 @@ interface CheckoutDetailsProps extends SharedData {
     subtotal: number;
     shippingCost: number;
     taxAmount: number;
+    // VAT rate (percent) the VAT portion is computed at; null when no VAT breakdown applies
+    taxRate: number | null;
     discountAmount?: number;
     couponCode?: string;
     discountDescription?: string;
@@ -71,8 +74,23 @@ interface CheckoutDetailsProps extends SharedData {
 
 export default function CheckoutDetails() {
     const pageProps = usePage<CheckoutDetailsProps>().props;
-    const { cartItems, subtotal, shippingCost, taxAmount, discountAmount = 0, couponCode: initialCouponCode, discountDescription, total, totalItems, auth } = pageProps;
-    const { t, isLoading } = useTranslation();
+    const { cartItems, subtotal, shippingCost, taxAmount, taxRate, discountAmount = 0, couponCode: initialCouponCode, discountDescription, total, totalItems, auth } = pageProps;
+    const { t, isLoading, locale } = useTranslation();
+    const formatCurrency = useMoney();
+
+    // Admin settings (Settings > Orders / Shipping)
+    const orderNotesMax = useSetting('orders.order_notes_max', 500);
+    const minAmount = useSetting('orders.min_amount', 0);
+    const destinations = useSetting('shipping.destinations', ['IT']);
+    const defaultCountry = useSetting('shipping.default_country', 'IT');
+    const belowMinimum = minAmount > 0 && subtotal < minAmount;
+    const countryName = (code: string): string => {
+        try {
+            return new Intl.DisplayNames([locale], { type: 'region' }).of(code) ?? code;
+        } catch {
+            return code;
+        }
+    };
     const isMobile = useIsMobile();
     const { addToast } = useToast();
 
@@ -97,7 +115,7 @@ export default function CheckoutDetails() {
         city: '',
         state: '',
         postal_code: '',
-        country: 'IT',
+        country: defaultCountry,
         phone: '',
     });
 
@@ -170,6 +188,15 @@ export default function CheckoutDetails() {
     };
 
     const proceedToPayment = () => {
+        if (belowMinimum) {
+            addToast({
+                type: 'error',
+                title: t('cart.checkout_error'),
+                description: t('cart.min_amount_notice', { amount: formatCurrency(minAmount) }),
+            });
+            return;
+        }
+
         // Validate required fields
         if (!contactInfo.email.trim()) {
             addToast({
@@ -233,7 +260,7 @@ export default function CheckoutDetails() {
                     addToast({
                         type: 'error',
                         title: t('cart.checkout_error'),
-                        description: t('cart.checkout_error_description'),
+                        description: Object.values(errors)[0] || t('cart.checkout_error_description'),
                     });
                     setIsProcessing(false);
                 },
@@ -255,7 +282,7 @@ export default function CheckoutDetails() {
                     addToast({
                         type: 'error',
                         title: t('cart.checkout_error'),
-                        description: t('cart.checkout_error_description'),
+                        description: Object.values(errors)[0] || t('cart.checkout_error_description'),
                     });
                     setIsProcessing(false);
                 },
@@ -474,11 +501,11 @@ export default function CheckoutDetails() {
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent className="bg-white text-black">
-                                                        <SelectItem value="IT">Italy</SelectItem>
-                                                        <SelectItem value="DE">Germany</SelectItem>
-                                                        <SelectItem value="GB">United Kingdom</SelectItem>
-                                                        <SelectItem value="FR">France</SelectItem>
-                                                        <SelectItem value="ES">Spain</SelectItem>
+                                                        {destinations.map((code) => (
+                                                            <SelectItem key={code} value={code}>
+                                                                {countryName(code)}
+                                                            </SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -536,7 +563,7 @@ export default function CheckoutDetails() {
                                         {discountAmount > 0 && (
                                             <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3">
                                                 <p className="text-sm text-green-800">
-                                                    {t('cart.discount_applied', { amount: discountAmount.toFixed(2) })}
+                                                    {t('cart.discount_applied', { amount: formatCurrency(discountAmount) })}
                                                 </p>
                                             </div>
                                         )}
@@ -565,12 +592,12 @@ export default function CheckoutDetails() {
                                             placeholder={t('checkout.order_notes_placeholder')}
                                             value={orderNotes}
                                             onChange={(e) => setOrderNotes(e.target.value)}
-                                            maxLength={200}
+                                            maxLength={orderNotesMax}
                                             className="resize-none border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                             rows={3}
                                         />
                                         <p className="mt-1 text-xs text-gray-500">
-                                            {orderNotes.length}/200 {t('checkout.characters')}
+                                            {orderNotes.length}/{orderNotesMax} {t('checkout.characters')}
                                         </p>
                                     </CardContent>
                                 </CollapsibleContent>
@@ -599,13 +626,7 @@ export default function CheckoutDetails() {
                                         </div>
                                         <div className="flex justify-between text-gray-600">
                                             <span>{t('cart.shipping')}</span>
-                                            <span className="font-medium text-black">
-                                                {shippingCost > 0 ? formatCurrency(shippingCost) : t('cart.free')}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between text-gray-600">
-                                            <span>{t('cart.tax')}</span>
-                                            <span className="font-medium text-black">{formatCurrency(taxAmount)}</span>
+                                            <span className="font-medium text-black">{formatCurrency(shippingCost)}</span>
                                         </div>
                                         {discountAmount > 0 && (
                                             <div className="flex justify-between text-green-600">
@@ -618,7 +639,18 @@ export default function CheckoutDetails() {
                                                 <span>{t('cart.total')}</span>
                                                 <span>{formatCurrency(total)}</span>
                                             </div>
+                                            {taxRate !== null && (
+                                                <div className="mt-1 flex justify-between text-sm text-gray-500">
+                                                    <span>{t('checkout.vat_portion', { rate: formatRate(taxRate, locale) })}</span>
+                                                    <span>{formatCurrency(taxAmount)}</span>
+                                                </div>
+                                            )}
                                         </div>
+                                        {belowMinimum && (
+                                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                                <p className="text-sm text-amber-800">{t('cart.min_amount_notice', { amount: formatCurrency(minAmount) })}</p>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </CollapsibleContent>
                             </Collapsible>
@@ -632,12 +664,12 @@ export default function CheckoutDetails() {
                             </Button>
                             <Button
                                 onClick={proceedToPayment}
-                                disabled={isProcessing}
+                                disabled={isProcessing || belowMinimum}
                                 size="lg"
                                 className="w-full bg-black text-white hover:bg-gray-800"
                             >
                                 <CreditCard className="mr-2 h-5 w-5" />
-                                {isProcessing ? t('checkout.processing') : t('checkout.pay', { amount: total.toFixed(2) })}
+                                {isProcessing ? t('checkout.processing') : t('checkout.pay', { amount: formatCurrency(total) })}
                             </Button>
                         </div>
                     </div>
@@ -653,11 +685,11 @@ export default function CheckoutDetails() {
                             </Button>
                             <Button
                                 onClick={proceedToPayment}
-                                disabled={isProcessing}
+                                disabled={isProcessing || belowMinimum}
                                 className="h-12 bg-black font-semibold text-white hover:bg-gray-800"
                             >
                                 <CreditCard className="mr-2 h-5 w-5" />
-                                {isProcessing ? t('checkout.processing') : t('checkout.pay', { amount: total.toFixed(2) })}
+                                {isProcessing ? t('checkout.processing') : t('checkout.pay', { amount: formatCurrency(total) })}
                             </Button>
                         </div>
                     </div>

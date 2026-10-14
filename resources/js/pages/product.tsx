@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { VariantSelector } from '@/components/VariantSelector';
 import { WishlistButton } from '@/components/wishlist-button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useMoney } from '@/hooks/use-money';
+import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
-import { formatCurrency } from '@/lib/utils';
 import { cartService, type AddToCartData } from '@/services/cartService';
 import { useToast } from '@/contexts/ToastContext';
 import { type SharedData } from '@/types';
@@ -80,6 +81,7 @@ export default function Product() {
     const { addToast } = useToast();
     const isMobile = useIsMobile();
     const { t } = useTranslation();
+    const formatCurrency = useMoney();
 
     // Find default variant
     const defaultVariant = product.variants.find((v) => v.is_default) ?? product.variants[0];
@@ -96,10 +98,19 @@ export default function Product() {
     // Get selected variant
     const selectedVariant = product.variants.find((v) => v.id === selectedVariantId)!;
 
+    // Effective maximum for one order line: the variant's stock, capped by orders.max_qty_per_line (0 = unlimited)
+    const maxQtyPerLine = useSetting('orders.max_qty_per_line', 0);
+    const maxQuantity = maxQtyPerLine > 0 ? Math.min(selectedVariant.stock_quantity, maxQtyPerLine) : selectedVariant.stock_quantity;
+
     // Reset image index when variant changes
     useEffect(() => {
         setCurrentImageIndex(0);
     }, [selectedVariantId]);
+
+    // Keep the chosen quantity inside the effective maximum when the variant changes
+    useEffect(() => {
+        setQuantity((prev) => Math.max(1, Math.min(prev, maxQuantity)));
+    }, [maxQuantity]);
 
     // Display images from selected variant
     const displayImages = selectedVariant.images.length > 0 ? selectedVariant.images : ['/images/product.png'];
@@ -122,7 +133,7 @@ export default function Product() {
     const handleQuantityChange = (delta: number) => {
         setQuantity((prev) => {
             const newQuantity = prev + delta;
-            return Math.max(1, Math.min(newQuantity, selectedVariant.stock_quantity));
+            return Math.max(1, Math.min(newQuantity, maxQuantity));
         });
     };
 
@@ -145,6 +156,9 @@ export default function Product() {
                 cartService.triggerCartAnimation('success');
             } else {
                 cartService.triggerCartAnimation('error');
+                if (response.message) {
+                    addToast({ type: 'error', title: response.message });
+                }
             }
         } catch (error) {
             console.error('Error adding to cart:', error);
@@ -328,7 +342,7 @@ export default function Product() {
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => handleQuantityChange(1)}
-                                            disabled={quantity >= selectedVariant.stock_quantity}
+                                            disabled={quantity >= maxQuantity}
                                             className="h-10 w-10 p-0 hover:bg-gray-100"
                                         >
                                             <Plus className="h-4 w-4 text-black" />
@@ -336,6 +350,7 @@ export default function Product() {
                                     </div>
                                     <span className="text-sm text-gray-600">
                                         {selectedVariant.stock_quantity} {t('product.in_stock')}
+                                        {maxQtyPerLine > 0 && ` · ${t('product.max_per_order', { max: maxQtyPerLine })}`}
                                     </span>
                                 </div>
                             </div>

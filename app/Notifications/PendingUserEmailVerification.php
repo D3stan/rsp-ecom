@@ -74,7 +74,7 @@ class PendingUserEmailVerification extends Notification implements ShouldQueue
         $name = trim((string) $this->pendingUser->name);
 
         return (new MailMessage)
-            ->subject(__('emails.verify_pending.subject', ['app' => config('app.name')]))
+            ->subject(__('emails.verify_pending.subject', ['app' => settings('store.name')]))
             ->view(['emails.pending-user-verification', 'emails.pending-user-verification-text'], [
                 'pendingUser' => $this->pendingUser,
                 'greeting' => $name !== ''
@@ -82,7 +82,7 @@ class PendingUserEmailVerification extends Notification implements ShouldQueue
                     : __('emails.common.greeting_generic'),
                 'verificationUrl' => $verificationUrl,
                 'expiresInHours' => self::LINK_VALID_HOURS,
-                'appName' => config('app.name'),
+                'appName' => settings('store.name'),
                 'logoUrl' => asset('images/rlogo.png'),
             ]);
     }

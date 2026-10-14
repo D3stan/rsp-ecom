@@ -28,11 +28,7 @@ class WelcomeEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: __('emails.welcome.subject', ['app' => config('app.name')]),
-            tags: ['welcome'],
-            metadata: [
-                'user_id' => $this->user->id,
-            ],
+            subject: __('emails.welcome.subject', ['app' => settings('store.name')]),
         );
     }
 

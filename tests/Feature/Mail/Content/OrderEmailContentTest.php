@@ -80,7 +80,7 @@ it('always shows lines that add up to the stored total', function (array $attrib
     $subtotal = amountOf($values['Subtotal']);
     $discountLine = $values->first(fn ($value, $label) => str_starts_with($label, 'Discount'));
     $discount = $discountLine !== null ? amountOf($discountLine) : 0.0;
-    $shipping = $values['Shipping'] === 'Free' ? 0.0 : amountOf($values['Shipping']);
+    $shipping = amountOf($values['Shipping']);
     $total = amountOf($values['Total']);
 
     expect(round($subtotal + $discount + $shipping, 2))->toBe(round($total, 2))
@@ -88,27 +88,29 @@ it('always shows lines that add up to the stored total', function (array $attrib
 })->with([
     'no discount' => [[]],
     'coupon' => [['discount_amount' => 6.00, 'coupon_code' => 'PRIMAVERA10', 'total_amount' => 59.00]],
-    'free shipping' => [['shipping_amount' => 0, 'total_amount' => 60.00]],
+    'zero shipping' => [['shipping_amount' => 0, 'total_amount' => 60.00]],
     '100% discount' => [['discount_amount' => 65.00, 'coupon_code' => 'FREE100', 'total_amount' => 0]],
     'legacy row whose parts do not add up' => [['subtotal' => 65.00, 'shipping_amount' => 5.00, 'discount_amount' => 0, 'total_amount' => 65.00]],
     'legacy row with a bigger total than its parts' => [['subtotal' => 10.00, 'shipping_amount' => 0, 'discount_amount' => 0, 'total_amount' => 65.00]],
 ]);
 
-it('shows the coupon code, localised "free" shipping and never a VAT amount', function () {
+it('shows the coupon code and prints a zero shipping amount as a plain amount, never as a word', function () {
     $order = Fx::discountedOrder(['shipping_amount' => 0, 'total_amount' => 54.00]);
 
     foreach (Fx::LOCALES as $locale) {
+        app()->setLocale($locale);
+        $zero = describer()->fmt(0);
         $html = Fx::deliver(new OrderConfirmation($order->fresh()), $locale)->getHtmlBody();
 
         expect($html)->toContain('PRIMAVERA10')
-            ->toContain(__('emails.common.shipping_free', [], $locale))
-            ->toContain(__('emails.common.vat_included', [], $locale))
-            ->not->toContain('22%')->not->toContain('IVA (');
+            ->toContain(__('emails.common.shipping', [], $locale))
+            ->toContain($zero)
+            ->toContain(__('emails.common.vat_included', [], $locale));
     }
 });
 
-it('does not hard-code a VAT rate or read the always-zero tax_amount', function () {
-    $order = Fx::order(['tax_amount' => 0]);
+it('keeps the plain "VAT included" sentence, without a rate or amount, for orders that have no stored rate', function () {
+    $order = Fx::order(['tax_amount' => 0, 'tax_rate' => null]);
     $text = Fx::deliver(new OrderConfirmation($order), 'it')->getTextBody();
 
     $totalsBlock = Str::between($text, 'Subtotale:', '(IVA inclusa)');
@@ -116,9 +118,39 @@ it('does not hard-code a VAT rate or read the always-zero tax_amount', function 
     expect($text)->toContain('(IVA inclusa)')->not->toContain('%')->not->toMatch('/IVA\s*\(\d/');
     expect($totalsBlock)->not->toContain('22')->not->toContain('IVA');
 
-    // a populated tax_amount would not change what is displayed either
-    $withTax = Fx::order(['tax_amount' => 11.72]);
+    // a populated tax_amount without a rate (older rows) is not printed either
+    $withTax = Fx::order(['tax_amount' => 11.72, 'tax_rate' => null]);
     expect(Fx::deliver(new OrderConfirmation($withTax), 'it')->getTextBody())->not->toContain('11,72');
+});
+
+it('shows "of which VAT (rate) amount" under the total for orders that stored their rate', function () {
+    // 65.00 incl. VAT at 22% contains 11.72
+    $order = Fx::order(['tax_rate' => 22, 'tax_amount' => 11.72]);
+    $expected = [
+        'it' => 'di cui IVA (22%): 11,72',
+        'en' => 'of which VAT (22%): €11.72',
+        'de' => 'davon MwSt. (22',
+        'es' => 'de los cuales IVA (22',
+        'fr' => 'dont TVA (22',
+    ];
+
+    foreach ($expected as $locale => $fragment) {
+        app()->setLocale($locale);
+        $mail = Fx::deliver(new OrderConfirmation($order->fresh()), $locale);
+        $text = $mail->getTextBody();
+
+        expect($text)->toContain($fragment)
+            ->not->toContain(__('emails.common.vat_included', [], $locale))
+            ->and($mail->getHtmlBody())->toContain(describer()->fmt(11.72))->not->toContain(__('emails.common.vat_included', [], $locale));
+
+        // the VAT row comes after the total
+        expect(strpos($text, __('emails.common.total', [], $locale)))->toBeLessThan(strpos($text, $fragment));
+    }
+
+    // a rate with a decimal part follows the locale
+    app()->setLocale('it');
+    $rows = describer()->totals(Fx::order(['tax_rate' => 5.5, 'tax_amount' => 3.39]))['rows'];
+    expect(collect($rows)->last()['label'])->toBe('di cui IVA (5,5%)');
 });
 
 it('shows only the total on the cancellation mail', function () {

@@ -13,7 +13,7 @@ class StripeService
      */
     public static function getClient(): ?StripeClient
     {
-        $stripeSecret = env('STRIPE_SECRET') ?: Setting::get('stripe_secret_key', '');
+        $stripeSecret = config('cashier.secret') ?: Setting::get('stripe_secret_key', '');
         
         if (empty($stripeSecret)) {
             Log::error('Stripe secret key not configured');
@@ -28,10 +28,8 @@ class StripeService
      */
     public static function getSecretKey(): ?string
     {
-        $envSecret = env('STRIPE_SECRET');
-        $dbSecret = Setting::get('stripe_secret_key', '');
-        
-        $stripeSecret = $envSecret ?: $dbSecret;
+        // Legacy database copy, read only when the environment has no key (see settings:purge-legacy-secrets)
+        $stripeSecret = config('cashier.secret') ?: Setting::get('stripe_secret_key', '');
         
         return !empty($stripeSecret) ? $stripeSecret : null;
     }
@@ -41,10 +39,7 @@ class StripeService
      */
     public static function getPublicKey(): ?string
     {
-        $envPublic = env('STRIPE_KEY');
-        $dbPublic = Setting::get('stripe_public_key', '');
-        
-        $stripePublic = $envPublic ?: $dbPublic;
+        $stripePublic = config('cashier.key') ?: Setting::get('stripe_public_key', '');
         
         return !empty($stripePublic) ? $stripePublic : null;
     }

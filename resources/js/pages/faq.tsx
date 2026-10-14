@@ -1,4 +1,6 @@
 import Header from '@/components/header';
+import { usePolicyValues } from '@/hooks/use-policy-values';
+import { useSetting } from '@/hooks/use-setting';
 import useTranslation from '@/hooks/useTranslation';
 import { Head } from '@inertiajs/react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -15,6 +17,15 @@ const categories = ['all', 'ordering', 'shipping', 'returns', 'account', 'genera
 
 export default function FAQ() {
     const { t } = useTranslation();
+    // {days}, {dispatch}, {delivery} of the shipping and returns answers (legal.withdrawal_days, shipping.*_days_*)
+    const policy = usePolicyValues();
+    const supportEmail = useSetting('contact.support_email', '');
+    const phone = useSetting('contact.phone', '').trim();
+    const businessHours = useSetting('contact.business_hours', '').trim();
+    // The address is a multi-line text in the admin: show it on one line
+    const address = useSetting('store.address', '')
+        .trim()
+        .replace(/\s*\n\s*/g, ', ');
     const [openItems, setOpenItems] = useState<string[]>([]);
     const [selectedCategory, setSelectedCategory] = useState('all');
 
@@ -154,6 +165,28 @@ export default function FAQ() {
         setOpenItems((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
     };
 
+    // Answers quoting the shop's contact details (admin: Settings > Contact / Store). A detail that is not set is left out.
+    const answerFor = (answerKey: string): string => {
+        const values = { email: supportEmail, phone, hours: businessHours, address };
+
+        switch (answerKey) {
+            case 'faq_items.ordering.answer_2':
+                return [t(answerKey, values), phone && t('faq_contact_phone_line', values)].filter(Boolean).join(' ');
+            case 'faq_items.general.answer_1':
+                return [
+                    t(answerKey, values),
+                    phone && t('faq_contact_phone_line', values),
+                    businessHours && `${t('faq_contact_hours_line', values)}.`,
+                ]
+                    .filter(Boolean)
+                    .join(' ');
+            case 'faq_items.general.answer_4':
+                return address ? t(answerKey, values) : t('faq_items.general.answer_4_no_address');
+            default:
+                return t(answerKey, policy);
+        }
+    };
+
     const filteredFAQ = selectedCategory === 'all' ? faqData : faqData.filter((item) => item.category === selectedCategory);
 
     return (
@@ -209,7 +242,7 @@ export default function FAQ() {
 
                                 {openItems.includes(item.id) && (
                                     <div className="px-6 pb-4">
-                                        <div className="leading-relaxed text-gray-600">{t(item.answerKey)}</div>
+                                        <div className="leading-relaxed text-gray-600">{answerFor(item.answerKey)}</div>
                                     </div>
                                 )}
                             </div>
@@ -228,7 +261,7 @@ export default function FAQ() {
                                 {t('contact_us')}
                             </a>
                             <a
-                                href="mailto:support@rsp-industries.com"
+                                href={`mailto:${supportEmail}`}
                                 className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 transition-colors hover:bg-gray-50"
                             >
                                 {t('email_support')}

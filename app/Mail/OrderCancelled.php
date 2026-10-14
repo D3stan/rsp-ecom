@@ -22,10 +22,6 @@ class OrderCancelled extends Mailable
     {
         return new Envelope(
             subject: __('emails.order_cancelled.subject', ['number' => '#'.$this->order->order_number]),
-            tags: ['order-cancelled'],
-            metadata: [
-                'order_id' => $this->order->id,
-            ],
         );
     }
 

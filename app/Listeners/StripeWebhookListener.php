@@ -35,8 +35,15 @@ class StripeWebhookListener
             case 'checkout.session.completed':
                 $this->handleCheckoutSessionCompleted($payload);
                 break;
-            case 'payment_intent.succeeded':
-                $this->handlePaymentIntentSucceeded($payload);
+            case 'checkout.session.async_payment_succeeded':
+                // A delayed payment method (SEPA debit, bank transfer...) finally paid: upgrades the pending order
+                $this->createOrderFromSession($payload['id'], $payload['data']['object']);
+                break;
+            case 'checkout.session.async_payment_failed':
+                $this->closeUnpaidSession($payload, 'failed');
+                break;
+            case 'checkout.session.expired':
+                $this->closeUnpaidSession($payload, 'expired');
                 break;
             default:
                 Log::info('Unhandled webhook event type: '.$payload['type']);
@@ -45,54 +52,32 @@ class StripeWebhookListener
     }
 
     /**
-     * Handle a successful checkout session completion.
+     * Handle a completed checkout session: paid, or (delayed payment methods) completed but not yet paid. An unpaid
+     * session creates the order as pending; the async_payment_succeeded / _failed event decides its fate later.
      */
     private function handleCheckoutSessionCompleted(array $payload): void
     {
-        Log::info('Processing checkout.session.completed webhook', ['session_id' => $payload['data']['object']['id']]);
-
         $session = $payload['data']['object'];
 
-        // Only process if payment was successful
-        if ($session['payment_status'] === 'paid') {
-            $this->createOrderFromSession($payload['id'], $session['id'], null, $session);
+        Log::info('Processing checkout.session.completed webhook', ['session_id' => $session['id']]);
+
+        if (in_array($session['payment_status'] ?? null, ['paid', 'unpaid'], true)) {
+            $this->createOrderFromSession($payload['id'], $session);
         }
     }
 
     /**
-     * Handle a successful payment intent.
-     */
-    private function handlePaymentIntentSucceeded(array $payload): void
-    {
-        Log::info('Processing payment_intent.succeeded webhook', ['payment_intent_id' => $payload['data']['object']['id']]);
-
-        $paymentIntent = $payload['data']['object'];
-        $sessionId = $paymentIntent['metadata']['checkout_session_id'] ?? null;
-
-        if ($sessionId) {
-            $this->createOrderFromSession($payload['id'], $sessionId, $paymentIntent);
-        } else {
-            Log::warning('No checkout session ID found in payment intent metadata', [
-                'payment_intent_id' => $paymentIntent['id'],
-            ]);
-        }
-    }
-
-    /**
-     * Create (or find) the order for a paid Stripe checkout session.
+     * Create (or find, or upgrade) the order for a Stripe checkout session.
      *
      * Failures are logged and rethrown so the webhook answers with a non-2xx status and Stripe
      * retries the delivery. This is safe because order creation is idempotent.
      */
-    private function createOrderFromSession(string $eventId, string $sessionId, ?array $paymentIntent = null, ?array $session = null): void
+    private function createOrderFromSession(string $eventId, array $session): void
     {
+        $sessionId = $session['id'];
+
         try {
-            $orders = app(OrderCreationService::class);
-
-            // Retrieve session from Stripe if not provided
-            $session ??= $orders->retrieveSession($sessionId);
-
-            $order = $orders->createFromStripeSession($session, $paymentIntent);
+            $order = app(OrderCreationService::class)->createFromStripeSession($session);
 
             // Not a session of this shop (the service already logged it): acknowledge with 200.
             if (! $order) {
@@ -109,7 +94,7 @@ class StripeWebhookListener
             Log::critical('Stripe payment succeeded but the order could not be created', [
                 'event_id' => $eventId,
                 'session_id' => $sessionId,
-                'payment_intent_id' => $paymentIntent['id'] ?? $session['payment_intent'] ?? null,
+                'payment_intent_id' => $session['payment_intent'] ?? null,
                 'amount_total' => $session['amount_total'] ?? null,
                 'currency' => $session['currency'] ?? null,
                 'cart_id' => $session['metadata']['cart_id'] ?? null,
@@ -118,7 +103,38 @@ class StripeWebhookListener
                 'error' => $e->getMessage(),
             ]);
 
-            $this->alertAdmin($sessionId, $paymentIntent, $session, $e);
+            $this->alertAdmin($sessionId, $session, $e);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * checkout.session.async_payment_failed / checkout.session.expired: close the order of a checkout that did not end
+     * in a payment (only while its payment is still pending; a paid order is never touched). Same failure semantics:
+     * log critical and rethrow so Stripe retries.
+     */
+    private function closeUnpaidSession(array $payload, string $outcome): void
+    {
+        $session = $payload['data']['object'];
+
+        try {
+            $order = app(OrderCreationService::class)->closeUnpaidSession($session, $outcome);
+
+            Log::info('Unpaid checkout session processed from webhook', [
+                'event_id' => $payload['id'],
+                'session_id' => $session['id'],
+                'outcome' => $outcome,
+                'order_id' => $order?->id,
+            ]);
+        } catch (Throwable $e) {
+            Log::critical('Stripe checkout session could not be closed', [
+                'event_id' => $payload['id'],
+                'session_id' => $session['id'],
+                'outcome' => $outcome,
+                'exception' => get_class($e),
+                'error' => $e->getMessage(),
+            ]);
 
             throw $e;
         }
@@ -128,7 +144,7 @@ class StripeWebhookListener
      * Tell the shop owner that a customer paid but no order exists. Deduped per session by EmailService;
      * must never mask the original exception, so any failure here is only logged.
      */
-    private function alertAdmin(string $sessionId, ?array $paymentIntent, ?array $session, Throwable $e): void
+    private function alertAdmin(string $sessionId, ?array $session, Throwable $e): void
     {
         try {
             $amount = isset($session['amount_total'])
@@ -136,7 +152,7 @@ class StripeWebhookListener
                 : null;
 
             app(EmailService::class)->sendPaidOrderMissingAlert($sessionId, [
-                'payment_intent_id' => $paymentIntent['id'] ?? $session['payment_intent'] ?? null,
+                'payment_intent_id' => $session['payment_intent'] ?? null,
                 'amount' => $amount,
                 'customer_email' => $session['customer_details']['email'] ?? $session['metadata']['guest_email'] ?? $session['metadata']['user_email'] ?? null,
                 'cart_id' => $session['metadata']['cart_id'] ?? null,

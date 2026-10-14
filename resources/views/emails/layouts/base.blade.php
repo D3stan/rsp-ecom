@@ -11,7 +11,7 @@
       logoUrl     override of the logo
 --}}
 @php
-    $appName = config('app.name');
+    $appName = settings('store.name');
     $logoUrl = $logoUrl ?? asset('images/rlogo.png');
     $internal = $internal ?? false;
     $showNoReply = ! $internal && ($noReply ?? true);

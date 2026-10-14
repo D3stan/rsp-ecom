@@ -120,16 +120,21 @@ class PageSeeder extends Seeder
 
     private function getContactUsContent(): string
     {
+        // Contact details come from the admin settings (contact.*, store.address); a detail that is not set is left out.
+        $details = ['- **Email**: '.settings('contact.support_email', '')];
+        if (($phone = trim((string) settings('contact.phone', ''))) !== '') {
+            $details[] = '- **Phone**: '.$phone;
+        }
+        if (($hours = trim((string) settings('contact.business_hours', ''))) !== '') {
+            $details[] = '- **Hours**: '.$hours;
+        }
+        $address = trim((string) settings('store.address', ''));
+
         return "# Contact Us\n\n" .
                "We'd love to hear from you! Get in touch with our customer service team.\n\n" .
                "## Customer Service\n\n" .
-               "- **Email**: support@rsp-industries.com\n" .
-               "- **Phone**: +1 (555) 123-4567\n" .
-               "- **Hours**: Monday - Friday, 9:00 AM - 5:00 PM EST\n\n" .
-               "## Business Address\n\n" .
-               "123 Business Street\n" .
-               "City, State 12345\n" .
-               "United States\n\n" .
+               implode("\n", $details) . "\n\n" .
+               ($address !== '' ? "## Business Address\n\n" . $address . "\n\n" : '') .
                "## Response Time\n\n" .
                "We typically respond to emails within 24 hours during business days.";
     }
@@ -138,33 +143,27 @@ class PageSeeder extends Seeder
     {
         return "# Shipping Information\n\n" .
                "We offer fast and reliable shipping options to get your orders to you quickly.\n\n" .
-               "## Shipping Methods\n\n" .
-               "- **Standard Shipping**: 5-7 business days - €5.99\n" .
-               "- **Express Shipping**: 2-3 business days - €9.99\n" .
-               "- **Next Day Delivery**: 1 business day - €19.99\n\n" .
-               "## Free Shipping\n\n" .
-               "Free standard shipping on orders over €50!\n\n" .
-               "## International Shipping\n\n" .
-               "We ship to all EU countries. International shipping rates and delivery times vary by destination.";
+               "## Shipping Costs\n\n" .
+               "The shipping cost is calculated at checkout from the package size of the items in your cart and is shown before you pay.\n\n" .
+               "## Delivery Times\n\n" .
+               "Orders are dispatched and delivered within the business-day ranges shown on the Shipping & Returns page.\n\n" .
+               "## Destinations\n\n" .
+               "We ship to the countries offered at checkout.";
     }
 
     private function getReturnPolicyContent(): string
     {
         return "# Return Policy\n\n" .
-               "We want you to be completely satisfied with your purchase.\n\n" .
-               "## Return Window\n\n" .
-               "You may return items within 30 days of delivery for a full refund.\n\n" .
-               "## Return Conditions\n\n" .
-               "- Items must be in original condition\n" .
-               "- Original packaging and tags must be included\n" .
-               "- Items must be unworn and unused\n\n" .
-               "## How to Return\n\n" .
-               "1. Contact our customer service team\n" .
-               "2. Print the return label we provide\n" .
-               "3. Package your items securely\n" .
-               "4. Drop off at any authorized shipping location\n\n" .
-               "## Refund Processing\n\n" .
-               "Refunds are processed within 5-7 business days after we receive your return.";
+               "## Right of Withdrawal\n\n" .
+               "You may withdraw from your purchase within 14 days of receiving the goods, without giving any reason.\n\n" .
+               "## How to Withdraw\n\n" .
+               "1. Send us a clear statement of your decision to withdraw, stating your order number\n" .
+               "2. Return the goods to us without undue delay and in any event within 14 days of that statement\n" .
+               "3. Package the goods securely\n\n" .
+               "## Return Shipping\n\n" .
+               "You bear the direct cost of returning the goods, unless the item is defective or we sent you the wrong item.\n\n" .
+               "## Refund\n\n" .
+               "We refund the payment within 14 days of receiving your withdrawal statement, to the payment method you used.";
     }
 
     private function getSizeGuideContent(): string
@@ -204,14 +203,14 @@ class PageSeeder extends Seeder
                "A: Orders can be modified within 1 hour of placement. Please contact us immediately.\n\n" .
                "## Shipping\n\n" .
                "**Q: How long does shipping take?**\n" .
-               "A: Standard shipping takes 5-7 business days, express shipping takes 2-3 days.\n\n" .
+               "A: The shipping cost depends on the package size and is shown at checkout; dispatch and delivery times are on the Shipping & Returns page.\n\n" .
                "**Q: Do you ship internationally?**\n" .
-               "A: Yes, we ship to all EU countries.\n\n" .
+               "A: Yes, to the countries offered at checkout.\n\n" .
                "## Returns\n\n" .
                "**Q: What is your return policy?**\n" .
-               "A: We accept returns within 30 days of delivery in original condition.\n\n" .
+               "A: You may withdraw from your purchase within 14 days of delivery without giving a reason.\n\n" .
                "**Q: Who pays for return shipping?**\n" .
-               "A: We provide free return shipping labels for all returns.\n\n" .
+               "A: You do, unless the item is defective or we sent you the wrong item.\n\n" .
                "## Account\n\n" .
                "**Q: Do I need an account to place an order?**\n" .
                "A: No, you can checkout as a guest, but having an account makes future orders easier.";

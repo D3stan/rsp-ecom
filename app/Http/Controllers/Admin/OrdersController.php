@@ -113,6 +113,14 @@ class OrdersController extends Controller
         return Inertia::render('Admin/Orders/Show', [
             'order' => $order->toFrontendArray(),
             'carriers' => app(TrackingManager::class)->carriers(),
+            // Internal stock bookkeeping (hidden from every customer-facing array): units sold beyond the stock
+            'stock' => [
+                'has_oversold_items' => (bool) $order->has_oversold_items,
+                'oversold' => $order->orderItems
+                    ->filter(fn ($item) => (int) $item->oversold_qty > 0)
+                    ->mapWithKeys(fn ($item) => [$item->id => (int) $item->oversold_qty])
+                    ->all(),
+            ],
         ]);
     }
 
@@ -142,7 +150,7 @@ class OrdersController extends Controller
         try {
             Log::info('Order update attempt', [
                 'order_id' => $order->id,
-                'request_data' => $request->all()
+                'fields' => $request->keys(),
             ]);
 
             $request->validate([
@@ -167,6 +175,7 @@ class OrdersController extends Controller
             // Get original status and tracking number to detect changes
             $originalStatus = $order->status;
             $originalTrackingNumber = $order->tracking_number;
+            $originalCarrier = mb_strtolower(trim((string) $order->getAttribute('tracking_carrier')));
 
             // Check what was provided in the request
             $newStatus = $request->input('status', $order->status);
@@ -191,9 +200,16 @@ class OrdersController extends Controller
                 'total_amount' => $request->input('total_amount', $order->total_amount),
             ]);
 
+            // The stored VAT portion follows the edited total (orders created with a VAT rate snapshot only):
+            // an admin who changes shipping or the total must not leave a stale "of which VAT" behind.
+            if ($order->tax_rate !== null && $order->wasChanged(['total_amount', 'shipping_amount', 'subtotal'])) {
+                $order->update(['tax_amount' => \App\Support\Vat::portion((float) $order->total_amount, (float) $order->tax_rate)]);
+            }
+
             // Send shipping notification email
             $statusChangedToShipped = $originalStatus !== 'shipped' && $newStatus === 'shipped';
-            $trackingNumberUpdated = $newTrackingNumber && $newTrackingNumber !== $originalTrackingNumber;
+            $trackingNumberUpdated = $newTrackingNumber && trim((string) $newTrackingNumber) !== trim((string) $originalTrackingNumber);
+            $carrierChanged = mb_strtolower(trim((string) $order->getAttribute('tracking_carrier'))) !== $originalCarrier;
 
             Log::info('Checking shipping email conditions', [
                 'order_id' => $order->id,
@@ -203,14 +219,15 @@ class OrdersController extends Controller
                 'new_tracking' => $newTrackingNumber,
                 'status_changed_to_shipped' => $statusChangedToShipped,
                 'tracking_number_updated' => $trackingNumberUpdated,
+                'tracking_carrier_changed' => $carrierChanged,
                 'tracking_number_added' => $trackingNumberAdded,
             ]);
 
             // The shipped email is only for orders that are (still) shipped. EmailService dedupes on
-            // status + tracking number, so repeated saves never re-send; only a changed number does.
+            // status + tracking number + carrier, so repeated saves never re-send; only a changed number or carrier does.
             $emailWarning = null;
 
-            if (($statusChangedToShipped || $trackingNumberUpdated) && $newStatus === 'shipped') {
+            if (($statusChangedToShipped || $trackingNumberUpdated || $carrierChanged) && $newStatus === 'shipped') {
                 $emailService = app(\App\Services\EmailService::class);
 
                 if ($emailService->isEnabled(\App\Models\OrderEmail::TYPE_SHIPPED)) {
@@ -274,8 +291,8 @@ class OrdersController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to update order', [
                 'order_id' => $order->id ?? 'unknown',
+                'exception' => get_class($e),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
             ]);
             return back()->with('error', 'Failed to update order: ' . $e->getMessage());
         }
@@ -398,12 +415,12 @@ class OrdersController extends Controller
 
         // Get admin settings for shipping
         $adminSettings = [
-            'company_name' => \App\Models\Setting::get('site_name', 'Your Company'),
-            'company_address' => \App\Models\Setting::get('company_address', ''),
-            'company_phone' => \App\Models\Setting::get('contact_phone', ''),
-            'company_email' => \App\Models\Setting::get('contact_email', ''),
-            'iban' => \App\Models\Setting::get('company_iban', ''),
-            'account_holder' => \App\Models\Setting::get('company_account_holder', ''),
+            'company_name' => settings('store.name', ''),
+            'company_address' => settings('store.address', ''),
+            'company_phone' => settings('contact.phone', ''),
+            'company_email' => settings('contact.support_email', ''),
+            'iban' => settings('store.company_iban', ''),
+            'account_holder' => settings('store.account_holder', ''),
         ];
 
         // Get available sizes for shipping box information
@@ -490,8 +507,8 @@ class OrdersController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to process order shipping', [
                 'order_id' => $order->id,
+                'exception' => get_class($e),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
             ]);
 
             return back()->with('error', 'Failed to process shipping: ' . $e->getMessage());

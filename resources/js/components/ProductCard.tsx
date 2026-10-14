@@ -4,8 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { WishlistButton } from '@/components/wishlist-button';
+import { useMoney } from '@/hooks/use-money';
 import { useTranslation } from '@/hooks/useTranslation';
-import { formatCurrency } from '@/lib/utils';
 import type { Product } from '@/pages/products';
 import { cartService, type AddToCartData } from '@/services/cartService';
 import { type SharedData } from '@/types';
@@ -31,6 +31,7 @@ interface QuickViewModalProps {
 function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToProduct }: QuickViewModalProps) {
     const [quantity, setQuantity] = useState(1);
     const { t } = useTranslation();
+    const formatCurrency = useMoney();
     const defaultImage = '/images/product.png';
     const [imageSrc, setImageSrc] = useState(() => {
         if (!product.image || product.image === '' || product.image === '/images/product.png') {
@@ -161,6 +162,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
     const [isAddingToCart, setIsAddingToCart] = useState(false);
     const { auth } = usePage<SharedData>().props;
     const { t } = useTranslation();
+    const formatCurrency = useMoney();
     // Use a more reliable fallback strategy
     const defaultImage = '/images/product.png';
     const [imageSrc, setImageSrc] = useState(() => {

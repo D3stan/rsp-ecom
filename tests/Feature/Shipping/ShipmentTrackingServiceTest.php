@@ -225,3 +225,75 @@ it('plans the next poll with the normal interval, then the slow one, and closes 
     $order->tracking_started_at = now()->subDays(31);
     expect($this->service->withinPollingWindow($order))->toBeFalse();
 });
+
+// ------------------------------------------------------------------ shipping.tracking.auto_deliver
+
+it('marks the order delivered by default (auto_deliver is on)', function () {
+    expect(config('shipping.tracking.auto_deliver'))->toBeTrue();
+
+    $order = Fx::shippedOrder();
+    $this->service->apply($order, 'fake', Fx::result(S::Delivered, Fx::event(S::Delivered, '-1 hour', 'e1')));
+
+    expect($order->fresh()->status)->toBe('delivered')->and(trkDeliveredEmails())->toBe(1);
+});
+
+it('with auto_deliver off stores events and tracking status but leaves the order shipped and sends nothing', function () {
+    config(['shipping.tracking.auto_deliver' => false]);
+    $order = Fx::shippedOrder();
+    $result = Fx::result(S::Delivered, Fx::event(S::InTransit, '-5 hours', 'e1'), Fx::event(S::Delivered, '-1 hour', 'e2'));
+
+    $this->service->apply($order, 'fake', $result);
+    $this->service->apply($order, 'fake', $result);
+
+    $fresh = $order->fresh();
+    expect($fresh->status)->toBe('shipped')
+        ->and($fresh->tracking_status)->toBe('delivered')
+        ->and($fresh->tracking_next_sync_at)->toBeNull() // terminal: polling stops, the admin decides
+        ->and(ShipmentTrackingEvent::where('order_id', $order->id)->count())->toBe(2)
+        ->and(trkDeliveredEmails())->toBe(0);
+
+    Queue::assertNothingPushed();
+});
+
+it('with auto_deliver off the admin can still mark the order delivered, which sends the email once', function () {
+    config(['shipping.tracking.auto_deliver' => false]);
+    $order = Fx::shippedOrder();
+    $this->service->apply($order, 'fake', Fx::result(S::Delivered, Fx::event(S::Delivered, '-1 hour', 'e1')));
+
+    $order->fresh()->update(['status' => 'delivered']);
+
+    expect(trkDeliveredEmails())->toBe(1);
+});
+
+it('does not touch other tracking behaviour when auto_deliver is off', function () {
+    config(['shipping.tracking.auto_deliver' => false]);
+    $order = Fx::shippedOrder();
+
+    $this->service->apply($order, 'fake', Fx::result(S::InTransit, Fx::event(S::InTransit, '-1 hour', 'e1')));
+
+    expect($order->fresh()->status)->toBe('shipped')->and($order->fresh()->tracking_status)->toBe('in_transit')
+        ->and($order->fresh()->tracking_next_sync_at)->not->toBeNull();
+});
+
+it('follows the admin setting tracking.auto_deliver without a restart', function () {
+    $admin = App\Models\User::factory()->create(['role' => 'admin']);
+
+    // off in the admin: a delivered answer leaves the order shipped
+    settings()->set('tracking.auto_deliver', false, $admin);
+    $first = Fx::shippedOrder();
+    $this->service->apply($first, 'fake', Fx::result(S::Delivered, Fx::event(S::Delivered, '-1 hour', 'e1')));
+    expect($first->fresh()->status)->toBe('shipped')->and(trkDeliveredEmails())->toBe(0);
+
+    // back on, same process, no restart: the next delivered answer marks the order delivered
+    settings()->set('tracking.auto_deliver', true, $admin);
+    $second = Fx::shippedOrder();
+    $this->service->apply($second, 'fake', Fx::result(S::Delivered, Fx::event(S::Delivered, '-1 hour', 'e2')));
+    expect($second->fresh()->status)->toBe('delivered')->and(trkDeliveredEmails())->toBe(1);
+
+    // resetting restores the default (on)
+    settings()->set('tracking.auto_deliver', false, $admin);
+    settings()->reset('tracking.auto_deliver', $admin);
+    $third = Fx::shippedOrder();
+    $this->service->apply($third, 'fake', Fx::result(S::Delivered, Fx::event(S::Delivered, '-1 hour', 'e3')));
+    expect($third->fresh()->status)->toBe('delivered');
+});

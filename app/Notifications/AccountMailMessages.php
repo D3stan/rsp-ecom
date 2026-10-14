@@ -18,12 +18,12 @@ class AccountMailMessages
         $broker = config('auth.defaults.passwords');
 
         return (new MailMessage)
-            ->subject(__('emails.password_reset.subject', ['app' => config('app.name')]))
+            ->subject(__('emails.password_reset.subject', ['app' => settings('store.name')]))
             ->view(['emails.password-reset', 'emails.password-reset-text'], [
                 'greeting' => self::greeting($notifiable),
                 'resetUrl' => $url,
                 'expiresInMinutes' => (int) config("auth.passwords.{$broker}.expire", 60),
-                'appName' => config('app.name'),
+                'appName' => settings('store.name'),
                 'logoUrl' => asset('images/rlogo.png'),
             ]);
     }
@@ -31,11 +31,11 @@ class AccountMailMessages
     public static function verifyEmail(object $notifiable, string $url): MailMessage
     {
         return (new MailMessage)
-            ->subject(__('emails.verify_email.subject', ['app' => config('app.name')]))
+            ->subject(__('emails.verify_email.subject', ['app' => settings('store.name')]))
             ->view(['emails.verify-email', 'emails.verify-email-text'], [
                 'greeting' => self::greeting($notifiable),
                 'verificationUrl' => $url,
-                'appName' => config('app.name'),
+                'appName' => settings('store.name'),
                 'logoUrl' => asset('images/rlogo.png'),
             ]);
     }

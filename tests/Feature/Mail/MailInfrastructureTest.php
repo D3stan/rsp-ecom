@@ -6,7 +6,6 @@ use App\Mail\WelcomeEmail;
 use App\Models\Order;
 use App\Models\OrderEmail;
 use App\Models\PendingUserVerification;
-use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\PendingUserEmailVerification;
 use App\Providers\AppServiceProvider;
@@ -75,7 +74,7 @@ it('pending-emails ignores old, unpaid, already sent and permanently failed orde
 it('pending-emails does nothing when confirmation emails are disabled', function () {
     Queue::fake();
     pendingOrder();
-    Setting::set('order_confirmation_enabled', false, 'boolean');
+    settings()->set('email.order_confirmation', false);
 
     $this->artisan('orders:send-pending-emails', ['--force' => true])->assertSuccessful();
 
@@ -135,7 +134,7 @@ it('the welcome job is a no-op for a user deleted in the meantime', function () 
 
 it('the welcome email respects the master notification switch', function () {
     Queue::fake();
-    Setting::set('email_notifications_enabled', false, 'boolean');
+    settings()->set('email.enabled', false);
 
     app(EmailService::class)->sendWelcomeEmail(User::factory()->create());
 
@@ -212,6 +211,9 @@ it('logs a critical warning at boot when production uses the log mailer', functi
 });
 
 it('stays quiet outside production and with a safe production config', function () {
+    // The check reads the effective support address from the settings (config() is overlaid after this provider boots)
+    app(\App\Settings\Settings::class)->set('contact.support_email', 'help@shop.test');
+
     Log::shouldReceive('critical')->never();
 
     config(['mail.default' => 'log']);
@@ -266,7 +268,8 @@ it('delivers through a real database queue worker, once, even if the claim is di
     SendOrderEmail::dispatch($order->id, OrderEmail::TYPE_CONFIRMATION, 'default');
     expect(DB::table('jobs')->count())->toBe(2);
 
-    Artisan::call('queue:work', ['--stop-when-empty' => true, '--tries' => 1, '--sleep' => 0]);
+    // --memory: the worker runs inside the test process, whose memory use grows with the suite; the default 128 MB would stop it early
+    Artisan::call('queue:work', ['--stop-when-empty' => true, '--tries' => 1, '--sleep' => 0, '--memory' => 1024]);
 
     expect(DB::table('jobs')->count())->toBe(0);
     expect(app('mailer')->getSymfonyTransport()->messages())->toHaveCount(1);
@@ -277,7 +280,7 @@ it('delivers through a real database queue worker, once, even if the claim is di
 it('pending-emails says why it skips when disabled, and leaves no rows or flags behind', function () {
     Queue::fake();
     $order = pendingOrder();
-    Setting::set('email_notifications_enabled', false, 'boolean');
+    settings()->set('email.enabled', false);
 
     $this->artisan('orders:send-pending-emails', ['--force' => true])
         ->expectsOutputToContain('disabled in the settings')
@@ -288,7 +291,7 @@ it('pending-emails says why it skips when disabled, and leaves no rows or flags 
     expect(OrderEmail::count())->toBe(0)->and($order->fresh()->confirmation_email_sent)->toBeFalse();
 
     // re-enabled: the 7-day window is picked up
-    Setting::set('email_notifications_enabled', true, 'boolean');
+    settings()->set('email.enabled', true);
     $this->artisan('orders:send-pending-emails', ['--force' => true])->assertSuccessful();
     Queue::assertPushed(SendOrderEmail::class, 1);
 });

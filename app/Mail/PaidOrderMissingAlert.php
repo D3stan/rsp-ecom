@@ -30,7 +30,6 @@ class PaidOrderMissingAlert extends Mailable implements ShouldQueue
     {
         return new Envelope(
             subject: __('emails.admin.paid_order_missing.subject'),
-            tags: ['admin-paid-order-missing'],
         );
     }
 

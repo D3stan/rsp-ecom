@@ -69,6 +69,29 @@ class Cart extends Model
         return sha1(implode("\n", $lines));
     }
 
+    /**
+     * Bring every line to the current catalogue price of its own variant (CartItem::current_price), so a change of
+     * the shop price between "added to cart" and "pay" is charged at the new price of the RIGHT variant, never at
+     * the default variant's price. Returns the lines that changed: cart item id => previous price.
+     *
+     * @return array<int, float>
+     */
+    public function refreshPrices(): array
+    {
+        $this->loadMissing(['cartItems.product.defaultVariant', 'cartItems.productVariant']);
+
+        $changed = [];
+
+        foreach ($this->cartItems as $item) {
+            if ($item->has_price_changed) {
+                $changed[$item->id] = (float) $item->price;
+                $item->updatePrice();
+            }
+        }
+
+        return $changed;
+    }
+
     // Helper methods
     public function addItem(Product $product, int $quantity = 1): CartItem
     {

@@ -170,18 +170,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                 {
                     preserveState: false, // Allow page to refresh with updated data
                     preserveScroll: true,
-                    onSuccess: () => {
-                        addToast({
-                            type: 'success',
-                            title: `Review ${isApproved ? 'approved' : 'rejected'} successfully`,
-                        });
-                    },
-                    onError: () => {
-                        addToast({
-                            type: 'error',
-                            title: 'Failed to update review status',
-                        });
-                    },
+                    // success/failure is the controller flash, toasted by the layout
                     onFinish: () => {
                         setIsUpdating(null);
                     },
@@ -215,18 +204,9 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                 {
                     preserveState: false, // Allow page to refresh with updated data
                     preserveScroll: true,
+                    // success/failure is the controller flash, toasted by the layout
                     onSuccess: () => {
-                        addToast({
-                            type: 'success',
-                            title: `${selectedReviews.length} reviews ${action}d successfully`,
-                        });
                         setSelectedReviews([]);
-                    },
-                    onError: () => {
-                        addToast({
-                            type: 'error',
-                            title: `Failed to ${action} reviews`,
-                        });
                     },
                 },
             );
@@ -243,18 +223,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
             await router.delete(`/admin/reviews/${reviewId}`, {
                 preserveState: true,
                 preserveScroll: true,
-                onSuccess: () => {
-                    addToast({
-                        type: 'success',
-                        title: 'Review deleted successfully',
-                    });
-                },
-                onError: () => {
-                    addToast({
-                        type: 'error',
-                        title: 'Failed to delete review',
-                    });
-                },
+                // success/failure is the controller flash, toasted by the layout
             });
         } catch {
             addToast({

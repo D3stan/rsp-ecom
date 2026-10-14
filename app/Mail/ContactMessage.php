@@ -69,13 +69,12 @@ class ContactMessage extends Mailable implements ShouldQueue
 
         // Sent From our own domain (SPF/DKIM/DMARC aligned); the visitor is only the display name and Reply-To.
         // Characters that could make the display name look like another address are dropped.
-        $displayName = trim(str_replace(['<', '>', '"', '@', ';'], '', $visitorName).' via '.config('app.name'));
+        $displayName = trim(str_replace(['<', '>', '"', '@', ';'], '', $visitorName).' via '.settings('store.name'));
 
         return new Envelope(
             from: new Address(config('mail.from.address'), $displayName),
             replyTo: [new Address($this->contactData['email'], str_replace(['<', '>', '"'], '', $visitorName))],
             subject: 'Contact Form: ' . $this->contactData['subject'],
-            tags: ['contact-form'],
         );
     }
 
@@ -89,7 +88,7 @@ class ContactMessage extends Mailable implements ShouldQueue
             with: [
                 'contactData' => $this->contactData,
                 'logoUrl' => $this->getLogoUrl(),
-                'appName' => config('app.name'),
+                'appName' => settings('store.name'),
             ],
         );
     }

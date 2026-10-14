@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useMoney } from '@/hooks/use-money';
+import { useSetting } from '@/hooks/use-setting';
 import { useToast } from '@/contexts/ToastContext';
 import { useTranslation } from '@/hooks/useTranslation';
-import { formatCurrency } from '@/lib/utils';
 import { cartService } from '@/services/cartService';
 import { type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -50,7 +51,14 @@ export default function Cart() {
     const { auth } = pageProps;
     const isMobile = useIsMobile();
     const { t, isLoading } = useTranslation();
+    const formatCurrency = useMoney();
     const { addToast } = useToast();
+
+    // Admin settings (Settings > Orders): minimum order amount (products only, 0 = off) and guest checkout switch
+    const minAmount = useSetting('orders.min_amount', 0);
+    const guestCheckoutEnabled = useSetting('orders.guest_checkout_enabled', true);
+    const belowMinimum = minAmount > 0 && subtotal < minAmount;
+    const needsSignIn = !auth?.user && !guestCheckoutEnabled;
 
     const [isUpdating, setIsUpdating] = useState<number | null>(null);
     const [removingId, setRemovingId] = useState<number | null>(null);
@@ -119,7 +127,14 @@ export default function Cart() {
     };
 
     const proceedToCheckout = () => {
-        if (auth?.user) {
+        if (belowMinimum) {
+            return;
+        }
+
+        if (needsSignIn) {
+            // Guest checkout is switched off: the customer has to sign in first
+            router.get('/login');
+        } else if (auth?.user) {
             // User is authenticated, proceed to checkout details page
             router.get('/checkout');
         } else {
@@ -405,12 +420,12 @@ export default function Cart() {
                                     </div>
                                     <div className="flex justify-between text-gray-700">
                                         <span>{t('cart.shipping')}</span>
-                                        <span>{shippingCost > 0 ? formatCurrency(shippingCost) : t('cart.calculated_at_checkout')}</span>
+                                        <span>{formatCurrency(shippingCost)}</span>
                                     </div>
-                                    {discountAmount && discountAmount > 0 && (
+                                    {(discountAmount ?? 0) > 0 && (
                                         <div className="flex justify-between text-green-600">
                                             <span>{t('cart.discount')} {discountDescription && `(${discountDescription})`}</span>
-                                            <span>-{formatCurrency(discountAmount)}</span>
+                                            <span>-{formatCurrency(discountAmount ?? 0)}</span>
                                         </div>
                                     )}
                                     <div className="border-t border-gray-200 pt-3">
@@ -421,20 +436,27 @@ export default function Cart() {
                                     </div>
                                 </div>
 
+                                {belowMinimum && (
+                                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                        <p className="text-sm text-amber-800">{t('cart.min_amount_notice', { amount: formatCurrency(minAmount) })}</p>
+                                    </div>
+                                )}
+
                                 {/* Checkout Buttons */}
                                 <div className="space-y-3">
                                     {/* Main Checkout Button - Hidden on mobile, shown on desktop */}
                                     <Button
                                         onClick={proceedToCheckout}
+                                        disabled={belowMinimum}
                                         className="hidden h-12 w-full items-center justify-center border border-black text-lg font-semibold md:flex"
                                         size="lg"
                                     >
                                         <Package className="mr-2 h-5 w-5" />
-                                        {t('cart.proceed_to_checkout')}
+                                        {needsSignIn ? t('cart.sign_in_to_continue') : t('cart.proceed_to_checkout')}
                                     </Button>
 
                                     {/* Alternative options for non-authenticated users - Hidden on mobile */}
-                                    {!auth?.user && (
+                                    {!auth?.user && !needsSignIn && (
                                         <div className="hidden text-center md:block">
                                             <p className="mb-2 text-sm text-gray-600">{t('cart.already_have_account')}</p>
                                             <Button variant="outline" asChild className="w-full">
@@ -463,9 +485,9 @@ export default function Cart() {
                                     {totalItems} {t('cart.items')}
                                 </p>
                             </div>
-                            <Button onClick={proceedToCheckout} className="h-12 flex-1 border border-black font-semibold">
+                            <Button onClick={proceedToCheckout} disabled={belowMinimum} className="h-12 flex-1 border border-black font-semibold">
                                 <Package className="mr-2 h-5 w-5" />
-                                {t('cart.checkout')}
+                                {needsSignIn ? t('cart.sign_in_to_continue') : t('cart.checkout')}
                             </Button>
                         </div>
                     </div>

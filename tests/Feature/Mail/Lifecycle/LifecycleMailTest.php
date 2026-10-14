@@ -179,7 +179,7 @@ it('refuses nonsensical refund amounts and honours the refund switch', function 
         ->and($service->sendOrderRefunded($order, -5))->toBeFalse()
         ->and($service->sendOrderRefunded($order, 55.01))->toBeFalse();
 
-    Setting::set('order_refunded_enabled', false, 'boolean');
+    settings()->set('email.order_refunded', false);
     expect($service->sendOrderRefunded($order, 10))->toBeTrue();   // "accepted": deliberately off
 
     Queue::assertNothingPushed();
@@ -193,17 +193,18 @@ it('sends the new-order alert to the admin address, falling back to the contact 
     config(['mail.contact_email' => 'contact@shop.test']);
     $order = Fx::paidOrder();
 
-    Setting::set('admin_notification_email', 'owner@shop.test');
+    settings()->set('contact.admin_notification_email', 'owner@shop.test');
     app(EmailService::class)->sendNewOrderAlert($order);
     Mail::assertSent(NewOrderAlert::class, fn ($m) => $m->hasTo('owner@shop.test') && ! $m->hasTo('guest@example.test'));
 
     $second = Fx::paidOrder(['guest_email' => 'g2@example.test']);
-    Setting::set('admin_notification_email', '');
+    settings()->set('contact.admin_notification_email', '');
     app(EmailService::class)->sendNewOrderAlert($second);
     Mail::assertSent(NewOrderAlert::class, fn ($m) => $m->hasTo('contact@shop.test'));
 
     $third = Fx::paidOrder(['guest_email' => 'g3@example.test']);
-    Setting::set('admin_notification_email', 'not-an-email');
+    // an invalid address cannot be saved through the settings service: simulate a bad row written by hand
+    Setting::updateOrCreate(['key' => 'contact.admin_notification_email'], ['value' => json_encode('not-an-email'), 'type' => 'email']);
     app(EmailService::class)->sendNewOrderAlert($third);
     Mail::assertSent(NewOrderAlert::class, 3);
     Mail::assertSent(NewOrderAlert::class, fn ($m) => $m->hasTo('contact@shop.test') && $m->order->is($third));
@@ -223,7 +224,7 @@ it('sends the new-order alert even for an order without a customer address, once
 
 it('honours the master switch for the new-order alert', function () {
     Queue::fake();
-    Setting::set('email_notifications_enabled', false, 'boolean');
+    settings()->set('email.enabled', false);
 
     app(EmailService::class)->sendNewOrderAlert(Fx::paidOrder());
 

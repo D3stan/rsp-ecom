@@ -2,139 +2,90 @@
 
 namespace App\Models;
 
+use App\Settings\Settings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 
+/**
+ * Storage row of the `settings` table (key, JSON value, informational type, updated_by).
+ *
+ * Reading and writing settings is the job of App\Settings\Settings (or the settings() helper). The static
+ * get/set/getTaxRate/getPricesIncludeTax wrappers below are DEPRECATED: they keep old call sites working by
+ * mapping legacy keys (tax_rate, site_name, order_shipped_enabled...) to the catalogue keys through the alias
+ * map in config/settings.php. Keys that are not part of the catalogue (stripe_secret_key, stripe_public_key,
+ * until `settings:purge-legacy-secrets` removes them) are read and written as raw rows, never cached.
+ */
 class Setting extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'key',
         'value',
         'type',
+        'updated_by',
     ];
 
-    // Cache key prefix
-    private const CACHE_PREFIX = 'setting_';
-    private const CACHE_TTL = 3600; // 1 hour
-
-    // Boot method to clear cache when settings change
-    protected static function boot()
+    protected static function booted(): void
     {
-        parent::boot();
+        // Rows written outside the Settings service (seeders, factories, tinker) must not leave a stale cache behind
+        $flush = fn () => app(Settings::class)->flush();
 
-        static::saved(function ($setting) {
-            Cache::forget(self::CACHE_PREFIX . $setting->key);
-        });
-
-        static::deleted(function ($setting) {
-            Cache::forget(self::CACHE_PREFIX . $setting->key);
-        });
+        static::saved($flush);
+        static::deleted($flush);
     }
 
-    // Get setting value with proper type casting
-    public function getValueAttribute($value)
+    /**
+     * @deprecated use settings('group.key') / App\Settings\Settings
+     */
+    public static function get(string $key, mixed $default = null): mixed
     {
-        return match ($this->type) {
-            'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
-            'json' => json_decode($value, true),
-            default => $value,
-        };
-    }
+        $settings = app(Settings::class);
+        $resolved = $settings->resolveKey($key);
 
-    // Set setting value with proper type handling
-    public function setValueAttribute($value)
-    {
-        $this->attributes['value'] = match ($this->type) {
-            'boolean' => $value ? '1' : '0',
-            'json' => is_string($value) ? $value : json_encode($value),
-            default => (string) $value,
-        };
-    }
-
-    // Static methods for easy setting management
-    public static function get(string $key, $default = null)
-    {
-        return Cache::remember(
-            self::CACHE_PREFIX . $key,
-            self::CACHE_TTL,
-            function () use ($key, $default) {
-                $setting = static::where('key', $key)->first();
-                return $setting ? $setting->value : $default;
-            }
-        );
-    }
-
-    public static function set(string $key, $value, string $type = 'string'): self
-    {
-        $setting = static::updateOrCreate(
-            ['key' => $key],
-            ['value' => $value, 'type' => $type]
-        );
-
-        Cache::forget(self::CACHE_PREFIX . $key);
-        
-        return $setting;
-    }
-
-    public static function has(string $key): bool
-    {
-        return static::where('key', $key)->exists();
-    }
-
-    public static function forget(string $key): bool
-    {
-        Cache::forget(self::CACHE_PREFIX . $key);
-        return static::where('key', $key)->delete() > 0;
-    }
-
-    // Get multiple settings
-    public static function getMany(array $keys): array
-    {
-        $settings = [];
-        
-        foreach ($keys as $key) {
-            $settings[$key] = static::get($key);
+        if ($resolved !== null) {
+            return $settings->get($resolved);
         }
-        
-        return $settings;
+
+        $value = static::query()->where('key', $key)->value('value');
+
+        return $value ?? $default;
     }
 
-    // Get all settings as key-value pairs
-    public static function getAllSettings(): array
+    /**
+     * @deprecated use App\Settings\Settings::set()
+     */
+    public static function set(string $key, mixed $value, string $type = 'string'): ?self
     {
-        return static::pluck('value', 'key')->toArray();
+        $settings = app(Settings::class);
+        $resolved = $settings->resolveKey($key);
+
+        if ($resolved !== null) {
+            $settings->set($resolved, $value);
+
+            return static::query()->where('key', $resolved)->first();
+        }
+
+        // Legacy raw row (e.g. stripe_secret_key): plain string, as before
+        return static::updateOrCreate(
+            ['key' => $key],
+            ['value' => is_bool($value) ? ($value ? '1' : '0') : (is_array($value) ? json_encode($value) : (string) $value), 'type' => $type]
+        );
     }
 
-    // Common settings getters
-    public static function getSiteName(): string
-    {
-        return static::get('site_name', 'Ecommerce Store');
-    }
-
-    public static function getSiteDescription(): string
-    {
-        return static::get('site_description', '');
-    }
-
-    public static function getDefaultCurrency(): string
-    {
-        return static::get('default_currency', 'EUR');
-    }
-
+    /**
+     * @deprecated use settings('tax.rate')
+     */
     public static function getTaxRate(): float
     {
-        return (float) static::get('tax_rate', 0);
+        return (float) app(Settings::class)->get('tax.rate');
     }
 
+    /**
+     * @deprecated use settings('tax.prices_include_tax')
+     */
     public static function getPricesIncludeTax(): bool
     {
-        return (bool) static::get('prices_include_tax', false);
-    }
-
-    public static function getShippingEnabled(): bool
-    {
-        return static::get('shipping_enabled', true);
+        return (bool) app(Settings::class)->get('tax.prices_include_tax');
     }
 }

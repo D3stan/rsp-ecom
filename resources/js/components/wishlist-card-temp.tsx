@@ -12,8 +12,10 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWishlist } from '@/hooks/useWishlist';
+import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { Wishlist } from '@/types';
+import { useMoney } from '@/hooks/use-money';
 
 interface WishlistCardProps {
     item: Wishlist;
@@ -33,13 +35,9 @@ export const WishlistCard: React.FC<WishlistCardProps> = ({
         initialInWishlist: true,
     });
     const { t } = useTranslation();
+    const lowStockThreshold = useSetting('inventory.low_stock_threshold', 10);
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'EUR',
-        }).format(amount);
-    };
+    const formatCurrency = useMoney();
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -69,7 +67,7 @@ export const WishlistCard: React.FC<WishlistCardProps> = ({
         if (!item.product.stock_quantity || item.product.stock_quantity === 0) {
             return { status: t('products.out_of_stock'), color: 'bg-red-100 text-red-800 border-red-200' };
         }
-        if ((item.product.stock_quantity || 0) <= 5) {
+        if ((item.product.stock_quantity || 0) <= lowStockThreshold) {
             return { status: t('products.low_stock'), color: 'bg-yellow-100 text-yellow-800 border-yellow-200' };
         }
         return { status: t('products.in_stock'), color: 'bg-green-100 text-green-800 border-green-200' };

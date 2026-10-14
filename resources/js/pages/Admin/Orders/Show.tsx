@@ -9,6 +9,7 @@ import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
 import {
+    AlertTriangle,
     ArrowRight,
     CheckCircle,
     ChevronDown,
@@ -66,6 +67,8 @@ interface Order {
     payment_status: string;
     subtotal: number;
     tax_amount: number;
+    // VAT rate (percent) stored with the order; null on orders from before it was recorded (their tax is not part of the total)
+    tax_rate?: number | null;
     shipping_amount: number;
     total_amount: number;
     currency: string;
@@ -95,9 +98,16 @@ interface Carrier {
     name: string;
 }
 
+interface StockInfo {
+    has_oversold_items: boolean;
+    // order item id => units sold beyond the available stock
+    oversold: Record<string, number>;
+}
+
 interface Props {
     order: Order;
     carriers?: Carrier[];
+    stock?: StockInfo;
 }
 
 const statusColors = {
@@ -132,7 +142,7 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-export default function OrderShow({ order, carriers = [] }: Props) {
+export default function OrderShow({ order, carriers = [], stock }: Props) {
     const { t } = useTranslation();
     const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
     const [isUpdating, setIsUpdating] = useState(false);
@@ -288,6 +298,16 @@ export default function OrderShow({ order, carriers = [] }: Props) {
                     </div>
                 </div>
 
+                {stock?.has_oversold_items && (
+                    <div className="flex items-start space-x-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900">
+                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+                        <div>
+                            <p className="font-medium">{t('admin.orders.oversold_title')}</p>
+                            <p className="text-sm">{t('admin.orders.oversold_body')}</p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Order Details */}
                     <div className="space-y-6 lg:col-span-2">
@@ -433,6 +453,14 @@ export default function OrderShow({ order, carriers = [] }: Props) {
                                                     <p className="text-sm text-muted-foreground">
                                                         Qty: {item.quantity} × {formatCurrency(item.price)}
                                                     </p>
+                                                    {stock?.oversold[item.id] ? (
+                                                        <p className="text-sm font-medium text-amber-700">
+                                                            {t('admin.orders.oversold_line', {
+                                                                missing: stock.oversold[item.id],
+                                                                ordered: item.quantity,
+                                                            })}
+                                                        </p>
+                                                    ) : null}
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="font-medium">{formatCurrency(item.total)}</p>
@@ -644,7 +672,7 @@ export default function OrderShow({ order, carriers = [] }: Props) {
                                             <span>Subtotal</span>
                                             <span>{formatCurrency(order.subtotal)}</span>
                                         </div>
-                                        {order.tax_amount > 0 && (
+                                        {order.tax_amount > 0 && order.tax_rate == null && (
                                             <div className="flex justify-between">
                                                 <span>Tax</span>
                                                 <span>{formatCurrency(order.tax_amount)}</span>
@@ -661,6 +689,12 @@ export default function OrderShow({ order, carriers = [] }: Props) {
                                             <span>Total</span>
                                             <span>{formatCurrency(order.total_amount)}</span>
                                         </div>
+                                        {order.tax_rate != null && (
+                                            <div className="flex justify-between text-sm text-muted-foreground">
+                                                <span>Of which VAT ({order.tax_rate}%)</span>
+                                                <span>{formatCurrency(order.tax_amount)}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </CollapsibleContent>
                             </Card>
@@ -690,15 +724,18 @@ export default function OrderShow({ order, carriers = [] }: Props) {
                     <DialogHeader>
                         <DialogTitle>Mark Order as Shipped?</DialogTitle>
                         <DialogDescription>
-                            You are about to mark this order as shipped without a tracking number.
-                            A shipping notification email will be sent to the customer without tracking information.
+                            You are about to mark this order as shipped without a tracking number. A shipping notification email will be sent to the
+                            customer without tracking information.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => {
-                            setShowShipConfirmation(false);
-                            setPendingStatus(null);
-                        }}>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setShowShipConfirmation(false);
+                                setPendingStatus(null);
+                            }}
+                        >
                             Cancel
                         </Button>
                         <Button onClick={handleConfirmShip} disabled={isUpdating}>

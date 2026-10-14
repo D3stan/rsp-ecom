@@ -80,24 +80,17 @@ class OrderSeeder extends Seeder
                 $orderSubtotal += $orderItem->total;
             }
             
-            // Update order totals using tax-inclusive pricing (European VAT model)
-            $taxRate = 0.22; // 22% VAT as per system settings
-            
-            // The orderSubtotal is the tax-inclusive price from product prices
-            $taxInclusiveSubtotal = $orderSubtotal;
-            
-            // Calculate tax amount and net subtotal using reverse calculation
-            $taxAmount = round(($taxInclusiveSubtotal * $taxRate) / (1 + $taxRate), 2);
-            $netSubtotal = round($taxInclusiveSubtotal / (1 + $taxRate), 2);
-            
-            // Shipping calculation (free shipping over €100)
-            $shippingAmount = $taxInclusiveSubtotal >= 100 ? 0 : 9.99;
-            
-            $total = $netSubtotal + $taxAmount + $shippingAmount;
-            
+            // Update order totals using tax-inclusive pricing (European VAT model): the product prices already
+            // contain the VAT, tax_amount is the portion of the total at tax_rate (same rule as App\Support\Vat).
+            $taxRate = 22.0;
+            $shippingAmount = 9.99; // shipping is always charged
+            $total = round($orderSubtotal + $shippingAmount, 2);
+            $taxAmount = round($total * ($taxRate / 100) / (1 + $taxRate / 100), 2);
+
             $order->update([
-                'subtotal' => $netSubtotal, // Net price excluding VAT
-                'tax_amount' => $taxAmount, // Calculated VAT
+                'subtotal' => $orderSubtotal, // VAT-inclusive
+                'tax_amount' => $taxAmount, // VAT contained in the total
+                'tax_rate' => $taxRate,
                 'shipping_amount' => $shippingAmount,
                 'total_amount' => $total,
             ]);

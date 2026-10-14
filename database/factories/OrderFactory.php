@@ -34,25 +34,22 @@ class OrderFactory extends Factory
             $deliveryDate = $this->faker->dateTimeBetween($shippingDate ?? $orderDate, '+7 days');
         }
 
-        // Use tax-inclusive pricing (European VAT model)
-        $taxInclusiveSubtotal = $this->faker->randomFloat(2, 15, 500);
-        $taxRate = 0.22; // 22% VAT as per system settings
-        
-        // Calculate tax amount and net subtotal using reverse calculation
-        $taxAmount = round(($taxInclusiveSubtotal * $taxRate) / (1 + $taxRate), 2);
-        $netSubtotal = round($taxInclusiveSubtotal / (1 + $taxRate), 2);
-        
-        // Shipping calculation (free shipping over €100)
-        $shippingAmount = $taxInclusiveSubtotal >= 100 ? 0 : $this->faker->randomFloat(2, 5.99, 9.99);
-        $total = $netSubtotal + $taxAmount + $shippingAmount;
+        // Prices are VAT-inclusive (European VAT model): subtotal and total contain the VAT, tax_amount is the
+        // portion of the total at tax_rate (same rule as App\Support\Vat). Shipping is always charged.
+        $subtotal = $this->faker->randomFloat(2, 15, 500);
+        $taxRate = 22.0;
+        $shippingAmount = $this->faker->randomFloat(2, 5.99, 9.99);
+        $total = round($subtotal + $shippingAmount, 2);
+        $taxAmount = round($total * ($taxRate / 100) / (1 + $taxRate / 100), 2);
 
         return [
             'user_id' => User::factory(),
             'shipping_address_id' => Address::factory()->shipping(),
             'billing_address_id' => Address::factory()->billing(),
             'status' => $status,
-            'subtotal' => $netSubtotal, // Net price excluding VAT
-            'tax_amount' => $taxAmount, // Calculated VAT
+            'subtotal' => $subtotal, // VAT-inclusive
+            'tax_amount' => $taxAmount, // VAT contained in the total
+            'tax_rate' => $taxRate,
             'shipping_amount' => $shippingAmount,
             'total_amount' => $total,
             'currency' => $this->faker->randomElement(['EUR', 'EUR', 'GBP']),
@@ -165,20 +162,19 @@ class OrderFactory extends Factory
     public function highValue(): static
     {
         return $this->state(function (array $attributes) {
-            // Use tax-inclusive pricing for high-value orders
-            $taxInclusiveSubtotal = $this->faker->randomFloat(2, 200, 1000);
-            $taxRate = 0.22; // 22% VAT
-            
-            // Calculate tax amount and net subtotal using reverse calculation
-            $taxAmount = round(($taxInclusiveSubtotal * $taxRate) / (1 + $taxRate), 2);
-            $netSubtotal = round($taxInclusiveSubtotal / (1 + $taxRate), 2);
-            $shippingAmount = 0; // Free shipping for high-value orders (over €100)
-            
+            // VAT-inclusive pricing for high-value orders; shipping is charged like on any other order
+            $subtotal = $this->faker->randomFloat(2, 200, 1000);
+            $taxRate = 22.0;
+            $shippingAmount = $this->faker->randomFloat(2, 5.99, 9.99);
+            $total = round($subtotal + $shippingAmount, 2);
+            $taxAmount = round($total * ($taxRate / 100) / (1 + $taxRate / 100), 2);
+
             return [
-                'subtotal' => $netSubtotal,
+                'subtotal' => $subtotal,
                 'tax_amount' => $taxAmount,
+                'tax_rate' => $taxRate,
                 'shipping_amount' => $shippingAmount,
-                'total_amount' => $netSubtotal + $taxAmount,
+                'total_amount' => $total,
             ];
         });
     }

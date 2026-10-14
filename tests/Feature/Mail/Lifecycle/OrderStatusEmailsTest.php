@@ -3,7 +3,6 @@
 use App\Jobs\SendOrderEmail;
 use App\Models\Order;
 use App\Models\OrderEmail;
-use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
 use Tests\Feature\Mail\Lifecycle\Support\LifecycleFixtures as Fx;
@@ -93,8 +92,8 @@ it('emails delivered through the admin edit form and the status endpoint', funct
 
 it('respects the per-type switch and the master switch, writing no order_emails row', function () {
     $order = Fx::paidOrder(['status' => 'shipped']);
-    Setting::set('order_delivered_enabled', false, 'boolean');
-    Setting::set('order_cancelled_enabled', false, 'boolean');
+    settings()->set('email.order_delivered', false);
+    settings()->set('email.order_cancelled', false);
 
     $order->update(['status' => 'delivered']);
     Fx::paidOrder()->cancel();
@@ -102,9 +101,9 @@ it('respects the per-type switch and the master switch, writing no order_emails 
     Queue::assertNothingPushed();
     expect(OrderEmail::count())->toBe(0);
 
-    Setting::set('order_delivered_enabled', true, 'boolean');
-    Setting::set('order_cancelled_enabled', true, 'boolean');
-    Setting::set('email_notifications_enabled', false, 'boolean');
+    settings()->set('email.order_delivered', true);
+    settings()->set('email.order_cancelled', true);
+    settings()->set('email.enabled', false);
     Fx::paidOrder(['status' => 'shipped'])->update(['status' => 'delivered']);
 
     Queue::assertNothingPushed();

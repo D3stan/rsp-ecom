@@ -26,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Cashier's own routes (GET stripe/payment/{id}, POST stripe/webhook) are not registered: the payment page is
+        // unused and the webhook is re-declared explicitly in routes/web.php (named cashier.webhook).
+        Cashier::ignoreRoutes();
+
         // Carrier tracking module: one manager, the active driver is injectable as TrackingProvider
         $this->app->singleton(TrackingManager::class);
         $this->app->bind(TrackingProvider::class, fn ($app) => $app->make(TrackingManager::class)->driver());
@@ -102,7 +106,9 @@ class AppServiceProvider extends ServiceProvider
             $problems[] = 'MAIL_FROM_ADDRESS is still a placeholder address';
         }
 
-        if ($isPlaceholder((string) config('mail.support_address'))) {
+        // This provider boots before SettingsServiceProvider has overlaid contact.support_email onto
+        // mail.support_address, so read the effective value (admin-customised or the env default) from the settings.
+        if ($isPlaceholder($this->effectiveSupportAddress())) {
             $problems[] = 'MAIL_SUPPORT_ADDRESS is not set (emails would show a placeholder support address)';
         }
 
@@ -119,5 +125,17 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Log::critical('Unsafe production mail configuration: '.implode('; ', $problems));
+    }
+
+    /**
+     * The support address emails will use: the admin-customised setting, else config('mail.support_address').
+     */
+    private function effectiveSupportAddress(): string
+    {
+        try {
+            return (string) settings('contact.support_email', config('mail.support_address'));
+        } catch (\Throwable) {
+            return (string) config('mail.support_address');
+        }
     }
 }

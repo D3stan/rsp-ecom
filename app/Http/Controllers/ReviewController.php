@@ -13,7 +13,7 @@ class ReviewController extends Controller
 {
     public function index()
     {
-        SEOMeta::setTitle('My Reviews – ' . config('app.name'));
+        SEOMeta::setTitle('My Reviews – ' . settings('store.name'));
         SEOMeta::setDescription('View and manage your product reviews.');
         
         $user = Auth::user();
@@ -32,7 +32,7 @@ class ReviewController extends Controller
     {
         // Set noindex for review form
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('Write Review for ' . $product->name . ' – ' . config('app.name'));
+        SEOMeta::setTitle('Write Review for ' . $product->name . ' – ' . settings('store.name'));
         
         $user = Auth::user();
         
@@ -94,14 +94,20 @@ class ReviewController extends Controller
             return redirect()->route('orders.index')->with('error', 'You can only review products you have purchased.');
         }
         
+        // reviews.auto_approve: off = the review waits for moderation in the admin
+        $autoApprove = (bool) settings('reviews.auto_approve', true);
+
         Review::create([
             'user_id' => $user->id,
             'product_id' => $request->product_id,
             'rating' => $request->rating,
             'comment' => $request->comment,
-            'is_approved' => true, // Auto-approve for now
+            'is_approved' => $autoApprove,
         ]);
         
-        return redirect()->route('orders.index')->with('success', 'Thank you for your review!');
+        return redirect()->route('orders.index')->with(
+            'success',
+            $autoApprove ? __('reviews.thank_you') : __('reviews.pending_moderation')
+        );
     }
 }

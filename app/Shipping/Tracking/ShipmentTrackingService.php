@@ -24,7 +24,10 @@ use Illuminate\Support\Str;
  *  - only `shipped` orders are touched: cancelled/delivered (e.g. set by the admin) are never modified;
  *  - the tracking status never moves backwards (see TrackingStatus::canReplace);
  *  - Delivered moves a shipped order to `delivered` through a normal model save, so the
- *    OrderObserver sends the delivered email (once, via order_emails) exactly as for an admin action;
+ *    OrderObserver sends the delivered email (once, via order_emails) exactly as for an admin action.
+ *    This depends only on TrackingStatus::Delivered and shipping.tracking.auto_deliver (default on):
+ *    with the flag off the events and tracking_status are still stored, but the order stays `shipped`
+ *    and no email is sent (the admin marks it delivered);
  *  - Exception / Returned are recorded and logged, but never change the order or send mail.
  */
 class ShipmentTrackingService
@@ -205,7 +208,7 @@ class ShipmentTrackingService
             ]);
         }
 
-        if ($moves && $new === TrackingStatus::Delivered) {
+        if ($moves && $new === TrackingStatus::Delivered && $this->autoDeliver()) {
             // Same path as the admin action: a regular save, so the OrderObserver sends the delivered email.
             $order->status = 'delivered';
         }
@@ -218,6 +221,11 @@ class ShipmentTrackingService
             'status' => $order->tracking_status,
             'new_events' => $newEvents,
         ]);
+    }
+
+    private function autoDeliver(): bool
+    {
+        return (bool) config('shipping.tracking.auto_deliver', true);
     }
 
     private function resultingStatus(Order $order): TrackingStatus

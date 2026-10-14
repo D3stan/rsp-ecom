@@ -2,8 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Settings\Settings;
+use App\Support\Locales;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 
@@ -41,7 +44,10 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => settings('store.name'),
+            'supportedLocales' => Locales::supported(),
+            // Admin settings marked public in config/settings.php, typed (numbers, booleans, lists), keyed by setting key
+            'settings' => fn (): array => app(Settings::class)->public(),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user(),
@@ -52,12 +58,17 @@ class HandleInertiaRequests extends Middleware
                 'location' => $request->url(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            // Session flashes set by controllers (->with('success'|'error'|'warning', ...)); rendered as toasts by the admin layout
-            'flash' => fn (): array => [
-                'success' => $this->flashMessage($request, 'success'),
-                'error' => $this->flashMessage($request, 'error'),
-                'warning' => $this->flashMessage($request, 'warning'),
-            ],
+            // Session flashes set by controllers (->with('success'|'error'|'warning', ...)); rendered as toasts by the
+            // FlashToaster. `id` is fresh per flash (null when there is no message) so the client shows each one once.
+            'flash' => function () use ($request): array {
+                $flash = [
+                    'success' => $this->flashMessage($request, 'success'),
+                    'error' => $this->flashMessage($request, 'error'),
+                    'warning' => $this->flashMessage($request, 'warning'),
+                ];
+
+                return [...$flash, 'id' => array_filter($flash) !== [] ? (string) Str::uuid() : null];
+            },
         ];
     }
 

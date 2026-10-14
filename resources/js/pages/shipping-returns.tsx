@@ -1,12 +1,17 @@
 import Header from '@/components/header';
+import { usePolicyValues } from '@/hooks/use-policy-values';
+import { useSetting } from '@/hooks/use-setting';
 import useTranslation from '@/hooks/useTranslation';
 import { Head } from '@inertiajs/react';
 
 export default function ShippingReturns() {
     const { t } = useTranslation();
+    const { days, dispatch, delivery, email } = usePolicyValues();
+    const storeName = useSetting('store.name', '');
+
     return (
         <>
-            <Head title="Shipping & Returns - Your Store" />
+            <Head title={storeName ? `${t('shipping_returns.title')} - ${storeName}` : t('shipping_returns.title')} />
 
             <div className="min-h-screen bg-white">
                 <Header />
@@ -36,8 +41,7 @@ export default function ShippingReturns() {
                                         <div className="rounded-lg bg-gray-50 p-4">
                                             <h4 className="mb-2 font-semibold text-black">{t('shipping_returns.available_options')}</h4>
                                             <ul className="list-inside list-disc space-y-1 text-gray-600">
-                                                <li>{t('shipping_returns.standard_delivery')}</li>
-                                                <li>{t('shipping_returns.express_delivery')}</li>
+                                                <li>{t('shipping_returns.standard_delivery', { delivery })}</li>
                                                 <li>{t('shipping_returns.tracked_delivery')}</li>
                                             </ul>
                                         </div>
@@ -46,41 +50,18 @@ export default function ShippingReturns() {
                                     <div>
                                         <h3 className="mb-3 text-xl font-semibold text-black">{t('shipping_returns.shipping_costs')}</h3>
                                         <p className="mb-3 text-gray-600">{t('shipping_returns.shipping_costs_text')}</p>
-                                        <div className="rounded-lg bg-gray-50 p-4">
-                                            <table className="w-full text-sm">
-                                                <thead>
-                                                    <tr className="border-b border-gray-200">
-                                                        <th className="py-2 text-left text-black">{t('shipping_returns.destination')}</th>
-                                                        <th className="py-2 text-left text-black">{t('shipping_returns.standard')}</th>
-                                                        <th className="py-2 text-left text-black">{t('shipping_returns.express')}</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="text-gray-600">
-                                                    <tr>
-                                                        <td className="py-1">{t('shipping_returns.eu_countries')}</td>
-                                                        <td className="py-1">€4.99</td>
-                                                        <td className="py-1">€9.99</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td className="py-1">{t('shipping_returns.uk')}</td>
-                                                        <td className="py-1">€7.99</td>
-                                                        <td className="py-1">€14.99</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
                                     </div>
 
                                     <div>
                                         <h3 className="mb-3 text-xl font-semibold text-black">{t('shipping_returns.dispatch_delivery')}</h3>
-                                        <p className="mb-3 text-gray-600">{t('shipping_returns.dispatch_text')}</p>
+                                        <p className="mb-3 text-gray-600">{t('shipping_returns.dispatch_text', { dispatch, delivery })}</p>
                                         <p className="text-gray-600">{t('shipping_returns.risk_transfer')}</p>
                                     </div>
 
                                     <div>
                                         <h3 className="mb-3 text-xl font-semibold text-black">{t('shipping_returns.missing_damaged')}</h3>
                                         <p className="mb-3 text-gray-600">{t('shipping_returns.missing_damaged_text')}</p>
-                                        <p className="text-gray-600">{t('shipping_returns.contact_email')}</p>
+                                        <p className="text-gray-600">{t('shipping_returns.contact_email', { email })}</p>
                                     </div>
                                 </div>
                             </section>
@@ -91,38 +72,40 @@ export default function ShippingReturns() {
 
                                 <div className="mb-6 border-l-4 border-blue-400 bg-blue-50 p-4">
                                     <p className="font-medium text-blue-800">
-                                        <strong>Important:</strong> {t('shipping_returns.no_free_returns')}
+                                        <strong>{t('shipping_returns.important_label')}</strong> {t('shipping_returns.no_free_returns', { days })}
                                     </p>
                                 </div>
 
                                 <div className="space-y-6">
                                     <div>
                                         <h3 className="mb-3 text-xl font-semibold text-black">{t('shipping_returns.eu_withdrawal')}</h3>
-                                        <p className="mb-3 text-gray-600">{t('shipping_returns.withdrawal_text')}</p>
+                                        <p className="mb-3 text-gray-600">{t('shipping_returns.withdrawal_text', { days })}</p>
+                                        <p className="mb-3 text-gray-600">{t('shipping_returns.return_costs_intro')}</p>
                                         <ul className="mb-4 list-inside list-disc space-y-2 text-gray-600">
                                             <li>{t('shipping_returns.defective_product')}</li>
                                             <li>{t('shipping_returns.wrong_item')}</li>
                                             <li>{t('shipping_returns.damaged_shipping')}</li>
                                         </ul>
-                                        <p className="text-gray-600">
-                                            <strong>Note:</strong> {t('shipping_returns.no_change_mind')}
+                                        <p className="mb-3 text-gray-600">
+                                            <strong>{t('shipping_returns.note_label')}</strong> {t('shipping_returns.no_change_mind')}
                                         </p>
+                                        <p className="text-gray-600">{t('shipping_returns.withdrawal_form', { email })}</p>
                                     </div>
 
                                     <div>
                                         <h3 className="mb-3 text-xl font-semibold text-black">{t('shipping_returns.return_request')}</h3>
                                         <p className="mb-3 text-gray-600">{t('shipping_returns.return_steps')}</p>
                                         <ol className="mb-4 list-inside list-decimal space-y-2 text-gray-600">
-                                            <li>{t('shipping_returns.step_1')}</li>
+                                            <li>{t('shipping_returns.step_1', { days })}</li>
                                             <li>{t('shipping_returns.step_2')}</li>
                                             <li>{t('shipping_returns.step_3')}</li>
-                                            <li>{t('shipping_returns.step_4')}</li>
+                                            <li>{t('shipping_returns.step_4', { days })}</li>
                                         </ol>
                                         <div className="rounded-lg bg-gray-50 p-4">
                                             <p className="text-gray-600">
-                                                <strong>Contact for Returns:</strong>
+                                                <strong>{t('shipping_returns.contact_for_returns')}</strong>
                                                 <br />
-                                                {t('shipping_returns.contact_email')}
+                                                {t('shipping_returns.contact_email', { email })}
                                                 <br />
                                             </p>
                                         </div>
@@ -141,7 +124,7 @@ export default function ShippingReturns() {
 
                                     <div>
                                         <h3 className="mb-3 text-xl font-semibold text-black">{t('shipping_returns.refund_processing')}</h3>
-                                        <p className="mb-3 text-gray-600">{t('shipping_returns.refund_text')}</p>
+                                        <p className="mb-3 text-gray-600">{t('shipping_returns.refund_text', { days })}</p>
                                         <p className="text-gray-600">{t('shipping_returns.withhold_refund')}</p>
                                     </div>
 
@@ -163,10 +146,6 @@ export default function ShippingReturns() {
                                 </div>
                             </section>
                         </div>
-                    </div>
-
-                    <div className="mt-12 border-t border-gray-200 pt-8 text-center">
-                        <p className="text-sm text-gray-500">{t('last_updated')}: August 5, 2025</p>
                     </div>
                 </div>
             </div>

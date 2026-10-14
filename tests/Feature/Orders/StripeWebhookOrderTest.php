@@ -58,7 +58,7 @@ class StripeWebhookOrderTest extends TestCase
         $this->assertNull(Cart::find($cart->id));
     }
 
-    public function test_unpaid_checkout_session_completed_is_ignored(): void
+    public function test_unpaid_checkout_session_completed_creates_a_pending_order_and_keeps_the_cart(): void
     {
         $cart = $this->makeCart(guestSessionId: 'wh-guest-2');
 
@@ -66,7 +66,10 @@ class StripeWebhookOrderTest extends TestCase
             $this->guestSessionPayload($cart, ['payment_status' => 'unpaid'])
         ));
 
-        $this->assertSame(0, Order::count());
+        // Delayed payment method: the order exists (so the async event always finds it) but is not paid yet
+        $order = Order::sole();
+        $this->assertSame('pending', $order->status);
+        $this->assertSame('processing', $order->payment_status);
         $this->assertSame([], $this->confirmationCalls);
         $this->assertNotNull(Cart::find($cart->id));
     }
@@ -83,54 +86,6 @@ class StripeWebhookOrderTest extends TestCase
         $this->assertSame(1, Order::sole()->orderItems()->count());
         // EmailService is idempotent; the same single order is the only one ever requested
         $this->assertSame([Order::sole()->id], array_values(array_unique($this->confirmationCalls)));
-    }
-
-    public function test_payment_intent_succeeded_retrieves_the_session_and_creates_the_order(): void
-    {
-        $cart = $this->makeCart(guestSessionId: 'wh-guest-4');
-        $session = $this->guestSessionPayload($cart, ['payment_intent' => 'pi_event_1']);
-
-        $this->stripeHttp->responses['/v1/checkout/sessions/cs_test_123'] = $session;
-
-        $this->dispatchWebhook([
-            'id' => 'evt_pi_1',
-            'type' => 'payment_intent.succeeded',
-            'data' => ['object' => [
-                'id' => 'pi_event_1',
-                'metadata' => ['checkout_session_id' => 'cs_test_123'],
-            ]],
-        ]);
-
-        $order = Order::sole();
-        $this->assertSame('pi_event_1', $order->stripe_payment_intent_id);
-        $this->assertSame('succeeded', $order->payment_status);
-    }
-
-    public function test_both_event_types_for_the_same_session_yield_one_order(): void
-    {
-        $cart = $this->makeCart(guestSessionId: 'wh-guest-5');
-        $session = $this->guestSessionPayload($cart);
-        $this->stripeHttp->responses['/v1/checkout/sessions/cs_test_123'] = $session;
-
-        $this->dispatchWebhook($this->sessionCompletedEvent($session));
-        $this->dispatchWebhook([
-            'id' => 'evt_pi_2',
-            'type' => 'payment_intent.succeeded',
-            'data' => ['object' => ['id' => 'pi_test_123', 'metadata' => ['checkout_session_id' => 'cs_test_123']]],
-        ]);
-
-        $this->assertSame(1, Order::count());
-    }
-
-    public function test_payment_intent_without_checkout_session_metadata_is_a_noop(): void
-    {
-        $this->dispatchWebhook([
-            'id' => 'evt_pi_3',
-            'type' => 'payment_intent.succeeded',
-            'data' => ['object' => ['id' => 'pi_other', 'metadata' => []]],
-        ]);
-
-        $this->assertSame(0, Order::count());
     }
 
     public function test_unhandled_event_types_are_ignored(): void
@@ -158,18 +113,6 @@ class StripeWebhookOrderTest extends TestCase
         Log::shouldHaveReceived('critical')->once()->withArgs(function ($message, $context) {
             return $context['session_id'] === 'cs_test_123' && $context['event_id'] === 'evt_1';
         });
-    }
-
-    public function test_failure_to_retrieve_the_session_is_rethrown(): void
-    {
-        // No canned Stripe response: the fake transport throws, as an unreachable Stripe would.
-        $this->expectException(\Throwable::class);
-
-        $this->dispatchWebhook([
-            'id' => 'evt_pi_4',
-            'type' => 'payment_intent.succeeded',
-            'data' => ['object' => ['id' => 'pi_4', 'metadata' => ['checkout_session_id' => 'cs_missing']]],
-        ]);
     }
 
     public function test_replayed_webhook_after_a_failed_attempt_recovers(): void

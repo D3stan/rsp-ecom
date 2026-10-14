@@ -154,8 +154,8 @@ from order_emails oe join orders o on o.id = oe.order_id
 where oe.sent_at is null and oe.queued_at > now() - interval 3 day order by oe.id desc;
 ```
 
-Logs: `storage/logs/laravel.log` (`Order email queued/sent/permanently failed`, `Failed to queue order email`), `storage/logs/pending-order-emails.log`
-(the 10-minute command). Recipient addresses are masked in that output and not logged by the job; look the order up by id/number.
+Logs: `storage/logs/laravel.log` (`Order email queued/sent/permanently failed`, `Failed to queue order email`). The 10-minute safety-net command no longer writes its own output file (it grew without rotation);
+its failures and backlog warnings go to `laravel.log`. Recipient addresses are masked in that output and not logged by the job; look the order up by id/number.
 
 ### Queue health alert (`ops:check-queue`)
 

@@ -8,10 +8,11 @@ use App\Mail\OrderConfirmation;
 use App\Mail\OrderDelivered;
 use App\Mail\OrderRefunded;
 use App\Mail\OrderShipped;
+use App\Mail\OversoldOrderAlert;
 use App\Models\Order;
 use App\Models\OrderEmail;
 use App\Services\EmailService;
-use App\Services\OrderCreationService;
+use App\Support\Locales;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -171,6 +172,7 @@ class SendOrderEmail implements ShouldQueue
             OrderEmail::TYPE_CANCELLED => new OrderCancelled($order),
             OrderEmail::TYPE_REFUNDED => new OrderRefunded($order, (float) $this->amount),
             OrderEmail::TYPE_ADMIN_NEW_ORDER => new NewOrderAlert($order),
+            OrderEmail::TYPE_ADMIN_OVERSOLD => new OversoldOrderAlert($order),
             default => throw new \InvalidArgumentException("Unknown order email type [{$this->type}]"),
         };
     }
@@ -187,9 +189,7 @@ class SendOrderEmail implements ShouldQueue
 
         $locale = $order->getAttribute('locale');
 
-        return in_array($locale, OrderCreationService::SUPPORTED_LOCALES, true)
-            ? $locale
-            : config('app.locale');
+        return Locales::isSupported($locale) ? $locale : Locales::fallback();
     }
 
     /**

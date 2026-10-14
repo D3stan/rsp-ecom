@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Star, Package, Calendar, MessageSquare } from 'lucide-react';
 import type { Review, PaginatedData } from '@/types';
+import { useMoney } from '@/hooks/use-money';
 
 interface ReviewsIndexProps {
     reviews: PaginatedData<Review>;
@@ -14,12 +15,7 @@ interface ReviewsIndexProps {
 export default function ReviewsIndex({ reviews }: ReviewsIndexProps) {
     const { t } = useTranslation();
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'EUR',
-        }).format(amount);
-    };
+    const formatCurrency = useMoney();
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {

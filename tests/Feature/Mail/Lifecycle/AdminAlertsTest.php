@@ -7,7 +7,6 @@ use App\Listeners\StripeWebhookListener;
 use App\Mail\PaidOrderMissingAlert;
 use App\Models\Order;
 use App\Models\OrderEmail;
-use App\Models\Setting;
 use App\Services\EmailService;
 use App\Services\OrderCreationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -168,8 +167,8 @@ class AdminAlertsTest extends TestCase
     public function test_the_alert_goes_to_the_admin_setting_even_when_customer_mail_switches_are_off(): void
     {
         Mail::fake();
-        Setting::set('admin_notification_email', 'boss@shop.test');
-        Setting::set('email_notifications_enabled', false, 'boolean');
+        settings()->set('contact.admin_notification_email', 'boss@shop.test');
+        settings()->set('email.enabled', false);
 
         app(EmailService::class)->sendPaidOrderMissingAlert('cs_c');
 
@@ -203,7 +202,7 @@ class AdminAlertsTest extends TestCase
     {
         Mail::fake();
         config(['mail.contact_email' => '']);
-        Setting::set('admin_notification_email', '');
+        settings()->set('contact.admin_notification_email', '');
 
         $this->assertFalse(app(EmailService::class)->sendPaidOrderMissingAlert('cs_e'));
         Mail::assertNothingQueued();

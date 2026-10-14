@@ -10,7 +10,7 @@ use Stripe\HttpClient\ClientInterface;
  */
 class FakeStripeHttpClient implements ClientInterface
 {
-    /** @var array<int, array{0: string, 1: string}> */
+    /** @var array<int, array{0: string, 1: string, 2: array|null}> method, URL, request parameters */
     public array $requests = [];
 
     /** @var array<string, array> URL fragment => JSON body */
@@ -18,7 +18,7 @@ class FakeStripeHttpClient implements ClientInterface
 
     public function request($method, $absUrl, $headers, $params, $hasFile, $apiMode = 'v1')
     {
-        $this->requests[] = [$method, $absUrl];
+        $this->requests[] = [$method, $absUrl, $params];
 
         foreach ($this->responses as $fragment => $body) {
             if (str_contains($absUrl, $fragment)) {

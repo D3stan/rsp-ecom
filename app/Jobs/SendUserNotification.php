@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Enums\UserNotificationKind;
 use App\Models\User;
-use App\Services\OrderCreationService;
+use App\Support\Locales;
 use App\Support\Privacy;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -46,7 +46,7 @@ class SendUserNotification implements ShouldQueue
     ) {
         $locale ??= app()->getLocale();
 
-        $this->locale = in_array($locale, OrderCreationService::SUPPORTED_LOCALES, true) ? $locale : config('app.locale');
+        $this->locale = Locales::isSupported($locale) ? $locale : Locales::fallback();
         $this->afterCommit();
     }
 

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Security;
 
+use App\Models\Order;
+use App\Models\User;
 use App\Services\EmailService;
 use App\Services\OrderCreationService;
 use App\Support\Privacy;
@@ -103,5 +105,61 @@ class LogHygieneTest extends TestCase
         $log = $this->logged();
         $this->assertStringContainsString('Custom email sent to: m***@example.com', $log);
         $this->assertStringNotContainsString('mario.rossi@example.com', $log);
+    }
+
+    public function test_admin_order_update_logs_field_names_but_never_addresses_or_notes(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $order = Order::factory()->create(['guest_email' => 'buyer@example.com', 'user_id' => null]);
+
+        $this->actingAs($admin)->put(route('admin.orders.update', $order), [
+            'notes' => 'gate code 4711, call grandma',
+            'billing_address' => json_encode(['address_line_1' => 'Via Segretissima 99', 'email' => 'buyer@example.com']),
+        ])->assertRedirect();
+
+        $log = $this->logged();
+        $this->assertStringContainsString('Order update attempt', $log);
+        $this->assertStringNotContainsString('request_data', $log);
+        $this->assertStringNotContainsString('gate code 4711', $log);
+        $this->assertStringNotContainsString('Via Segretissima', $log);
+        $this->assertStringNotContainsString('buyer@example.com', $log);
+    }
+
+    public function test_admin_order_update_failure_logs_class_and_message_but_no_stack_trace(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $order = Order::factory()->create(['guest_email' => 'buyer@example.com', 'user_id' => null, 'status' => 'processing']);
+
+        $failing = \Mockery::mock(EmailService::class);
+        $failing->shouldReceive('isEnabled')->andReturn(true);
+        $failing->shouldReceive('sendOrderShipped')->andThrow(new \RuntimeException('mail backend exploded'));
+        $this->app->instance(EmailService::class, $failing);
+
+        $this->actingAs($admin)->put(route('admin.orders.update', $order), ['status' => 'shipped'])
+            ->assertSessionHas('error');
+
+        $log = $this->logged();
+        $this->assertStringContainsString('Failed to update order', $log);
+        $this->assertStringContainsString('RuntimeException', $log);
+        $this->assertStringContainsString('mail backend exploded', $log);
+        $this->assertStringNotContainsString('#0 ', $log);
+        $this->assertStringNotContainsString('buyer@example.com', $log);
+    }
+
+    public function test_application_code_never_logs_stack_traces_or_raw_request_payloads(): void
+    {
+        $offenders = [];
+
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(app_path())) as $file) {
+            if ($file->getExtension() !== 'php') {
+                continue;
+            }
+
+            if (preg_match('/getTraceAsString\(|[\'"]request_data[\'"]/', file_get_contents($file->getPathname()))) {
+                $offenders[] = str_replace(base_path().'/', '', $file->getPathname());
+            }
+        }
+
+        $this->assertSame([], $offenders);
     }
 }

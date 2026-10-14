@@ -58,7 +58,8 @@ class OrderCreationServiceTest extends TestCase
         $this->assertEquals(50.00, $order->subtotal);
         $this->assertEquals(5.00, $order->shipping_amount);
         $this->assertEquals(0, $order->discount_amount);
-        $this->assertEquals(0, $order->tax_amount);
+        $this->assertEquals(9.92, $order->tax_amount); // 22% contained in 55.00
+        $this->assertEquals(22.00, $order->tax_rate);
         $this->assertEquals(55.00, $order->total_amount);
 
         $orderItem = $order->orderItems->first();
@@ -170,15 +171,57 @@ class OrderCreationServiceTest extends TestCase
         $this->assertEquals(54.99, $order->total_amount);
     }
 
-    public function test_tax_comes_from_stripe_total_details(): void
+    public function test_vat_is_the_portion_of_the_paid_total_at_the_current_rate_and_ignores_stripes_tax(): void
     {
         $cart = $this->makeCart(guestSessionId: 'guest-session-5');
 
+        // Stripe's own tax figure (990) is not used: the charge is one VAT-inclusive amount
         $payload = $this->guestSessionPayload($cart, ['total_details' => ['amount_tax' => 990]]);
 
         $order = $this->service()->createFromStripeSession($payload);
 
-        $this->assertEquals(9.90, $order->tax_amount);
+        $this->assertEquals(9.92, $order->tax_amount);
+        $this->assertEquals(22.00, $order->tax_rate);
+    }
+
+    public function test_vat_of_a_discounted_order_is_taken_from_what_was_paid(): void
+    {
+        $cart = $this->makeCart(guestSessionId: 'guest-session-vat-discount');
+
+        // items 50.00 + shipping 5.00 - 10.00 discount = 45.00 paid; 22% contained = 8.11
+        $payload = $this->guestSessionPayload($cart, [
+            'amount_total' => 4500,
+            'total_details' => ['amount_discount' => 1000],
+        ]);
+
+        $order = $this->service()->createFromStripeSession($payload);
+
+        $this->assertEquals(45.00, $order->total_amount);
+        $this->assertEquals(8.11, $order->tax_amount);
+    }
+
+    public function test_the_rate_is_a_snapshot_and_follows_the_setting_at_the_time_of_the_order(): void
+    {
+        settings()->set('tax.rate', 10);
+        $cart = $this->makeCart(guestSessionId: 'guest-session-vat-rate');
+
+        $order = $this->service()->createFromStripeSession($this->guestSessionPayload($cart));
+        settings()->set('tax.rate', 22);
+
+        $this->assertEquals(5.00, $order->fresh()->tax_amount); // 10% contained in 55.00
+        $this->assertEquals(10.00, $order->fresh()->tax_rate);
+    }
+
+    public function test_without_vat_inclusive_prices_no_vat_is_recorded(): void
+    {
+        settings()->set('tax.prices_include_tax', false);
+        $cart = $this->makeCart(guestSessionId: 'guest-session-no-vat');
+
+        $order = $this->service()->createFromStripeSession($this->guestSessionPayload($cart));
+
+        $this->assertEquals(0, $order->tax_amount);
+        $this->assertNull($order->tax_rate);
+        $this->assertEquals(55.00, $order->total_amount);
     }
 
     public function test_same_session_twice_returns_the_same_order_without_duplicates(): void
@@ -251,18 +294,6 @@ class OrderCreationServiceTest extends TestCase
         $this->assertSame('pi_test_123', $paid->stripe_payment_intent_id);
         $this->assertSame([$paid->id], $this->confirmationCalls);
         $this->assertNull(Cart::find($cart->id));
-    }
-
-    public function test_payment_intent_marks_the_order_as_paid_and_stores_its_id(): void
-    {
-        $cart = $this->makeCart(guestSessionId: 'guest-session-10');
-        $payload = $this->guestSessionPayload($cart, ['payment_status' => 'unpaid', 'payment_intent' => null]);
-
-        $order = $this->service()->createFromStripeSession($payload, ['id' => 'pi_from_event', 'status' => 'succeeded']);
-
-        $this->assertSame('pi_from_event', $order->stripe_payment_intent_id);
-        $this->assertSame('succeeded', $order->payment_status);
-        $this->assertSame('processing', $order->status);
     }
 
     public function test_locale_is_validated_against_supported_locales(): void

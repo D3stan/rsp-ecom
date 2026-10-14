@@ -2,7 +2,7 @@
     Plain-text layout (twin of base.blade.php). Output is not HTML-escaped on purpose.
     Sections: title, content. Options: internal (no notice, no footer links), noReply.
 --}}
-{!! config('app.name') !!}
+{!! settings('store.name') !!}
 ============================================================
 @yield('title')
 

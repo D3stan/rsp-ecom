@@ -24,6 +24,9 @@ class OrderEmail extends Model
     /** Internal alert to the shop owner (the recipient is the admin address, not the customer). */
     public const TYPE_ADMIN_NEW_ORDER = 'admin_new_order';
 
+    /** Internal alert to the shop owner: a paid order sold units that were not in stock. */
+    public const TYPE_ADMIN_OVERSOLD = 'admin_oversold_order';
+
     /** Fingerprint for types that can only ever be sent once per order. */
     public const FINGERPRINT_DEFAULT = 'default';
 
@@ -84,7 +87,7 @@ class OrderEmail extends Model
      */
     public static function isInternal(string $type): bool
     {
-        return $type === self::TYPE_ADMIN_NEW_ORDER;
+        return in_array($type, [self::TYPE_ADMIN_NEW_ORDER, self::TYPE_ADMIN_OVERSOLD], true);
     }
 
     /**
@@ -104,11 +107,16 @@ class OrderEmail extends Model
     }
 
     /**
-     * Fingerprint for the "shipped" email: status + tracking number, so the mail is re-sent
-     * only when the tracking number actually changes.
+     * Fingerprint for the "shipped" email: status + tracking number (+ carrier), so the mail is
+     * re-sent only when the tracking number or the carrier actually changes.
+     *
+     * Without a carrier the hash is exactly the pre-carrier one, so rows already stored for
+     * orders shipped before the carrier existed keep matching and never trigger a duplicate.
      */
-    public static function shippedFingerprint(?string $trackingNumber): string
+    public static function shippedFingerprint(?string $trackingNumber, ?string $carrier = null): string
     {
-        return substr(sha1('shipped|'.trim((string) $trackingNumber)), 0, 40);
+        $carrier = mb_strtolower(trim((string) $carrier));
+
+        return substr(sha1('shipped|'.trim((string) $trackingNumber).($carrier === '' ? '' : '|'.$carrier)), 0, 40);
     }
 }

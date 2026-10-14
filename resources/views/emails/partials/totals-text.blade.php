@@ -2,4 +2,6 @@
 @foreach($totals['rows'] as $row)
 {!! $row['label'] !!}: {!! $row['value'] !!}
 @endforeach
+@if(! empty($totals['vat_note']))
 ({!! $totals['vat_note'] !!})
+@endif

@@ -33,10 +33,6 @@ class OrderShipped extends Mailable
     {
         return new Envelope(
             subject: __('emails.order_shipped.subject', ['number' => '#'.$this->order->order_number]),
-            tags: ['order-shipped'],
-            metadata: [
-                'order_id' => $this->order->id,
-            ],
         );
     }
 

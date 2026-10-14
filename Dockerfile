@@ -23,7 +23,8 @@ RUN npm run build
 
 FROM base AS production
 
-# Config caching stays off: StripeService reads env() directly, which returns null once config is cached.
+# Config caching stays off by choice: app code no longer calls env() outside config/ (Stripe keys come from
+# config('cashier.*')), but enabling it has not been verified end to end for this deployment yet.
 ENV PHP_OPCACHE_ENABLE=1 \
     PHP_MEMORY_LIMIT=512M \
     PHP_UPLOAD_MAX_FILE_SIZE=100M \

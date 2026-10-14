@@ -71,7 +71,7 @@ class PendingUserVerificationController extends Controller
         Auth::login($user);
 
         return redirect()->intended(route('dashboard', absolute: false))
-            ->with('success', 'Email verified successfully! Welcome to ' . config('app.name') . '!');
+            ->with('success', 'Email verified successfully! Welcome to ' . settings('store.name') . '!');
     }
 
     /**

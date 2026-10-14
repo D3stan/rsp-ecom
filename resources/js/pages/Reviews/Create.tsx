@@ -7,6 +7,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Star, ArrowLeft, Package } from 'lucide-react';
 import React, { useState } from 'react';
+import { useMoney } from '@/hooks/use-money';
 
 interface Product {
     id: number;
@@ -52,12 +53,7 @@ const ReviewCreatePage: React.FC<ReviewCreatePageProps> = ({ product }) => {
         post(route('reviews.store'));
     };
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-US', { 
-            style: 'currency', 
-            currency: 'EUR' 
-        }).format(amount);
-    };
+    const formatCurrency = useMoney();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

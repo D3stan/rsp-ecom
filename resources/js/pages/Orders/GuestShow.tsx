@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { formatRate } from '@/hooks/use-money';
 import useTranslation from '@/hooks/useTranslation';
 import { Head, Link } from '@inertiajs/react';
 import { MapPin, Package, Truck } from 'lucide-react';
@@ -35,6 +36,9 @@ interface Order {
     tracking_number: string | null;
     currency: string | null;
     subtotal: number;
+    tax_amount: number;
+    // VAT rate (percent) stored with the order; null on orders from before it was recorded
+    tax_rate: number | null;
     shipping_amount: number;
     discount_amount: number;
     total_amount: number;
@@ -140,13 +144,19 @@ export default function GuestOrderShow({ order, supportEmail }: Props) {
                                     )}
                                     <div className="flex justify-between text-sm">
                                         <span>{t('guest_order.shipping')}</span>
-                                        <span>{order.shipping_amount === 0 ? t('guest_order.free') : formatMoney(order.shipping_amount)}</span>
+                                        <span>{formatMoney(order.shipping_amount)}</span>
                                     </div>
                                     <Separator />
                                     <div className="flex justify-between text-lg font-bold">
                                         <span>{t('guest_order.total')}</span>
                                         <span>{formatMoney(order.total_amount)}</span>
                                     </div>
+                                    {order.tax_rate !== null && (
+                                        <div className="flex justify-between text-xs text-gray-500">
+                                            <span>{t('checkout.vat_portion', { rate: formatRate(order.tax_rate, locale) })}</span>
+                                            <span>{formatMoney(order.tax_amount)}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

@@ -8,6 +8,9 @@ import { Link, usePage } from '@inertiajs/react';
 import { Globe, Heart, HelpCircle, Menu, Package, ShoppingCart, User, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+// Native names for the language list in the mobile menu; unknown codes fall back to the upper-cased code.
+const LOCALE_NAMES: Record<string, string> = { en: 'English', es: 'Español', fr: 'Français', de: 'Deutsch', it: 'Italiano' };
+
 interface HeaderProps {
     currentPage?: 'home' | 'products' | 'about' | 'contact';
     transparent?: boolean;
@@ -15,7 +18,7 @@ interface HeaderProps {
 
 export default function Header({ transparent = false }: HeaderProps) {
     const { auth, name } = usePage<SharedData>().props;
-    const { t, locale, changeLocale, isLoading } = useTranslation();
+    const { t, locale, changeLocale, isLoading, availableLocales } = useTranslation();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [cartCount, setCartCount] = useState(0);
     const [wishlistCount, setWishlistCount] = useState(0);
@@ -270,21 +273,11 @@ export default function Header({ transparent = false }: HeaderProps) {
                                         )}
                                     </SelectTrigger>
                                     <SelectContent className="border border-gray-200 bg-white">
-                                        <SelectItem value="en" className="text-gray-900 hover:bg-gray-100">
-                                            EN
-                                        </SelectItem>
-                                        <SelectItem value="es" className="text-gray-900 hover:bg-gray-100">
-                                            ES
-                                        </SelectItem>
-                                        <SelectItem value="fr" className="text-gray-900 hover:bg-gray-100">
-                                            FR
-                                        </SelectItem>
-                                        <SelectItem value="de" className="text-gray-900 hover:bg-gray-100">
-                                            DE
-                                        </SelectItem>
-                                        <SelectItem value="it" className="text-gray-900 hover:bg-gray-100">
-                                            IT
-                                        </SelectItem>
+                                        {availableLocales.map((code) => (
+                                            <SelectItem key={code} value={code} className="text-gray-900 hover:bg-gray-100">
+                                                {code.toUpperCase()}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -396,21 +389,11 @@ export default function Header({ transparent = false }: HeaderProps) {
                                         avoidCollisions={true}
                                         collisionPadding={8}
                                     >
-                                        <SelectItem value="en" className="text-gray-900 hover:bg-gray-100">
-                                            English
-                                        </SelectItem>
-                                        <SelectItem value="es" className="text-gray-900 hover:bg-gray-100">
-                                            Español
-                                        </SelectItem>
-                                        <SelectItem value="fr" className="text-gray-900 hover:bg-gray-100">
-                                            Français
-                                        </SelectItem>
-                                        <SelectItem value="de" className="text-gray-900 hover:bg-gray-100">
-                                            Deutsch
-                                        </SelectItem>
-                                        <SelectItem value="it" className="text-gray-900 hover:bg-gray-100">
-                                            Italiano
-                                        </SelectItem>
+                                        {availableLocales.map((code) => (
+                                            <SelectItem key={code} value={code} className="text-gray-900 hover:bg-gray-100">
+                                                {LOCALE_NAMES[code] ?? code.toUpperCase()}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>

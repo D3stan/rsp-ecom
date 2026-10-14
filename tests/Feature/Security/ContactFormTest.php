@@ -18,8 +18,10 @@ class ContactFormTest extends TestCase
         config([
             'mail.from.address' => 'noreply@shop.test',
             'mail.contact_email' => 'inbox@shop.test',
-            'app.name' => 'RSP Shop',
         ]);
+
+        // the display name comes from the admin setting store.name
+        settings()->set('store.name', 'RSP Shop');
     }
 
     private function payload(array $overrides = []): array

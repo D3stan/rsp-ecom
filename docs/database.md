@@ -1001,7 +1001,8 @@ erDiagram
         int shipping_address_id FK
         enum status "pending, processing, shipped, delivered, cancelled"
         decimal subtotal
-        decimal tax_amount
+        decimal tax_amount "VAT contained in total_amount"
+        decimal tax_rate "nullable, percent at order time"
         decimal shipping_amount  
         decimal total_amount
         string currency

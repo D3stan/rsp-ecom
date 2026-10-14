@@ -15,9 +15,10 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 function AppWrapper({ children, pageProps }: { children: React.ReactNode; pageProps: Record<string, unknown> }) {
     const translations = pageProps.translations as Record<string, string>;
     const locale = pageProps.locale as string;
+    const supportedLocales = Array.isArray(pageProps.supportedLocales) ? (pageProps.supportedLocales as string[]) : undefined;
 
     return (
-        <TranslationProvider initialTranslations={translations} initialLocale={locale}>
+        <TranslationProvider initialTranslations={translations} initialLocale={locale} supportedLocales={supportedLocales}>
             <ToastProvider>
                 {children}
                 <ToastContainer />

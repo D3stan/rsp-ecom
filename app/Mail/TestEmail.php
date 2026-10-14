@@ -27,8 +27,7 @@ class TestEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: __('emails.test.subject', ['app' => config('app.name')]),
-            tags: ['test-email'],
+            subject: __('emails.test.subject', ['app' => settings('store.name')]),
         );
     }
 

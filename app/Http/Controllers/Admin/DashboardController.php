@@ -99,12 +99,15 @@ class DashboardController extends Controller
         }
 
         // Top products (placeholder - you'll need to implement this based on OrderItems)
-        $topProducts = Product::withCount(['orderItems' => function($query) {
-                $query->whereHas('order', function($orderQuery) {
-                    $orderQuery->where('payment_status', 'succeeded');
-                });
-            }])
-            ->having('order_items_count', '>', 0)
+        $paidOrderItems = function ($query) {
+            $query->whereHas('order', function ($orderQuery) {
+                $orderQuery->where('payment_status', 'succeeded');
+            });
+        };
+
+        // HAVING on a withCount alias is a non-aggregate query on SQLite: filter with whereHas instead.
+        $topProducts = Product::withCount(['orderItems' => $paidOrderItems])
+            ->whereHas('orderItems', $paidOrderItems)
             ->orderBy('order_items_count', 'desc')
             ->limit(5)
             ->get()
@@ -118,8 +121,7 @@ class DashboardController extends Controller
             });
 
         // Low stock alerts
-        $lowStockProducts = Product::where('stock_quantity', '<=', 10)
-            ->where('stock_quantity', '>', 0)
+        $lowStockProducts = Product::lowStock()
             ->orderBy('stock_quantity', 'asc')
             ->limit(5)
             ->get()

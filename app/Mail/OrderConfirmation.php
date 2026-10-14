@@ -32,10 +32,6 @@ class OrderConfirmation extends Mailable
     {
         return new Envelope(
             subject: __('emails.order_confirmation.subject', ['number' => '#'.$this->order->order_number]),
-            tags: ['order-confirmation'],
-            metadata: [
-                'order_id' => $this->order->id,
-            ],
         );
     }
 

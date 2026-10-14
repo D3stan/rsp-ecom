@@ -59,6 +59,8 @@ interface Order {
     subtotal: number;
     shipping_amount: number;
     tax_amount: number;
+    // VAT rate stored with the order: when set, tax_amount is already part of the prices and of the total
+    tax_rate?: number | null;
     total_amount: number;
     notes?: string;
     created_at: string;
@@ -180,7 +182,7 @@ export default function Edit({ order, carriers = [] }: Props) {
     const calculateTotals = () => {
         const itemsTotal = formData.order_items.reduce((sum, item) => sum + item.total, 0);
         const newSubtotal = itemsTotal;
-        const newTotal = newSubtotal + formData.shipping_amount + formData.tax_amount;
+        const newTotal = newSubtotal + formData.shipping_amount + (order.tax_rate != null ? 0 : formData.tax_amount);
 
         setFormData((prev) => ({
             ...prev,
@@ -324,29 +326,19 @@ export default function Edit({ order, carriers = [] }: Props) {
         setProcessing(true);
 
         router.patch(`/admin/orders/${order.id}`, updateData, {
-            onSuccess: () => {
+            // the outcome (success, warning or error) is the controller flash, toasted by the layout
+            onSuccess: (page) => {
                 setProcessing(false);
                 setShowShipConfirmation(false);
-                addToast({
-                    type: 'success',
-                    title: 'Order Updated',
-                    description: 'Order details have been successfully updated.',
-                    duration: 3000,
-                });
 
-                // Wait a moment for the toast to show before redirecting
-                setTimeout(() => {
+                // Back to the order, unless the controller reported a failure (then stay and let the admin retry)
+                const flash = (page.props as { flash?: { error?: string | null } }).flash;
+                if (!flash?.error) {
                     router.visit(`/admin/orders/${order.id}`);
-                }, 1000);
+                }
             },
             onError: () => {
                 setProcessing(false);
-                addToast({
-                    type: 'error',
-                    title: 'Update Failed',
-                    description: 'There was an error updating the order. Please try again.',
-                    duration: 5000,
-                });
             },
             onFinish: () => {
                 // This will run regardless of success or error
@@ -642,7 +634,7 @@ export default function Edit({ order, carriers = [] }: Props) {
                                                     <span>{formatCurrency(formData.shipping_amount)}</span>
                                                 </div>
                                                 <div className="flex justify-between text-sm">
-                                                    <span>Tax:</span>
+                                                    <span>{order.tax_rate != null ? `Included VAT (${order.tax_rate}%):` : 'Tax:'}</span>
                                                     <span>{formatCurrency(formData.tax_amount)}</span>
                                                 </div>
                                                 <Separator />

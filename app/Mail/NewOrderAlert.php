@@ -26,10 +26,6 @@ class NewOrderAlert extends Mailable
                 'number' => '#'.$this->order->order_number,
                 'total' => $this->money($this->order->total_amount, $this->order->currency),
             ]),
-            tags: ['admin-new-order'],
-            metadata: [
-                'order_id' => $this->order->id,
-            ],
         );
     }
 

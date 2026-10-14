@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { formatRate } from '@/hooks/use-money';
+import { usePolicyValues } from '@/hooks/use-policy-values';
 import useTranslation from '@/hooks/useTranslation';
 import { Head, Link } from '@inertiajs/react';
 import { CheckCircle, CreditCard, Mail, Package, Truck, User } from 'lucide-react';
@@ -20,6 +22,10 @@ interface OrderItem {
         id: number;
         name: string;
     } | null;
+    variant?: {
+        id: number;
+        name: string;
+    } | null;
     quantity: number;
     price: number;
     total: number;
@@ -33,6 +39,8 @@ interface Order {
     payment_status: string;
     subtotal: number;
     tax_amount: number;
+    // VAT rate (percent) stored with the order; null on orders from before it was recorded
+    tax_rate?: number | null;
     shipping_amount?: number;
     shipping_cost?: number;
     discount_amount?: number;
@@ -67,6 +75,7 @@ interface Props {
 
 export default function CheckoutSuccess({ order, session, isGuest, restricted = false, user }: Props) {
     const { t, locale } = useTranslation();
+    const { dispatch } = usePolicyValues();
 
     // Add loading state for when order is still being processed
     const isLoading = order.id === 'pending';
@@ -83,6 +92,10 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
 
     const shippingAmount = order.shipping_amount ?? order.shipping_cost ?? 0;
     const discountAmount = order.discount_amount ?? 0;
+    // Orders that stored their VAT rate: prices and total include the VAT (tax_amount is the portion of it). Older orders
+    // kept the VAT apart from the subtotal and have no rate.
+    const hasVatBreakdown = order.tax_rate !== null && order.tax_rate !== undefined;
+    const subtotalAmount = hasVatBreakdown ? order.subtotal || 0 : (order.subtotal || 0) + (order.tax_amount || 0);
     const customerEmail = isGuest ? session.customer_email : user?.email;
     // Guests (and anyone who is not proven to be the buyer) follow their order through the link in the confirmation email
     const showInboxNotice = isGuest || restricted;
@@ -194,6 +207,7 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                                         />
                                                         <div className="flex-1">
                                                             <h4 className="font-medium">{item.product.name}</h4>
+                                                            {item.variant?.name && <p className="text-sm text-gray-600">{item.variant.name}</p>}
                                                             {item.size && (
                                                                 <p className="text-sm text-gray-600">
                                                                     {t('checkout.success.size')}: {item.size.name}
@@ -248,7 +262,7 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                                 </div>
                                                 <div>
                                                     <p className="font-medium text-gray-700">{t('checkout.success.step_2_title')}</p>
-                                                    <p className="text-sm text-gray-600">{t('checkout.success.step_2_desc')}</p>
+                                                    <p className="text-sm text-gray-600">{t('checkout.success.step_2_desc', { dispatch })}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-3">
@@ -279,7 +293,7 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                         <div className="space-y-2">
                                             <div className="flex justify-between">
                                                 <span className="text-sm">{t('checkout.success.subtotal')}</span>
-                                                <span className="text-sm">{formatMoney((order.subtotal || 0) + (order.tax_amount || 0))}</span>
+                                                <span className="text-sm">{formatMoney(subtotalAmount)}</span>
                                             </div>
                                             {discountAmount > 0 && (
                                                 <div className="flex justify-between">
@@ -289,16 +303,21 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                             )}
                                             <div className="flex justify-between">
                                                 <span className="text-sm">{t('checkout.success.shipping')}</span>
-                                                <span className="text-sm">
-                                                    {shippingAmount === 0 ? t('checkout.success.free') : formatMoney(shippingAmount)}
-                                                </span>
+                                                <span className="text-sm">{formatMoney(shippingAmount)}</span>
                                             </div>
                                             <Separator />
                                             <div className="flex justify-between text-lg font-bold">
                                                 <span>{t('checkout.success.total')}</span>
                                                 <span>{formatMoney(order.total_amount || 0)}</span>
                                             </div>
-                                            <p className="text-right text-xs text-gray-500">{t('checkout.success.vat_included')}</p>
+                                            {hasVatBreakdown ? (
+                                                <div className="flex justify-between text-xs text-gray-500">
+                                                    <span>{t('checkout.vat_portion', { rate: formatRate(order.tax_rate ?? 0, locale) })}</span>
+                                                    <span>{formatMoney(order.tax_amount || 0)}</span>
+                                                </div>
+                                            ) : (
+                                                <p className="text-right text-xs text-gray-500">{t('checkout.success.vat_included')}</p>
+                                            )}
                                         </div>
 
                                         <Separator />

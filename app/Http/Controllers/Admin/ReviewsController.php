@@ -149,8 +149,8 @@ class ReviewsController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to update review status', [
                 'review_id' => $review->id,
+                'exception' => get_class($e),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
             ]);
             return back()->with('error', 'Failed to update review: ' . $e->getMessage());
         }
@@ -227,8 +227,10 @@ class ReviewsController extends Controller
             return back()->with('success', "{$count} reviews {$action} successfully.");
         } catch (\Exception $e) {
             Log::error('Failed to bulk update reviews', [
+                'exception' => get_class($e),
                 'error' => $e->getMessage(),
-                'request_data' => $request->all(),
+                'action' => $request->input('action'),
+                'review_count' => count((array) $request->input('review_ids', [])),
             ]);
             return back()->with('error', 'Failed to update reviews: ' . $e->getMessage());
         }
@@ -247,7 +249,8 @@ class ReviewsController extends Controller
                 'review_id' => $reviewId,
             ]);
 
-            return back()->with('success', 'Review deleted successfully.');
+            // not back(): from the Show page that would redirect to the deleted review (404) and lose the flash
+            return redirect()->route('admin.reviews.index')->with('success', 'Review deleted successfully.');
         } catch (\Exception $e) {
             Log::error('Failed to delete review', [
                 'review_id' => $review->id,

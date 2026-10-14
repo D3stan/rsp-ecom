@@ -193,16 +193,21 @@ class PageFactory extends Factory
 
     private function getContactUsContent(): string
     {
+        // Contact details come from the admin settings (contact.*, store.address); a detail that is not set is left out.
+        $details = ['- **Email**: '.settings('contact.support_email', '')];
+        if (($phone = trim((string) settings('contact.phone', ''))) !== '') {
+            $details[] = '- **Phone**: '.$phone;
+        }
+        if (($hours = trim((string) settings('contact.business_hours', ''))) !== '') {
+            $details[] = '- **Hours**: '.$hours;
+        }
+        $address = trim((string) settings('store.address', ''));
+
         return "# Contact Us\n\n" .
                "We'd love to hear from you! Get in touch with our customer service team.\n\n" .
                "## Customer Service\n\n" .
-               "- **Email**: support@rsp-industries.com\n" .
-               "- **Phone**: +1 (555) 123-4567\n" .
-               "- **Hours**: Monday - Friday, 9:00 AM - 5:00 PM EST\n\n" .
-               "## Business Address\n\n" .
-               "123 Business Street\n" .
-               "City, State 12345\n" .
-               "United States\n\n" .
+               implode("\n", $details) . "\n\n" .
+               ($address !== '' ? "## Business Address\n\n" . $address . "\n\n" : '') .
                "## Response Time\n\n" .
                "We typically respond to emails within 24 hours during business days.";
     }

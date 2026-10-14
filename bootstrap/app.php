@@ -44,8 +44,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth' => Authenticate::class,
         ]);
 
-        // Server-to-server carrier webhooks cannot carry a CSRF token (authenticated by the driver instead)
-        $middleware->validateCsrfTokens(except: ['webhooks/tracking/*']);
+        // Server-to-server webhooks cannot carry a CSRF token: carrier webhooks are authenticated by the driver, the
+        // Stripe webhook by its signature (Cashier's VerifyWebhookSignature)
+        $middleware->validateCsrfTokens(except: ['webhooks/tracking/*', 'stripe/webhook']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
 

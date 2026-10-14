@@ -15,6 +15,15 @@ it('derives the shipped fingerprint from the tracking number only', function () 
     expect(strlen(OrderEmail::shippedFingerprint(str_repeat('x', 100))))->toBeLessThanOrEqual(64);
 });
 
+it('adds the carrier to the shipped fingerprint but keeps the old hash without one', function () {
+    expect(OrderEmail::shippedFingerprint('ABC', null))->toBe(OrderEmail::shippedFingerprint('ABC'))
+        ->and(OrderEmail::shippedFingerprint('ABC', ' '))->toBe(OrderEmail::shippedFingerprint('ABC'))
+        ->and(OrderEmail::shippedFingerprint('ABC'))->toBe(substr(sha1('shipped|ABC'), 0, 40))
+        ->and(OrderEmail::shippedFingerprint('ABC', 'Acme'))->toBe(OrderEmail::shippedFingerprint(' ABC ', 'acme'))
+        ->and(OrderEmail::shippedFingerprint('ABC', 'acme'))->not->toBe(OrderEmail::shippedFingerprint('ABC'))
+        ->and(OrderEmail::shippedFingerprint('ABC', 'acme'))->not->toBe(OrderEmail::shippedFingerprint('ABC', 'zeta'));
+});
+
 it('tells sent, failed and in-flight rows apart', function () {
     $queued = new OrderEmail(['queued_at' => now()]);
     $sent = new OrderEmail(['queued_at' => now(), 'sent_at' => now()]);

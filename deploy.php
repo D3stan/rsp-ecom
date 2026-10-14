@@ -42,6 +42,8 @@ task('laravel:restart', function () {
     run('sudo systemctl restart laravel.service');
 });
 
+// NOTE: the Docker image deliberately does NOT run config:cache (see the comment in the Dockerfile); this task only
+// applies to the Deployer path.
 task('laravel:optimize', function () {
     run('cd {{release_path}} && php artisan config:cache');
     run('cd {{release_path}} && php artisan route:cache');

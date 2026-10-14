@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\CatalogPagination;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -27,17 +28,17 @@ class CategoryController extends Controller
         $pageTitle = $category->seo_title ?: $category->name;
         $metaDescription = $category->seo_description ?: $category->description ?: "Browse our {$category->name} collection. Find quality products in this category with great prices and fast shipping.";
         
-        SEOMeta::setTitle($pageTitle . ' – ' . config('app.name'));
+        SEOMeta::setTitle($pageTitle . ' – ' . settings('store.name'));
         SEOMeta::setDescription(Str::limit(strip_tags($metaDescription), 160));
         SEOMeta::setCanonical(route('categories.show', $category));
 
         OpenGraph::setType('website');
         OpenGraph::setUrl(route('categories.show', $category));
-        OpenGraph::setTitle($pageTitle . ' – ' . config('app.name'));
+        OpenGraph::setTitle($pageTitle . ' – ' . settings('store.name'));
         OpenGraph::setDescription(Str::limit(strip_tags($metaDescription), 300));
 
         TwitterCard::setType('summary');
-        TwitterCard::setTitle($pageTitle . ' – ' . config('app.name'));
+        TwitterCard::setTitle($pageTitle . ' – ' . settings('store.name'));
         TwitterCard::setDescription(Str::limit(strip_tags($metaDescription), 200));
 
         // Add category image if available
@@ -95,7 +96,7 @@ class CategoryController extends Controller
         }
 
         // Pagination
-        $perPage = $request->get('per_page', 12);
+        $perPage = CatalogPagination::perPage($request);
         $products = $query->paginate($perPage)->withQueryString();
 
         // Transform products for frontend
@@ -138,7 +139,7 @@ class CategoryController extends Controller
                 'max_price' => $request->get('max_price', ''),
                 'sort' => $request->get('sort', 'name'),
                 'direction' => $request->get('direction', 'asc'),
-                'per_page' => $request->get('per_page', 12),
+                'per_page' => $perPage,
             ],
             'pagination' => [
                 'total' => $products->total(),

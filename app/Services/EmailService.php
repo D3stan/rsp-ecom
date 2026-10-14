@@ -8,7 +8,6 @@ use App\Mail\PaidOrderMissingAlert;
 use App\Mail\TestEmail;
 use App\Models\Order;
 use App\Models\OrderEmail;
-use App\Models\Setting;
 use App\Models\User;
 use App\Support\Privacy;
 use Illuminate\Support\Facades\Cache;
@@ -25,14 +24,14 @@ class EmailService
     public const STALE_AFTER_MINUTES = 180;
 
     /**
-     * Setting that switches each order email type on/off (all default to enabled).
+     * Catalogue key (config/settings.php) that switches each order email type on/off (all default to enabled).
      */
     private const TYPE_SETTINGS = [
-        OrderEmail::TYPE_CONFIRMATION => 'order_confirmation_enabled',
-        OrderEmail::TYPE_SHIPPED => 'order_shipped_enabled',
-        OrderEmail::TYPE_DELIVERED => 'order_delivered_enabled',
-        OrderEmail::TYPE_CANCELLED => 'order_cancelled_enabled',
-        OrderEmail::TYPE_REFUNDED => 'order_refunded_enabled',
+        OrderEmail::TYPE_CONFIRMATION => 'email.order_confirmation',
+        OrderEmail::TYPE_SHIPPED => 'email.order_shipped',
+        OrderEmail::TYPE_DELIVERED => 'email.order_delivered',
+        OrderEmail::TYPE_CANCELLED => 'email.order_cancelled',
+        OrderEmail::TYPE_REFUNDED => 'email.order_refunded',
     ];
 
     /**
@@ -65,17 +64,18 @@ class EmailService
     }
 
     /**
-     * Queue the order shipped email. Sent once per distinct tracking number
-     * (first shipment, then again only if the tracking number changes).
+     * Queue the order shipped email. Sent once per distinct tracking number + carrier
+     * (first shipment, then again only if the tracking number or the carrier changes).
      */
     public function sendOrderShipped(Order $order, ?string $trackingNumber = null): bool
     {
         $trackingNumber = $trackingNumber !== null && trim($trackingNumber) !== '' ? trim($trackingNumber) : null;
+        $carrier = $order->getAttribute('tracking_carrier');
 
         return $this->dispatchOrderEmail(
             $order,
             OrderEmail::TYPE_SHIPPED,
-            OrderEmail::shippedFingerprint($trackingNumber),
+            OrderEmail::shippedFingerprint($trackingNumber, is_string($carrier) ? $carrier : null),
             $trackingNumber,
         );
     }
@@ -123,6 +123,15 @@ class EmailService
     public function sendNewOrderAlert(Order $order): bool
     {
         return $this->dispatchOrderEmail($order, OrderEmail::TYPE_ADMIN_NEW_ORDER, OrderEmail::FINGERPRINT_DEFAULT);
+    }
+
+    /**
+     * Queue the internal "paid order sold more units than were in stock" alert for the shop owner. At most one per
+     * order; follows the email.enabled master switch like the other admin alerts.
+     */
+    public function sendOversoldAlert(Order $order): bool
+    {
+        return $this->dispatchOrderEmail($order, OrderEmail::TYPE_ADMIN_OVERSOLD, OrderEmail::FINGERPRINT_DEFAULT);
     }
 
     /**
@@ -179,11 +188,7 @@ class EmailService
      */
     public function adminAddress(): ?string
     {
-        try {
-            $configured = trim((string) Setting::get('admin_notification_email', ''));
-        } catch (Throwable) {
-            $configured = '';
-        }
+        $configured = trim((string) settings('contact.admin_notification_email', ''));
 
         if ($configured !== '' && filter_var($configured, FILTER_VALIDATE_EMAIL)) {
             return $configured;
@@ -346,18 +351,13 @@ class EmailService
 
     private function notificationsEnabled(): bool
     {
-        return $this->settingEnabled('email_notifications_enabled');
+        return $this->settingEnabled('email.enabled');
     }
 
     private function settingEnabled(string $key): bool
     {
-        try {
-            $value = Setting::get($key, true);
-        } catch (Throwable) {
-            return true;
-        }
-
-        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+        // settings() already returns a typed bool and falls back to the default when the table cannot be read
+        return (bool) settings($key, true);
     }
 
     /**
@@ -410,7 +410,7 @@ class EmailService
     public function sendSimpleTestEmail(string $testEmail): bool
     {
         try {
-            Mail::raw('Simple test email from '.config('app.name'), function ($mail) use ($testEmail) {
+            Mail::raw('Simple test email from '.settings('store.name'), function ($mail) use ($testEmail) {
                 $mail->to($testEmail)
                     ->subject('Simple Test Email Configuration')
                     ->from(config('mail.from.address'), config('mail.from.name'));
