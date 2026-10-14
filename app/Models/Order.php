@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
@@ -459,7 +460,26 @@ class Order extends Model
     }
 
     /**
-     * Get order data formatted for frontend (with numeric values as floats)
+     * Order fields the customer's own pages may receive (account dashboard, My orders, checkout success).
+     * Everything else on the row stays server-side: internal admin notes, Stripe ids, the guest session id.
+     */
+    public const CUSTOMER_FIELDS = [
+        'id', 'order_number', 'status', 'payment_status', 'created_at', 'currency',
+        'subtotal', 'tax_amount', 'tax_rate', 'shipping_amount', 'discount_amount', 'total_amount',
+        'tracking_number', 'tracking_carrier', 'tracking_status',
+    ];
+
+    /**
+     * Whitelisted order data for customer-facing pages (see CUSTOMER_FIELDS). Callers add the items they show.
+     */
+    public function toCustomerArray(): array
+    {
+        return Arr::only($this->attributesToArray(), self::CUSTOMER_FIELDS);
+    }
+
+    /**
+     * Get order data formatted for frontend (with numeric values as floats).
+     * Includes internal fields (notes, Stripe ids): admin pages only. Customer pages use toCustomerArray().
      */
     public function toFrontendArray(): array
     {
