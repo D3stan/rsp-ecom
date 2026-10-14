@@ -222,6 +222,8 @@ class ProductsController extends Controller
     public function show(string $slug): Response
     {
         $product = Product::with(['category', 'approvedReviews.user', 'size', 'activeVariants', 'defaultVariant'])
+            ->withAvg('approvedReviews', 'rating')
+            ->withCount('approvedReviews')
             ->where('slug', $slug)
             ->where('status', 'active')
             ->firstOrFail();
@@ -333,6 +335,9 @@ class ProductsController extends Controller
             'shipping' => [
                 'size' => $product->size?->name,
             ],
+            // Approved reviews only (null average when there are none)
+            'average_rating' => $product->approved_reviews_count > 0 ? round((float) $product->approved_reviews_avg_rating, 1) : null,
+            'review_count' => (int) $product->approved_reviews_count,
         ];
 
         // Get reviews with user information

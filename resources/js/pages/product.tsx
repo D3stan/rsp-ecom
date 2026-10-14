@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Label } from '@/components/ui/label';
+import { ProductRatingSummary } from '@/components/product-rating-summary';
 import { VariantSelector } from '@/components/VariantSelector';
 import { WishlistButton } from '@/components/wishlist-button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -36,6 +37,8 @@ interface Product {
         slug: string;
     } | null;
     variants: ProductVariant[];
+    average_rating: number | null;
+    review_count: number;
     shipping: {
         size: string;
     };
@@ -94,6 +97,10 @@ export default function Product() {
     const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
     const [isSpecsOpen, setIsSpecsOpen] = useState(false);
     const [isReviewsOpen, setIsReviewsOpen] = useState(false);
+    const showReviews = () => {
+        setIsReviewsOpen(true);
+        document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     // Get selected variant
     const selectedVariant = product.variants.find((v) => v.id === selectedVariantId)!;
@@ -302,11 +309,7 @@ export default function Product() {
                                 {product.category && <p className="mb-2 text-sm text-gray-600">{product.category.name}</p>}
                                 <h1 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">{product.name}</h1>
 
-                                {/* Rating - placeholder for now */}
-                                <div className="mb-4 flex items-center space-x-2">
-                                    <div className="flex">{renderStars(0)}</div>
-                                    <span className="text-sm text-gray-600">(0 reviews)</span>
-                                </div>
+                                <ProductRatingSummary average={product.average_rating} count={product.review_count} onShowReviews={showReviews} />
 
                                 {/* Price */}
                                 <div className="mb-6 flex items-center space-x-3">
@@ -403,7 +406,7 @@ export default function Product() {
 
                     {/* Reviews */}
                     {reviews.length > 0 && (
-                        <div className="mt-16 space-y-4">
+                        <div id="reviews" className="mt-16 scroll-mt-24 space-y-4">
                             <Collapsible open={isReviewsOpen} onOpenChange={setIsReviewsOpen} className="rounded-lg border border-gray-300">
                                 <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-gray-50 p-4 transition-colors hover:bg-gray-100">
                                     <span className="text-lg font-semibold text-gray-900">

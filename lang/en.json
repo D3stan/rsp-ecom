@@ -547,6 +547,7 @@
         "specifications": "Specifications",
         "reviews": "Reviews",
         "reviews_count": "Reviews ({count})",
+        "rating_label": "Rated {rating} out of 5",
         "you_may_also_like": "You may also like",
         "breadcrumb": {
             "home": "Home",

@@ -531,6 +531,7 @@
         "specifications": "Spezifikationen",
         "reviews": "Bewertungen",
         "reviews_count": "Bewertungen ({count})",
+        "rating_label": "Bewertet mit {rating} von 5",
         "you_may_also_like": "Das könnte Ihnen auch gefallen",
         "breadcrumb": {
             "home": "Startseite",
