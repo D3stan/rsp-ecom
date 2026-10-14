@@ -288,7 +288,15 @@ export default function Product() {
                                                 index === currentImageIndex ? 'border-black' : 'border-gray-200 hover:border-gray-400'
                                             }`}
                                         >
-                                            <img src={image} alt={`${product.name} ${index + 1}`} className="h-full w-full object-cover" />
+                                            <img
+                                                src={image}
+                                                alt={`${product.name} ${index + 1}`}
+                                                loading="lazy"
+                                                decoding="async"
+                                                width={80}
+                                                height={80}
+                                                className="h-full w-full object-cover"
+                                            />
                                         </button>
                                     ))}
                                 </div>
@@ -442,6 +450,10 @@ export default function Product() {
                                             <img
                                                 src={relatedProduct.image}
                                                 alt={relatedProduct.name}
+                                                loading="lazy"
+                                                decoding="async"
+                                                width={300}
+                                                height={300}
                                                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                             />
                                         </div>

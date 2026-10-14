@@ -89,7 +89,6 @@ export default function Home() {
     // const [videoLoaded, setVideoLoaded] = useState(false);
     // const [imageLoaded, setImageLoaded] = useState(false);
     const [addingToCartId, setAddingToCartId] = useState<number | null>(null);
-    const [backgroundBlur, setBackgroundBlur] = useState(3); // Tunable blur amount (0-10)
     const { t, isLoading } = useTranslation();
     const formatCurrency = useMoney();
     const storeName = useSetting('store.name', 'Store');
@@ -186,25 +185,36 @@ export default function Home() {
 
                 {/* Hero Section with Ring Masked Image */}
                 <section className="hero-section relative -mt-16 flex overflow-hidden pt-16" style={{ height: '100vh' }}>
-                    {/* Background Image Layer */}
+                    {/* Background Image Layer: blurred at build time (was a 1.9 MB PNG blurred by a CSS filter); the LCP image */}
                     <div className="absolute inset-0 z-0" style={{ transform: 'scale(1.05)' }}>
-                        <img
-                            src="/images/angels.png"
-                            alt="RSP Background"
-                            className="w-full h-full object-cover object-center"
-                            style={{
-                                minWidth: '100%',
-                                minHeight: '100%',
-                                filter: `blur(${backgroundBlur}px)`,
-                                transform: 'scale(1.02)', // Slight scale to prevent edge artifacts
-                            }}
-                        />
+                        <picture>
+                            <source
+                                type="image/avif"
+                                srcSet="/images/hero/hero-bg-600.avif 600w, /images/hero/hero-bg-1024.avif 1024w"
+                                sizes="(orientation: portrait) 110vh, 110vw"
+                            />
+                            <img
+                                src="/images/hero/hero-bg-1024.webp"
+                                srcSet="/images/hero/hero-bg-600.webp 600w, /images/hero/hero-bg-1024.webp 1024w"
+                                sizes="(orientation: portrait) 110vh, 110vw"
+                                width={1024}
+                                height={1024}
+                                fetchPriority="high"
+                                alt=""
+                                className="w-full h-full object-cover object-center"
+                                style={{
+                                    minWidth: '100%',
+                                    minHeight: '100%',
+                                    transform: 'scale(1.02)', // Slight scale to prevent edge artifacts
+                                }}
+                            />
+                        </picture>
                     </div>
 
                     {/* Ring Masked Image Layer */}
                     <div className="absolute inset-0 z-5 flex items-center justify-center">
                         <RingMaskedImage
-                            src="/images/angel-eye.png"
+                            src="/images/hero/angel-eye.webp"
                             alt="Angel Eye - Discover Amazing Products"
                             engine="framer"
                             mode="continuous"
@@ -218,18 +228,21 @@ export default function Home() {
                             introEnabled={false}
                             introTTLSeconds={86400}
                             sessionKey="heroRingIntroSeen"
-                            respectReducedMotion={false}
+                            respectReducedMotion={true}
                             disableResponsiveConstraints={true}
                             preserveAspectRatio="xMidYMid meet"
                             className="w-full h-full mx-auto max-w-[1400px]"
                         />
                     </div>
 
-                    {/* Black Angel Eye Image Layer */}
+                    {/* Black Angel Eye Image Layer: same file as the ring layer above (one download) */}
                     <div className="absolute inset-0 z-4 flex items-center justify-center">
                         <img
-                            src="/images/angel-eye.png"
-                            alt="Angel Eye Black"
+                            src="/images/hero/angel-eye.webp"
+                            width={1024}
+                            height={1024}
+                            alt=""
+                            aria-hidden="true"
                             className="w-full h-full mx-auto max-w-[1400px]"
                             style={{
                                 filter: 'brightness(0.2) saturate(100%)',
@@ -263,9 +276,9 @@ export default function Home() {
 
                     {/* Scroll Indicator */}
                     <div className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2 transform sm:bottom-8">
-                        <div className="animate-bounce">
+                        <div className="motion-safe:animate-bounce">
                             <div className="flex h-8 w-5 justify-center rounded-full border-2 border-white sm:h-10 sm:w-6">
-                                <div className="mt-1.5 h-2 w-1 animate-pulse rounded-full bg-white sm:mt-2 sm:h-3" />
+                                <div className="mt-1.5 h-2 w-1 rounded-full bg-white motion-safe:animate-pulse sm:mt-2 sm:h-3" />
                             </div>
                         </div>
                     </div>
@@ -304,6 +317,10 @@ export default function Home() {
                                                 <img
                                                     src={product.image}
                                                     alt={product.name}
+                                                    loading="lazy"
+                                                    decoding="async"
+                                                    width={400}
+                                                    height={192}
                                                     className={`h-48 w-full object-cover transition-transform duration-200 ${
                                                         productInteractions.isMobile
                                                             ? isActive
