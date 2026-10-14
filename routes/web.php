@@ -11,6 +11,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\GuestOrderController;
 use App\Http\Controllers\Api\PromotionController;
+use App\Http\Controllers\RestockUnsubscribeController;
 use App\Http\Controllers\ReviewController;
 use App\Shipping\Tracking\Http\TrackingWebhookController;
 use App\Support\Locales;
@@ -82,6 +83,13 @@ Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('che
 Route::get('/orders/{order}', [GuestOrderController::class, 'show'])
     ->middleware('throttle:60,1')
     ->name('orders.guest.show');
+
+// Unsubscribe from back-in-stock emails (signed link): GET asks to confirm, only POST acts (page button or RFC 8058
+// one-click from mail clients; CSRF-exempt, the signature protects it)
+Route::match(['get', 'post'], '/restock/unsubscribe/{user}', RestockUnsubscribeController::class)
+    ->whereNumber('user')
+    ->middleware('throttle:30,1')
+    ->name('restock.unsubscribe');
 
 // Remove test route since it was causing Inertia issues
 

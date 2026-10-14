@@ -7,7 +7,9 @@ use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\GenerateSitemapIndex;
 use App\Console\Commands\ClearSitemaps;
 use App\Models\Order;
+use App\Models\ProductVariant;
 use App\Observers\OrderObserver;
+use App\Observers\ProductVariantObserver;
 use App\Shipping\Tracking\Contracts\TrackingProvider;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Support\ServiceProvider;
@@ -71,6 +73,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Lifecycle emails (delivered, cancelled) follow order status changes
         Order::observe(OrderObserver::class);
+
+        // Stock that comes back (any Eloquent write to a variant) is announced for back-in-stock emails
+        ProductVariant::observe(ProductVariantObserver::class);
 
         // Configure Cashier
         // Cashier::calculateTaxes(); // Uncomment to enable automatic tax calculation

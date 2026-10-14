@@ -34,6 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'google_id',
         'avatar',
         'email_verified_at',
+        'notify_back_in_stock',
     ];
 
     /**
@@ -57,6 +58,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'notify_back_in_stock' => 'boolean',
         ];
     }
 

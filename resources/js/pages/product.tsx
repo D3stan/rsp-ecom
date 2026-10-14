@@ -15,6 +15,8 @@ import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronLeft, ChevronRight, Heart, Minus, Plus, Share2, ShoppingCart, Star } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useInitialVariantId } from '@/hooks/use-initial-variant';
+import ProductSafety from '@/components/product/ProductSafety';
 
 interface ProductVariant {
     id: number;
@@ -87,7 +89,7 @@ export default function Product() {
     const defaultVariant = product.variants.find((v) => v.is_default) ?? product.variants[0];
 
     // State
-    const [selectedVariantId, setSelectedVariantId] = useState<number>(defaultVariant.id);
+    const [selectedVariantId, setSelectedVariantId] = useState<number>(useInitialVariantId(product.variants, defaultVariant.id));
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
     const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -408,6 +410,8 @@ export default function Product() {
                             )}
                         </div>
                     </div>
+
+                    <ProductSafety variantId={selectedVariantId} />
 
                     {/* Reviews */}
                     {reviews.length > 0 && (
