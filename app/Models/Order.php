@@ -332,16 +332,17 @@ class Order extends Model
 
     public function getCustomerEmail(): ?string
     {
-        return $this->user_id ? $this->user->email : $this->guest_email;
+        // Orders of a deleted account have no user: guest_email holds the email copied at deletion.
+        return $this->user?->email ?? $this->guest_email;
     }
 
     public function getCustomerName(): ?string
     {
-        if ($this->user_id) {
+        if ($this->user) {
             return $this->user->name;
         }
-        
-        // For guest orders, try to get name from billing address
+
+        // Guest orders and orders of a deleted account: the name on the billing address
         if ($this->billingAddress) {
             return trim($this->billingAddress->first_name . ' ' . $this->billingAddress->last_name);
         }

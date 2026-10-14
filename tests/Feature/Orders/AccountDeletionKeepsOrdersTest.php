@@ -121,3 +121,42 @@ test('an order of a deleted account still opens from its signed status link', fu
             ->where('order.tracking_number', 'TRK-KEEP-1')
         );
 });
+
+test('deleting an account removes its address-book entries that no order uses', function () {
+    $user = User::factory()->create();
+    $order = paidOrderOf($user, $user->id);
+    $unused = Address::factory()->shipping()->create(['user_id' => $user->id]);
+    $someoneElses = Address::factory()->shipping()->create();
+
+    deleteAccount($user);
+
+    expect(Address::find($unused->id))->toBeNull()
+        ->and(Address::find($someoneElses->id))->not->toBeNull()
+        ->and(Address::find($order->billing_address_id)->user_id)->toBeNull();
+});
+
+test('an email already stored on the order is not overwritten at deletion', function () {
+    $user = User::factory()->create(['email' => 'account@example.test']);
+    $order = paidOrderOf($user, null);
+    $order->forceFill(['guest_email' => 'checkout@example.test'])->save();
+
+    deleteAccount($user);
+
+    expect(Order::find($order->id)->getCustomerEmail())->toBe('checkout@example.test');
+});
+
+test('the foreign-key migration is reversible on sqlite', function () {
+    $migration = require database_path('migrations/2026_10_15_100000_keep_orders_when_user_is_deleted.php');
+
+    $migration->down();
+    $user = User::factory()->create();
+    $order = paidOrderOf($user, null);
+    $user->delete();
+    expect(Order::find($order->id))->toBeNull();
+
+    $migration->up();
+    $user = User::factory()->create();
+    $order = paidOrderOf($user, $user->id);
+    $user->delete();
+    expect(Order::find($order->id))->not->toBeNull();
+});
