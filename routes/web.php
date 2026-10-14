@@ -125,14 +125,14 @@ Route::get('/api/translations/{locale}', function ($locale) {
         $locale = Locales::fallback();
     }
     
-    $translationFile = base_path("lang/{$locale}.json");
-    
-    if (file_exists($translationFile)) {
-        $translations = json_decode(file_get_contents($translationFile), true);
-        return response()->json($translations);
+    // English fills in any key the locale lacks (Locales::translations)
+    $translations = Locales::translations($locale);
+
+    if ($translations === []) {
+        return response()->json(['error' => 'Translations not found'], 404);
     }
-    
-    return response()->json(['error' => 'Translations not found'], 404);
+
+    return response()->json($translations);
 })->name('translations');
 
 // Language switching route

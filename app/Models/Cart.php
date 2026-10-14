@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Shipping;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -39,13 +40,33 @@ class Cart extends Model
         return $this->cartItems->sum('quantity');
     }
 
-    public function getShippingCostAttribute(): float
+    /**
+     * Shipping before the free-shipping rule: the sum of the package sizes' shipping_cost.
+     */
+    public function getBaseShippingCostAttribute(): float
     {
         // Calculate shipping based on cart items' sizes
-        return $this->cartItems->sum(function ($item) {
+        return (float) $this->cartItems->sum(function ($item) {
             // Use the size from the cart item, not from the product
             return $item->size ? $item->size->shipping_cost : 0;
         });
+    }
+
+    /**
+     * Shipping charged when $discount comes off the items: free once the items after the discount reach the
+     * free-shipping threshold (App\Support\Shipping). Callers that know the coupon use this.
+     */
+    public function shippingCostFor(float $discount = 0.0): float
+    {
+        return Shipping::costFor((float) $this->subtotal - $discount, $this->base_shipping_cost);
+    }
+
+    /**
+     * Shipping with no coupon applied (see shippingCostFor).
+     */
+    public function getShippingCostAttribute(): float
+    {
+        return $this->shippingCostFor();
     }
 
     public function getTotalAttribute(): float

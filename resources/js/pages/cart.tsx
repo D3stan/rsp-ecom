@@ -1,3 +1,4 @@
+import ShippingLine from '@/components/checkout/ShippingLine';
 import Header from '@/components/header';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
@@ -43,11 +44,12 @@ interface CartPageProps extends SharedData {
     couponCode?: string;
     total: number;
     totalItems: number;
+    freeShippingRemaining?: number | null;
 }
 
 export default function Cart() {
     const pageProps = usePage<CartPageProps>().props;
-    const { cartItems, subtotal, shippingCost, discountAmount, discountDescription, couponCode, total, totalItems } = pageProps;
+    const { cartItems, subtotal, shippingCost, discountAmount, discountDescription, couponCode, total, totalItems, freeShippingRemaining } = pageProps;
     const { auth } = pageProps;
     const isMobile = useIsMobile();
     const { t, isLoading } = useTranslation();
@@ -418,10 +420,11 @@ export default function Cart() {
                                         <span>{t('cart.subtotal')}</span>
                                         <span>{formatCurrency(subtotal)}</span>
                                     </div>
-                                    <div className="flex justify-between text-gray-700">
-                                        <span>{t('cart.shipping')}</span>
-                                        <span>{formatCurrency(shippingCost)}</span>
-                                    </div>
+                                    <ShippingLine
+                                        shippingCost={shippingCost}
+                                        freeShippingRemaining={freeShippingRemaining}
+                                        className="flex justify-between text-gray-700"
+                                    />
                                     {(discountAmount ?? 0) > 0 && (
                                         <div className="flex justify-between text-green-600">
                                             <span>{t('cart.discount')} {discountDescription && `(${discountDescription})`}</span>

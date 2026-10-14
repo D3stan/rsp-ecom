@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Size;
+use App\Support\CheckoutTotals;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -35,6 +36,7 @@ class CartController extends Controller
                 'shippingCost' => 0,
                 'total' => 0,
                 'totalItems' => 0,
+                'freeShippingRemaining' => null,
             ]);
         }
 
@@ -65,18 +67,14 @@ class CartController extends Controller
         // Reload to get updated size relationship
         $cart->load(['cartItems.size', 'cartItems.productVariant']);
 
-        // Get applied coupon and calculate discount
+        // The same totals the checkout charges (coupon discount, free-shipping rule)
         $appliedCoupon = $this->getAppliedCoupon();
-        $discountAmount = 0;
+        $totals = CheckoutTotals::for($cart, $appliedCoupon);
 
-        if ($appliedCoupon) {
-            // Recalculate discount based on current subtotal
-            $discountAmount = min($appliedCoupon['discount_amount'], $cart->subtotal);
-        }
-
-        $subtotal = (float) $cart->subtotal;
-        $shippingCost = (float) $cart->shipping_cost;
-        $total = max(0, $subtotal + $shippingCost - $discountAmount);
+        $subtotal = $totals['items'];
+        $shippingCost = $totals['shipping'];
+        $discountAmount = $totals['discount'];
+        $total = $totals['total'];
 
         return Inertia::render('cart', [
             'cart' => $cart,
@@ -113,6 +111,7 @@ class CartController extends Controller
             'couponCode' => $appliedCoupon['code'] ?? null,
             'total' => $total,
             'totalItems' => $cart->total_items,
+            'freeShippingRemaining' => $totals['free_shipping_remaining'],
         ]);
     }
 

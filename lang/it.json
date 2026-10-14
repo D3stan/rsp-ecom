@@ -28,6 +28,8 @@
     "terms_of_service": "Termini di Servizio",
     "returns": "Resi",
     "shipping_returns_link": "Spedizioni e Resi",
+    "shipping.free": "Spedizione gratuita",
+    "shipping.free_remaining": "Aggiungi altri {amount} per la spedizione gratuita",
     "terms_of_sale_warranty": "Termini di Vendita e Garanzia",
     "terms_legal_governing": "Termini legali che regolano i tuoi acquisti e la copertura della garanzia",
     "contract_formation": "Formazione del Contratto",
@@ -279,8 +281,18 @@
             "restricted_body": "Abbiamo inviato la conferma d'ordine all'indirizzo email usato al checkout. Usa il link contenuto nell'email per seguire il tuo ordine.",
             "discount": "Sconto",
             "vat_included": "IVA inclusa",
-            "processing": "In elaborazione..."
-        }
+            "processing": "In elaborazione...",
+            "pending_title": "Pagamento ricevuto",
+            "pending_body": "Stiamo finalizzando il tuo ordine e ti invieremo la conferma via email.",
+            "pending_checking": "Verifica dell'ordine in corso…",
+            "pending_timeout": "Ci vuole più del solito. Il pagamento è stato ricevuto: se l'email di conferma non arriva a breve, contattaci.",
+            "pending_contact": "Contatta l'assistenza",
+            "pending_reference": "Riferimento del pagamento"
+        },
+        "field_required": "Campo obbligatorio.",
+        "email_invalid": "Inserisci un indirizzo email valido, ad es. nome@esempio.it.",
+        "summary_show": "Mostra il riepilogo dell'ordine ({amount})",
+        "summary_hide": "Nascondi il riepilogo dell'ordine"
     },
     "shipping_returns": {
         "title": "Spedizioni e Resi",
@@ -586,6 +598,7 @@
         "quick_actions_description": "Gestisci il tuo account e le preferenze",
         "edit_profile": "Modifica Profilo",
         "payment_methods": "Metodi di Pagamento",
+        "account_settings": "Impostazioni Account",
         "view_wishlist": "Visualizza Lista dei Desideri",
         "write_review": "Scrivi Recensione",
         "account_summary": "Riepilogo Account",
@@ -950,6 +963,8 @@
     "settings.shipping.default_country.help": "Preselezionato al checkout. Deve essere uno dei paesi di destinazione.",
     "settings.shipping.carriers.label": "Corrieri",
     "settings.shipping.carriers.help": "Corrieri selezionabili quando si spedisce un ordine. Nel link di tracciamento usare {number} al posto del numero di tracciamento.",
+    "settings.shipping.free_threshold.label": "Spedizione gratuita da",
+    "settings.shipping.free_threshold.help": "Gli ordini il cui totale prodotti (dopo lo sconto) raggiunge questo importo vengono spediti gratis. 0 = disattivata.",
     "settings.orders.min_amount.label": "Importo minimo dell'ordine",
     "settings.orders.min_amount.help": "Gli ordini con un totale inferiore non possono essere effettuati. 0 disattiva il limite.",
     "settings.orders.max_qty_per_line.label": "Quantità massima per prodotto",

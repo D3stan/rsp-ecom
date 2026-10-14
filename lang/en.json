@@ -28,6 +28,8 @@
     "terms_of_service": "Terms of Service",
     "returns": "Returns",
     "shipping_returns_link": "Shipping & Returns",
+    "shipping.free": "Free shipping",
+    "shipping.free_remaining": "Add {amount} more for free shipping",
     "terms_of_sale_warranty": "Terms of Sale & Warranty",
     "terms_legal_governing": "Legal terms governing your purchases and warranty coverage",
     "contract_formation": "Contract Formation",
@@ -279,8 +281,18 @@
             "restricted_body": "We have sent the order confirmation to the email address used at checkout. Use the link in that email to follow your order.",
             "discount": "Discount",
             "vat_included": "VAT included",
-            "processing": "Processing..."
-        }
+            "processing": "Processing...",
+            "pending_title": "Payment received",
+            "pending_body": "We're finalising your order and will email you the confirmation.",
+            "pending_checking": "Checking for your order…",
+            "pending_timeout": "This is taking longer than usual. Your payment has been received: if the confirmation email doesn't arrive shortly, please contact us.",
+            "pending_contact": "Contact support",
+            "pending_reference": "Payment reference"
+        },
+        "field_required": "This field is required.",
+        "email_invalid": "Enter a valid email address, e.g. name@example.com.",
+        "summary_show": "Show order summary ({amount})",
+        "summary_hide": "Hide order summary"
     },
     "shipping_returns": {
         "title": "Shipping & Returns",
@@ -951,6 +963,8 @@
     "settings.shipping.default_country.help": "Pre-selected at checkout. Must be one of the destination countries.",
     "settings.shipping.carriers.label": "Carriers",
     "settings.shipping.carriers.help": "Carriers you can pick when shipping an order. Use {number} in the tracking link where the tracking number goes.",
+    "settings.shipping.free_threshold.label": "Free shipping from",
+    "settings.shipping.free_threshold.help": "Orders whose items total (after discount) reaches this amount ship free. 0 = off.",
     "settings.orders.min_amount.label": "Minimum order amount",
     "settings.orders.min_amount.help": "Orders below this total cannot be placed. 0 turns the limit off.",
     "settings.orders.max_qty_per_line.label": "Maximum quantity per product",
