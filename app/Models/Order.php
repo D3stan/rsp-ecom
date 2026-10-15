@@ -258,7 +258,24 @@ class Order extends Model
      */
     public function allowedTransitions(): array
     {
-        return OrderTransitions::allowedFrom($this->status);
+        $allowed = OrderTransitions::allowedFrom($this->status);
+
+        // "shipped" also needs a captured payment (canShip()): never offer a move the server refuses
+        return array_values(array_filter($allowed, fn (string $to) => $to !== 'shipped' || $this->canShip()));
+    }
+
+    /**
+     * May the admin ship this order now? Only a "processing" order whose payment was captured and not refunded in
+     * full. The lifecycle map alone would also let through an unpaid order moved to processing by hand.
+     */
+    public function canShip(): bool
+    {
+        return $this->status === 'processing' && $this->hasShippablePayment();
+    }
+
+    public function hasShippablePayment(): bool
+    {
+        return in_array($this->payment_status, self::SHIPPABLE_PAYMENT_STATUSES, true);
     }
 
     /**
@@ -281,12 +298,19 @@ class Order extends Model
         }
 
         DB::transaction(function () use ($to, $actor, $reason, $meta) {
-            $stored = static::query()->whereKey($this->getKey())->lockForUpdate()->value('status');
+            $row = static::query()->whereKey($this->getKey())->lockForUpdate()->first(['status', 'payment_status']);
+            $stored = $row?->getAttribute('status');
 
             // Decide on what is stored, not on what this instance remembers
             if ($stored !== null && $stored !== $this->getOriginal('status')) {
                 $this->setAttribute('status', $stored);
                 $this->syncOriginalAttribute('status');
+            }
+
+            // Same for the payment (a refund webhook may have changed it meanwhile), unless the caller is changing it
+            if ($row !== null && ! $this->isDirty('payment_status') && $row->getAttribute('payment_status') !== $this->getOriginal('payment_status')) {
+                $this->setAttribute('payment_status', $row->getAttribute('payment_status'));
+                $this->syncOriginalAttribute('payment_status');
             }
 
             $from = $this->getOriginal('status');
@@ -306,6 +330,10 @@ class Order extends Model
 
             if ($reason === null && OrderTransitions::requiresReason($from, $to)) {
                 throw InvalidOrderTransition::reasonRequired((string) $this->order_number, $from, $to);
+            }
+
+            if ($to === 'shipped' && ! $this->hasShippablePayment()) {
+                throw InvalidOrderTransition::notPaid((string) $this->order_number, (string) $this->payment_status);
             }
 
             $this->status = $to;
@@ -399,6 +427,9 @@ class Order extends Model
 
     /** Captured money not (fully) returned yet: a cancelled order in one of these owes the customer a refund. */
     public const REFUND_DUE_PAYMENT_STATUSES = ['succeeded', 'partially_refunded'];
+
+    /** Payment states in which the order may ship: paid, and not refunded in full. */
+    public const SHIPPABLE_PAYMENT_STATUSES = ['succeeded', 'partially_refunded'];
 
     public function hasCapturedPayment(): bool
     {

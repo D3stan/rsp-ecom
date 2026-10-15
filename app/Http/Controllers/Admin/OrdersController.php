@@ -14,6 +14,7 @@ use App\Models\Refund;
 use App\Services\RefundService;
 use App\Support\Revenue;
 use App\Shipping\Tracking\TrackingManager;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -75,7 +76,10 @@ class OrdersController extends Controller
         // Transform the pagination response to ensure proper structure
         $ordersData = [
             'data' => collect($orders->items())
-                ->map(fn (Order $order) => $order->toArray() + ['allowed_transitions' => $order->allowedTransitions()])
+                ->map(fn (Order $order) => $order->toArray() + [
+                    'allowed_transitions' => $order->allowedTransitions(),
+                    'can_ship' => $order->canShip(),
+                ])
                 ->all(),
             'meta' => [
                 'total' => $orders->total(),
@@ -131,6 +135,8 @@ class OrdersController extends Controller
         return Inertia::render('Admin/Orders/Show', [
             'order' => $order->toFrontendArray(),
             'allowed_transitions' => $order->allowedTransitions(),
+            // processing and paid (Order::canShip): the "Ship" action is offered only then
+            'can_ship' => $order->canShip(),
             // cancelled while money is still captured (computed)
             'refund_due' => $order->isRefundDue(),
             // Audit trail for the timeline, oldest first (empty for orders from before it existed)
@@ -502,8 +508,14 @@ class OrdersController extends Controller
     /**
      * Show the shipping form for an order
      */
-    public function showShip(Order $order): Response
+    public function showShip(Order $order): Response|RedirectResponse
     {
+        // Only a processing order with a captured payment may ship (processShip is refused the same way)
+        if (! $order->canShip()) {
+            return redirect()->route('admin.orders.show', $order)
+                ->with('error', "Order {$order->order_number} cannot ship now: it must be processing and paid.");
+        }
+
         $order->load([
             'user',
             'orderItems.product', 'orderItems.product.defaultVariant',

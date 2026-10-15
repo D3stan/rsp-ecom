@@ -29,6 +29,11 @@ on cancel, and status emails are sent.
 | `delivered`  | none (refunds after delivery keep the status)     |
 | `cancelled`  | none                                              |
 
+**Shipping also needs the money:** `processing → shipped` is refused unless `payment_status` is `succeeded` or
+`partially_refunded` (`Order::canShip()`; `transitionTo()` checks the stored payment). An unpaid order moved to
+`processing` by hand, or one refunded in full, cannot ship. `allowedTransitions()` leaves `shipped` out for such an
+order, and the admin pages receive `can_ship`, which shows the "Ship" action.
+
 Who calls it:
 - **The admin:** the order page, the edit form, the status endpoint, bulk updates, the ship form. A refused move
   writes nothing and shows an error. In bulk, refused orders are listed as skipped.

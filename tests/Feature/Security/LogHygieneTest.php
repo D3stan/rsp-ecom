@@ -128,7 +128,8 @@ class LogHygieneTest extends TestCase
     public function test_admin_order_update_failure_logs_class_and_message_but_no_stack_trace(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $order = Order::factory()->create(['guest_email' => 'buyer@example.com', 'user_id' => null, 'status' => 'processing']);
+        // paid: only a paid processing order may ship (Order::canShip)
+        $order = Order::factory()->create(['guest_email' => 'buyer@example.com', 'user_id' => null, 'status' => 'processing', 'payment_status' => 'succeeded']);
 
         $failing = \Mockery::mock(EmailService::class);
         $failing->shouldReceive('isEnabled')->andReturn(true);

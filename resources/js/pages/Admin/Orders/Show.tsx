@@ -111,6 +111,8 @@ interface Props {
     order: Order;
     // statuses this order may move to next (server-side order lifecycle)
     allowed_transitions: string[];
+    // processing and paid: the ship form is available (Order::canShip)
+    can_ship?: boolean;
     // audit trail (order_events), oldest first
     events?: OrderTimelineEvent[];
     // cancelled while money is still captured (customer service owes a refund)
@@ -159,6 +161,7 @@ const getStatusIcon = (status: string) => {
 export default function OrderShow({
     order,
     allowed_transitions = [],
+    can_ship = false,
     refund_due = false,
     events = [],
     refunds = [],
@@ -310,6 +313,12 @@ export default function OrderShow({
                         </div>
                     </div>
                     <div className="flex items-center space-x-2">
+                        {can_ship && (
+                            <Button size="sm" onClick={() => router.visit(`/admin/orders/${order.id}/ship`)}>
+                                <Truck className="mr-2 h-4 w-4" />
+                                Ship
+                            </Button>
+                        )}
                         <Button variant="outline" size="sm" onClick={() => router.visit(`/admin/orders/${order.id}/edit`)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit Order

@@ -19,4 +19,9 @@ class InvalidOrderTransition extends DomainException
     {
         return new self("Order {$orderNumber}: moving from \"{$from}\" to \"{$to}\" needs a reason.");
     }
+
+    public static function notPaid(string $orderNumber, string $paymentStatus): self
+    {
+        return new self("Order {$orderNumber} cannot ship: its payment is \"{$paymentStatus}\" (it must be paid and not refunded in full).");
+    }
 }
