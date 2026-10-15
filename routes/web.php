@@ -169,7 +169,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         // Get recent orders with items and products
         $recentOrders = $user->orders()
-            ->with(['orderItems.product', 'orderItems.size'])
+            ->with(['orderItems.product', 'orderItems.size', 'orderItems.productVariant'])
             ->latest()
             ->limit(5)
             ->get()
@@ -183,6 +183,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'order_id' => $item->order_id,
                         'product_id' => $item->product_id,
                         'product_name' => $item->product_name,
+                        'variant_name' => $item->productVariant?->name,
                         'quantity' => $item->quantity,
                         'price' => (float) $item->price,
                         'total' => (float) $item->total,
@@ -273,7 +274,7 @@ Sitemap: " . url('/sitemap.xml');
         ->header('Content-Type', 'text/plain');
 })->name('robots');
 
-// Fallback route for 404 errors - must be last
-Route::fallback(function () {
-    return Inertia::render('Errors/NotFound');
+// Fallback route for 404 errors - must be last. The status is 404 (not a soft 404), for Inertia visits too.
+Route::fallback(function (Request $request) {
+    return Inertia::render('Errors/NotFound')->toResponse($request)->setStatusCode(404);
 });

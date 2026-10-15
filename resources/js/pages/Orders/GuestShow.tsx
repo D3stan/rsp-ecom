@@ -11,7 +11,8 @@ import { MapPin, Package, Truck } from 'lucide-react';
 interface OrderItem {
     id: number;
     name: string | null;
-    size: string | null;
+    /** The chosen variant; null when it has since been deleted. */
+    variant_name: string | null;
     quantity: number;
     price: number;
     total: number;
@@ -115,11 +116,7 @@ export default function GuestOrderShow({ order, supportEmail }: Props) {
                                             />
                                             <div className="min-w-0 flex-1">
                                                 <h4 className="font-medium break-words">{item.name}</h4>
-                                                {item.size && (
-                                                    <p className="text-sm text-gray-600">
-                                                        {t('guest_order.size')}: {item.size}
-                                                    </p>
-                                                )}
+                                                {item.variant_name && <p className="text-sm text-gray-600">{item.variant_name}</p>}
                                                 <p className="text-sm text-gray-600">
                                                     {t('guest_order.quantity')}: {item.quantity}
                                                 </p>

@@ -246,7 +246,8 @@ class CartController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Cart updated successfully.');
+        // No flash: the new quantity and totals are visible on the cart page, a toast on every +/- is noise
+        return back();
     }
 
     /**

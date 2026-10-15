@@ -27,6 +27,8 @@ export interface OrderItem {
     order_id: number;
     product_id: number;
     product_name: string;
+    /** The chosen variant; null when it has since been deleted. */
+    variant_name?: string | null;
     quantity: number;
     price: number;
     total: number;

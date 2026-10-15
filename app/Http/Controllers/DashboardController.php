@@ -17,7 +17,7 @@ class DashboardController extends Controller
         
         $user = Auth::user();
         $orders = $user->orders()
-            ->with(['orderItems.product.category', 'orderItems.product.defaultVariant', 'orderItems.size'])
+            ->with(['orderItems.product.category', 'orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant'])
             ->latest()
             ->get()
             ->map(function ($order) {
@@ -31,6 +31,8 @@ class DashboardController extends Controller
                         'order_id' => $item->order_id,
                         'product_id' => $item->product_id,
                         'product_name' => $item->product_name,
+                        // The chosen variant (null when it has since been deleted)
+                        'variant_name' => $item->productVariant?->name,
                         'quantity' => $item->quantity,
                         'price' => (float) $item->price,
                         'total' => (float) $item->total,
