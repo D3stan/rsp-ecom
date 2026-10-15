@@ -645,7 +645,7 @@ class Order extends Model
     public const CUSTOMER_FIELDS = [
         'id', 'order_number', 'status', 'payment_status', 'created_at', 'currency',
         'subtotal', 'tax_amount', 'tax_rate', 'shipping_amount', 'discount_amount', 'total_amount',
-        'tracking_number', 'tracking_carrier', 'tracking_status',
+        'tracking_number', 'tracking_carrier', 'tracking_status', 'tracking_last_synced_at',
     ];
 
     /**
@@ -654,6 +654,37 @@ class Order extends Model
     public function toCustomerArray(): array
     {
         return Arr::only($this->attributesToArray(), self::CUSTOMER_FIELDS);
+    }
+
+    /**
+     * Customer-facing shipment tracking: the public tracking link, the carrier display name, and the checkpoint
+     * list a customer may see (status + description + location + time, no raw carrier codes, no provider/hashes).
+     * Merged into the customer order payloads (account orders, dashboard, guest page). trackingEvents must be
+     * eager-loaded by the caller; when it is not, no event query is run and the list is empty.
+     *
+     * @return array<string, mixed>
+     */
+    public function customerTrackingArray(): array
+    {
+        $events = $this->relationLoaded('trackingEvents')
+            ? $this->trackingEvents
+                ->sortByDesc('occurred_at')
+                ->values()
+                ->map(fn (ShipmentTrackingEvent $event) => [
+                    // provider-neutral status value (e.g. "in_transit"); the UI renders tracking_admin.status.<value>
+                    'status' => $event->status,
+                    'description' => $event->description,
+                    'location' => $event->location,
+                    'occurred_at' => $event->occurred_at?->toISOString(),
+                ])
+                ->all()
+            : [];
+
+        return [
+            'tracking_url' => $this->trackingUrl(),
+            'carrier_name' => $this->trackingCarrierName(),
+            'tracking_events' => $events,
+        ];
     }
 
     /**

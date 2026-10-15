@@ -17,12 +17,12 @@ class DashboardController extends Controller
         
         $user = Auth::user();
         $orders = $user->orders()
-            ->with(['orderItems.product.category', 'orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant'])
+            ->with(['orderItems.product.category', 'orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant', 'trackingEvents'])
             ->latest()
             ->get()
             ->map(function ($order) {
                 // Whitelisted fields only: the order row also holds internal notes and Stripe ids
-                $orderData = $order->toCustomerArray();
+                $orderData = $order->toCustomerArray() + $order->customerTrackingArray();
                 $orderData['total'] = $order->total_amount; // Add alias for backward compatibility
                 $orderData['tracking_number'] = $order->tracking_number; // Ensure tracking number is included
                 $orderData['order_items'] = $order->orderItems->map(function ($item) {

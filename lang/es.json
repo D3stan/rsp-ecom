@@ -647,7 +647,14 @@
             "shipped": "Enviado",
             "delivered": "Entregado"
         },
-        "tracking": "Seguimiento"
+        "tracking": "Seguimiento",
+        "track_with": "Seguir con {carrier}",
+        "track_package": "Seguir paquete",
+        "tracking_updates": "Actualizaciones de seguimiento",
+        "last_update": "Última actualización {time}",
+        "no_updates_yet": "Aún no hay actualizaciones del transportista.",
+        "cancelled_state": "Este pedido fue cancelado.",
+        "refunded_state": "Este pedido fue reembolsado."
     },
     "wishlist": {
         "title": "Mi Lista de Deseos",

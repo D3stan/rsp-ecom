@@ -1,10 +1,12 @@
 import Header from '@/components/header';
+import OrderTracking from '@/components/orders/OrderTracking';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { formatRate } from '@/hooks/use-money';
 import useTranslation from '@/hooks/useTranslation';
+import { type TrackingEvent } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { MapPin, Package, Truck } from 'lucide-react';
 
@@ -35,6 +37,12 @@ interface Order {
     payment_status: string;
     created_at: string | null;
     tracking_number: string | null;
+    // customer-facing tracking (Order::customerTrackingArray)
+    tracking_status?: string | null;
+    tracking_last_synced_at?: string | null;
+    carrier_name?: string | null;
+    tracking_url?: string | null;
+    tracking_events?: TrackingEvent[];
     currency: string | null;
     subtotal: number;
     tax_amount: number;
@@ -84,7 +92,7 @@ export default function GuestOrderShow({ order, supportEmail }: Props) {
                     </div>
 
                     <div className="space-y-6">
-                        {order.tracking_number && (
+                        {(order.tracking_number || order.status === 'cancelled') && (
                             <Card className="bg-white">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-gray-800">
@@ -93,7 +101,7 @@ export default function GuestOrderShow({ order, supportEmail }: Props) {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="font-mono text-sm break-all text-black">{order.tracking_number}</p>
+                                    <OrderTracking order={order} />
                                 </CardContent>
                             </Card>
                         )}

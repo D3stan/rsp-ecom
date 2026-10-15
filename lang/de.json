@@ -647,7 +647,14 @@
             "shipped": "Versandt",
             "delivered": "Geliefert"
         },
-        "tracking": "Verfolgung"
+        "tracking": "Verfolgung",
+        "track_with": "Mit {carrier} verfolgen",
+        "track_package": "Paket verfolgen",
+        "tracking_updates": "Sendungsverfolgung",
+        "last_update": "Letzte Aktualisierung {time}",
+        "no_updates_yet": "Noch keine Updates vom Versanddienstleister.",
+        "cancelled_state": "Diese Bestellung wurde storniert.",
+        "refunded_state": "Diese Bestellung wurde erstattet."
     },
     "wishlist": {
         "title": "Meine Wunschliste",

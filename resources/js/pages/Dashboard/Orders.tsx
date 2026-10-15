@@ -1,6 +1,7 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import OrderTracking from '@/components/orders/OrderTracking';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Timeline, TimelineBody, TimelineConnector, TimelineHeader, TimelineIcon, TimelineItem, TimelineTitle } from '@/components/ui/timeline';
 import AppLayout from '@/layouts/app-layout';
@@ -310,17 +311,9 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                                                         <h4 className="font-medium">{t('orders.order_status')}</h4>
                                                         <div className="p-4 border rounded-lg space-y-4">
                                                             <OrderStatusTimeline status={order.status} />
-                                                            
-                                                            {/* Tracking Information */}
-                                                            {order.tracking_number && ['shipped', 'delivered'].includes(order.status.toLowerCase()) && (
-                                                                <div className="pt-4 border-t">
-                                                                    <div className="flex items-center gap-2 text-sm">
-                                                                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                                                                        <span className="font-medium">{t('orders.tracking_number')}:</span>
-                                                                        <span className="font-mono text-blue-600">{order.tracking_number}</span>
-                                                                    </div>
-                                                                </div>
-                                                            )}
+
+                                                            {/* Customer-facing shipment tracking (link, status, events, cancelled/refunded state) */}
+                                                            <OrderTracking order={order} />
                                                         </div>
                                                     </div>
                                                 </div>

@@ -647,7 +647,14 @@
             "shipped": "Expédié",
             "delivered": "Livré"
         },
-        "tracking": "Suivi"
+        "tracking": "Suivi",
+        "track_with": "Suivre avec {carrier}",
+        "track_package": "Suivre le colis",
+        "tracking_updates": "Suivi de livraison",
+        "last_update": "Dernière mise à jour {time}",
+        "no_updates_yet": "Aucune mise à jour du transporteur.",
+        "cancelled_state": "Cette commande a été annulée.",
+        "refunded_state": "Cette commande a été remboursée."
     },
     "wishlist": {
         "title": "Ma Liste de Souhaits",

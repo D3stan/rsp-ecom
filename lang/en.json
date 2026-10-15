@@ -647,7 +647,14 @@
             "shipped": "Shipped",
             "delivered": "Delivered"
         },
-        "tracking": "Tracking"
+        "tracking": "Tracking",
+        "track_with": "Track with {carrier}",
+        "track_package": "Track package",
+        "tracking_updates": "Tracking updates",
+        "last_update": "Last update {time}",
+        "no_updates_yet": "No carrier updates yet.",
+        "cancelled_state": "This order was cancelled.",
+        "refunded_state": "This order was refunded."
     },
     "wishlist": {
         "title": "My Wishlist",

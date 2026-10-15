@@ -647,7 +647,14 @@
             "shipped": "Spedito",
             "delivered": "Consegnato"
         },
-        "tracking": "Tracciamento"
+        "tracking": "Tracciamento",
+        "track_with": "Traccia con {carrier}",
+        "track_package": "Traccia il pacco",
+        "tracking_updates": "Aggiornamenti di tracking",
+        "last_update": "Ultimo aggiornamento {time}",
+        "no_updates_yet": "Nessun aggiornamento dal corriere.",
+        "cancelled_state": "Questo ordine è stato annullato.",
+        "refunded_state": "Questo ordine è stato rimborsato."
     },
     "wishlist": {
         "title": "I Miei Preferiti",
