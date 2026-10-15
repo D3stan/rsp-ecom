@@ -2,9 +2,11 @@ import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, ShieldCheck, Clock, ArrowRight } from 'lucide-react';
+import useTranslation from '@/hooks/useTranslation';
 import AuthLayout from '@/layouts/auth-layout';
 
 export default function EmailVerificationRequired() {
+    const { t } = useTranslation();
     const handleResendVerification = () => {
         // This will be handled by the existing email verification notification system
         window.location.href = route('verification.send');
@@ -12,10 +14,10 @@ export default function EmailVerificationRequired() {
 
     return (
         <AuthLayout
-            title="Email verification required"
-            description="Please verify your email address to access this feature."
+            title={t('auth.required.title')}
+            description={t('auth.required.description')}
         >
-            <Head title="Email Verification Required" />
+            <Head title={t('auth.required.head')} />
             
             <Card className="w-full max-w-md mx-auto">
                 <CardHeader className="text-center space-y-4">
@@ -23,9 +25,9 @@ export default function EmailVerificationRequired() {
                         <ShieldCheck className="w-8 h-8 text-amber-600" />
                     </div>
                     <div className="space-y-2">
-                        <CardTitle className="text-2xl font-semibold">Email verification required</CardTitle>
+                        <CardTitle className="text-2xl font-semibold">{t('auth.required.title')}</CardTitle>
                         <CardDescription className="text-base">
-                            You need to verify your email address to access this feature
+                            {t('auth.required.card_description')}
                         </CardDescription>
                     </div>
                 </CardHeader>
@@ -35,9 +37,9 @@ export default function EmailVerificationRequired() {
                         <div className="flex items-start space-x-3">
                             <Mail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                             <div>
-                                <h3 className="font-medium text-sm">Check your email</h3>
+                                <h3 className="font-medium text-sm">{t('auth.check_email')}</h3>
                                 <p className="text-sm text-gray-600">
-                                    We've sent a verification link to your email address.
+                                    {t('auth.required.step_email')}
                                 </p>
                             </div>
                         </div>
@@ -45,9 +47,9 @@ export default function EmailVerificationRequired() {
                         <div className="flex items-start space-x-3">
                             <Clock className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                             <div>
-                                <h3 className="font-medium text-sm">Click the link</h3>
+                                <h3 className="font-medium text-sm">{t('auth.required.step_click_title')}</h3>
                                 <p className="text-sm text-gray-600">
-                                    Follow the verification link in your email to complete the process.
+                                    {t('auth.required.step_click')}
                                 </p>
                             </div>
                         </div>
@@ -55,32 +57,32 @@ export default function EmailVerificationRequired() {
                         <div className="flex items-start space-x-3">
                             <ArrowRight className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                             <div>
-                                <h3 className="font-medium text-sm">Start shopping</h3>
+                                <h3 className="font-medium text-sm">{t('auth.required.step_shop_title')}</h3>
                                 <p className="text-sm text-gray-600">
-                                    Once verified, you'll have full access to checkout and account features.
+                                    {t('auth.required.step_shop')}
                                 </p>
                             </div>
                         </div>
                     </div>
 
                     <div className="space-y-3">
-                        <Button 
+                        <Button
                             onClick={handleResendVerification}
                             className="w-full"
                         >
-                            Resend verification email
+                            {t('auth.resend_verification')}
                         </Button>
-                        
+
                         <Link href={route('dashboard')}>
                             <Button variant="outline" className="w-full">
-                                Return to dashboard
+                                {t('auth.required.return_dashboard')}
                             </Button>
                         </Link>
                     </div>
 
                     <div className="text-center pt-4 border-t">
                         <p className="text-xs text-gray-500">
-                            Having trouble? Check your spam folder or contact support.
+                            {t('auth.required.trouble')}
                         </p>
                     </div>
                 </CardContent>

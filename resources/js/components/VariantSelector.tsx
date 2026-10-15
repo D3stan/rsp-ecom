@@ -1,5 +1,6 @@
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import useTranslation from '@/hooks/useTranslation';
 
 interface Variant {
     id: number;
@@ -16,12 +17,9 @@ interface VariantSelectorProps {
     label?: string;
 }
 
-export function VariantSelector({
-    variants,
-    selectedVariantId,
-    onVariantChange,
-    label = 'Variante',
-}: VariantSelectorProps) {
+export function VariantSelector({ variants, selectedVariantId, onVariantChange, label }: VariantSelectorProps) {
+    const { t } = useTranslation();
+
     // Don't render if only one variant
     if (variants.length <= 1) {
         return null;
@@ -29,10 +27,10 @@ export function VariantSelector({
 
     return (
         <div>
-            <Label className="mb-3 block text-sm font-medium text-gray-900">{label}</Label>
+            <Label className="mb-3 block text-sm font-medium text-gray-900">{label ?? t('product.variant.label')}</Label>
             <Select value={selectedVariantId.toString()} onValueChange={(value) => onVariantChange(Number(value))}>
                 <SelectTrigger className="w-full text-black">
-                    <SelectValue placeholder="Seleziona variante" />
+                    <SelectValue placeholder={t('product.variant.placeholder')} />
                 </SelectTrigger>
                 <SelectContent className="bg-white text-gray-900">
                     {variants.map((variant) => (
@@ -40,7 +38,9 @@ export function VariantSelector({
                             <span className="flex items-center justify-between gap-4">
                                 <span>{variant.name}</span>
                                 <span className="text-sm text-gray-500">
-                                    {variant.stock_quantity > 0 ? `${variant.stock_quantity} disponibili` : 'Esaurito'}
+                                    {variant.stock_quantity > 0
+                                        ? t('product.variant.available', { count: variant.stock_quantity })
+                                        : t('product.variant.out_of_stock')}
                                 </span>
                             </span>
                         </SelectItem>

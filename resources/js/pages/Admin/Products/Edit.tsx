@@ -67,7 +67,6 @@ interface Props {
     };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function EditProduct({ product, categories, sizes, uploadLimits }: Props) {
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const [deletedVariantIds, setDeletedVariantIds] = useState<number[]>([]);
@@ -91,7 +90,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
         }));
     };
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, processing, errors } = useForm({
         name: product.name,
         category_id: product.category_id.toString(),
         size_id: product.size_id.toString(),
@@ -104,14 +103,12 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
         variants: transformVariants(product.variants),
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [validationErrors, setValidationErrors] = useState<Record<string, boolean>>({});
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         // Client-side validation with field highlighting
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const clientErrors: Record<string, boolean> = {};
 
         if (!data.name.trim()) {
@@ -146,7 +143,6 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
         setValidationErrors({});
 
         // Check total file size before uploading
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let totalFileSize = 0;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (data.variants as any[]).forEach((variant: any) => {
@@ -225,7 +221,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
 
         router.post(route('admin.products.update', product.id), formData, {
             forceFormData: true,
-            onError: (errors: any) => {
+            onError: (errors: Record<string, string>) => {
                 console.error('Server errors:', errors);
                 // Display error to user
                 if (errors.error) {

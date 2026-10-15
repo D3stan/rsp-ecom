@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWishlist } from '@/hooks/useWishlist';
+import useTranslation from '@/hooks/useTranslation';
 import { usePage, Link } from '@inertiajs/react';
 import { type SharedData } from '@/types';
 
@@ -25,6 +26,7 @@ export const WishlistButton: React.FC<WishlistButtonProps> = ({
     disabled = false,
 }) => {
     const { auth } = usePage<SharedData>().props;
+    const { t } = useTranslation();
     const { inWishlist, isLoading, toggleWishlist } = useWishlist({
         productId,
         initialInWishlist,
@@ -45,11 +47,7 @@ export const WishlistButton: React.FC<WishlistButtonProps> = ({
             >
                 <Link href={route('login')}>
                     <Heart className="h-4 w-4 text-current" />
-                    {showText && (
-                        <span className="ml-2">
-                            Add to Wishlist
-                        </span>
-                    )}
+                    {showText && <span className="ml-2">{t('wishlist.add')}</span>}
                 </Link>
             </Button>
         );
@@ -89,9 +87,7 @@ export const WishlistButton: React.FC<WishlistButtonProps> = ({
         >
             <Heart className={getHeartClass()} />
             {showText && (
-                <span className="ml-2">
-                    {isLoading ? 'Loading...' : inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                </span>
+                <span className="ml-2">{isLoading ? t('wishlist.loading') : inWishlist ? t('wishlist.remove') : t('wishlist.add')}</span>
             )}
         </Button>
     );

@@ -177,7 +177,7 @@ export default function Home() {
 
     return (
         <>
-            <Head title="Home" />
+            <Head title={t('home.head_title')} />
 
             <LoadingOverlay isLoading={isLoading} className="min-h-screen bg-white">
                 {/* SEO H1 - Hidden from view but visible to search engines */}
@@ -218,7 +218,7 @@ export default function Home() {
                     <div className="absolute inset-0 z-5 flex items-center justify-center">
                         <RingMaskedImage
                             src="/images/hero/angel-eye.webp"
-                            alt="Angel Eye - Discover Amazing Products"
+                            alt={t('home.hero_alt')}
                             engine="framer"
                             mode="continuous"
                             innerRadiusPct={15}
@@ -352,7 +352,7 @@ export default function Home() {
                                                         handleAddToCart(product);
                                                     }}
                                                 >
-                                                    {addingToCartId === product.id ? 'Adding...' : t('add_to_cart')}
+                                                    {addingToCartId === product.id ? t('product.adding') : t('add_to_cart')}
                                                 </Button>
                                             </div>
                                             <div className="p-4">

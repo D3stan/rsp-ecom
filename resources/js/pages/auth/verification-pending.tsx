@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mail, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import useTranslation from '@/hooks/useTranslation';
 import AuthLayout from '@/layouts/auth-layout';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function VerificationPending({ email, status }: Props) {
+    const { t } = useTranslation();
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [canResend, setCanResend] = useState(true);
     const [isPolling, setIsPolling] = useState(true);
@@ -193,10 +195,10 @@ export default function VerificationPending({ email, status }: Props) {
 
     return (
         <AuthLayout
-            title="Verify your email"
-            description="We've sent you a verification link to complete your registration."
+            title={t('auth.pending.title')}
+            description={t('auth.pending.description')}
         >
-            <Head title="Verify Email" />
+            <Head title={t('auth.pending.head')} />
             
             <Card className="w-full max-w-md mx-auto">
                 <CardHeader className="text-center space-y-4">
@@ -204,9 +206,9 @@ export default function VerificationPending({ email, status }: Props) {
                         <Mail className="w-8 h-8 text-blue-600" />
                     </div>
                     <div className="space-y-2">
-                        <CardTitle className="text-2xl font-semibold">Check your email</CardTitle>
+                        <CardTitle className="text-2xl font-semibold">{t('auth.check_email')}</CardTitle>
                         <CardDescription className="text-base">
-                            We've sent a verification link to
+                            {t('auth.pending.sent_to')}
                         </CardDescription>
                         {email && (
                             <p className="font-medium text-sm text-white px-3 py-2 rounded-md">
@@ -244,7 +246,7 @@ export default function VerificationPending({ email, status }: Props) {
                         <Alert>
                             <CheckCircle className="h-4 w-4" />
                             <AlertDescription>
-                                A new verification link has been sent to your email address.
+                                {t('auth.pending.link_resent')}
                             </AlertDescription>
                         </Alert>
                     )}
@@ -261,7 +263,7 @@ export default function VerificationPending({ email, status }: Props) {
                             <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
                                 <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
                                 <p className="text-sm text-blue-800">
-                                    Waiting for email verification... This page will automatically refresh when you click the verification link.
+                                    {t('auth.pending.waiting')}
                                 </p>
                             </div>
                         </div>
@@ -271,19 +273,19 @@ export default function VerificationPending({ email, status }: Props) {
                         <div className="flex items-start space-x-3">
                             <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
                             <p>
-                                The verification link will expire in <strong>24 hours</strong> for security reasons.
+                                {t('auth.pending.expiry_before')} <strong>{t('auth.pending.expiry_duration')}</strong> {t('auth.pending.expiry_after')}
                             </p>
                         </div>
                         <div className="flex items-start space-x-3">
                             <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                             <p>
-                                Click the link in your email to complete your registration and start shopping.
+                                {t('auth.pending.tip_click')}
                             </p>
                         </div>
                         <div className="flex items-start space-x-3">
                             <Mail className="w-4 h-4 mt-0.5 flex-shrink-0" />
                             <p>
-                                You can verify from any device - this page will automatically update when verification is complete.
+                                {t('auth.pending.tip_device')}
                             </p>
                         </div>
                     </div>
@@ -291,20 +293,20 @@ export default function VerificationPending({ email, status }: Props) {
                     {verificationStatus !== 'verified' && (
                         <div className="border-t pt-4">
                             <p className="text-sm text-gray-500 mb-3">
-                                Didn't receive the email? Check your spam folder or request a new one:
+                                {t('auth.pending.no_email')}
                             </p>
 
                             <form onSubmit={handleResend} className="space-y-3">
                                 <div>
                                     <Label htmlFor="email" className="sr-only">
-                                        Email address
+                                        {t('auth.email_address')}
                                     </Label>
                                     <Input
                                         id="email"
                                         type="email"
                                         value={data.email}
                                         onChange={(e) => setData('email', e.target.value)}
-                                        placeholder="Enter your email address"
+                                        placeholder={t('auth.pending.email_placeholder')}
                                         required
                                         disabled={processing || verificationStatus !== 'pending'}
                                     />
@@ -319,12 +321,12 @@ export default function VerificationPending({ email, status }: Props) {
                                     {processing ? (
                                         <>
                                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            Sending...
+                                            {t('auth.pending.sending')}
                                         </>
                                     ) : !canResend && timeLeft ? (
-                                        `Resend in ${timeLeft}s`
+                                        t('auth.pending.resend_in', { seconds: timeLeft })
                                     ) : (
-                                        'Resend verification email'
+                                        t('auth.resend_verification')
                                     )}
                                 </Button>
                             </form>
@@ -334,7 +336,7 @@ export default function VerificationPending({ email, status }: Props) {
 
                 <CardFooter className="flex-col space-y-2">
                     <p className="text-xs text-gray-500 text-center">
-                        If you continue to have problems, please contact our support team.
+                        {t('auth.pending.support')}
                     </p>
                 </CardFooter>
             </Card>

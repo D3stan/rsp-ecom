@@ -239,7 +239,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                         <Link href="/" className={`flex items-center space-x-2 transition-colors duration-300`}>
                             <img
                                 src="/images/rsplogo.png"
-                                alt={name || 'Store'}
+                                alt={name || t('nav.store_fallback')}
                                 className={`h-8 brightness-0 ${isDarkTheme ? 'invert' : ''}`}
                                 onError={(e) => {
                                     // Fallback to favicon.ico if SVG fails
@@ -352,7 +352,7 @@ export default function Header({ transparent = false }: HeaderProps) {
             >
                 {/* Menu Header */}
                 <div className="flex items-center justify-between border-b border-gray-200 p-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Menu</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{t('nav.menu')}</h3>
                     <Button variant="ghost" size="icon" onClick={closeMenu}>
                         <X className="h-5 w-5" />
                     </Button>
@@ -363,7 +363,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                     <div className="space-y-6">
                         {/* Language Selector */}
                         <div className="space-y-2">
-                            <h4 className="text-sm font-medium text-gray-700">Language</h4>
+                            <h4 className="text-sm font-medium text-gray-700">{t('nav.language')}</h4>
                             <div className="flex items-center space-x-2">
                                 <Globe className="h-4 w-4 text-gray-600" />
                                 <Select

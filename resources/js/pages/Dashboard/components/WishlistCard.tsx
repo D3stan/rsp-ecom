@@ -8,7 +8,9 @@ import { useTranslation } from '@/hooks/useTranslation';
 export const WishlistCard = () => {
     const { props } = usePage<SharedData & { wishlistItems?: WishlistItem[] }>();
     const wishlistItems = props.wishlistItems || [];
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
+
+    const formatPrice = (value: number) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }).format(value);
 
     return (
         <Card className="w-full overflow-hidden">
@@ -44,16 +46,11 @@ export const WishlistCard = () => {
                                             {item.product.name}
                                         </h4>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-sm font-medium">
-                                                {new Intl.NumberFormat('en-US', {
-                                                    style: 'currency',
-                                                    currency: 'EUR',
-                                                }).format(item.product.price)}
-                                            </span>
+                                            <span className="text-sm font-medium">{formatPrice(item.product.price)}</span>
                                             {item.product.rating && (
                                                 <div className="flex items-center gap-1">
                                                     <span className="text-xs text-muted-foreground">
-                                                        ★{item.product.rating.toFixed(1)}
+                                                        {t('dashboard.rating_short', { rating: item.product.rating.toFixed(1) })}
                                                     </span>
                                                 </div>
                                             )}

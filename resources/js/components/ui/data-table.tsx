@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import useTranslation from '@/hooks/useTranslation';
 
 interface Column<T> {
     key: keyof T | string;
@@ -43,6 +44,7 @@ export function DataTable<T extends Record<string, unknown>>({
     emptyMessage = "No data available",
     loading = false
 }: DataTableProps<T>) {
+    const { t } = useTranslation();
     const getValue = (item: T, key: string) => {
         return key.split('.').reduce((obj: unknown, k: string) => {
             if (typeof obj === 'object' && obj !== null) {
@@ -87,7 +89,7 @@ export function DataTable<T extends Record<string, unknown>>({
                                 <td colSpan={columns.length} className="px-4 py-8 text-center">
                                     <div className="flex items-center justify-center">
                                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                                        <span className="ml-2">Loading...</span>
+                                        <span className="ml-2">{t('common.loading')}</span>
                                     </div>
                                 </td>
                             </tr>
@@ -119,7 +121,7 @@ export function DataTable<T extends Record<string, unknown>>({
             {pagination && pagination.last_page > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t">
                     <div className="text-sm text-muted-foreground">
-                        Showing {pagination.from} to {pagination.to} of {pagination.total} results
+                        {t('common.pagination_showing', { from: pagination.from, to: pagination.to, total: pagination.total })}
                     </div>
                     <div className="flex items-center space-x-2">
                         <Button
@@ -129,10 +131,10 @@ export function DataTable<T extends Record<string, unknown>>({
                             disabled={pagination.current_page === 1}
                         >
                             <ChevronLeft className="h-4 w-4" />
-                            Previous
+                            {t('common.previous')}
                         </Button>
                         <span className="text-sm">
-                            Page {pagination.current_page} of {pagination.last_page}
+                            {t('common.pagination_page', { current: pagination.current_page, last: pagination.last_page })}
                         </span>
                         <Button
                             variant="outline"
@@ -140,7 +142,7 @@ export function DataTable<T extends Record<string, unknown>>({
                             onClick={() => onPageChange?.(pagination.current_page + 1)}
                             disabled={pagination.current_page === pagination.last_page}
                         >
-                            Next
+                            {t('common.next')}
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>

@@ -9,7 +9,7 @@ export default function NotFound() {
     const { t } = useTranslation();
     return (
         <PublicLayout currentPage="home">
-            <Head title="404 Not Found" />
+            <Head title={t('error_pages.404.head_title')} />
 
             <div className="-mt-16 flex min-h-screen items-center justify-center px-4 py-0 pt-16">
                 <div className="mx-auto max-w-2xl text-center">

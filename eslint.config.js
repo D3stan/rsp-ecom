@@ -49,8 +49,10 @@ export default [
             'resources/js/pages/Admin/**',
             'resources/js/components/admin/**',
             'resources/js/components/admin-sidebar.tsx',
-            // Dead dev-only demos: not routed and not imported anywhere (storefront never renders them).
+            // Dead dev-only pages/demos: not routed and not imported anywhere (storefront never
+            // renders them). welcome.tsx is the unused Laravel starter page ('/' renders 'home').
             'resources/js/pages/ring-masked-image-test.tsx',
+            'resources/js/pages/welcome.tsx',
             'resources/js/components/RingMaskedImageDemo.tsx',
         ],
         plugins: {
