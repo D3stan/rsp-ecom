@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\OrdersController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\CategoriesAndSizesController;
+use App\Http\Controllers\Admin\ReviewMediaController;
 use App\Http\Controllers\Admin\ReviewsController;
 use App\Http\Controllers\Admin\NewsletterSubscribersController;
 use App\Http\Controllers\Admin\NewsletterCampaignsController;
@@ -50,6 +51,12 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('reviews/bulk-update', [ReviewsController::class, 'bulkUpdate'])->name('reviews.bulk-update');
     Route::patch('reviews/{review}/approve', [ReviewsController::class, 'approve'])->name('reviews.approve');
     Route::patch('reviews/{review}/reject', [ReviewsController::class, 'reject'])->name('reviews.reject');
+    Route::patch('reviews/{review}/approve-with-media', [ReviewsController::class, 'approveWithMedia'])->name('reviews.approve-with-media');
+    Route::scopeBindings()->group(function () {
+        Route::patch('reviews/{review}/media/{media}/approve', [ReviewMediaController::class, 'approve'])->name('reviews.media.approve');
+        Route::patch('reviews/{review}/media/{media}/reject', [ReviewMediaController::class, 'reject'])->name('reviews.media.reject');
+        Route::patch('reviews/{review}/media/{media}/feature', [ReviewMediaController::class, 'feature'])->name('reviews.media.feature');
+    });
     Route::resource('reviews', ReviewsController::class)->only(['index', 'show', 'update', 'destroy']);
 
     // Settings Management (registry-driven, docs/admin-settings.md)

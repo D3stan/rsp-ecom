@@ -42,6 +42,15 @@ class Product extends Model
 
     protected $appends = ['image_url'];
 
+    protected static function booted(): void
+    {
+        // The FK cascade would delete the reviews without model events: delete them one by one so Review
+        // removes their photo files from the public disk.
+        static::deleting(function (Product $product) {
+            $product->reviews()->get()->each->delete();
+        });
+    }
+
     public function getImageUrlAttribute(): string
     {
         // First, check if the default variant has images
