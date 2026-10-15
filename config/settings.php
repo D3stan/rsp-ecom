@@ -69,6 +69,7 @@ return [
         'tax' => ['icon' => 'Percent'],
         'shipping' => ['icon' => 'Truck'],
         'legal' => ['icon' => 'Scale'],
+        'compliance' => ['icon' => 'ShieldCheck'],
         'orders' => ['icon' => 'ShoppingCart'],
         'inventory' => ['icon' => 'Boxes'],
         'catalog' => ['icon' => 'LayoutGrid'],
@@ -128,11 +129,21 @@ return [
             'bridge_format' => 'keyed_by_code',
             'seed' => false,
         ],
+        // Items total after the coupon discount from which shipping is free (App\Support\Shipping). 0 = off.
+        ['key' => 'shipping.free_threshold', 'type' => 'float', 'default' => 1000, 'min' => 0, 'max' => 100000, 'unit' => 'EUR', 'public' => true],
 
         // ------------------------------------------------------------------ legal
         // EU statutory minimum for distance sales (Directive 2011/83/EU), set in config/shipping.php. Read-only: shown in
         // the admin, quoted by the policy pages (React: useSetting) and the order emails.
         ['key' => 'legal.withdrawal_days', 'type' => 'int', 'default' => (int) $shipping['withdrawal_days'], 'required' => true, 'min' => 14, 'max' => 365, 'unit' => 'days', 'access' => 'readonly', 'public' => true],
+
+        // ------------------------------------------------------------- compliance
+        // GPSR (Regulation (EU) 2023/988) block of the product page. Empty = the store's own identity
+        // (store.legal_name / store.address / contact.support_email), see ProductsController::compliance().
+        ['key' => 'compliance.manufacturer_name', 'type' => 'string', 'default' => '', 'max' => 160, 'public' => true],
+        ['key' => 'compliance.manufacturer_address', 'type' => 'text', 'default' => '', 'max' => 500, 'public' => true],
+        ['key' => 'compliance.manufacturer_email', 'type' => 'email', 'default' => '', 'public' => true],
+        ['key' => 'compliance.eu_responsible_person', 'type' => 'text', 'default' => '', 'max' => 500, 'public' => true],
 
         // ----------------------------------------------------------------- orders
         ['key' => 'orders.min_amount', 'type' => 'float', 'default' => 0, 'required' => true, 'min' => 0, 'max' => 100000, 'unit' => 'EUR', 'public' => true],
@@ -160,6 +171,8 @@ return [
         ['key' => 'email.order_delivered', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
         ['key' => 'email.order_cancelled', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
         ['key' => 'email.order_refunded', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
+        // Back-in-stock emails for items in carts and wishlists (customers can also opt out themselves)
+        ['key' => 'email.back_in_stock', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
 
         // --------------------------------------------------------------- tracking
         ['key' => 'tracking.auto_deliver', 'type' => 'bool', 'default' => (bool) $shipping['tracking']['auto_deliver'], 'config_bridge' => 'shipping.tracking.auto_deliver', 'seed' => false],

@@ -226,7 +226,16 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
             >
                 <div className="flex">
                     <div className="relative h-48 w-48 flex-shrink-0 bg-gray-50">
-                        <img src={imageSrc} alt={product.name} onError={handleImageError} className="relative z-10 h-full w-full object-cover" />
+                        <img
+                            src={imageSrc}
+                            alt={product.name}
+                            onError={handleImageError}
+                            loading="lazy"
+                            decoding="async"
+                            width={192}
+                            height={192}
+                            className="relative z-10 h-full w-full object-cover"
+                        />
                     </div>
                     <CardContent className="flex-1 bg-white p-8">
                         <div className="flex h-full justify-between">
@@ -329,6 +338,10 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                         src={imageSrc}
                         alt={product.name}
                         onError={handleImageError}
+                        loading="lazy"
+                        decoding="async"
+                        width={400}
+                        height={400}
                         className="relative z-10 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                 </div>

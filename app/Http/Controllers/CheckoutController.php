@@ -12,6 +12,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Support\CheckoutTotals;
 use App\Support\Money;
 use App\Support\Vat;
 use App\Models\CheckoutSnapshot;
@@ -65,7 +66,6 @@ class CheckoutController extends Controller
 
                 $order->load(['orderItems.product', 'orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant']);
                 $orderData = $order->toFrontendArray();
-                unset($orderData['guest_session_id']);
 
                 if ($order->isPaymentCompleted()) {
                     session()->forget('applied_coupon');
@@ -98,12 +98,12 @@ class CheckoutController extends Controller
             $isOwner = $order !== null
                 && ($order->isOwnedBy($request->user(), session()->getId()) || $request->hasValidSignature());
 
-            if (! $isOwner) {
-                $orderData = Arr::only($orderData, [
-                    'id', 'order_number', 'status', 'payment_status', 'created_at', 'currency',
-                    'subtotal', 'tax_amount', 'tax_rate', 'shipping_amount', 'discount_amount', 'total_amount', 'orderItems',
-                ]);
-            }
+            // The page shows the same order summary to everyone: the owner only gets the email in `session`.
+            // Whitelisted for the owner too, since the order row also holds internal notes and Stripe ids.
+            $orderData = Arr::only($orderData, [
+                'id', 'order_number', 'status', 'payment_status', 'created_at', 'currency',
+                'subtotal', 'tax_amount', 'tax_rate', 'shipping_amount', 'discount_amount', 'total_amount', 'orderItems',
+            ]);
 
             return Inertia::render('Checkout/Success', [
                 'order' => $orderData,
@@ -289,8 +289,8 @@ class CheckoutController extends Controller
         $appliedCoupon = session('applied_coupon');
 
         return [
-            'cart' => $cart,
-            'cartItems' => $cart->cartItems,
+            'cart' => ['id' => $cart->id],
+            'cartItems' => $this->summaryLines($cart),
             'subtotal' => $totals['items'],
             'shippingCost' => $totals['shipping'],
             'taxAmount' => $totals['vat']['amount'],
@@ -300,49 +300,46 @@ class CheckoutController extends Controller
             'discountAmount' => $totals['discount'],
             'total' => $totals['total'],
             'totalItems' => $cart->cartItems->sum('quantity'),
+            'freeShippingRemaining' => $totals['free_shipping_remaining'],
         ];
     }
 
     /**
-     * What the customer pays, in one place (used by both details pages and both Stripe checkouts):
-     * items (VAT-inclusive) - coupon discount + shipping, where shipping is the sum of the package sizes' own
-     * shipping_cost (Cart::shipping_cost); it is never waived or capped by the order value. VAT is the portion contained in the total.
+     * The lines of the order summary: what the customer sees, as plain values (no catalogue internals). The variant is
+     * the line's own one, else the product's default (as in the checkout snapshot).
      *
-     * @return array{items: float, shipping: float, discount: float, total: float, vat: array{rate: float|null, amount: float}}
+     * @return array<int, array{id: int, name: string, variant_name: string|null, image: string, quantity: int, price: float, total: float}>
+     */
+    private function summaryLines(\App\Models\Cart $cart): array
+    {
+        return $cart->cartItems->map(function ($item) {
+            $variant = $item->productVariant ?? $item->product?->defaultVariant;
+            $price = round((float) $item->price, 2);
+
+            return [
+                'id' => $item->id,
+                'name' => (string) ($item->product?->name ?? ''),
+                'variant_name' => $variant?->name,
+                // the variant's own photo when it has one, else the product's
+                'image' => ! empty($item->productVariant?->images)
+                    ? $item->productVariant->main_image_url
+                    : ($item->product?->image_url ?? '/images/product.png'),
+                'quantity' => (int) $item->quantity,
+                'price' => $price,
+                'total' => round($price * (int) $item->quantity, 2),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * What the customer pays (CheckoutTotals, shared with the cart page): used by both details pages and both
+     * Stripe checkouts, so the snapshot, the Stripe amount and the stored order follow the free-shipping rule too.
+     *
+     * @return array{items: float, shipping: float, discount: float, total: float, vat: array{rate: float|null, amount: float}, free_shipping_remaining: float|null}
      */
     private function checkoutTotals(\App\Models\Cart $cart): array
     {
-        $items = round((float) $cart->cartItems->sum(fn ($item) => $item->price * $item->quantity), 2);
-        $shipping = round((float) $cart->shipping_cost, 2);
-        $discount = $this->couponDiscount($items);
-        $total = round(max(0, $items + $shipping - $discount), 2);
-
-        return [
-            'items' => $items,
-            'shipping' => $shipping,
-            'discount' => $discount,
-            'total' => $total,
-            'vat' => Vat::includedIn($total),
-        ];
-    }
-
-    /**
-     * Discount of the coupon stored in the session on a VAT-inclusive items total
-     */
-    private function couponDiscount(float $itemsTotal): float
-    {
-        $appliedCoupon = session('applied_coupon');
-
-        if (! $appliedCoupon) {
-            return 0.0;
-        }
-
-        // Recalculate discount based on current subtotal for percentage discounts
-        if ($appliedCoupon['discount_type'] === 'percentage' && $appliedCoupon['discount_percentage'] > 0) {
-            return round($itemsTotal * ($appliedCoupon['discount_percentage'] / 100), 2);
-        }
-
-        return (float) min($appliedCoupon['discount_amount'], $itemsTotal);
+        return CheckoutTotals::for($cart, session('applied_coupon'));
     }
 
     /**
@@ -390,6 +387,9 @@ class CheckoutController extends Controller
         if (settings('orders.guest_checkout_enabled', true)) {
             return null;
         }
+
+        // Back to the checkout once signed in (the guest cart is merged into the user's cart at login)
+        redirect()->setIntendedUrl(route('checkout.details'));
 
         return redirect()->route('login')->with('error', __('checkout.guest_checkout_disabled'));
     }

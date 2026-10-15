@@ -183,8 +183,24 @@ test('cleanup command removes expired pending verifications', function () {
     expect(PendingUserVerification::count())->toBe(2);
 });
 
+// The status endpoint only answers the browser that registered the email (see
+// tests/Feature/Security/VerificationStatusLoginBypassTest.php): these tests register first.
+function registerForStatusPolling(): PendingUserVerification
+{
+    Notification::fake();
+
+    test()->post('/register', [
+        'name' => 'Test User',
+        'email' => 'polling@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ]);
+
+    return PendingUserVerification::where('email', 'polling@example.com')->sole();
+}
+
 test('verification status api returns correct status for pending verification', function () {
-    $pendingUser = PendingUserVerification::factory()->create();
+    $pendingUser = registerForStatusPolling();
 
     $response = $this->get(route('verification.status', ['email' => $pendingUser->email]));
 
@@ -196,7 +212,7 @@ test('verification status api returns correct status for pending verification', 
 });
 
 test('verification status api returns verified status after verification', function () {
-    $pendingUser = PendingUserVerification::factory()->create();
+    $pendingUser = registerForStatusPolling();
 
     // Manually create user (simulating verification process)
     $user = $pendingUser->createVerifiedUser();
@@ -206,13 +222,15 @@ test('verification status api returns verified status after verification', funct
     $response->assertOk()
         ->assertJson([
             'verified' => true,
-            'user_id' => $user->id,
+            'authenticated' => true,
         ])
+        ->assertJsonMissingPath('user_id')
         ->assertJsonStructure(['redirect_url']);
 });
 
 test('verification status api returns expired status for expired tokens', function () {
-    $pendingUser = PendingUserVerification::factory()->expired()->create();
+    $pendingUser = registerForStatusPolling();
+    $pendingUser->update(['token_expires_at' => now()->subHour()]);
 
     $response = $this->get(route('verification.status', ['email' => $pendingUser->email]));
 

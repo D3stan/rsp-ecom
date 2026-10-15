@@ -17,12 +17,12 @@ class DashboardController extends Controller
         
         $user = Auth::user();
         $orders = $user->orders()
-            ->with(['orderItems.product.category', 'orderItems.product.defaultVariant', 'orderItems.size'])
+            ->with(['orderItems.product.category', 'orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant'])
             ->latest()
             ->get()
             ->map(function ($order) {
-                // Format order data for frontend
-                $orderData = $order->toArray();
+                // Whitelisted fields only: the order row also holds internal notes and Stripe ids
+                $orderData = $order->toCustomerArray();
                 $orderData['total'] = $order->total_amount; // Add alias for backward compatibility
                 $orderData['tracking_number'] = $order->tracking_number; // Ensure tracking number is included
                 $orderData['order_items'] = $order->orderItems->map(function ($item) {
@@ -31,6 +31,8 @@ class DashboardController extends Controller
                         'order_id' => $item->order_id,
                         'product_id' => $item->product_id,
                         'product_name' => $item->product_name,
+                        // The chosen variant (null when it has since been deleted)
+                        'variant_name' => $item->productVariant?->name,
                         'quantity' => $item->quantity,
                         'price' => (float) $item->price,
                         'total' => (float) $item->total,

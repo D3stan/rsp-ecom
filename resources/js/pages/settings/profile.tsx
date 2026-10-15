@@ -3,6 +3,7 @@ import { Transition } from '@headlessui/react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
+import BackInStockPreference from '@/components/back-in-stock-preference';
 import DeleteUser from '@/components/delete-user';
 import GoogleAccountSettings from '@/components/google-account-settings';
 import HeadingSmall from '@/components/heading-small';
@@ -127,6 +128,8 @@ export default function Profile({
                 </div>
 
                 <NewsletterPreference newsletter={newsletter} />
+
+                <BackInStockPreference />
 
                 <GoogleAccountSettings />
 

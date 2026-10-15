@@ -29,7 +29,7 @@ export default function LoadingOverlay({ isLoading, children, className = '' }: 
             )}
 
             {/* Content with loading state styling */}
-            <div className={`transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'} select-none ${className}`}>{children}</div>
+            <div className={`transition-opacity duration-300 ${isLoading ? 'opacity-50 select-none' : 'opacity-100'} ${className}`}>{children}</div>
         </>
     );
 }

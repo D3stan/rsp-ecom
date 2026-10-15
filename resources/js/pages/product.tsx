@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Label } from '@/components/ui/label';
+import { ProductRatingSummary } from '@/components/product-rating-summary';
 import { VariantSelector } from '@/components/VariantSelector';
 import { WishlistButton } from '@/components/wishlist-button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -15,6 +16,8 @@ import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronLeft, ChevronRight, Heart, Minus, Plus, Share2, ShoppingCart, Star } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useInitialVariantId } from '@/hooks/use-initial-variant';
+import ProductSafety from '@/components/product/ProductSafety';
 
 interface ProductVariant {
     id: number;
@@ -36,6 +39,9 @@ interface Product {
         slug: string;
     } | null;
     variants: ProductVariant[];
+    average_rating: number | null;
+    review_count: number;
+    inWishlist: boolean;
     shipping: {
         size: string;
     };
@@ -87,13 +93,17 @@ export default function Product() {
     const defaultVariant = product.variants.find((v) => v.is_default) ?? product.variants[0];
 
     // State
-    const [selectedVariantId, setSelectedVariantId] = useState<number>(defaultVariant.id);
+    const [selectedVariantId, setSelectedVariantId] = useState<number>(useInitialVariantId(product.variants, defaultVariant.id));
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
     const [isAddingToCart, setIsAddingToCart] = useState(false);
     const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
     const [isSpecsOpen, setIsSpecsOpen] = useState(false);
     const [isReviewsOpen, setIsReviewsOpen] = useState(false);
+    const showReviews = () => {
+        setIsReviewsOpen(true);
+        document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     // Get selected variant
     const selectedVariant = product.variants.find((v) => v.id === selectedVariantId)!;
@@ -288,7 +298,15 @@ export default function Product() {
                                                 index === currentImageIndex ? 'border-black' : 'border-gray-200 hover:border-gray-400'
                                             }`}
                                         >
-                                            <img src={image} alt={`${product.name} ${index + 1}`} className="h-full w-full object-cover" />
+                                            <img
+                                                src={image}
+                                                alt={`${product.name} ${index + 1}`}
+                                                loading="lazy"
+                                                decoding="async"
+                                                width={80}
+                                                height={80}
+                                                className="h-full w-full object-cover"
+                                            />
                                         </button>
                                     ))}
                                 </div>
@@ -302,11 +320,7 @@ export default function Product() {
                                 {product.category && <p className="mb-2 text-sm text-gray-600">{product.category.name}</p>}
                                 <h1 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">{product.name}</h1>
 
-                                {/* Rating - placeholder for now */}
-                                <div className="mb-4 flex items-center space-x-2">
-                                    <div className="flex">{renderStars(0)}</div>
-                                    <span className="text-sm text-gray-600">(0 reviews)</span>
-                                </div>
+                                <ProductRatingSummary average={product.average_rating} count={product.review_count} onShowReviews={showReviews} />
 
                                 {/* Price */}
                                 <div className="mb-6 flex items-center space-x-3">
@@ -371,7 +385,7 @@ export default function Product() {
                                     {auth.user ? (
                                         <WishlistButton
                                             productId={product.id}
-                                            initialInWishlist={false}
+                                            initialInWishlist={product.inWishlist}
                                             showText={true}
                                             variant="outline"
                                             className="h-12"
@@ -401,9 +415,11 @@ export default function Product() {
                         </div>
                     </div>
 
+                    <ProductSafety variantId={selectedVariantId} />
+
                     {/* Reviews */}
                     {reviews.length > 0 && (
-                        <div className="mt-16 space-y-4">
+                        <div id="reviews" className="mt-16 scroll-mt-24 space-y-4">
                             <Collapsible open={isReviewsOpen} onOpenChange={setIsReviewsOpen} className="rounded-lg border border-gray-300">
                                 <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-gray-50 p-4 transition-colors hover:bg-gray-100">
                                     <span className="text-lg font-semibold text-gray-900">
@@ -442,6 +458,10 @@ export default function Product() {
                                             <img
                                                 src={relatedProduct.image}
                                                 alt={relatedProduct.name}
+                                                loading="lazy"
+                                                decoding="async"
+                                                width={300}
+                                                height={300}
                                                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                             />
                                         </div>

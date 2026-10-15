@@ -12,6 +12,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\GuestOrderController;
 use App\Http\Controllers\Api\PromotionController;
+use App\Http\Controllers\RestockUnsubscribeController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Newsletter\NewsletterController;
 use App\Shipping\Tracking\Http\TrackingWebhookController;
@@ -88,6 +89,13 @@ Route::get('/orders/{order}', [GuestOrderController::class, 'show'])
     ->middleware('throttle:60,1')
     ->name('orders.guest.show');
 
+// Unsubscribe from back-in-stock emails (signed link): GET asks to confirm, only POST acts (page button or RFC 8058
+// one-click from mail clients; CSRF-exempt, the signature protects it)
+Route::match(['get', 'post'], '/restock/unsubscribe/{user}', RestockUnsubscribeController::class)
+    ->whereNumber('user')
+    ->middleware('throttle:30,1')
+    ->name('restock.unsubscribe');
+
 // Remove test route since it was causing Inertia issues
 
 // Stripe webhook. Cashier's own routes are disabled (Cashier::ignoreRoutes() in AppServiceProvider::register) so that
@@ -138,14 +146,14 @@ Route::get('/api/translations/{locale}', function ($locale) {
         $locale = Locales::fallback();
     }
     
-    $translationFile = base_path("lang/{$locale}.json");
-    
-    if (file_exists($translationFile)) {
-        $translations = json_decode(file_get_contents($translationFile), true);
-        return response()->json($translations);
+    // English fills in any key the locale lacks (Locales::translations)
+    $translations = Locales::translations($locale);
+
+    if ($translations === []) {
+        return response()->json(['error' => 'Translations not found'], 404);
     }
-    
-    return response()->json(['error' => 'Translations not found'], 404);
+
+    return response()->json($translations);
 })->name('translations');
 
 // Language switching route
@@ -174,12 +182,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         // Get recent orders with items and products
         $recentOrders = $user->orders()
-            ->with(['orderItems.product', 'orderItems.size'])
+            ->with(['orderItems.product', 'orderItems.size', 'orderItems.productVariant'])
             ->latest()
             ->limit(5)
             ->get()
             ->map(function ($order) {
-                $orderData = $order->toArray();
+                // Whitelisted fields only: the order row also holds internal notes and Stripe ids
+                $orderData = $order->toCustomerArray();
                 $orderData['total'] = $order->total_amount; // Add alias for backward compatibility
                 $orderData['order_items'] = $order->orderItems->map(function ($item) {
                     return [
@@ -187,6 +196,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'order_id' => $item->order_id,
                         'product_id' => $item->product_id,
                         'product_name' => $item->product_name,
+                        'variant_name' => $item->productVariant?->name,
                         'quantity' => $item->quantity,
                         'price' => (float) $item->price,
                         'total' => (float) $item->total,
@@ -277,7 +287,7 @@ Sitemap: " . url('/sitemap.xml');
         ->header('Content-Type', 'text/plain');
 })->name('robots');
 
-// Fallback route for 404 errors - must be last
-Route::fallback(function () {
-    return Inertia::render('Errors/NotFound');
+// Fallback route for 404 errors - must be last. The status is 404 (not a soft 404), for Inertia visits too.
+Route::fallback(function (Request $request) {
+    return Inertia::render('Errors/NotFound')->toResponse($request)->setStatusCode(404);
 });

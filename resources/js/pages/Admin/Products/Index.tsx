@@ -71,16 +71,15 @@ interface PaginationLink {
 }
 
 interface Props {
+    // Laravel paginator as serialised by Inertia: the pagination fields sit next to `data` (no `meta`)
     products: {
         data: Product[];
-        meta: {
-            total: number;
-            per_page: number;
-            current_page: number;
-            last_page: number;
-            from: number;
-            to: number;
-        };
+        total: number;
+        per_page: number;
+        current_page: number;
+        last_page: number;
+        from: number | null;
+        to: number | null;
         links: PaginationLink[];
     };
     categories: Category[];
@@ -117,7 +116,14 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
 
     // Add safety checks for products data
     const productsData = products?.data || [];
-    const productsMeta = products?.meta || { total: 0, per_page: 15, current_page: 1, last_page: 1, from: 0, to: 0 };
+    const productsMeta = {
+        total: products?.total ?? 0,
+        per_page: products?.per_page ?? 20,
+        current_page: products?.current_page ?? 1,
+        last_page: products?.last_page ?? 1,
+        from: products?.from ?? 0,
+        to: products?.to ?? 0,
+    };
     const productsLinks = products?.links || [];
 
     // Instant filtering - apply filters immediately on change

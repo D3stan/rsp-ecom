@@ -17,6 +17,7 @@ class Product extends Model
         'name',
         'slug',
         'description',
+        'safety_information',
         'seo_title',
         'seo_description',
         'social_image_url',

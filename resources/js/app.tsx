@@ -4,6 +4,7 @@ import '../css/app.css';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
+import FlashToaster from './components/flash-toaster';
 import { ToastContainer } from './components/Toast';
 import { ToastProvider } from './contexts/ToastContext';
 import { TranslationProvider } from './contexts/TranslationContext';
@@ -33,10 +34,27 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
 
+        // Renders the page (this app has no persistent layouts) next to the FlashToaster: inside Inertia's page
+        // context, mounted once for every page (storefront, account and admin) and kept across visits.
         root.render(
             <AppWrapper pageProps={props}>
-                <App {...props} />
-            </AppWrapper>
+                <App {...props}>
+                    {({
+                        Component,
+                        props: pageProps,
+                        key,
+                    }: {
+                        Component: React.ComponentType;
+                        props: Record<string, unknown>;
+                        key: React.Key | null;
+                    }) => (
+                        <>
+                            <FlashToaster />
+                            <Component key={key} {...pageProps} />
+                        </>
+                    )}
+                </App>
+            </AppWrapper>,
         );
     },
     progress: {
