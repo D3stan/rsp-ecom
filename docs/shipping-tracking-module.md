@@ -449,3 +449,20 @@ and the waybill response format. All adapter tests use `Http::fake`; the real AP
 
 Guard rail: the Spediamo scan in `tests/Unit/Shipping/ArchitectureTest.php` allows the carrier name only in `Drivers/Spediamo/` (tracking and
 labels), `TrackingServiceProvider`, `LabelServiceProvider` and `config/shipping.php`.
+
+## Customer-facing tracking
+
+The customer sees their shipment on the account orders page (`Dashboard/Orders`), the account dashboard and the signed guest order page
+(`Orders/GuestShow`), through one shared React component (`resources/js/components/orders/OrderTracking.tsx`). The payload comes from
+`Order::customerTrackingArray()`, merged into the whitelisted customer order arrays (`Order::CUSTOMER_FIELDS` / `toCustomerArray()`, used by
+`DashboardController::orders`, the `/dashboard` closure and `GuestOrderController`):
+
+* `tracking_url` (`Order::trackingUrl()`, the active driver's public page, else the manual template), `carrier_name`
+  (`Order::trackingCarrierName()`), `tracking_status`, `tracking_last_synced_at`.
+* `tracking_events`: the `shipment_tracking_events` checkpoints the customer may see — **only** the provider-neutral `status` value
+  (rendered via the `tracking_admin.status.*` labels), `description`, `location` and `occurred_at`. The stored `raw` payload, the carrier's
+  own status string, the `provider` name, the `event_hash` and the `external_id` are never sent to the browser. The caller eager-loads the
+  `trackingEvents` relation, so there is no N+1.
+
+A cancelled order shows a dedicated "Cancelled" state (and "Refunded" when `payment_status` is refunded or partially refunded) instead of a
+tracking link. Nothing here is carrier specific.
