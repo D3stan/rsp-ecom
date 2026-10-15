@@ -50,6 +50,7 @@ class StripeWebhookListener
                 $this->reconcileRefunds($payload);
                 break;
             case 'charge.refund.updated':
+            case 'refund.updated': // the same refund object; newer API versions send this name
                 $this->reconcileRefunds($payload, update: true);
                 break;
             default:
@@ -118,7 +119,7 @@ class StripeWebhookListener
 
     /**
      * charge.refunded: record refunds made in the Stripe dashboard (and complete our own whose outcome was never
-     * stored). charge.refund.updated (the object is a refund): a refund that failed or was canceled after the fact is
+     * stored). charge.refund.updated / refund.updated (the object is a refund): a refund that failed or was canceled after the fact is
      * taken back. Idempotent, so a failure is logged critical and rethrown: Stripe retries the delivery.
      */
     private function reconcileRefunds(array $payload, bool $update = false): void

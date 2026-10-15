@@ -415,3 +415,16 @@ it('marks a recorded refund failed when Stripe later reports it failed, and give
         ->and($order->events()->where('type', 'refund_failed')->count())->toBe(1);
     Log::shouldHaveReceived('critical')->once()->withArgs(fn ($message) => str_contains($message, 'failed after'));
 });
+
+it('handles refund.updated like charge.refund.updated', function () {
+    $order = refundOrder();
+    Refund::create(['order_id' => $order->id, 'amount_cents' => 2000, 'currency' => 'EUR', 'status' => 'succeeded', 'stripe_refund_id' => 're_new_name', 'source' => 'admin']);
+    Order::whereKey($order->id)->update(['payment_status' => 'partially_refunded']);
+
+    app(StripeWebhookListener::class)->handle(new WebhookReceived(['id' => 'evt_n', 'type' => 'refund.updated', 'data' => ['object' => refundResponse('re_new_name', 2000, 'canceled') + [
+        'payment_intent' => 'pi_test_refund', 'metadata' => [],
+    ]]]));
+
+    expect(Refund::sole()->status)->toBe('failed')
+        ->and($order->fresh()->payment_status)->toBe('succeeded');
+});
