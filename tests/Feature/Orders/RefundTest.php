@@ -10,6 +10,7 @@ use App\Services\RefundService;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -293,4 +294,124 @@ it('forbids customers to refund', function () {
     $this->actingAs($customer)->post(route('admin.orders.refund', $order), ['amount' => 10])->assertForbidden();
 
     expect(refundRequests($this->stripeHttp))->toBe([]);
+});
+
+/** Idempotency-Key headers of the POSTs to /v1/refunds, in order. */
+function refundKeys(FakeStripeHttpClient $stripe): array
+{
+    $keys = [];
+
+    foreach ($stripe->requests as $index => $request) {
+        if (strtolower($request[0]) === 'post' && str_contains($request[1], '/v1/refunds')) {
+            $keys[] = collect($stripe->headers[$index])->first(fn ($header) => str_starts_with($header, 'Idempotency-Key: '));
+        }
+    }
+
+    return $keys;
+}
+
+it('keeps a refund pending and its amount reserved when Stripe times out', function () {
+    $order = refundOrder();
+    $this->stripeHttp->responses['/v1/refunds'] = ['__throw' => 'connection'];
+
+    $this->actingAs($this->admin)->post(route('admin.orders.refund', $order), ['amount' => 20.00])
+        ->assertSessionHas('warning', fn ($message) => str_contains($message, 'Do not retry'));
+
+    $refund = Refund::sole();
+    expect($refund->status)->toBe('pending')
+        ->and(app(RefundService::class)->refundableCents($order->fresh()))->toBe(3500)
+        ->and($order->fresh()->payment_status)->toBe('succeeded')
+        ->and($order->events()->where('type', 'refund_unconfirmed')->count())->toBe(1)
+        ->and(refundEmails())->toBe(0);
+});
+
+it('treats a Stripe 5xx as unconfirmed, not as failed', function () {
+    $order = refundOrder();
+    $this->stripeHttp->responses['/v1/refunds'] = ['__status' => 500, 'error' => ['type' => 'api_error', 'message' => 'Something went wrong on our end.']];
+
+    $this->actingAs($this->admin)->post(route('admin.orders.refund', $order), ['amount' => 20.00])->assertSessionHas('warning');
+
+    expect(Refund::sole()->status)->toBe('pending')
+        ->and(app(RefundService::class)->refundableCents($order->fresh()))->toBe(3500);
+});
+
+it('retries an unconfirmed refund with the same idempotency key', function () {
+    $order = refundOrder();
+    $this->stripeHttp->responses['/v1/refunds'] = ['__throw' => 'connection'];
+    $this->actingAs($this->admin)->post(route('admin.orders.refund', $order), ['amount' => 20.00]);
+    $refund = Refund::sole();
+
+    $this->stripeHttp->responses = [
+        'GET /v1/refunds' => ['object' => 'list', 'has_more' => false, 'data' => []],
+        'POST /v1/refunds' => refundResponse('re_retry', 2000),
+    ];
+    $this->actingAs($this->admin)->post(route('admin.orders.refunds.retry', [$order, $refund]))->assertSessionHas('success');
+
+    expect(refundKeys($this->stripeHttp))->toBe(['Idempotency-Key: refund:'.$refund->id, 'Idempotency-Key: refund:'.$refund->id])
+        ->and(Refund::count())->toBe(1)
+        ->and($refund->fresh()->status)->toBe('succeeded')
+        ->and($refund->fresh()->stripe_refund_id)->toBe('re_retry')
+        ->and($order->fresh()->payment_status)->toBe('partially_refunded')
+        ->and(refundEmails())->toBe(1);
+});
+
+it('completes a retried refund from the one Stripe already made, without sending it again', function () {
+    $order = refundOrder();
+    $this->stripeHttp->responses['/v1/refunds'] = ['__throw' => 'connection'];
+    $this->actingAs($this->admin)->post(route('admin.orders.refund', $order), ['amount' => 20.00]);
+    $refund = Refund::sole();
+
+    $this->stripeHttp->responses = ['GET /v1/refunds' => ['object' => 'list', 'has_more' => false, 'data' => [
+        refundResponse('re_made', 2000) + ['metadata' => ['refund_id' => (string) $refund->id]],
+    ]]];
+    $this->actingAs($this->admin)->post(route('admin.orders.refunds.retry', [$order, $refund]))->assertSessionHas('success');
+
+    expect(refundKeys($this->stripeHttp))->toHaveCount(1) // only the first, unconfirmed attempt
+        ->and($refund->fresh()->status)->toBe('succeeded')
+        ->and($refund->fresh()->stripe_refund_id)->toBe('re_made');
+});
+
+it('only retries pending refunds, and only for admins', function () {
+    $order = refundOrder();
+    $done = Refund::create(['order_id' => $order->id, 'amount_cents' => 1000, 'currency' => 'EUR', 'status' => 'succeeded', 'stripe_refund_id' => 're_done', 'source' => 'admin']);
+    $customer = User::factory()->create(['role' => 'customer']);
+
+    $this->actingAs($customer)->post(route('admin.orders.refunds.retry', [$order, $done]))->assertForbidden();
+    $this->actingAs($this->admin)->post(route('admin.orders.refunds.retry', [$order, $done]))->assertSessionHas('error');
+
+    expect($this->stripeHttp->requests)->toBe([]);
+});
+
+it('records a dashboard refund that Stripe still reports as pending', function () {
+    $order = refundOrder();
+
+    app(StripeWebhookListener::class)->handle(new WebhookReceived(['id' => 'evt_p', 'type' => 'charge.refunded', 'data' => ['object' => [
+        'id' => 'ch_1', 'object' => 'charge', 'payment_intent' => 'pi_test_refund',
+        'refunds' => ['object' => 'list', 'has_more' => false, 'data' => [refundResponse('re_pend', 1000, 'pending') + ['metadata' => []]]],
+    ]]]));
+
+    expect(Refund::sole()->only(['stripe_refund_id', 'status', 'source']))->toBe(['stripe_refund_id' => 're_pend', 'status' => 'succeeded', 'source' => 'stripe_dashboard'])
+        ->and($order->fresh()->payment_status)->toBe('partially_refunded');
+});
+
+it('marks a recorded refund failed when Stripe later reports it failed, and gives the money state back', function () {
+    $order = refundOrder();
+    $this->stripeHttp->responses['/v1/refunds'] = refundResponse('re_later', 5500, 'pending');
+    $this->actingAs($this->admin)->post(route('admin.orders.refund', $order), ['amount' => 55.00]);
+    expect($order->fresh()->payment_status)->toBe('refunded');
+    Log::spy();
+
+    $update = new WebhookReceived(['id' => 'evt_u', 'type' => 'charge.refund.updated', 'data' => ['object' => refundResponse('re_later', 5500, 'failed') + [
+        'payment_intent' => 'pi_test_refund', 'failure_reason' => 'expired_or_canceled_card', 'metadata' => [],
+    ]]]);
+    app(StripeWebhookListener::class)->handle($update);
+    app(StripeWebhookListener::class)->handle($update); // retried delivery
+
+    $refund = Refund::sole();
+    expect($refund->status)->toBe('failed')
+        ->and($refund->failure_message)->toContain('expired_or_canceled_card')
+        ->and($order->fresh()->payment_status)->toBe('succeeded')
+        ->and(app(RefundService::class)->refundableCents($order->fresh()))->toBe(5500)
+        ->and($order->events()->where('type', 'refund_failed')->count())->toBe(1);
+    Log::shouldHaveReceived('critical')->once()->withArgs(fn ($message) => str_contains($message, 'failed after'));
 });

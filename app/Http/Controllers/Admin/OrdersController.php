@@ -7,6 +7,7 @@ use App\Exceptions\InvalidOrderTransition;
 use App\Exceptions\OrderEditRefused;
 use App\Exceptions\RefundFailed;
 use App\Exceptions\RefundRefused;
+use App\Exceptions\RefundUnconfirmed;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Refund;
@@ -21,6 +22,10 @@ use Inertia\Response;
 
 class OrdersController extends Controller
 {
+    /** Stripe may have refunded or not (timeout, 5xx): the refund stays pending and is settled automatically. */
+    private const REFUND_UNCONFIRMED_MESSAGE = 'Stripe did not confirm the refund yet; it will be updated automatically. Do not retry with a new refund: '
+        .'if it stays pending, use "Retry" on it (it resends the same request, so it cannot be paid twice).';
+
     /**
      * Display a listing of orders
      */
@@ -438,9 +443,30 @@ class OrdersController extends Controller
             return back()->withErrors(['amount' => $e->getMessage()])->with('error', $e->getMessage());
         } catch (RefundFailed $e) {
             return back()->with('error', 'Stripe did not execute the refund: '.$e->getMessage());
+        } catch (RefundUnconfirmed) {
+            return back()->with('warning', self::REFUND_UNCONFIRMED_MESSAGE);
         }
 
         return back()->with('success', sprintf('Refund of %s %s issued.', number_format($refund->amount(), 2, ',', '.'), $refund->currency));
+    }
+
+    /**
+     * Settle a refund Stripe did not confirm (still pending): looks it up at Stripe, else re-sends it under the same
+     * idempotency key, so it can never be paid twice.
+     */
+    public function retryRefund(Request $request, Order $order, Refund $refund, RefundService $refunds)
+    {
+        try {
+            $refund = $refunds->retry($refund, $request->user());
+        } catch (RefundRefused $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (RefundFailed $e) {
+            return back()->with('error', 'Stripe did not execute the refund: '.$e->getMessage());
+        } catch (RefundUnconfirmed) {
+            return back()->with('warning', self::REFUND_UNCONFIRMED_MESSAGE);
+        }
+
+        return back()->with('success', sprintf('Refund of %s %s confirmed by Stripe.', number_format($refund->amount(), 2, ',', '.'), $refund->currency));
     }
 
     /**

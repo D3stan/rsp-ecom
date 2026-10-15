@@ -49,6 +49,9 @@ class StripeWebhookListener
             case 'charge.refunded':
                 $this->reconcileRefunds($payload);
                 break;
+            case 'charge.refund.updated':
+                $this->reconcileRefunds($payload, update: true);
+                break;
             default:
                 Log::info('Unhandled webhook event type: '.$payload['type']);
                 break;
@@ -115,20 +118,22 @@ class StripeWebhookListener
 
     /**
      * charge.refunded: record refunds made in the Stripe dashboard (and complete our own whose outcome was never
-     * stored). Idempotent, so a failure is logged critical and rethrown: Stripe retries the delivery.
+     * stored). charge.refund.updated (the object is a refund): a refund that failed or was canceled after the fact is
+     * taken back. Idempotent, so a failure is logged critical and rethrown: Stripe retries the delivery.
      */
-    private function reconcileRefunds(array $payload): void
+    private function reconcileRefunds(array $payload, bool $update = false): void
     {
-        $charge = $payload['data']['object'];
+        $object = $payload['data']['object'];
 
         try {
-            $applied = app(RefundService::class)->reconcileCharge($charge);
+            $service = app(RefundService::class);
+            $applied = $update ? $service->reconcileRefundUpdate($object) : $service->reconcileCharge($object);
 
-            Log::info('charge.refunded processed', ['event_id' => $payload['id'], 'charge' => $charge['id'] ?? null, 'applied' => $applied]);
+            Log::info($payload['type'].' processed', ['event_id' => $payload['id'], 'object' => $object['id'] ?? null, 'applied' => $applied]);
         } catch (Throwable $e) {
             Log::critical('Stripe refund could not be recorded', [
                 'event_id' => $payload['id'],
-                'charge' => $charge['id'] ?? null,
+                'object' => $object['id'] ?? null,
                 'exception' => get_class($e),
                 'error' => $e->getMessage(),
             ]);

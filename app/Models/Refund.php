@@ -22,11 +22,12 @@ class Refund extends Model
     public const SOURCE_STRIPE_DASHBOARD = 'stripe_dashboard';
 
     protected $fillable = [
-        'order_id', 'amount_cents', 'currency', 'reason', 'status', 'stripe_refund_id', 'failure_message', 'source', 'created_by',
+        'order_id', 'amount_cents', 'currency', 'reason', 'status', 'stripe_refund_id', 'failure_message', 'source', 'created_by', 'restock',
     ];
 
     protected $casts = [
         'amount_cents' => 'integer',
+        'restock' => 'array',
     ];
 
     public function order(): BelongsTo

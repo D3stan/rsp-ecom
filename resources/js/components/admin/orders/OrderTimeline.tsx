@@ -5,7 +5,7 @@ import { type ReactNode } from 'react';
 /** One order_events row as Admin\OrdersController::show sends it (OrderEvent::toTimelineArray). */
 export interface OrderTimelineEvent {
     id: number;
-    type: 'status_changed' | 'refund' | 'refund_failed' | 'note' | string;
+    type: 'status_changed' | 'refund' | 'refund_failed' | 'refund_unconfirmed' | 'note' | string;
     from_status: string | null;
     to_status: string | null;
     reason: string | null;
@@ -35,7 +35,7 @@ function Step({ icon, tone, title, children }: { icon: ReactNode; tone: string; 
 }
 
 function iconFor(event: OrderTimelineEvent): [ReactNode, string] {
-    if (event.type === 'refund' || event.type === 'refund_failed') {
+    if (event.type === 'refund' || event.type === 'refund_failed' || event.type === 'refund_unconfirmed') {
         return [<CreditCard className="h-4 w-4 text-amber-600" />, 'bg-amber-100'];
     }
     if (event.type === 'note') {
@@ -70,6 +70,8 @@ export default function OrderTimeline({ createdAt, status, events, formatDate }:
                 return `${t('admin.orders.timeline.refund')}${amountOf(event)}`;
             case 'refund_failed':
                 return `${t('admin.orders.timeline.refund_failed')}${amountOf(event)}`;
+            case 'refund_unconfirmed':
+                return `${t('admin.orders.timeline.refund_unconfirmed')}${amountOf(event)}`;
             default:
                 return t('admin.orders.timeline.note');
         }

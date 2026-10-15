@@ -24,6 +24,8 @@ return new class extends Migration
             $table->string('stripe_refund_id')->nullable()->unique();
             $table->text('failure_message')->nullable();
             $table->enum('source', ['admin', 'stripe_dashboard'])->default('admin');
+            // units to put back in stock once the refund succeeds ({order_item_id: qty}); kept for retries and webhooks
+            $table->json('restock')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 

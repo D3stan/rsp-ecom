@@ -93,6 +93,13 @@ export default function OrderRefunds({ orderId, currency, shippingAmount, lines,
     const [open, setOpen] = useState(false);
     const [confirming, setConfirming] = useState(false);
     const [busy, setBusy] = useState(false);
+    const [retrying, setRetrying] = useState<number | null>(null);
+
+    // Same Stripe request under the same idempotency key: safe, it can never pay twice
+    const retry = (refundId: number) => {
+        setRetrying(refundId);
+        router.post(`/admin/orders/${orderId}/refunds/${refundId}/retry`, {}, { preserveScroll: true, onFinish: () => setRetrying(null) });
+    };
     const [includeShipping, setIncludeShipping] = useState(true);
     const [amount, setAmount] = useState(defaultAmount(true));
     const [reason, setReason] = useState('');
@@ -175,6 +182,14 @@ export default function OrderRefunds({ orderId, currency, shippingAmount, lines,
                             </p>
                             {refund.reason && <p className="break-words text-muted-foreground italic">“{refund.reason}”</p>}
                             {refund.failure_message && <p className="break-words text-red-600">{refund.failure_message}</p>}
+                            {refund.status === 'pending' && (
+                                <div className="flex items-center justify-between gap-2 pt-1">
+                                    <p className="text-muted-foreground">{t('admin.orders.refunds.pending_hint')}</p>
+                                    <Button size="sm" variant="outline" onClick={() => retry(refund.id)} disabled={retrying !== null}>
+                                        {t('admin.orders.refunds.retry')}
+                                    </Button>
+                                </div>
+                            )}
                         </li>
                     ))}
                 </ul>

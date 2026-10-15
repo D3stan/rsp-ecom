@@ -19,6 +19,9 @@ class OrderEvent extends Model
 
     public const TYPE_REFUND_FAILED = 'refund_failed';
 
+    /** Stripe did not answer clearly (timeout, 5xx): the refund stays pending until it is confirmed. */
+    public const TYPE_REFUND_UNCONFIRMED = 'refund_unconfirmed';
+
     public const TYPE_NOTE = 'note';
 
     protected $fillable = ['order_id', 'actor_id', 'type', 'from_status', 'to_status', 'payload'];
