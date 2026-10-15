@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\VariantRestocked;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Stock bookkeeping of paid orders. product_variants.stock_quantity is the source of truth; the legacy mirror
+ * Stock bookkeeping of paid orders (and manual corrections). product_variants.stock_quantity is the source of truth; the legacy mirror
  * products.stock_quantity follows the default variant through Product::syncStockMirror().
  *
  * A paid order is never rejected for lack of stock (the customer already paid): the shortfall is recorded per line in
@@ -204,6 +205,73 @@ class StockService
 
             return $done;
         });
+    }
+
+    /**
+     * Apply a manual stock correction as a change relative to the current stock, under a row lock, so units sold
+     * meanwhile stay sold (an admin form posts what it loaded and what was typed; the difference is the delta).
+     * Clamped at zero, with a warning in the log. Does not touch the products' stock mirror (the caller syncs it).
+     *
+     * @return array{0: int, 1: int}|null [stock before, stock after], or null when the variant no longer exists
+     */
+    public function adjustVariantStock(int $variantId, int $delta): ?array
+    {
+        return DB::transaction(function () use ($variantId, $delta) {
+            $variant = ProductVariant::query()->whereKey($variantId)->lockForUpdate()->first();
+
+            if (! $variant) {
+                return null;
+            }
+
+            $before = (int) $variant->stock_quantity;
+            $after = max(0, $before + $delta);
+
+            if ($before + $delta < 0) {
+                Log::warning('Manual stock adjustment clamped at zero', [
+                    'variant_id' => $variant->id,
+                    'stock_before' => $before,
+                    'delta' => $delta,
+                ]);
+            }
+
+            if ($after !== $before) {
+                $variant->update(['stock_quantity' => $after]);
+            }
+
+            return [$before, $after];
+        });
+    }
+
+    /**
+     * The single entry point of back-in-stock notifications: announce a variant that became sellable (active with
+     * stock > 0) after being out of stock or inactive. The event is dispatched after the surrounding transaction
+     * commits. Called by ProductVariantObserver for every Eloquent write; code that updates product_variants with a
+     * query-builder UPDATE (no model events) must call it itself with the values before and after its change.
+     *
+     * Wishlists are per product, so their owners are only told when no other variant of the product could be bought
+     * at this moment (read here, inside the writer's transaction, so two variants restocked in one save notify the
+     * wishlists once).
+     *
+     * @return bool whether a restock was announced
+     */
+    public function announceIfRestocked(int $variantId, int $stockBefore, int $stockAfter, bool $wasActive = true, bool $isActive = true): bool
+    {
+        if (($wasActive && $stockBefore > 0) || ! ($isActive && $stockAfter > 0)) {
+            return false;
+        }
+
+        $productId = ProductVariant::query()->whereKey($variantId)->value('product_id');
+
+        $otherSellable = $productId !== null && ProductVariant::query()
+            ->where('product_id', $productId)
+            ->whereKeyNot($variantId)
+            ->where('status', 'active')
+            ->where('stock_quantity', '>', 0)
+            ->exists();
+
+        VariantRestocked::dispatch($variantId, ! $otherSellable);
+
+        return true;
     }
 
     /**

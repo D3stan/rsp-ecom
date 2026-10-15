@@ -7,6 +7,8 @@ use App\Models\PendingUserVerification;
 use App\Models\User;
 use App\Notifications\PendingUserEmailVerification;
 use App\Services\EmailService;
+use App\Services\Newsletter\MarketingConsent;
+use App\Support\RegistrationAutoLogin;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,6 +39,7 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class.'|unique:'.PendingUserVerification::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'newsletter' => ['sometimes', 'boolean'],
         ]);
 
         // Create pending verification record instead of user
@@ -48,9 +51,17 @@ class RegisteredUserController extends Controller
             'token_expires_at' => now()->addHours(24),
         ]);
 
+        // This browser is the one the "verification pending" page may log in once the email is verified
+        RegistrationAutoLogin::remember($request, $pendingUser->email);
+
         // Send verification email
         Notification::route('mail', $pendingUser->email)
             ->notify(new PendingUserEmailVerification($pendingUser));
+
+        // Unticked by default; the double opt-in mail goes out next to the account verification mail
+        if ($request->boolean('newsletter') && settings('newsletter.enabled', false)) {
+            app(MarketingConsent::class)->subscribe($pendingUser->email, 'register', app()->getLocale(), null, $request->ip(), $request->userAgent());
+        }
 
         return redirect()->route('verification.pending')->with('email', $pendingUser->email);
     }

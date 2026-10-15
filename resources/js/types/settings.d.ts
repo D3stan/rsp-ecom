@@ -29,6 +29,7 @@ export interface PublicSettings {
     'shipping.delivery_days_max': number;
     'shipping.destinations': string[];
     'shipping.default_country': string;
+    'shipping.free_threshold': number;
     'legal.withdrawal_days': number;
     'orders.min_amount': number;
     'orders.max_qty_per_line': number;
@@ -37,6 +38,7 @@ export interface PublicSettings {
     'orders.order_notes_max': number;
     'inventory.low_stock_threshold': number;
     'catalog.per_page': number;
+    'newsletter.enabled': boolean;
 }
 
 /** Catalogue key of a setting shared with the frontend (`settings` Inertia prop). */

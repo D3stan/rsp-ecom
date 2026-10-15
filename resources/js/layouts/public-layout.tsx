@@ -1,6 +1,7 @@
 import FooterLegalLine from '@/components/footer-legal-line';
 import FooterSocialLinks from '@/components/footer-social-links';
 import Header from '@/components/header';
+import NewsletterSignup from '@/components/newsletter/NewsletterSignup';
 import { useSetting } from '@/hooks/use-setting';
 import useTranslation from '@/hooks/useTranslation';
 import { Link } from '@inertiajs/react';
@@ -77,6 +78,8 @@ export default function PublicLayout({ children, transparent = false, currentPag
 
                         <FooterSocialLinks />
                     </div>
+
+                    <NewsletterSignup className="mt-8" />
 
                     <div className="mt-8 border-t border-gray-800 pt-8 text-center text-gray-400">
                         <p>

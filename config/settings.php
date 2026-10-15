@@ -69,6 +69,7 @@ return [
         'tax' => ['icon' => 'Percent'],
         'shipping' => ['icon' => 'Truck'],
         'legal' => ['icon' => 'Scale'],
+        'compliance' => ['icon' => 'ShieldCheck'],
         'orders' => ['icon' => 'ShoppingCart'],
         'inventory' => ['icon' => 'Boxes'],
         'catalog' => ['icon' => 'LayoutGrid'],
@@ -76,6 +77,7 @@ return [
         'email' => ['icon' => 'Mail'],
         'tracking' => ['icon' => 'MapPin'],
         'seo' => ['icon' => 'Search'],
+        'newsletter' => ['icon' => 'Newspaper'],
         'system' => ['icon' => 'Server', 'readonly_panel' => true],
     ],
 
@@ -127,11 +129,21 @@ return [
             'bridge_format' => 'keyed_by_code',
             'seed' => false,
         ],
+        // Items total after the coupon discount from which shipping is free (App\Support\Shipping). 0 = off.
+        ['key' => 'shipping.free_threshold', 'type' => 'float', 'default' => 1000, 'min' => 0, 'max' => 100000, 'unit' => 'EUR', 'public' => true],
 
         // ------------------------------------------------------------------ legal
         // EU statutory minimum for distance sales (Directive 2011/83/EU), set in config/shipping.php. Read-only: shown in
         // the admin, quoted by the policy pages (React: useSetting) and the order emails.
         ['key' => 'legal.withdrawal_days', 'type' => 'int', 'default' => (int) $shipping['withdrawal_days'], 'required' => true, 'min' => 14, 'max' => 365, 'unit' => 'days', 'access' => 'readonly', 'public' => true],
+
+        // ------------------------------------------------------------- compliance
+        // GPSR (Regulation (EU) 2023/988) block of the product page. Empty = the store's own identity
+        // (store.legal_name / store.address / contact.support_email), see ProductsController::compliance().
+        ['key' => 'compliance.manufacturer_name', 'type' => 'string', 'default' => '', 'max' => 160, 'public' => true],
+        ['key' => 'compliance.manufacturer_address', 'type' => 'text', 'default' => '', 'max' => 500, 'public' => true],
+        ['key' => 'compliance.manufacturer_email', 'type' => 'email', 'default' => '', 'public' => true],
+        ['key' => 'compliance.eu_responsible_person', 'type' => 'text', 'default' => '', 'max' => 500, 'public' => true],
 
         // ----------------------------------------------------------------- orders
         ['key' => 'orders.min_amount', 'type' => 'float', 'default' => 0, 'required' => true, 'min' => 0, 'max' => 100000, 'unit' => 'EUR', 'public' => true],
@@ -139,6 +151,9 @@ return [
         ['key' => 'orders.guest_checkout_enabled', 'type' => 'bool', 'default' => true, 'public' => true, 'risk' => 'high'],
         ['key' => 'orders.public_link_days', 'type' => 'int', 'default' => 30, 'required' => true, 'min' => 1, 'max' => 365, 'unit' => 'days', 'public' => true],
         ['key' => 'orders.order_notes_max', 'type' => 'int', 'default' => 500, 'required' => true, 'min' => 50, 'max' => 500, 'unit' => 'chars', 'public' => true],
+        // Lifetime of a Stripe checkout session (Stripe accepts 30 minutes to 24 hours). The abandoned-checkout reminder
+        // is only queued once the session has expired, so a customer never holds two live payment pages for one cart.
+        ['key' => 'orders.checkout_expiry_minutes', 'type' => 'int', 'default' => 60, 'required' => true, 'min' => 30, 'max' => 1440, 'unit' => 'minutes'],
 
         // -------------------------------------------------------------- inventory
         ['key' => 'inventory.low_stock_threshold', 'type' => 'int', 'default' => 10, 'required' => true, 'min' => 0, 'max' => 1000, 'public' => true],
@@ -156,6 +171,8 @@ return [
         ['key' => 'email.order_delivered', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
         ['key' => 'email.order_cancelled', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
         ['key' => 'email.order_refunded', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
+        // Back-in-stock emails for items in carts and wishlists (customers can also opt out themselves)
+        ['key' => 'email.back_in_stock', 'type' => 'bool', 'default' => true, 'depends_on' => 'email.enabled'],
 
         // --------------------------------------------------------------- tracking
         ['key' => 'tracking.auto_deliver', 'type' => 'bool', 'default' => (bool) $shipping['tracking']['auto_deliver'], 'config_bridge' => 'shipping.tracking.auto_deliver', 'seed' => false],
@@ -164,6 +181,15 @@ return [
         // Overlaid on seotools.* at boot (the package builds its singletons lazily, after our provider has booted).
         ['key' => 'seo.default_description', 'type' => 'text', 'default' => (string) config('seotools.meta.defaults.description', ''), 'max' => 320, 'public' => false, 'config_bridge' => ['seotools.meta.defaults.description', 'seotools.opengraph.defaults.description'], 'seed' => false],
         ['key' => 'seo.keywords', 'type' => 'list', 'default' => array_values((array) config('seotools.meta.defaults.keywords', [])), 'max' => 30, 'item_max' => 60, 'config_bridge' => 'seotools.meta.defaults.keywords', 'seed' => false],
+
+        // ------------------------------------------------------------- newsletter
+        // Off hides every sign-up form (footer, registration, account, checkout). Empty sender name = the store name.
+        ['key' => 'newsletter.enabled', 'type' => 'bool', 'default' => false, 'public' => true],
+        ['key' => 'newsletter.sender_name', 'type' => 'string', 'default' => '', 'max' => 120],
+        ['key' => 'newsletter.send_rate_per_minute', 'type' => 'int', 'default' => 60, 'required' => true, 'min' => 1, 'max' => 600, 'unit' => '/min'],
+        // One reminder after an abandoned checkout, only to customers who ticked the marketing consent at checkout
+        ['key' => 'newsletter.abandoned_checkout_enabled', 'type' => 'bool', 'default' => false],
+        ['key' => 'newsletter.abandoned_checkout_delay_minutes', 'type' => 'int', 'default' => 60, 'required' => true, 'min' => 0, 'max' => 2880, 'unit' => 'minutes', 'depends_on' => 'newsletter.abandoned_checkout_enabled'],
     ],
 
     /*

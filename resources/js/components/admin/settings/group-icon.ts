@@ -3,6 +3,7 @@ import {
     LayoutGrid,
     Mail,
     MapPin,
+    Newspaper,
     Percent,
     Phone,
     Scale,
@@ -10,6 +11,7 @@ import {
     Server,
     Settings,
     Share2,
+    ShieldCheck,
     ShoppingCart,
     Star,
     Store,
@@ -25,6 +27,7 @@ const GROUP_ICONS: Record<string, LucideIcon> = {
     Percent,
     Truck,
     Scale,
+    ShieldCheck,
     ShoppingCart,
     Boxes,
     LayoutGrid,
@@ -32,6 +35,7 @@ const GROUP_ICONS: Record<string, LucideIcon> = {
     Mail,
     MapPin,
     Search,
+    Newspaper,
     Server,
 };
 

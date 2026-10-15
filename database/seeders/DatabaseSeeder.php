@@ -12,6 +12,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Production gets only what the shop needs to run: settings defaults (never overwrites existing rows)
+        // and the admin from ADMIN_EMAIL / ADMIN_PASSWORD (UserSeeder). No demo data, no demo credentials.
+        if (app()->isProduction()) {
+            $this->call([SettingsSeeder::class, UserSeeder::class]);
+            $this->command->warn('Production: demo data skipped (catalogue, pages, addresses, orders, reviews, wishlists).');
+
+            return;
+        }
+
         $this->command->info('Starting database seeding...');
         $this->command->info('Volume multiplier: ' . SeederConfig::VOLUME_MULTIPLIER);
         

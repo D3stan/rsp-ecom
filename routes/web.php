@@ -4,6 +4,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CheckoutRecoveryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\CategoryController;
@@ -11,7 +12,9 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\GuestOrderController;
 use App\Http\Controllers\Api\PromotionController;
+use App\Http\Controllers\RestockUnsubscribeController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\Newsletter\NewsletterController;
 use App\Shipping\Tracking\Http\TrackingWebhookController;
 use App\Support\Locales;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
@@ -78,10 +81,20 @@ Route::post('/guest/checkout/cart', [CheckoutController::class, 'guestCartChecko
 Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
 
+// "Complete your order" link of the abandoned-checkout reminder (signed, 7 days): rebuilds the cart
+Route::get('/checkout/recover/{snapshot}', CheckoutRecoveryController::class)->middleware(['signed', 'throttle:30,1'])->name('checkout.recover');
+
 // Order-status page for guests, reached through the signed link in the emails (Order::publicUrl())
 Route::get('/orders/{order}', [GuestOrderController::class, 'show'])
     ->middleware('throttle:60,1')
     ->name('orders.guest.show');
+
+// Unsubscribe from back-in-stock emails (signed link): GET asks to confirm, only POST acts (page button or RFC 8058
+// one-click from mail clients; CSRF-exempt, the signature protects it)
+Route::match(['get', 'post'], '/restock/unsubscribe/{user}', RestockUnsubscribeController::class)
+    ->whereNumber('user')
+    ->middleware('throttle:30,1')
+    ->name('restock.unsubscribe');
 
 // Remove test route since it was causing Inertia issues
 
@@ -115,6 +128,14 @@ Route::get('/terms', [PageController::class, 'terms'])->name('terms');
 
 Route::get('/faq', [PageController::class, 'faq'])->name('faq');
 
+// Newsletter: sign-up + double opt-in (only while newsletter.enabled), unsubscribe (always; signed link from every
+// marketing email; the POST is also the RFC 8058 one-click target, CSRF-exempt in bootstrap/app.php)
+Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->middleware('throttle:5,1')->name('newsletter.subscribe');
+Route::get('/newsletter/confirm/{token}', [NewsletterController::class, 'showConfirm'])->middleware('throttle:30,1')->name('newsletter.confirm');
+Route::post('/newsletter/confirm/{token}', [NewsletterController::class, 'confirm'])->middleware('throttle:10,1')->name('newsletter.confirm.store');
+Route::get('/newsletter/unsubscribe/{subscriber}', [NewsletterController::class, 'showUnsubscribe'])->middleware(['signed', 'throttle:60,1'])->name('newsletter.unsubscribe');
+Route::post('/newsletter/unsubscribe/{subscriber}', [NewsletterController::class, 'unsubscribe'])->middleware(['signed', 'throttle:60,1'])->name('newsletter.unsubscribe.store');
+
 // API routes for AJAX calls
 Route::prefix('api')->group(function () {
     Route::post('/promotion/validate', [PromotionController::class, 'validate'])->name('api.promotion.validate');
@@ -125,14 +146,14 @@ Route::get('/api/translations/{locale}', function ($locale) {
         $locale = Locales::fallback();
     }
     
-    $translationFile = base_path("lang/{$locale}.json");
-    
-    if (file_exists($translationFile)) {
-        $translations = json_decode(file_get_contents($translationFile), true);
-        return response()->json($translations);
+    // English fills in any key the locale lacks (Locales::translations)
+    $translations = Locales::translations($locale);
+
+    if ($translations === []) {
+        return response()->json(['error' => 'Translations not found'], 404);
     }
-    
-    return response()->json(['error' => 'Translations not found'], 404);
+
+    return response()->json($translations);
 })->name('translations');
 
 // Language switching route
@@ -161,12 +182,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         // Get recent orders with items and products
         $recentOrders = $user->orders()
-            ->with(['orderItems.product', 'orderItems.size'])
+            ->with(['orderItems.product', 'orderItems.size', 'orderItems.productVariant'])
             ->latest()
             ->limit(5)
             ->get()
             ->map(function ($order) {
-                $orderData = $order->toArray();
+                // Whitelisted fields only: the order row also holds internal notes and Stripe ids
+                $orderData = $order->toCustomerArray();
                 $orderData['total'] = $order->total_amount; // Add alias for backward compatibility
                 $orderData['order_items'] = $order->orderItems->map(function ($item) {
                     return [
@@ -174,6 +196,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'order_id' => $item->order_id,
                         'product_id' => $item->product_id,
                         'product_name' => $item->product_name,
+                        'variant_name' => $item->productVariant?->name,
                         'quantity' => $item->quantity,
                         'price' => (float) $item->price,
                         'total' => (float) $item->total,
@@ -264,7 +287,7 @@ Sitemap: " . url('/sitemap.xml');
         ->header('Content-Type', 'text/plain');
 })->name('robots');
 
-// Fallback route for 404 errors - must be last
-Route::fallback(function () {
-    return Inertia::render('Errors/NotFound');
+// Fallback route for 404 errors - must be last. The status is 404 (not a soft 404), for Inertia visits too.
+Route::fallback(function (Request $request) {
+    return Inertia::render('Errors/NotFound')->toResponse($request)->setStatusCode(404);
 });

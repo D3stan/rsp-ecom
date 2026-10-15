@@ -30,7 +30,8 @@ class CategoryFactory extends Factory
         ];
 
         $categoryName = $this->faker->randomElement(array_keys($categories));
-        $slug = strtolower(str_replace([' ', '&'], ['-', 'and'], $categoryName));
+        // slug is unique: a suffix keeps tests that create several products (each with its own category) from colliding
+        $slug = strtolower(str_replace([' ', '&'], ['-', 'and'], $categoryName)).'-'.$this->faker->unique()->numberBetween(1, 999999);
 
         return [
             'name' => $categoryName,

@@ -205,7 +205,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                                         <div className="space-y-2">
                                             <CardTitle className="flex items-center gap-2">
                                                 <Package className="h-5 w-5" />
-                                                {t('orders.order_number', { id: order.id })}
+                                                {t('orders.order_number', { id: order.order_number })}
                                             </CardTitle>
                                             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                                                 <div className="flex items-center gap-1">
@@ -283,9 +283,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                                                                     <div className="flex-1 min-w-0">
                                                                         <h5 className="font-medium truncate">{item.product.name}</h5>
                                                                         <div className="flex flex-wrap gap-2 mt-1 text-sm text-muted-foreground">
-                                                                            {item.size && (
-                                                                                <span>{t('orders.size')}: {item.size.name}</span>
-                                                                            )}
+                                                                            {item.variant_name && <span>{item.variant_name}</span>}
                                                                             <span>{t('orders.qty')}: {item.quantity}</span>
                                                                         </div>
                                                                         <div className="flex items-center justify-between mt-2">

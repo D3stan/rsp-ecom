@@ -1,3 +1,4 @@
+import ShippingLine from '@/components/checkout/ShippingLine';
 import Header from '@/components/header';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,14 @@ interface CartItem {
         image: string;
         category?: string;
     };
+    variant: {
+        id: number;
+        name: string;
+        price: number;
+        image: string | null;
+        /** Stock of the variant */
+        max_quantity: number;
+    } | null;
     quantity: number;
     price: number;
     total: number;
@@ -43,11 +52,12 @@ interface CartPageProps extends SharedData {
     couponCode?: string;
     total: number;
     totalItems: number;
+    freeShippingRemaining?: number | null;
 }
 
 export default function Cart() {
     const pageProps = usePage<CartPageProps>().props;
-    const { cartItems, subtotal, shippingCost, discountAmount, discountDescription, couponCode, total, totalItems } = pageProps;
+    const { cartItems, subtotal, shippingCost, discountAmount, discountDescription, couponCode, total, totalItems, freeShippingRemaining } = pageProps;
     const { auth } = pageProps;
     const isMobile = useIsMobile();
     const { t, isLoading } = useTranslation();
@@ -57,6 +67,13 @@ export default function Cart() {
     // Admin settings (Settings > Orders): minimum order amount (products only, 0 = off) and guest checkout switch
     const minAmount = useSetting('orders.min_amount', 0);
     const guestCheckoutEnabled = useSetting('orders.guest_checkout_enabled', true);
+    const maxQtyPerLine = useSetting('orders.max_qty_per_line', 0);
+
+    // Highest quantity a line can reach: its variant's stock, capped by orders.max_qty_per_line (0 = unlimited)
+    const lineMax = (item: CartItem): number => {
+        const stock = item.variant ? item.variant.max_quantity : Infinity;
+        return maxQtyPerLine > 0 ? Math.min(stock, maxQtyPerLine) : stock;
+    };
     const belowMinimum = minAmount > 0 && subtotal < minAmount;
     const needsSignIn = !auth?.user && !guestCheckoutEnabled;
 
@@ -132,8 +149,9 @@ export default function Cart() {
         }
 
         if (needsSignIn) {
-            // Guest checkout is switched off: the customer has to sign in first
-            router.get('/login');
+            // Guest checkout is switched off: the customer has to sign in first. The checkout details page requires
+            // a login, so the server remembers it as the intended URL and returns there after sign-in.
+            router.get(route('checkout.details'));
         } else if (auth?.user) {
             // User is authenticated, proceed to checkout details page
             router.get('/checkout');
@@ -309,11 +327,7 @@ export default function Cart() {
                                                     </p>
                                                 )}
 
-                                                {item.size && (
-                                                    <p className="text-sm text-gray-600">
-                                                        {t('cart.size')}: {item.size}
-                                                    </p>
-                                                )}
+                                                {item.variant?.name && <p className="text-sm text-gray-600">{item.variant.name}</p>}
                                             </div>
 
                                             {/* Quantity Controls */}
@@ -334,7 +348,7 @@ export default function Cart() {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                        disabled={isUpdating === item.id}
+                                                        disabled={item.quantity >= lineMax(item) || isUpdating === item.id}
                                                         className="h-8 w-8 p-0"
                                                     >
                                                         <Plus className="h-4 w-4" />
@@ -418,10 +432,11 @@ export default function Cart() {
                                         <span>{t('cart.subtotal')}</span>
                                         <span>{formatCurrency(subtotal)}</span>
                                     </div>
-                                    <div className="flex justify-between text-gray-700">
-                                        <span>{t('cart.shipping')}</span>
-                                        <span>{formatCurrency(shippingCost)}</span>
-                                    </div>
+                                    <ShippingLine
+                                        shippingCost={shippingCost}
+                                        freeShippingRemaining={freeShippingRemaining}
+                                        className="flex justify-between text-gray-700"
+                                    />
                                     {(discountAmount ?? 0) > 0 && (
                                         <div className="flex justify-between text-green-600">
                                             <span>{t('cart.discount')} {discountDescription && `(${discountDescription})`}</span>
@@ -460,7 +475,7 @@ export default function Cart() {
                                         <div className="hidden text-center md:block">
                                             <p className="mb-2 text-sm text-gray-600">{t('cart.already_have_account')}</p>
                                             <Button variant="outline" asChild className="w-full">
-                                                <Link href="/login">{t('cart.sign_in_to_continue')}</Link>
+                                                <Link href={route('checkout.details')}>{t('cart.sign_in_to_continue')}</Link>
                                             </Button>
                                         </div>
                                     )}

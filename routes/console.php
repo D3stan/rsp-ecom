@@ -57,3 +57,8 @@ Schedule::command('tracking:sync')
 Schedule::command('model:prune', ['--model' => \App\Models\CheckoutSnapshot::class])
     ->daily()
     ->withoutOverlapping();
+
+// Newsletter: start scheduled campaigns when they are due (the sending itself runs on the queue, rate-limited)
+Schedule::command('newsletter:dispatch-scheduled')
+    ->everyMinute()
+    ->withoutOverlapping();

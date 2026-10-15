@@ -4,6 +4,7 @@ import { FormEventHandler } from 'react';
 
 import GoogleButton from '@/components/google-button';
 import InputError from '@/components/input-error';
+import NewsletterConsentCheckbox from '@/components/newsletter/NewsletterConsentCheckbox';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ type RegisterForm = {
     email: string;
     password: string;
     password_confirmation: string;
+    newsletter: boolean;
 };
 
 export default function Register() {
@@ -23,6 +25,7 @@ export default function Register() {
         email: '',
         password: '',
         password_confirmation: '',
+        newsletter: false,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -117,6 +120,13 @@ export default function Register() {
                         />
                         <InputError message={errors.password_confirmation} />
                     </div>
+
+                    <NewsletterConsentCheckbox
+                        id="newsletter"
+                        checked={data.newsletter}
+                        onCheckedChange={(checked) => setData('newsletter', checked)}
+                        disabled={processing}
+                    />
 
                     <Button type="submit" className="mt-2 w-full" tabIndex={5} disabled={processing}>
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}

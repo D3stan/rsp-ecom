@@ -71,7 +71,7 @@ export const LatestOrderCard = () => {
                         <div className="p-4 border rounded-lg bg-muted/20 overflow-hidden">
                             <div className="flex items-center justify-between mb-3 gap-4">
                                 <div className="min-w-0 flex-1">
-                                    <h4 className="font-medium truncate">{t('dashboard.order_number', { id: latestOrder.id })}</h4>
+                                    <h4 className="font-medium truncate">{t('dashboard.order_number', { id: latestOrder.order_number })}</h4>
                                     <p className="text-sm text-muted-foreground truncate">
                                         {formatDate(latestOrder.created_at)} • {latestOrder.order_items.length} {latestOrder.order_items.length === 1 ? t('dashboard.item') : t('dashboard.items')}
                                     </p>
@@ -94,10 +94,8 @@ export const LatestOrderCard = () => {
                                     <div key={item.id} className="flex items-center justify-between text-sm gap-4">
                                         <div className="flex-1 min-w-0">
                                             <span className="font-medium truncate block">{item.product.name}</span>
-                                            {item.size && (
-                                                <span className="text-muted-foreground truncate block">
-                                                    • {t('orders.size')}: {item.size.name}
-                                                </span>
+                                            {item.variant_name && (
+                                                <span className="text-muted-foreground truncate block">• {item.variant_name}</span>
                                             )}
                                         </div>
                                         <div className="text-muted-foreground flex-shrink-0">
@@ -121,7 +119,7 @@ export const LatestOrderCard = () => {
                                         {getOrderStatusIcon(order.status)}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-medium truncate">{t('dashboard.order_number', { id: order.id })}</p>
+                                        <p className="text-sm font-medium truncate">{t('dashboard.order_number', { id: order.order_number })}</p>
                                         <p className="text-xs text-muted-foreground truncate">
                                             {formatDate(order.created_at)}
                                         </p>

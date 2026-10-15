@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Services\EmailService;
+use App\Services\Newsletter\AbandonedCheckoutReminders;
 use App\Services\OrderCreationService;
 use App\Services\RefundService;
 use Illuminate\Support\Facades\Log;
@@ -45,6 +46,7 @@ class StripeWebhookListener
                 break;
             case 'checkout.session.expired':
                 $this->closeUnpaidSession($payload, 'expired');
+                app(AbandonedCheckoutReminders::class)->sessionExpired($payload['data']['object']);
                 break;
             case 'charge.refunded':
                 $this->reconcileRefunds($payload);

@@ -1,3 +1,4 @@
+import { SafetyInformationField } from '@/components/admin/SafetyInformationField';
 import { VariantManager } from '@/components/admin/VariantManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +27,7 @@ interface FormData {
     base_sku: string;
     seo_title: string;
     seo_description: string;
+    safety_information: string;
     variants: Array<{
         name: string;
         sku_suffix: string;
@@ -73,6 +75,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
         base_sku: '',
         seo_title: '',
         seo_description: '',
+        safety_information: '',
         variants: [
             {
                 name: 'Standard',
@@ -134,6 +137,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
         formData.append('base_sku', data.base_sku);
         formData.append('seo_title', data.seo_title);
         formData.append('seo_description', data.seo_description);
+        formData.append('safety_information', data.safety_information);
 
         // Add variants as JSON (without images)
         const variantsForJson = data.variants.map((v, index) => ({
@@ -291,6 +295,12 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                         Featured Product
                                     </Label>
                                 </div>
+
+                                <SafetyInformationField
+                                    value={data.safety_information}
+                                    onChange={(value) => setData('safety_information', value)}
+                                    error={errors.safety_information}
+                                />
                             </div>
                         </CardContent>
                     </Card>

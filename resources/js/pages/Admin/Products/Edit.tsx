@@ -1,3 +1,4 @@
+import { SafetyInformationField } from '@/components/admin/SafetyInformationField';
 import { VariantManager } from '@/components/admin/VariantManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,6 +49,7 @@ interface Product {
     size_id: number;
     seo_title: string | null;
     seo_description: string | null;
+    safety_information: string | null;
     variants: ProductVariant[];
 }
 
@@ -79,6 +81,8 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
             sku_suffix: v.sku_suffix,
             price: v.price.toString(),
             stock_quantity: v.stock_quantity.toString(),
+            // The stock as loaded: the server applies (typed - loaded) so orders placed meanwhile are kept
+            stock_quantity_original: v.stock_quantity,
             description: v.description || '',
             is_default: v.is_default,
             sort_order: v.sort_order,
@@ -96,6 +100,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
         base_sku: product.base_sku || '',
         seo_title: product.seo_title || '',
         seo_description: product.seo_description || '',
+        safety_information: product.safety_information || '',
         variants: transformVariants(product.variants),
     });
 
@@ -173,6 +178,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
         formData.append('base_sku', data.base_sku as string);
         formData.append('seo_title', data.seo_title as string);
         formData.append('seo_description', data.seo_description as string);
+        formData.append('safety_information', data.safety_information as string);
 
         // Add variants as JSON (without images, with existing_images)
         // Note: existing_images contains full URLs, backend will extract filenames using basename()
@@ -183,6 +189,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
             sku_suffix: v.sku_suffix,
             price: v.price,
             stock_quantity: v.stock_quantity,
+            stock_quantity_original: v.stock_quantity_original, // undefined (omitted) for new variants
             description: v.description,
             is_default: v.is_default,
             sort_order: v.sort_order,
@@ -225,6 +232,9 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
                     alert('Error: ' + errors.error);
                 } else if (errors.variants) {
                     alert('Variant error: ' + errors.variants);
+                } else if (Object.keys(errors).some((key) => key.endsWith('.stock_quantity_original'))) {
+                    // The page was loaded before the stock-delta form existed: the server asks for a reload
+                    alert(Object.entries(errors).find(([key]) => key.endsWith('.stock_quantity_original'))?.[1]);
                 } else {
                     alert('An error occurred. Check console for details.');
                 }
@@ -389,6 +399,12 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
                                         Featured Product
                                     </Label>
                                 </div>
+
+                                <SafetyInformationField
+                                    value={data.safety_information as string}
+                                    onChange={(value) => setData('safety_information', value)}
+                                    error={formErrors.safety_information}
+                                />
                             </div>
                         </CardContent>
                     </Card>
