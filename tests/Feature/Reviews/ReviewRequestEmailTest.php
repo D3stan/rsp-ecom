@@ -180,3 +180,15 @@ it('carries a one-click unsubscribe header and link', function () {
 
     $mailable->assertSeeInHtml($subscriber->unsubscribeUrl());
 });
+
+it('renders the review request with a product link in every locale without leaking keys', function (string $locale) {
+    $product = CatalogFixtures::product(['name' => 'Angel Eye Kit']);
+    $order = deliveredOrder($this->customer, $product, ['locale' => $locale]);
+
+    $html = (new ReviewRequest($order->fresh()))->locale($locale)->render();
+
+    expect($html)->toContain('Angel Eye Kit')
+        ->toContain('/reviews/create/'.$product->id)
+        ->not->toContain('emails.review_request')
+        ->not->toContain('settings.');
+})->with(['en', 'it', 'de', 'fr', 'es']);
