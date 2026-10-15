@@ -1,3 +1,4 @@
+import ReviewMediaModeration, { type AdminReviewMedia } from '@/components/reviews/admin/ReviewMediaModeration';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -7,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import {
@@ -19,6 +21,7 @@ import {
     Clock,
     Eye,
     Filter,
+    Image as ImageIcon,
     MessageSquare,
     MoreHorizontal,
     Search,
@@ -50,6 +53,7 @@ interface Review {
     is_approved: boolean;
     created_at: string;
     updated_at: string;
+    media?: AdminReviewMedia[];
 }
 
 interface KPIs {
@@ -58,6 +62,7 @@ interface KPIs {
     pending: number;
     this_week: number;
     average_rating: number;
+    pending_photos: number;
 }
 
 interface PaginationLink {
@@ -104,6 +109,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState<number | null>(null);
     const { addToast } = useToast();
+    const { t } = useTranslation();
 
     // Add safety checks for reviews data
     const reviewsData = reviews?.data || [];
@@ -294,7 +300,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                         </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-4 space-y-4">
-                        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+                        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <MessageSquare className="h-4 w-4 text-blue-600" />
@@ -351,6 +357,17 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                     <p className="text-xs text-muted-foreground">New reviews</p>
                                 </div>
                             </Card>
+
+                            <Card className="p-4">
+                                <div className="mb-2 flex items-center space-x-2">
+                                    <ImageIcon className="h-4 w-4 text-orange-600" />
+                                    <h3 className="text-xs font-medium">{t('reviews.admin.kpi_pending_photos')}</h3>
+                                </div>
+                                <div>
+                                    <p className="text-lg font-bold">{kpis.pending_photos}</p>
+                                    <p className="text-xs text-muted-foreground">{t('reviews.admin.kpi_pending_photos_hint')}</p>
+                                </div>
+                            </Card>
                         </div>
                     </CollapsibleContent>
                 </Collapsible>
@@ -381,6 +398,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                     <option value="">All Status</option>
                                     <option value="approved">Approved</option>
                                     <option value="pending">Pending</option>
+                                    <option value="photos">{t('reviews.admin.filter_photos')}</option>
                                 </select>
                             </div>
 
@@ -471,8 +489,14 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                 />
                                             </td>
                                             <td className="p-4">
-                                                <div className="max-w-xs">
+                                                <div className="max-w-xs space-y-2">
                                                     <p className="line-clamp-2 text-sm">{review.comment || 'No comment provided'}</p>
+                                                    <ReviewMediaModeration
+                                                        reviewId={review.id}
+                                                        reviewApproved={review.is_approved}
+                                                        media={review.media ?? []}
+                                                        compact
+                                                    />
                                                 </div>
                                             </td>
                                             <td className="p-4">
@@ -644,8 +668,14 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                         <div>{renderStars(review.rating)}</div>
 
                                         {/* Review Content */}
-                                        <div>
+                                        <div className="space-y-2">
                                             <p className="text-sm">{review.comment || 'No comment provided'}</p>
+                                            <ReviewMediaModeration
+                                                reviewId={review.id}
+                                                reviewApproved={review.is_approved}
+                                                media={review.media ?? []}
+                                                compact
+                                            />
                                         </div>
 
                                         {/* Product & Customer Info */}

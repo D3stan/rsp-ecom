@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Review;
+use App\Models\ReviewMedia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,7 +18,7 @@ class ReviewsController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Review::with(['user', 'product'])
+        $query = Review::with(['user', 'product', 'media'])
             ->orderBy('created_at', 'desc');
 
         // Apply filters - default to pending reviews
@@ -25,6 +27,9 @@ class ReviewsController extends Controller
                 $query->approved();
             } elseif ($request->status === 'pending') {
                 $query->pending();
+            } elseif ($request->status === 'photos') {
+                // Photos always wait for moderation, also on reviews whose text was auto-approved
+                $query->whereHas('media', fn ($media) => $media->where('status', ReviewMedia::STATUS_PENDING));
             }
             // If status is empty string, show all
         } else {
@@ -62,7 +67,7 @@ class ReviewsController extends Controller
 
         // Transform the pagination response to ensure proper structure
         $reviewsData = [
-            'data' => $reviews->items(),
+            'data' => collect($reviews->items())->map(fn (Review $review) => $this->withMedia($review))->all(),
             'meta' => [
                 'total' => $reviews->total(),
                 'per_page' => $reviews->perPage(),
@@ -85,6 +90,7 @@ class ReviewsController extends Controller
             'pending' => Review::pending()->count(),
             'this_week' => Review::whereDate('created_at', '>=', $thisWeek)->count(),
             'average_rating' => (float) (Review::approved()->avg('rating') ?? 0),
+            'pending_photos' => ReviewMedia::where('status', ReviewMedia::STATUS_PENDING)->count(),
         ];
 
         $filters = $request->only(['status', 'rating', 'search', 'date_from', 'date_to']);
@@ -105,7 +111,7 @@ class ReviewsController extends Controller
      */
     public function show(Review $review): Response
     {
-        $review->load(['user', 'product']);
+        $review->load(['user', 'product', 'media']);
 
         // Get navigation data for next/previous reviews
         $nextReview = Review::where('id', '>', $review->id)
@@ -117,7 +123,7 @@ class ReviewsController extends Controller
             ->first();
 
         return Inertia::render('Admin/Reviews/Show', [
-            'review' => $review,
+            'review' => $this->withMedia($review),
             'navigation' => [
                 'next' => $nextReview ? ['id' => $nextReview->id] : null,
                 'previous' => $previousReview ? ['id' => $previousReview->id] : null,
@@ -135,7 +141,8 @@ class ReviewsController extends Controller
                 'is_approved' => 'required|boolean',
             ]);
 
-            $review->update(['is_approved' => $request->is_approved]);
+            // reject() also rejects the photos
+            $request->boolean('is_approved') ? $review->approve() : $review->reject();
 
             $action = $request->is_approved ? 'approved' : 'rejected';
             
@@ -205,6 +212,18 @@ class ReviewsController extends Controller
     }
 
     /**
+     * Approve a review together with its pending photos
+     */
+    public function approveWithMedia(Review $review)
+    {
+        $review->approveWithMedia();
+
+        Log::info('Review approved with photos', ['review_id' => $review->id]);
+
+        return back()->with('success', __('reviews.admin.approved_with_photos'));
+    }
+
+    /**
      * Bulk approve/reject reviews
      */
     public function bulkUpdate(Request $request)
@@ -218,8 +237,14 @@ class ReviewsController extends Controller
 
             $isApproved = $request->action === 'approve';
             
-            $updatedCount = Review::whereIn('id', $request->review_ids)
-                ->update(['is_approved' => $isApproved]);
+            DB::transaction(function () use ($request, $isApproved) {
+                Review::whereIn('id', $request->review_ids)->update(['is_approved' => $isApproved]);
+
+                // Rejecting a review rejects its photos; approving leaves them to per-photo moderation
+                if (! $isApproved) {
+                    Review::rejectMediaOf($request->review_ids);
+                }
+            });
 
             $count = count($request->review_ids);
             $action = $request->action . 'd';
@@ -258,5 +283,17 @@ class ReviewsController extends Controller
             ]);
             return back()->with('error', 'Failed to delete review.');
         }
+    }
+
+    /**
+     * A review for the moderation pages, with every photo (all states) and its URLs.
+     *
+     * @return array<string, mixed>
+     */
+    private function withMedia(Review $review): array
+    {
+        return array_merge($review->toArray(), [
+            'media' => $review->media->map->toAdminArray()->values()->all(),
+        ]);
     }
 }

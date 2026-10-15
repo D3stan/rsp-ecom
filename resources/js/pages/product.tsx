@@ -1,23 +1,23 @@
 import Header from '@/components/header';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Label } from '@/components/ui/label';
 import { ProductRatingSummary } from '@/components/product-rating-summary';
+import ProductSafety from '@/components/product/ProductSafety';
+import ProductReviews from '@/components/reviews/ProductReviews';
+import type { DisplayReview } from '@/components/reviews/review-gallery';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { VariantSelector } from '@/components/VariantSelector';
 import { WishlistButton } from '@/components/wishlist-button';
+import { useToast } from '@/contexts/ToastContext';
+import { useInitialVariantId } from '@/hooks/use-initial-variant';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useMoney } from '@/hooks/use-money';
 import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
 import { cartService, type AddToCartData } from '@/services/cartService';
-import { useToast } from '@/contexts/ToastContext';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ChevronDown, ChevronLeft, ChevronRight, Heart, Minus, Plus, Share2, ShoppingCart, Star } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { useInitialVariantId } from '@/hooks/use-initial-variant';
-import ProductSafety from '@/components/product/ProductSafety';
+import { ChevronLeft, ChevronRight, Heart, Minus, Plus, Share2, ShoppingCart } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface ProductVariant {
     id: number;
@@ -41,18 +41,11 @@ interface Product {
     variants: ProductVariant[];
     average_rating: number | null;
     review_count: number;
+    rating_distribution: Record<string, number>;
     inWishlist: boolean;
     shipping: {
         size: string;
     };
-}
-
-interface Review {
-    id: number;
-    user: string;
-    rating: number;
-    comment: string;
-    date: string;
 }
 
 interface RelatedProduct {
@@ -65,22 +58,10 @@ interface RelatedProduct {
 
 interface ProductPageProps extends SharedData {
     product: Product;
-    reviews: Review[];
+    reviews: DisplayReview[];
     relatedProducts: RelatedProduct[];
     breadcrumb: string[];
 }
-
-const renderStars = (rating: number, size: 'sm' | 'md' | 'lg' = 'md') => {
-    const sizeClasses = {
-        sm: 'w-4 h-4',
-        md: 'w-5 h-5',
-        lg: 'w-6 h-6',
-    };
-
-    return Array.from({ length: 5 }, (_, i) => (
-        <Star key={i} className={`${sizeClasses[size]} ${i < Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-    ));
-};
 
 export default function Product() {
     const { product, reviews, relatedProducts, breadcrumb, auth } = usePage<ProductPageProps>().props;
@@ -97,9 +78,7 @@ export default function Product() {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
     const [isAddingToCart, setIsAddingToCart] = useState(false);
-    const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
-    const [isSpecsOpen, setIsSpecsOpen] = useState(false);
-    const [isReviewsOpen, setIsReviewsOpen] = useState(false);
+    const [isReviewsOpen, setIsReviewsOpen] = useState(() => reviews.some((review) => review.photos.length > 0));
     const showReviews = () => {
         setIsReviewsOpen(true);
         document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -378,7 +357,11 @@ export default function Product() {
                                     size="lg"
                                 >
                                     <ShoppingCart className="mr-2 h-5 w-5" />
-                                    {isAddingToCart ? t('product.adding') : selectedVariant.stock_quantity > 0 ? t('product.add_to_cart') : t('product.out_of_stock')}
+                                    {isAddingToCart
+                                        ? t('product.adding')
+                                        : selectedVariant.stock_quantity > 0
+                                          ? t('product.add_to_cart')
+                                          : t('product.out_of_stock')}
                                 </Button>
 
                                 <div className="grid grid-cols-2 gap-3">
@@ -418,34 +401,15 @@ export default function Product() {
                     <ProductSafety variantId={selectedVariantId} />
 
                     {/* Reviews */}
-                    {reviews.length > 0 && (
-                        <div id="reviews" className="mt-16 scroll-mt-24 space-y-4">
-                            <Collapsible open={isReviewsOpen} onOpenChange={setIsReviewsOpen} className="rounded-lg border border-gray-300">
-                                <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-gray-50 p-4 transition-colors hover:bg-gray-100">
-                                    <span className="text-lg font-semibold text-gray-900">
-                                        {t('product.reviews_count', { count: reviews.length })}
-                                    </span>
-                                    <ChevronDown
-                                        className={`h-5 w-5 text-black transition-transform duration-200 ${isReviewsOpen ? 'rotate-180' : ''}`}
-                                    />
-                                </CollapsibleTrigger>
-                                <CollapsibleContent className="mt-2 rounded-lg p-4">
-                                    <div className="space-y-6">
-                                        {reviews.map((review) => (
-                                            <div key={review.id} className="border-b border-gray-200 pb-6 last:border-b-0">
-                                                <div className="mb-2 flex items-center justify-between">
-                                                    <span className="font-medium text-gray-900">{review.user}</span>
-                                                    <span className="text-sm text-gray-500">{new Date(review.date).toLocaleDateString()}</span>
-                                                </div>
-                                                <div className="mb-2 flex items-center">{renderStars(review.rating, 'sm')}</div>
-                                                <p className="text-gray-700">{review.comment}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CollapsibleContent>
-                            </Collapsible>
-                        </div>
-                    )}
+                    <ProductReviews
+                        reviews={reviews}
+                        average={product.average_rating}
+                        count={product.review_count}
+                        distribution={product.rating_distribution}
+                        open={isReviewsOpen}
+                        onOpenChange={setIsReviewsOpen}
+                        verifyHref={route('faq')}
+                    />
 
                     {/* Related Products */}
                     {relatedProducts.length > 0 && (
@@ -487,7 +451,11 @@ export default function Product() {
                                 className="h-12 flex-1 font-semibold"
                             >
                                 <ShoppingCart className="mr-2 h-5 w-5" />
-                                {isAddingToCart ? t('product.adding') : selectedVariant.stock_quantity > 0 ? t('product.add_to_cart') : t('product.out_of_stock')}
+                                {isAddingToCart
+                                    ? t('product.adding')
+                                    : selectedVariant.stock_quantity > 0
+                                      ? t('product.add_to_cart')
+                                      : t('product.out_of_stock')}
                             </Button>
                         </div>
                     </div>

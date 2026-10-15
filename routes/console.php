@@ -62,3 +62,9 @@ Schedule::command('model:prune', ['--model' => \App\Models\CheckoutSnapshot::cla
 Schedule::command('newsletter:dispatch-scheduled')
     ->everyMinute()
     ->withoutOverlapping();
+
+// Consented review-request emails for delivered orders. No-op while reviews.request_enabled is off; the command
+// checks marketing consent and OrderEmail dedupe, so a daily run never produces a second request for an order.
+Schedule::command('reviews:send-requests')
+    ->dailyAt('09:00')
+    ->withoutOverlapping();

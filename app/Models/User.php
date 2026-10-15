@@ -156,6 +156,10 @@ class User extends Authenticatable implements MustVerifyEmail
                 ->whereDoesntHave('billingOrders')
                 ->whereDoesntHave('shippingOrders')
                 ->delete();
+
+            // The reviews go with the account anyway (FK cascade), but the cascade skips model events: deleting
+            // them one by one lets Review remove the customer's photo files from the public disk.
+            $user->reviews()->get()->each->delete();
         });
     }
 

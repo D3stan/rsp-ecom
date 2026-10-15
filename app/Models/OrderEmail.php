@@ -21,6 +21,9 @@ class OrderEmail extends Model
 
     public const TYPE_REFUNDED = 'order_refunded';
 
+    /** Consented marketing email inviting the customer to review the products they bought (one per order). */
+    public const TYPE_REVIEW_REQUEST = 'review_request';
+
     /** Internal alert to the shop owner (the recipient is the admin address, not the customer). */
     public const TYPE_ADMIN_NEW_ORDER = 'admin_new_order';
 
