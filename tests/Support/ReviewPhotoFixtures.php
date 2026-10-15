@@ -2,7 +2,11 @@
 
 namespace Tests\Support;
 
+use App\Models\Review;
+use App\Models\ReviewMedia;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Real image uploads for the review-photo tests. They are written to temp files and wrapped in a real UploadedFile
@@ -48,6 +52,32 @@ final class ReviewPhotoFixtures
     public static function disguised(string $content = "<?php echo 'not an image';", string $name = 'photo.jpg'): UploadedFile
     {
         return self::upload($content, $name, 'image/jpeg');
+    }
+
+    /**
+     * A stored photo as the upload would leave it (both files on the public disk), in any moderation state.
+     * Use with Storage::fake('public').
+     */
+    public static function storedMedia(Review $review, string $status = ReviewMedia::STATUS_PENDING, array $attributes = []): ReviewMedia
+    {
+        $name = (string) Str::uuid();
+        $path = "reviews/{$review->id}/{$name}.webp";
+        $thumbnailPath = "reviews/{$review->id}/{$name}-thumb.webp";
+        Storage::disk('public')->put($path, 'full');
+        Storage::disk('public')->put($thumbnailPath, 'thumb');
+
+        $media = new ReviewMedia;
+        $media->forceFill(array_merge([
+            'review_id' => $review->id,
+            'path' => $path,
+            'thumbnail_path' => $thumbnailPath,
+            'width' => 1600,
+            'height' => 1200,
+            'sort_order' => ReviewMedia::where('review_id', $review->id)->count(),
+            'status' => $status,
+        ], $attributes))->save();
+
+        return $media->refresh();
     }
 
     public static function upload(string $bytes, string $name, string $clientMime): UploadedFile
