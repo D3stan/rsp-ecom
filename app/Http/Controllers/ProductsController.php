@@ -221,7 +221,7 @@ class ProductsController extends Controller
      */
     public function show(string $slug): Response
     {
-        $product = Product::with(['category', 'approvedReviews.user', 'size', 'activeVariants', 'defaultVariant'])
+        $product = Product::with(['category', 'approvedReviews.user', 'approvedReviews.approvedMedia', 'size', 'activeVariants', 'defaultVariant'])
             ->withAvg('approvedReviews', 'rating')
             ->withCount('approvedReviews')
             ->where('slug', $slug)
@@ -354,6 +354,8 @@ class ProductsController extends Controller
                 'rating' => $review->rating,
                 'comment' => $review->comment,
                 'date' => $review->created_at->toDateString(),
+                // Moderated photos only: pending/rejected ones never leave the admin
+                'photos' => $review->approvedMedia->map->toStorefrontArray()->values(),
             ];
         });
 

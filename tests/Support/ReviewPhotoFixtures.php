@@ -35,6 +35,15 @@ final class ReviewPhotoFixtures
         return self::upload((string) ob_get_clean(), $name, 'image/png');
     }
 
+    public static function webp(int $width = 640, int $height = 480, string $name = 'photo.webp'): UploadedFile
+    {
+        $image = imagecreatetruecolor($width, $height);
+        ob_start();
+        imagewebp($image);
+
+        return self::upload((string) ob_get_clean(), $name, 'image/webp');
+    }
+
     /** Arbitrary bytes under an image name: what a disguised upload looks like. */
     public static function disguised(string $content = "<?php echo 'not an image';", string $name = 'photo.jpg'): UploadedFile
     {

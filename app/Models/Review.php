@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Review extends Model
 {
@@ -31,6 +32,18 @@ class Review extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /** Customer photos, in upload order (all statuses: moderation only). */
+    public function media(): HasMany
+    {
+        return $this->hasMany(ReviewMedia::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /** The photos the storefront may show. */
+    public function approvedMedia(): HasMany
+    {
+        return $this->media()->where('status', ReviewMedia::STATUS_APPROVED);
     }
 
     // Scopes

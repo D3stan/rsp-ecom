@@ -68,6 +68,14 @@ it('stores photos as pending WebP media under reviews/{review}/ with a capped si
     expect([$thumbWidth, $thumbHeight])->toBe([600, 300]);
 });
 
+it('accepts WebP photos', function () {
+    submitReviewWithPhotos($this, [ReviewPhotoFixtures::webp(640, 480)])->assertSessionHasNoErrors();
+
+    $media = ReviewMedia::sole();
+    expect([$media->width, $media->height])->toBe([640, 480])
+        ->and(Storage::disk('public')->exists($media->path))->toBeTrue();
+});
+
 it('tells the customer the photos wait for a check even when the text is published at once', function () {
     submitReviewWithPhotos($this, [ReviewPhotoFixtures::jpeg(400, 300)])
         ->assertSessionHas('success', __('reviews.photos_pending'));

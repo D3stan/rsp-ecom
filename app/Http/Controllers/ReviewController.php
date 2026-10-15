@@ -4,7 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\ReviewMedia;
+use App\Services\FileUploadConfigService;
+use App\Services\Reviews\InvalidReviewPhoto;
+use App\Services\Reviews\ReviewPhotoProcessor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Artesaos\SEOTools\Facades\SEOMeta;
@@ -61,16 +68,33 @@ class ReviewController extends Controller
                 'name' => $product->name,
                 'image_url' => $product->image_url,
                 'price' => (float) $product->price,
-            ]
+            ],
+            // Limits for the photo picker (the server enforces the same ones)
+            'photoLimits' => [
+                'max_files' => ReviewPhotoProcessor::MAX_PHOTOS,
+                'max_file_size' => FileUploadConfigService::getMaxFileUploadSize(),
+                'max_request_size' => FileUploadConfigService::getMaxRequestSize(),
+            ],
         ]);
     }
     
-    public function store(Request $request)
+    public function store(Request $request, ReviewPhotoProcessor $photoProcessor)
     {
+        $maxPhotoKb = max(100, (int) ceil(FileUploadConfigService::getMaxFileUploadSize() / 1024));
+
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'rating' => 'required|integer|min:1|max:5',
             'comment' => 'nullable|string|max:1000',
+            'photos' => 'nullable|array|max:'.ReviewPhotoProcessor::MAX_PHOTOS,
+            // mimetypes sniffs the content (finfo), not the file name or the browser's claim
+            'photos.*' => ['file', 'mimetypes:'.implode(',', ReviewPhotoProcessor::MIME_TYPES), 'max:'.$maxPhotoKb],
+        ], [
+            'photos.array' => __('reviews.photos.invalid'),
+            'photos.max' => __('reviews.photos.too_many', ['max' => ReviewPhotoProcessor::MAX_PHOTOS]),
+            'photos.*.file' => __('reviews.photos.invalid'),
+            'photos.*.mimetypes' => __('reviews.photos.invalid'),
+            'photos.*.max' => __('reviews.photos.too_large'),
         ]);
         
         $user = Auth::user();
@@ -94,20 +118,45 @@ class ReviewController extends Controller
             return redirect()->route('orders.index')->with('error', 'You can only review products you have purchased.');
         }
         
-        // reviews.auto_approve: off = the review waits for moderation in the admin
+        // Decode and re-encode every photo before anything is saved: an unreadable file is a validation error
+        $photos = [];
+        foreach (array_values($request->file('photos', [])) as $index => $file) {
+            try {
+                $photos[] = $photoProcessor->prepare($file);
+            } catch (InvalidReviewPhoto) {
+                throw ValidationException::withMessages(["photos.{$index}" => __('reviews.photos.invalid')]);
+            }
+        }
+
+        // reviews.auto_approve: off = the review waits for moderation in the admin. Photos always wait for it.
         $autoApprove = (bool) settings('reviews.auto_approve', true);
 
-        Review::create([
-            'user_id' => $user->id,
-            'product_id' => $request->product_id,
-            'rating' => $request->rating,
-            'comment' => $request->comment,
-            'is_approved' => $autoApprove,
-        ]);
-        
-        return redirect()->route('orders.index')->with(
-            'success',
-            $autoApprove ? __('reviews.thank_you') : __('reviews.pending_moderation')
-        );
+        $written = [];
+        try {
+            DB::transaction(function () use ($request, $user, $autoApprove, $photos, $photoProcessor, &$written) {
+                $review = Review::create([
+                    'user_id' => $user->id,
+                    'product_id' => $request->product_id,
+                    'rating' => $request->rating,
+                    'comment' => $request->comment,
+                    'is_approved' => $autoApprove,
+                ]);
+
+                $photoProcessor->store($review, $photos, $written);
+            });
+        } catch (\Throwable $e) {
+            // The rows rolled back: don't leave their files behind
+            Storage::disk(ReviewMedia::DISK)->delete($written);
+
+            throw $e;
+        }
+
+        $message = match (true) {
+            ! $autoApprove => __('reviews.pending_moderation'),
+            $photos !== [] => __('reviews.photos_pending'),
+            default => __('reviews.thank_you'),
+        };
+
+        return redirect()->route('orders.index')->with('success', $message);
     }
 }
