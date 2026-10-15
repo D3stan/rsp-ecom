@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { ChevronDown, ChevronUp, DollarSign, Edit, Eye, Filter, MoreHorizontal, Package, Search, TrendingUp, Truck, Users } from 'lucide-react';
@@ -72,6 +73,8 @@ interface Props {
     filters: {
         status?: string;
         payment_status?: string;
+        // "1": only cancelled orders whose money is still captured
+        refund_due?: string;
         search?: string;
         date_from?: string;
         date_to?: string;
@@ -99,6 +102,8 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [statusFilter, setStatusFilter] = useState(filters.status || '');
     const [paymentStatusFilter, setPaymentStatusFilter] = useState(filters.payment_status || '');
+    const [refundDueFilter, setRefundDueFilter] = useState(filters.refund_due === '1');
+    const { t } = useTranslation();
     const [isKPIsOpen, setIsKPIsOpen] = useState(false);
 
     // Add safety checks for orders data
@@ -115,6 +120,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                     search: search || undefined,
                     status: statusFilter || undefined,
                     payment_status: paymentStatusFilter || undefined,
+                    refund_due: refundDueFilter ? 1 : undefined,
                 },
                 {
                     preserveState: true,
@@ -125,12 +131,13 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
         }, 300); // 300ms debounce for search
 
         return () => clearTimeout(timeoutId);
-    }, [search, statusFilter, paymentStatusFilter]);
+    }, [search, statusFilter, paymentStatusFilter, refundDueFilter]);
 
     const clearFilters = () => {
         setSearch('');
         setStatusFilter('');
         setPaymentStatusFilter('');
+        setRefundDueFilter(false);
         router.get('/admin/orders');
     };
 
@@ -291,8 +298,12 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                 </select>
                             </div>
 
-                            <div className="flex items-end">
-                                {(search || statusFilter || paymentStatusFilter) && (
+                            <div className="flex items-end gap-3">
+                                <label className="flex h-9 items-center gap-2 text-sm whitespace-nowrap">
+                                    <input type="checkbox" checked={refundDueFilter} onChange={(e) => setRefundDueFilter(e.target.checked)} />
+                                    {t('admin.orders.refund_due')}
+                                </label>
+                                {(search || statusFilter || paymentStatusFilter || refundDueFilter) && (
                                     <Button onClick={clearFilters} variant="outline" size="sm" className="w-full">
                                         Clear Filters
                                     </Button>

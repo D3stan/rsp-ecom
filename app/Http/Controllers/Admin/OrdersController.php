@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Refund;
 use App\Services\RefundService;
+use App\Support\Revenue;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +42,11 @@ class OrdersController extends Controller
 
         if ($request->filled('payment_status')) {
             $query->where('payment_status', $request->payment_status);
+        }
+
+        // Cancelled while money is still captured: customer service owes a refund
+        if ($request->boolean('refund_due')) {
+            $query->refundDue();
         }
 
         if ($request->filled('search')) {
@@ -81,7 +87,7 @@ class OrdersController extends Controller
             'links' => [],
         ];
 
-        // Calculate KPI data
+        // KPI data; revenue is net (cancelled orders excluded, succeeded refunds subtracted)
         $today = now()->startOfDay();
         $thisMonth = now()->startOfMonth();
         $thisYear = now()->startOfYear();
@@ -89,25 +95,22 @@ class OrdersController extends Controller
         $kpis = [
             'today' => [
                 'orders' => Order::whereDate('created_at', $today)->count(),
-                'revenue' => Order::whereDate('created_at', $today)
-                    ->where('payment_status', 'succeeded')->sum('total_amount'),
+                'revenue' => Revenue::net(Order::whereDate('created_at', $today)),
             ],
             'month' => [
                 'orders' => Order::whereDate('created_at', '>=', $thisMonth)->count(),
-                'revenue' => Order::whereDate('created_at', '>=', $thisMonth)
-                    ->where('payment_status', 'succeeded')->sum('total_amount'),
+                'revenue' => Revenue::net(Order::whereDate('created_at', '>=', $thisMonth)),
             ],
             'year' => [
                 'orders' => Order::whereDate('created_at', '>=', $thisYear)->count(),
-                'revenue' => Order::whereDate('created_at', '>=', $thisYear)
-                    ->where('payment_status', 'succeeded')->sum('total_amount'),
+                'revenue' => Revenue::net(Order::whereDate('created_at', '>=', $thisYear)),
             ],
         ];
 
         return Inertia::render('Admin/Orders/Index', [
             'orders' => $ordersData,
             'kpis' => $kpis,
-            'filters' => $request->only(['status', 'payment_status', 'search', 'date_from', 'date_to']),
+            'filters' => $request->only(['status', 'payment_status', 'refund_due', 'search', 'date_from', 'date_to']),
         ]);
     }
 
@@ -127,6 +130,8 @@ class OrdersController extends Controller
         return Inertia::render('Admin/Orders/Show', [
             'order' => $order->toFrontendArray(),
             'allowed_transitions' => $order->allowedTransitions(),
+            // cancelled while money is still captured (computed)
+            'refund_due' => $order->isRefundDue(),
             // Audit trail for the timeline, oldest first (empty for orders from before it existed)
             'events' => $order->events()->with('actor:id,name')->get()->map->toTimelineArray()->values()->all(),
             // Money returned so far (newest first) and what can still be refunded through Stripe
@@ -406,15 +411,39 @@ class OrdersController extends Controller
     /**
      * Cancel an order
      */
-    public function cancel(Request $request, Order $order)
+    public function cancel(Request $request, Order $order, RefundService $refunds)
     {
-        $request->validate(['reason' => 'nullable|string|max:500']);
+        $request->validate([
+            'reason' => 'nullable|string|max:500',
+            // paid orders: "now" refunds everything still refundable first, "later" leaves the order as "Refund due"
+            'refund' => 'nullable|in:now,later',
+        ]);
 
-        if (! $order->cancel($request->user(), $request->input('reason'))) {
+        if (! $order->can_be_cancelled) {
             return back()->with('error', "Order {$order->order_number} cannot be cancelled from \"{$order->status}\".");
         }
 
-        return back()->with('success', 'Order cancelled successfully.');
+        $warning = null;
+        $refundable = $refunds->refundableCents($order);
+
+        if ($request->input('refund') === 'now' && $refundable > 0) {
+            try {
+                $refunds->refund($order, $refundable, $request->input('reason') ?: 'Order cancelled', $request->user());
+            } catch (RefundRefused|RefundFailed $e) {
+                // Not cancelled either: the admin can retry, or cancel and refund later
+                return back()->with('error', 'The order was not cancelled: the refund failed. '.$e->getMessage());
+            } catch (RefundUnconfirmed) {
+                $warning = self::REFUND_UNCONFIRMED_MESSAGE;
+            }
+        }
+
+        if (! $order->fresh()->cancel($request->user(), $request->input('reason'))) {
+            return back()->with('error', "Order {$order->order_number} cannot be cancelled from \"{$order->status}\".");
+        }
+
+        $response = back()->with('success', 'Order cancelled successfully.');
+
+        return $warning ? $response->with('warning', $warning) : $response;
     }
 
     /**

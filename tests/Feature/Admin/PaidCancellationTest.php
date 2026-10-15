@@ -1,7 +1,9 @@
 <?php
 
+use App\Jobs\SendOrderEmail;
 use App\Mail\OrderCancelled;
 use App\Models\Order;
+use App\Models\OrderEmail;
 use App\Models\Refund;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
@@ -106,4 +108,54 @@ it('promises a refund of what is still owed on a partly refunded cancelled order
     $text = EmailFixtures::deliver(new OrderCancelled($order), 'en')->getTextBody();
 
     expect($text)->toContain('we will refund €35.00');
+});
+
+it('cancels a paid order without touching the money when the refund comes later', function () {
+    $order = cancellationOrder();
+
+    $this->actingAs($this->admin)->patch(route('admin.orders.cancel', $order), ['refund' => 'later'])->assertSessionHas('success');
+
+    expect($this->stripeHttp->requests)->toBe([])
+        ->and($order->fresh()->status)->toBe('cancelled')
+        ->and($order->fresh()->isRefundDue())->toBeTrue();
+});
+
+it('does not cancel when the refund of "cancel and refund now" fails', function () {
+    $order = cancellationOrder();
+    $this->stripeHttp->responses['/v1/refunds'] = ['__status' => 400, 'error' => ['type' => 'invalid_request_error', 'message' => 'No such payment_intent']];
+
+    $this->actingAs($this->admin)->patch(route('admin.orders.cancel', $order), ['refund' => 'now'])
+        ->assertSessionHas('error', fn ($message) => str_contains($message, 'not cancelled'));
+
+    expect($order->fresh()->status)->toBe('processing')
+        ->and($order->fresh()->payment_status)->toBe('succeeded');
+});
+
+it('still cancels when Stripe does not confirm the refund, keeping it pending', function () {
+    $order = cancellationOrder();
+    $this->stripeHttp->responses['/v1/refunds'] = ['__throw' => 'connection'];
+
+    $this->actingAs($this->admin)->patch(route('admin.orders.cancel', $order), ['refund' => 'now'])
+        ->assertSessionHas('success')
+        ->assertSessionHas('warning');
+
+    expect($order->fresh()->status)->toBe('cancelled')
+        ->and(Refund::sole()->status)->toBe('pending');
+});
+
+it('emails the cancellation after a cancel-and-refund (the order is refunded, the customer still hears of it)', function () {
+    $order = cancellationOrder();
+    $this->stripeHttp->responses['/v1/refunds'] = ['id' => 're_c2', 'object' => 'refund', 'amount' => 5500, 'currency' => 'eur', 'status' => 'succeeded'];
+
+    $this->actingAs($this->admin)->patch(route('admin.orders.cancel', $order), ['refund' => 'now']);
+
+    Queue::assertPushed(SendOrderEmail::class, fn ($job) => $job->type === OrderEmail::TYPE_CANCELLED);
+    Queue::assertPushed(SendOrderEmail::class, fn ($job) => $job->type === OrderEmail::TYPE_REFUNDED);
+});
+
+it('does not call a fully refunded or an unpaid cancelled order "refund due"', function () {
+    expect(cancellationOrder(['status' => 'cancelled', 'payment_status' => 'refunded'])->isRefundDue())->toBeFalse()
+        ->and(cancellationOrder(['status' => 'cancelled', 'payment_status' => 'cancelled'])->isRefundDue())->toBeFalse()
+        ->and(cancellationOrder(['status' => 'cancelled', 'payment_status' => 'partially_refunded'])->isRefundDue())->toBeTrue()
+        ->and(Order::refundDue()->count())->toBe(1);
 });

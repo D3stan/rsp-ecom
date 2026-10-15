@@ -6,7 +6,9 @@
 @section('content')
     @include('emails.partials.paragraph', ['text' => $greeting])
     @include('emails.partials.paragraph', ['text' => __('emails.order_cancelled.intro', ['number' => $orderNumber])])
-    @if($refundDue)
+    @if($refunded)
+        @include('emails.partials.paragraph', ['text' => __('emails.order_cancelled.refunded', ['amount' => $refundedAmount])])
+    @elseif($refundDue)
         @include('emails.partials.paragraph', ['text' => __('emails.order_cancelled.refund_due', ['amount' => $amount])])
     @endif
 

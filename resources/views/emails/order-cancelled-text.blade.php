@@ -6,7 +6,10 @@
 {!! $greeting !!}
 
 {!! __('emails.order_cancelled.intro', ['number' => $orderNumber]) !!}
-@if($refundDue)
+@if($refunded)
+
+{!! __('emails.order_cancelled.refunded', ['amount' => $refundedAmount]) !!}
+@elseif($refundDue)
 
 {!! __('emails.order_cancelled.refund_due', ['amount' => $amount]) !!}
 @endif

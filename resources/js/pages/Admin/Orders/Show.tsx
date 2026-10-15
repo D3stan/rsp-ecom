@@ -113,6 +113,8 @@ interface Props {
     allowed_transitions: string[];
     // audit trail (order_events), oldest first
     events?: OrderTimelineEvent[];
+    // cancelled while money is still captured (customer service owes a refund)
+    refund_due?: boolean;
     // money returned so far and what can still be refunded (RefundService)
     refunds?: OrderRefund[];
     refund?: RefundInfo;
@@ -154,7 +156,16 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-export default function OrderShow({ order, allowed_transitions = [], events = [], refunds = [], refund, carriers = [], stock }: Props) {
+export default function OrderShow({
+    order,
+    allowed_transitions = [],
+    refund_due = false,
+    events = [],
+    refunds = [],
+    refund,
+    carriers = [],
+    stock,
+}: Props) {
     const { t } = useTranslation();
     const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
     const [isUpdating, setIsUpdating] = useState(false);
@@ -340,6 +351,11 @@ export default function OrderShow({ order, allowed_transitions = [], events = []
                                                 <CreditCard className="mr-1 h-4 w-4" />
                                                 {order.payment_status}
                                             </Badge>
+                                            {refund_due && (
+                                                <Badge variant="secondary" className="bg-red-100 text-red-800">
+                                                    {t('admin.orders.refund_due')}
+                                                </Badge>
+                                            )}
                                         </div>
                                     </div>
 
@@ -350,6 +366,8 @@ export default function OrderShow({ order, allowed_transitions = [], events = []
                                         allowedTransitions={allowed_transitions}
                                         disabled={isUpdating}
                                         onAdvance={updateOrderStatus}
+                                        refundableCents={refund?.has_payment_intent ? refund.refundable_cents : 0}
+                                        currency={order.currency}
                                     />
                                 </CollapsibleContent>
                             </Card>

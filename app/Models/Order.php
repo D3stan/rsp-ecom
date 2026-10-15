@@ -218,6 +218,19 @@ class Order extends Model
         return $query->where('payment_status', 'failed');
     }
 
+    /**
+     * "Refund due" (computed, never stored): cancelled while money is still captured, fully or in part.
+     */
+    public function scopeRefundDue($query)
+    {
+        return $query->where('status', 'cancelled')->whereIn('payment_status', self::REFUND_DUE_PAYMENT_STATUSES);
+    }
+
+    public function isRefundDue(): bool
+    {
+        return $this->status === 'cancelled' && in_array($this->payment_status, self::REFUND_DUE_PAYMENT_STATUSES, true);
+    }
+
     // Accessors
     public function getTotalItemsAttribute(): int
     {
@@ -382,6 +395,9 @@ class Order extends Model
 
     /** Payment states in which money was captured: the order's lines and totals are then locked (refunds only). */
     public const CAPTURED_PAYMENT_STATUSES = ['succeeded', 'partially_refunded', 'refunded'];
+
+    /** Captured money not (fully) returned yet: a cancelled order in one of these owes the customer a refund. */
+    public const REFUND_DUE_PAYMENT_STATUSES = ['succeeded', 'partially_refunded'];
 
     public function hasCapturedPayment(): bool
     {
