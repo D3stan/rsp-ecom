@@ -1,15 +1,15 @@
 import OrderRefunds, { type OrderRefund, type RefundInfo } from '@/components/admin/orders/OrderRefunds';
-import OrderStatusActions, { forwardTransitions } from '@/components/admin/orders/OrderStatusActions';
+import OrderStatusActions from '@/components/admin/orders/OrderStatusActions';
 import OrderTimeline, { type OrderTimelineEvent } from '@/components/admin/orders/OrderTimeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
+import { forwardTransitions } from '@/lib/order-transitions';
 import { Head, router } from '@inertiajs/react';
 import {
     AlertTriangle,
@@ -174,8 +174,6 @@ export default function OrderShow({
     const [isUpdating, setIsUpdating] = useState(false);
     const [isAddingTracking, setIsAddingTracking] = useState(false);
     const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || '');
-    const [showShipConfirmation, setShowShipConfirmation] = useState(false);
-    const [pendingStatus, setPendingStatus] = useState<string | null>(null);
     const [collapsedSections, setCollapsedSections] = useState({
         orderStatus: false,
         orderItems: false,
@@ -228,41 +226,10 @@ export default function OrderShow({
         };
     };
 
+    // Status buttons never offer "shipped": the order ships through the ship form (carrier, tracking, one email)
     const updateOrderStatus = (newStatus: string) => {
-        // Check if status is being changed to shipped without a tracking number
-        const isChangingToShipped = newStatus === 'shipped' && order.status !== 'shipped';
-        const hasTrackingNumber = order.tracking_number && order.tracking_number.trim() !== '';
-
-        if (isChangingToShipped && !hasTrackingNumber) {
-            // Show confirmation modal for status change to shipped without tracking
-            setPendingStatus(newStatus);
-            setShowShipConfirmation(true);
-            return;
-        }
-
-        // Proceed with status update
-        submitStatusUpdate(newStatus);
-    };
-
-    const submitStatusUpdate = (newStatus: string) => {
         setIsUpdating(true);
-        router.patch(
-            `/admin/orders/${order.id}`,
-            { status: newStatus },
-            {
-                onFinish: () => {
-                    setIsUpdating(false);
-                    setPendingStatus(null);
-                },
-            },
-        );
-    };
-
-    const handleConfirmShip = () => {
-        setShowShipConfirmation(false);
-        if (pendingStatus) {
-            submitStatusUpdate(pendingStatus);
-        }
+        router.patch(`/admin/orders/${order.id}`, { status: newStatus }, { onFinish: () => setIsUpdating(false) });
     };
 
     const getNextStatus = () => forwardTransitions(order.status, allowed_transitions)[0] ?? null;
@@ -316,7 +283,7 @@ export default function OrderShow({
                         {can_ship && (
                             <Button size="sm" onClick={() => router.visit(`/admin/orders/${order.id}/ship`)}>
                                 <Truck className="mr-2 h-4 w-4" />
-                                Ship
+                                {t('admin.orders.ship.button')}
                             </Button>
                         )}
                         <Button variant="outline" size="sm" onClick={() => router.visit(`/admin/orders/${order.id}/edit`)}>
@@ -706,33 +673,6 @@ export default function OrderShow({
                     </div>
                 </div>
             </div>
-
-            {/* Confirmation Modal for Manual Status Change to Shipped */}
-            <Dialog open={showShipConfirmation} onOpenChange={setShowShipConfirmation}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Mark Order as Shipped?</DialogTitle>
-                        <DialogDescription>
-                            You are about to mark this order as shipped without a tracking number. A shipping notification email will be sent to the
-                            customer without tracking information.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setShowShipConfirmation(false);
-                                setPendingStatus(null);
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button onClick={handleConfirmShip} disabled={isUpdating}>
-                            {isUpdating ? 'Processing...' : 'Confirm & Send Email'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </AppLayout>
     );
 }

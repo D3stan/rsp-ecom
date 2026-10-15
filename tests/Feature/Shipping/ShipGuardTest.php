@@ -14,6 +14,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 beforeEach(function () {
     Queue::fake();
     $this->admin = User::factory()->create(['role' => 'admin']);
+    config(['shipping.carriers' => ['acme' => ['name' => 'Acme Courier']]]);
 });
 
 function shipGuardOrder(string $status, string $paymentStatus): Order
@@ -29,14 +30,7 @@ function shipGuardOrder(string $status, string $paymentStatus): Order
 
 function shipGuardForm(): array
 {
-    return [
-        'sender_info' => ['company_name' => 'Shop', 'address' => 'Via Roma 1', 'phone' => '123', 'email' => 'shop@example.test'],
-        'customer_info' => ['name' => 'Mario Rossi', 'email' => 'mario@example.test'],
-        'shipping_address' => [
-            'first_name' => 'Mario', 'last_name' => 'Rossi', 'address_line_1' => 'Via Verdi 2',
-            'city' => 'Milano', 'state' => 'MI', 'postal_code' => '20100', 'country' => 'IT',
-        ],
-    ];
+    return ['tracking_carrier' => 'acme', 'tracking_number' => 'TRK1'];
 }
 
 dataset('payments that may not ship', ['pending', 'processing', 'failed', 'refunded']);

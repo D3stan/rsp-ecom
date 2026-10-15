@@ -128,15 +128,15 @@ class LogHygieneTest extends TestCase
     public function test_admin_order_update_failure_logs_class_and_message_but_no_stack_trace(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        // paid: only a paid processing order may ship (Order::canShip)
-        $order = Order::factory()->create(['guest_email' => 'buyer@example.com', 'user_id' => null, 'status' => 'processing', 'payment_status' => 'succeeded']);
+        // a shipped order whose tracking number is added: the shipped email is requested (and blows up)
+        $order = Order::factory()->create(['guest_email' => 'buyer@example.com', 'user_id' => null, 'status' => 'shipped', 'payment_status' => 'succeeded', 'tracking_number' => null]);
 
         $failing = \Mockery::mock(EmailService::class);
         $failing->shouldReceive('isEnabled')->andReturn(true);
         $failing->shouldReceive('sendOrderShipped')->andThrow(new \RuntimeException('mail backend exploded'));
         $this->app->instance(EmailService::class, $failing);
 
-        $this->actingAs($admin)->put(route('admin.orders.update', $order), ['status' => 'shipped'])
+        $this->actingAs($admin)->put(route('admin.orders.update', $order), ['tracking_number' => 'TRK1'])
             ->assertSessionHas('error');
 
         $log = $this->logged();

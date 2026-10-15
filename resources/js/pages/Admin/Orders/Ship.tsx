@@ -1,30 +1,30 @@
-import { Badge } from '@/components/ui/badge';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
-import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Box, ChevronDown, ChevronUp, CreditCard, MapPin, Package, Shield, User } from 'lucide-react';
-import React, { useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, MapPin, Package, Truck } from 'lucide-react';
+import { FormEvent, useState } from 'react';
 
 interface Order {
     id: number;
     order_number: string;
-    user?: {
-        id: number;
-        name: string;
-        email: string;
-        phone?: string;
-    };
-    guest_email?: string;
-    guest_phone?: string;
-    status: string;
-    total_amount: number;
+    tracking_number?: string | null;
+    tracking_carrier?: string | null;
     shippingAddress?: {
         first_name: string;
         last_name: string;
@@ -36,34 +36,13 @@ interface Order {
         postal_code: string;
         country: string;
         phone?: string;
-    };
+    } | null;
     orderItems?: Array<{
         id: number;
-        product: {
-            name: string;
-        };
+        product: { name: string };
+        variant?: { name: string } | null;
         quantity: number;
-        price: number;
     }>;
-}
-
-interface AdminSettings {
-    company_name?: string;
-    company_address?: string;
-    company_phone?: string;
-    company_email?: string;
-    iban?: string;
-    account_holder?: string;
-}
-
-interface Size {
-    id: number;
-    name: string;
-    length: number;
-    width: number;
-    height: number;
-    box_type: string;
-    shipping_cost: number;
 }
 
 interface Carrier {
@@ -73,794 +52,230 @@ interface Carrier {
 
 interface Props {
     order: Order;
-    adminSettings: AdminSettings;
-    sizes: Size[];
     carriers?: Carrier[];
+    // false: the shipped email is switched off in the settings
+    shipped_email_enabled?: boolean;
 }
 
-// Radix Select cannot hold an empty value: this stands for "other / unknown" (sent as no carrier)
-const NO_CARRIER = '__none__';
+type ShipForm = {
+    tracking_carrier: string;
+    tracking_number: string;
+    ship_without_tracking: boolean;
+    notify_customer: boolean;
+};
 
-export default function OrderShip({ order, adminSettings, sizes, carriers = [] }: Props) {
+/**
+ * Ship form (labels off): carrier and tracking number. The server (ShippingService) records the shipment, moves the
+ * order to "shipped" and sends one shipped email, with the tracking. Shipping without a number is possible after an
+ * explicit confirmation; the customer is then emailed now only when "notify now" is ticked.
+ */
+export default function OrderShip({ order, carriers = [], shipped_email_enabled = true }: Props) {
     const { t } = useTranslation();
-    const [trackingCarrier, setTrackingCarrier] = useState('');
-    const [openSections, setOpenSections] = useState({
-        sender: false,
-        customer: true,
-        shipping: true,
-        box: true,
-        additional: true,
+    const [confirming, setConfirming] = useState(false);
+    const { data, setData, post, processing, errors } = useForm<ShipForm>({
+        // a carrier/number saved earlier on the order is prefilled
+        tracking_carrier: carriers.some((carrier) => carrier.code === order.tracking_carrier) ? (order.tracking_carrier as string) : '',
+        tracking_number: order.tracking_number ?? '',
+        ship_without_tracking: false,
+        notify_customer: false,
     });
 
-    // Form state
-    const [senderInfo, setSenderInfo] = useState({
-        company_name: adminSettings.company_name || '',
-        address: adminSettings.company_address || '',
-        phone: adminSettings.company_phone || '',
-        email: adminSettings.company_email || '',
-    });
+    const withoutNumber = data.tracking_number.trim() === '';
+    const canSubmit = data.tracking_carrier !== '' && (!withoutNumber || data.ship_without_tracking) && !processing;
 
-    // Customer info (editable)
-    const [customerInfo, setCustomerInfo] = useState({
-        name: order.user?.name || 'Guest Customer',
-        email: order.user?.email || order.guest_email || '',
-        phone: order.user?.phone || order.guest_phone || '',
-    });
+    const send = () => post(`/admin/orders/${order.id}/ship`, { preserveScroll: true, onFinish: () => setConfirming(false) });
 
-    // Shipping address (editable)
-    const [shippingAddress, setShippingAddress] = useState({
-        first_name: order.shippingAddress?.first_name || '',
-        last_name: order.shippingAddress?.last_name || '',
-        company: order.shippingAddress?.company || '',
-        address_line_1: order.shippingAddress?.address_line_1 || '',
-        address_line_2: order.shippingAddress?.address_line_2 || '',
-        city: order.shippingAddress?.city || '',
-        state: order.shippingAddress?.state || '',
-        postal_code: order.shippingAddress?.postal_code || '',
-        country: order.shippingAddress?.country || '',
-        phone: order.shippingAddress?.phone || '',
-    });
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        if (!canSubmit) return;
 
-    const [boxInfo, setBoxInfo] = useState({
-        size_id: '',
-        weight: '',
-        carrier: '',
-        service_type: '',
-    });
-
-    const [additionalSettings, setAdditionalSettings] = useState({
-        insurance_enabled: false,
-        insurance_value: '',
-        contrassegno_enabled: false,
-        contrassegno_amount: '',
-        iban: adminSettings.iban || '',
-        account_holder: adminSettings.account_holder || '',
-        notes: '',
-    });
-
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const toggleSection = (section: keyof typeof openSections) => {
-        setOpenSections((prev) => ({
-            ...prev,
-            [section]: !prev[section],
-        }));
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-
-        try {
-            const shippingData = {
-                sender_info: senderInfo,
-                customer_info: customerInfo,
-                shipping_address: shippingAddress,
-                box_info: boxInfo,
-                tracking_carrier: trackingCarrier || null,
-                additional_settings: additionalSettings,
-            };
-
-            router.post(`/admin/orders/${order.id}/ship`, shippingData, {
-                onSuccess: () => {
-                    console.log('Order shipped successfully!');
-                },
-                onError: (errors) => {
-                    console.error('Failed to process shipping', errors);
-                },
-                onFinish: () => {
-                    setIsSubmitting(false);
-                },
-            });
-        } catch (error) {
-            console.error('An error occurred while processing shipping', error);
-            setIsSubmitting(false);
+        // no tracking number: ask first (the customer gets no tracking link now)
+        if (withoutNumber) {
+            setConfirming(true);
+            return;
         }
+
+        send();
     };
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('it-IT', {
-            style: 'currency',
-            currency: 'EUR',
-        }).format(amount);
-    };
+    const emailHint = !shipped_email_enabled
+        ? t('admin.orders.ship.email_disabled')
+        : !withoutNumber
+          ? t('admin.orders.ship.email_with_tracking')
+          : data.notify_customer
+            ? t('admin.orders.ship.email_now')
+            : t('admin.orders.ship.email_later');
 
-    const getSelectedSize = () => {
-        if (!boxInfo.size_id) return null;
-        return sizes.find((size) => size.id.toString() === boxInfo.size_id);
-    };
-
-    const formatDimensions = (length: number, width: number, height: number) => {
-        return `${length} × ${width} × ${height} cm`;
-    };
+    const address = order.shippingAddress;
 
     return (
         <AppLayout
             breadcrumbs={[
                 { title: 'Admin', href: '/admin/dashboard' },
                 { title: 'Orders', href: '/admin/orders' },
-                { title: `Order ${order.order_number}`, href: `/admin/orders/${order.id}` },
-                { title: 'Ship Order', href: '#' },
+                { title: order.order_number, href: `/admin/orders/${order.id}` },
+                { title: t('admin.orders.ship.button'), href: '#' },
             ]}
         >
-            <Head title={`Ship Order ${order.order_number} - Admin`} />
+            <Head title={t('admin.orders.ship.title', { number: order.order_number })} />
 
-            <div className="space-y-6 p-4 md:p-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <div className="mb-2 flex items-center gap-3">
-                            <Button variant="outline" size="sm" asChild>
-                                <Link href={`/admin/orders/${order.id}`}>
-                                    <ArrowLeft className="mr-1 h-4 w-4" />
-                                    Back to Order
-                                </Link>
-                            </Button>
-                        </div>
-                        <h1 className="text-2xl font-bold">Ship Order {order.order_number}</h1>
-                        <p className="text-muted-foreground">Prepare shipping details for this order</p>
-                    </div>
-                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                        {order.status}
-                    </Badge>
+            <div className="mx-auto max-w-3xl space-y-6 p-4 md:p-6">
+                <div className="space-y-2">
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={`/admin/orders/${order.id}`}>
+                            <ArrowLeft className="mr-1 h-4 w-4" />
+                            {t('admin.orders.ship.back')}
+                        </Link>
+                    </Button>
+                    <h1 className="text-2xl font-bold">{t('admin.orders.ship.title', { number: order.order_number })}</h1>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* 1. Sender Shipping Information (Collapsed by default) */}
+                <div className="grid gap-4 md:grid-cols-2">
                     <Card>
-                        <Collapsible open={openSections.sender} onOpenChange={() => toggleSection('sender')}>
-                            <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer transition-colors hover:bg-muted/50">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Package className="h-5 w-5" />
-                                            <CardTitle>Sender Shipping Information</CardTitle>
-                                        </div>
-                                        {openSections.sender ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                    </div>
-                                </CardHeader>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <CardContent className="space-y-4">
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div>
-                                            <Label htmlFor="company_name">Company Name</Label>
-                                            <Input
-                                                id="company_name"
-                                                value={senderInfo.company_name}
-                                                onChange={(e) =>
-                                                    setSenderInfo((prev) => ({
-                                                        ...prev,
-                                                        company_name: e.target.value,
-                                                    }))
-                                                }
-                                                placeholder="Your company name"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="sender_email">Email</Label>
-                                            <Input
-                                                id="sender_email"
-                                                type="email"
-                                                value={senderInfo.email}
-                                                onChange={(e) =>
-                                                    setSenderInfo((prev) => ({
-                                                        ...prev,
-                                                        email: e.target.value,
-                                                    }))
-                                                }
-                                                placeholder="company@example.com"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="sender_address">Address</Label>
-                                        <Textarea
-                                            id="sender_address"
-                                            value={senderInfo.address}
-                                            onChange={(e) =>
-                                                setSenderInfo((prev) => ({
-                                                    ...prev,
-                                                    address: e.target.value,
-                                                }))
-                                            }
-                                            placeholder="Complete company address"
-                                            rows={3}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="sender_phone">Phone</Label>
-                                        <Input
-                                            id="sender_phone"
-                                            value={senderInfo.phone}
-                                            onChange={(e) =>
-                                                setSenderInfo((prev) => ({
-                                                    ...prev,
-                                                    phone: e.target.value,
-                                                }))
-                                            }
-                                            placeholder="+39 123 456 7890"
-                                        />
-                                    </div>
-                                </CardContent>
-                            </CollapsibleContent>
-                        </Collapsible>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <Package className="h-4 w-4" />
+                                {t('admin.orders.ship.items')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="space-y-1 text-sm">
+                                {(order.orderItems ?? []).map((item) => (
+                                    <li key={item.id}>
+                                        {item.quantity} × {item.product.name}
+                                        {item.variant?.name ? <span className="text-muted-foreground"> ({item.variant.name})</span> : null}
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
                     </Card>
 
-                    {/* 2. Customer Information (Auto-filled, expanded by default) */}
                     <Card>
-                        <Collapsible open={openSections.customer} onOpenChange={() => toggleSection('customer')}>
-                            <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer transition-colors hover:bg-muted/50">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <User className="h-5 w-5" />
-                                            <CardTitle>Customer Information</CardTitle>
-                                        </div>
-                                        {openSections.customer ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                    </div>
-                                </CardHeader>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <CardContent className="space-y-4">
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div>
-                                            <Label htmlFor="customer_name">Customer Name</Label>
-                                            <Input
-                                                id="customer_name"
-                                                value={customerInfo.name}
-                                                onChange={(e) =>
-                                                    setCustomerInfo((prev) => ({
-                                                        ...prev,
-                                                        name: e.target.value,
-                                                    }))
-                                                }
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="customer_email">Email</Label>
-                                            <Input
-                                                id="customer_email"
-                                                type="email"
-                                                value={customerInfo.email}
-                                                onChange={(e) =>
-                                                    setCustomerInfo((prev) => ({
-                                                        ...prev,
-                                                        email: e.target.value,
-                                                    }))
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="customer_phone">Phone</Label>
-                                        <Input
-                                            id="customer_phone"
-                                            value={customerInfo.phone}
-                                            onChange={(e) =>
-                                                setCustomerInfo((prev) => ({
-                                                    ...prev,
-                                                    phone: e.target.value,
-                                                }))
-                                            }
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <MapPin className="h-4 w-4" />
+                                {t('admin.orders.ship.address')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-0.5 text-sm">
+                            {address ? (
+                                <>
+                                    <p className="font-medium">
+                                        {address.first_name} {address.last_name}
+                                    </p>
+                                    {address.company && <p>{address.company}</p>}
+                                    <p>{address.address_line_1}</p>
+                                    {address.address_line_2 && <p>{address.address_line_2}</p>}
+                                    <p>
+                                        {address.postal_code} {address.city} {address.state}
+                                    </p>
+                                    <p>{address.country}</p>
+                                    {address.phone && <p className="text-muted-foreground">{address.phone}</p>}
+                                </>
+                            ) : (
+                                <p className="text-muted-foreground">—</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <form onSubmit={submit}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <Truck className="h-4 w-4" />
+                                {t('admin.orders.ship.shipment')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-5">
+                            <div className="space-y-2">
+                                <Label htmlFor="tracking_carrier">{t('tracking_admin.carrier')}</Label>
+                                {carriers.length === 0 ? (
+                                    <p className="text-sm text-destructive">{t('admin.orders.ship.no_carriers')}</p>
+                                ) : (
+                                    <Select value={data.tracking_carrier} onValueChange={(value) => setData('tracking_carrier', value)}>
+                                        <SelectTrigger id="tracking_carrier" aria-invalid={!!errors.tracking_carrier}>
+                                            <SelectValue placeholder={t('tracking_admin.carrier_select')} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {carriers.map((carrier) => (
+                                                <SelectItem key={carrier.code} value={carrier.code}>
+                                                    {carrier.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                                {errors.tracking_carrier && <p className="text-sm text-destructive">{errors.tracking_carrier}</p>}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="tracking_number">{t('admin.orders.ship.tracking_number')}</Label>
+                                <Input
+                                    id="tracking_number"
+                                    value={data.tracking_number}
+                                    onChange={(event) => setData('tracking_number', event.target.value)}
+                                    placeholder={t('admin.orders.ship.tracking_placeholder')}
+                                    maxLength={100}
+                                    autoComplete="off"
+                                    aria-invalid={!!errors.tracking_number}
+                                />
+                                {errors.tracking_number && <p className="text-sm text-destructive">{errors.tracking_number}</p>}
+                            </div>
+
+                            {withoutNumber && (
+                                <div className="space-y-3 rounded-md border p-3">
+                                    <div className="flex items-start gap-2">
+                                        <Checkbox
+                                            id="ship_without_tracking"
+                                            checked={data.ship_without_tracking}
+                                            onCheckedChange={(checked) => setData('ship_without_tracking', checked === true)}
                                         />
+                                        <div className="space-y-1">
+                                            <Label htmlFor="ship_without_tracking">{t('admin.orders.ship.without_tracking')}</Label>
+                                            <p className="text-xs text-muted-foreground">{t('admin.orders.ship.without_tracking_help')}</p>
+                                        </div>
                                     </div>
-                                    {order.orderItems && order.orderItems.length > 0 && (
-                                        <div>
-                                            <Label>Order Items</Label>
-                                            <div className="mt-2 space-y-2">
-                                                {order.orderItems.map((item) => (
-                                                    <div key={item.id} className="flex items-center justify-between rounded bg-muted p-2">
-                                                        <span>{item.product.name}</span>
-                                                        <span>
-                                                            Qty: {item.quantity} - {formatCurrency(item.price)}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                                <div className="flex items-center justify-between rounded bg-primary/10 p-2 font-semibold">
-                                                    <span>Total Order Value</span>
-                                                    <span>{formatCurrency(order.total_amount)}</span>
-                                                </div>
-                                            </div>
+                                    {data.ship_without_tracking && shipped_email_enabled && (
+                                        <div className="flex items-center gap-2 pl-6">
+                                            <Checkbox
+                                                id="notify_customer"
+                                                checked={data.notify_customer}
+                                                onCheckedChange={(checked) => setData('notify_customer', checked === true)}
+                                            />
+                                            <Label htmlFor="notify_customer">{t('admin.orders.ship.notify_now')}</Label>
                                         </div>
                                     )}
-                                </CardContent>
-                            </CollapsibleContent>
-                        </Collapsible>
+                                </div>
+                            )}
+
+                            <p className="text-sm text-muted-foreground">{emailHint}</p>
+
+                            <div className="flex justify-end">
+                                <Button type="submit" disabled={!canSubmit}>
+                                    <Truck className="mr-2 h-4 w-4" />
+                                    {t('admin.orders.ship.submit')}
+                                </Button>
+                            </div>
+                        </CardContent>
                     </Card>
-
-                    {/* 3. Shipping Address Information (Auto-filled, expanded by default) */}
-                    <Card>
-                        <Collapsible open={openSections.shipping} onOpenChange={() => toggleSection('shipping')}>
-                            <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer transition-colors hover:bg-muted/50">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="h-5 w-5" />
-                                            <CardTitle>Shipping Address Information</CardTitle>
-                                        </div>
-                                        {openSections.shipping ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                    </div>
-                                </CardHeader>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <CardContent className="space-y-4">
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div>
-                                            <Label htmlFor="shipping_first_name">First Name</Label>
-                                            <Input
-                                                id="shipping_first_name"
-                                                value={shippingAddress.first_name}
-                                                onChange={(e) =>
-                                                    setShippingAddress((prev) => ({
-                                                        ...prev,
-                                                        first_name: e.target.value,
-                                                    }))
-                                                }
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="shipping_last_name">Last Name</Label>
-                                            <Input
-                                                id="shipping_last_name"
-                                                value={shippingAddress.last_name}
-                                                onChange={(e) =>
-                                                    setShippingAddress((prev) => ({
-                                                        ...prev,
-                                                        last_name: e.target.value,
-                                                    }))
-                                                }
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="shipping_company">Company</Label>
-                                        <Input
-                                            id="shipping_company"
-                                            value={shippingAddress.company}
-                                            onChange={(e) =>
-                                                setShippingAddress((prev) => ({
-                                                    ...prev,
-                                                    company: e.target.value,
-                                                }))
-                                            }
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="shipping_address_1">Address Line 1</Label>
-                                        <Input
-                                            id="shipping_address_1"
-                                            value={shippingAddress.address_line_1}
-                                            onChange={(e) =>
-                                                setShippingAddress((prev) => ({
-                                                    ...prev,
-                                                    address_line_1: e.target.value,
-                                                }))
-                                            }
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="shipping_address_2">Address Line 2</Label>
-                                        <Input
-                                            id="shipping_address_2"
-                                            value={shippingAddress.address_line_2}
-                                            onChange={(e) =>
-                                                setShippingAddress((prev) => ({
-                                                    ...prev,
-                                                    address_line_2: e.target.value,
-                                                }))
-                                            }
-                                        />
-                                    </div>
-                                    <div className="grid gap-4 md:grid-cols-3">
-                                        <div>
-                                            <Label htmlFor="shipping_city">City</Label>
-                                            <Input
-                                                id="shipping_city"
-                                                value={shippingAddress.city}
-                                                onChange={(e) =>
-                                                    setShippingAddress((prev) => ({
-                                                        ...prev,
-                                                        city: e.target.value,
-                                                    }))
-                                                }
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="shipping_state">State/Province</Label>
-                                            <Input
-                                                id="shipping_state"
-                                                value={shippingAddress.state}
-                                                onChange={(e) =>
-                                                    setShippingAddress((prev) => ({
-                                                        ...prev,
-                                                        state: e.target.value,
-                                                    }))
-                                                }
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="shipping_postal_code">Postal Code</Label>
-                                            <Input
-                                                id="shipping_postal_code"
-                                                value={shippingAddress.postal_code}
-                                                onChange={(e) =>
-                                                    setShippingAddress((prev) => ({
-                                                        ...prev,
-                                                        postal_code: e.target.value,
-                                                    }))
-                                                }
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div>
-                                            <Label htmlFor="shipping_country">Country</Label>
-                                            <Input
-                                                id="shipping_country"
-                                                value={shippingAddress.country}
-                                                onChange={(e) =>
-                                                    setShippingAddress((prev) => ({
-                                                        ...prev,
-                                                        country: e.target.value,
-                                                    }))
-                                                }
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="shipping_phone">Phone</Label>
-                                            <Input
-                                                id="shipping_phone"
-                                                value={shippingAddress.phone}
-                                                onChange={(e) =>
-                                                    setShippingAddress((prev) => ({
-                                                        ...prev,
-                                                        phone: e.target.value,
-                                                    }))
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </CollapsibleContent>
-                        </Collapsible>
-                    </Card>
-
-                    {/* 4. Shipping Box Information */}
-                    <Card>
-                        <Collapsible open={openSections.box} onOpenChange={() => toggleSection('box')}>
-                            <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer transition-colors hover:bg-muted/50">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Box className="h-5 w-5" />
-                                            <CardTitle>Shipping Box Information</CardTitle>
-                                        </div>
-                                        {openSections.box ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                    </div>
-                                </CardHeader>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <CardContent className="space-y-4">
-                                    {/* Size Selection */}
-                                    <div>
-                                        <Label htmlFor="size_select">Box Size</Label>
-                                        <Select
-                                            value={boxInfo.size_id}
-                                            onValueChange={(value) =>
-                                                setBoxInfo((prev) => ({
-                                                    ...prev,
-                                                    size_id: value,
-                                                }))
-                                            }
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select a box size" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {sizes.map((size) => (
-                                                    <SelectItem key={size.id} value={size.id.toString()}>
-                                                        {size.name} - {formatDimensions(size.length, size.width, size.height)}-{' '}
-                                                        {formatCurrency(size.shipping_cost)}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {getSelectedSize() && (
-                                            <div className="mt-2 rounded-md bg-muted p-3">
-                                                <div className="text-sm text-muted-foreground">
-                                                    <p>
-                                                        <strong>Dimensions:</strong>{' '}
-                                                        {formatDimensions(
-                                                            getSelectedSize()!.length,
-                                                            getSelectedSize()!.width,
-                                                            getSelectedSize()!.height,
-                                                        )}
-                                                    </p>
-                                                    <p>
-                                                        <strong>Box Type:</strong>{' '}
-                                                        {getSelectedSize()!
-                                                            .box_type.replace('_', ' ')
-                                                            .replace(/\b\w/g, (l) => l.toUpperCase())}
-                                                    </p>
-                                                    <p>
-                                                        <strong>Shipping Cost:</strong> {formatCurrency(getSelectedSize()!.shipping_cost)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Weight */}
-                                    <div>
-                                        <Label htmlFor="weight">Weight (kg)</Label>
-                                        <Input
-                                            id="weight"
-                                            type="number"
-                                            step="0.1"
-                                            value={boxInfo.weight}
-                                            onChange={(e) =>
-                                                setBoxInfo((prev) => ({
-                                                    ...prev,
-                                                    weight: e.target.value,
-                                                }))
-                                            }
-                                            placeholder="1.5"
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div>
-                                            <Label htmlFor="carrier">{t('tracking_admin.carrier')}</Label>
-                                            {carriers.length > 0 && (
-                                                <Select
-                                                    value={trackingCarrier || NO_CARRIER}
-                                                    onValueChange={(value) => {
-                                                        const code = value === NO_CARRIER ? '' : value;
-                                                        setTrackingCarrier(code);
-                                                        setBoxInfo((prev) => ({
-                                                            ...prev,
-                                                            carrier: carriers.find((carrier) => carrier.code === code)?.name ?? '',
-                                                        }));
-                                                    }}
-                                                >
-                                                    <SelectTrigger id="carrier">
-                                                        <SelectValue placeholder={t('tracking_admin.carrier_select')} />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {carriers.map((carrier) => (
-                                                            <SelectItem key={carrier.code} value={carrier.code}>
-                                                                {carrier.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                        <SelectItem value={NO_CARRIER}>{t('tracking_admin.carrier_unknown')}</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                            {!trackingCarrier && (
-                                                <Input
-                                                    id={carriers.length > 0 ? 'carrier_name' : 'carrier'}
-                                                    className={carriers.length > 0 ? 'mt-2' : undefined}
-                                                    value={boxInfo.carrier}
-                                                    onChange={(e) =>
-                                                        setBoxInfo((prev) => ({
-                                                            ...prev,
-                                                            carrier: e.target.value,
-                                                        }))
-                                                    }
-                                                    placeholder={t('tracking_admin.carrier')}
-                                                />
-                                            )}
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="service_type">Service Type</Label>
-                                            <Input
-                                                id="service_type"
-                                                value={boxInfo.service_type}
-                                                onChange={(e) =>
-                                                    setBoxInfo((prev) => ({
-                                                        ...prev,
-                                                        service_type: e.target.value,
-                                                    }))
-                                                }
-                                                placeholder="Express, Standard, etc."
-                                            />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </CollapsibleContent>
-                        </Collapsible>
-                    </Card>
-
-                    {/* 5. Additional Settings */}
-                    <Card>
-                        <Collapsible open={openSections.additional} onOpenChange={() => toggleSection('additional')}>
-                            <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer transition-colors hover:bg-muted/50">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Shield className="h-5 w-5" />
-                                            <CardTitle>Additional Settings</CardTitle>
-                                        </div>
-                                        {openSections.additional ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                    </div>
-                                </CardHeader>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <CardContent className="space-y-6">
-                                    {/* Insurance Section */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center space-x-2">
-                                            <input
-                                                type="checkbox"
-                                                id="insurance_enabled"
-                                                checked={additionalSettings.insurance_enabled}
-                                                onChange={(e) =>
-                                                    setAdditionalSettings((prev) => ({
-                                                        ...prev,
-                                                        insurance_enabled: e.target.checked,
-                                                    }))
-                                                }
-                                                className="rounded border-gray-300"
-                                            />
-                                            <Label htmlFor="insurance_enabled" className="flex items-center gap-2">
-                                                <Shield className="h-4 w-4" />
-                                                Enable Insurance
-                                            </Label>
-                                        </div>
-
-                                        {additionalSettings.insurance_enabled && (
-                                            <div className="ml-6 rounded-lg border bg-muted/50 p-4">
-                                                <div>
-                                                    <Label htmlFor="insurance_value">Insurance Value (€)</Label>
-                                                    <Input
-                                                        id="insurance_value"
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={additionalSettings.insurance_value}
-                                                        onChange={(e) =>
-                                                            setAdditionalSettings((prev) => ({
-                                                                ...prev,
-                                                                insurance_value: e.target.value,
-                                                            }))
-                                                        }
-                                                        placeholder="0.00"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Contrassegno Section */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center space-x-2">
-                                            <input
-                                                type="checkbox"
-                                                id="contrassegno_enabled"
-                                                checked={additionalSettings.contrassegno_enabled}
-                                                onChange={(e) =>
-                                                    setAdditionalSettings((prev) => ({
-                                                        ...prev,
-                                                        contrassegno_enabled: e.target.checked,
-                                                    }))
-                                                }
-                                                className="rounded border-gray-300"
-                                            />
-                                            <Label htmlFor="contrassegno_enabled" className="flex items-center gap-2">
-                                                <CreditCard className="h-4 w-4" />
-                                                Enable Contrassegno (Cash on Delivery)
-                                            </Label>
-                                        </div>
-
-                                        {additionalSettings.contrassegno_enabled && (
-                                            <div className="ml-6 space-y-4 rounded-lg border bg-muted/50 p-4">
-                                                <div>
-                                                    <Label htmlFor="contrassegno_amount">Contrassegno Amount (€)</Label>
-                                                    <Input
-                                                        id="contrassegno_amount"
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={additionalSettings.contrassegno_amount}
-                                                        onChange={(e) =>
-                                                            setAdditionalSettings((prev) => ({
-                                                                ...prev,
-                                                                contrassegno_amount: e.target.value,
-                                                            }))
-                                                        }
-                                                        placeholder="0.00"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <Label htmlFor="iban">IBAN</Label>
-                                                    <Input
-                                                        id="iban"
-                                                        value={additionalSettings.iban}
-                                                        onChange={(e) =>
-                                                            setAdditionalSettings((prev) => ({
-                                                                ...prev,
-                                                                iban: e.target.value,
-                                                            }))
-                                                        }
-                                                        placeholder="IT60 X054 2811 1010 0000 0123 456"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <Label htmlFor="account_holder">Account Holder Name</Label>
-                                                    <Input
-                                                        id="account_holder"
-                                                        value={additionalSettings.account_holder}
-                                                        onChange={(e) =>
-                                                            setAdditionalSettings((prev) => ({
-                                                                ...prev,
-                                                                account_holder: e.target.value,
-                                                            }))
-                                                        }
-                                                        placeholder="Company Name or Person Name"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Notes */}
-                                    <div>
-                                        <Label htmlFor="notes">Additional Notes</Label>
-                                        <Textarea
-                                            id="notes"
-                                            value={additionalSettings.notes}
-                                            onChange={(e) =>
-                                                setAdditionalSettings((prev) => ({
-                                                    ...prev,
-                                                    notes: e.target.value,
-                                                }))
-                                            }
-                                            placeholder="Any additional shipping instructions or notes..."
-                                            rows={3}
-                                        />
-                                    </div>
-                                </CardContent>
-                            </CollapsibleContent>
-                        </Collapsible>
-                    </Card>
-
-                    {/* Submit Button */}
-                    <div className="flex justify-end space-x-4">
-                        <Button type="button" variant="outline" asChild>
-                            <Link href={`/admin/orders/${order.id}`}>Cancel</Link>
-                        </Button>
-                        <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting ? 'Processing...' : 'Ship Order'}
-                        </Button>
-                    </div>
                 </form>
             </div>
+
+            <AlertDialog open={confirming} onOpenChange={(open) => !open && !processing && setConfirming(false)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t('admin.orders.ship.confirm_title')}</AlertDialogTitle>
+                        <AlertDialogDescription>{emailHint}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={processing}>{t('admin.orders.ship.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={send} disabled={processing}>
+                            {t('admin.orders.ship.confirm')}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }

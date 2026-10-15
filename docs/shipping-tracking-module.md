@@ -81,8 +81,9 @@ Rules enforced centrally by `ShipmentTrackingService` (adapters cannot get them 
 
 ## Flow in operation
 
-1. The admin ships the order and picks the carrier (`tracking_carrier`, a key of `config('shipping.carriers')`) and later adds the
-   tracking number. The shipped email's link comes from `Order::trackingUrl()` → `TrackingManager::trackingUrl()` (active driver,
+1. The admin ships the order on the ship form (`App\Shipping\ShippingService`): carrier (`tracking_carrier`, a key of
+   `config('shipping.carriers')`, required) and tracking number (required unless "ship without tracking number" is confirmed; it can
+   then be added later on the order page). One shipped email goes out, with the tracking when there is a number. The shipped email's link comes from `Order::trackingUrl()` → `TrackingManager::trackingUrl()` (active driver,
    then the manual template; never a network call).
 2. **Polling** (`tracking:sync`, scheduled every 15 minutes **only when the active driver is not passive**): selects `shipped` orders
    with a tracking number, a non-terminal tracking status, inside the polling window and with `tracking_next_sync_at` empty or due.

@@ -64,7 +64,10 @@ it('records nothing for a refused move or a move to the current status', functio
 it('gives the admin order page the events oldest first, with actor name and reason', function () {
     $order = eventsOrder('processing');
 
-    $this->actingAs($this->admin)->patch(route('admin.orders.update-status', $order), ['status' => 'shipped']);
+    config(['shipping.carriers' => ['acme' => ['name' => 'Acme Courier']]]);
+
+    // shipping goes through the ship form (ShippingService), which moves the order through transitionTo()
+    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $order), ['tracking_carrier' => 'acme', 'tracking_number' => 'TRK1']);
     $this->travel(5)->minutes();
     $this->actingAs($this->admin)->patch(route('admin.orders.update-status', $order), ['status' => 'processing', 'reason' => 'Wrong parcel']);
     $order->fresh()->transitionTo('shipped', null, null, ['source' => 'tracking']);

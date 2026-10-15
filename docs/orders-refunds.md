@@ -36,7 +36,10 @@ order, and the admin pages receive `can_ship`, which shows the "Ship" action.
 
 Who calls it:
 - **The admin:** the order page, the edit form, the status endpoint, bulk updates, the ship form. A refused move
-  writes nothing and shows an error. In bulk, refused orders are listed as skipped.
+  writes nothing and shows an error. In bulk, refused orders are listed as skipped. **`→ shipped` only through the
+  ship form** (`App\Shipping\ShippingService::ship()`: carrier, tracking number, shipment row, one shipped email). The
+  edit form, the status endpoint and bulk updates refuse `shipped`, and typing a tracking number in the edit form never
+  ships the order.
 - **The system:** Stripe confirming a payment (`pending → processing`), a checkout that expired or failed
   (`→ cancelled`), and the carrier tracking auto-deliver (`shipped → delivered`). These run with no actor and record
   their source in the event. A refused move never fails a webhook: it is logged and the other fields are saved.

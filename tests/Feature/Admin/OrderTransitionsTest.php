@@ -181,15 +181,12 @@ it('treats a move to the current status as a no-op that still saves the other ch
 });
 
 it('refuses to ship an unpaid pending order from the ship form', function () {
+    config(['shipping.carriers' => ['acme' => ['name' => 'Acme Courier']]]);
     $order = Order::factory()->create(['status' => 'pending', 'payment_status' => 'pending']);
 
     $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $order), [
-        'sender_info' => ['company_name' => 'Shop', 'address' => 'Via Roma 1', 'phone' => '123', 'email' => 'shop@example.test'],
-        'customer_info' => ['name' => 'Mario Rossi', 'email' => 'mario@example.test'],
-        'shipping_address' => [
-            'first_name' => 'Mario', 'last_name' => 'Rossi', 'address_line_1' => 'Via Verdi 2',
-            'city' => 'Milano', 'state' => 'MI', 'postal_code' => '20100', 'country' => 'IT',
-        ],
+        'tracking_carrier' => 'acme',
+        'tracking_number' => 'TRK1',
     ])->assertSessionHas('error');
 
     expect($order->fresh()->status)->toBe('pending');

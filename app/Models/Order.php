@@ -165,6 +165,15 @@ class Order extends Model
     }
 
     /**
+     * Parcels shipped for this order (ShippingService), oldest first. The order's tracking_number / tracking_carrier
+     * are the current values.
+     */
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class)->orderBy('id');
+    }
+
+    /**
      * Audit trail (status changes, refunds), oldest first.
      */
     public function events(): HasMany

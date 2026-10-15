@@ -376,7 +376,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                             <Button asChild size="sm" variant="outline">
                                                                 <Link href={`/admin/orders/${order.id}/ship`}>
                                                                     <Truck className="mr-1 h-4 w-4" />
-                                                                    Ship
+                                                                    {t('admin.orders.ship.button')}
                                                                 </Link>
                                                             </Button>
                                                         )}
@@ -441,7 +441,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                     <Button asChild size="sm" variant="outline">
                                                         <Link href={`/admin/orders/${order.id}/ship`}>
                                                             <Truck className="mr-1 h-4 w-4" />
-                                                            Ship
+                                                            {t('admin.orders.ship.button')}
                                                         </Link>
                                                     </Button>
                                                 )}

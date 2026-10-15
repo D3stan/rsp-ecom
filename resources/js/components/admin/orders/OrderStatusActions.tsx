@@ -12,16 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import useTranslation from '@/hooks/useTranslation';
+import { forwardTransitions } from '@/lib/order-transitions';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-
-// Statuses an order moves forward through, in order (cancel and "undo ship" are separate, confirmed actions)
-const FORWARD = ['processing', 'shipped', 'delivered'];
-
-/** The forward moves the server allows from the current status (Admin\OrdersController passes allowed_transitions). */
-export function forwardTransitions(status: string, allowed: string[]): string[] {
-    return allowed.filter((next) => FORWARD.indexOf(next) > FORWARD.indexOf(status));
-}
 
 interface Props {
     orderId: number;
