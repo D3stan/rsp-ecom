@@ -81,9 +81,10 @@ arch('shared driver helpers are traits')
 it('mentions the Spediamo adapter only in its own folder, its registration, its config key, docs and tests', function () {
     $root = dirname(__DIR__, 3);
 
-    // The one registration line and the config key. Everything else is scanned.
+    // The two registration lines (tracking + label adapters) and the config key. Everything else is scanned.
     $allowed = [
         'app/Providers/TrackingServiceProvider.php',
+        'app/Providers/LabelServiceProvider.php',
         'config/shipping.php',
     ];
 
@@ -101,7 +102,8 @@ it('mentions the Spediamo adapter only in its own folder, its registration, its 
 
             if (! $file->isFile() || ! preg_match('/\.(php|tsx?|jsx?|css|json)$/', $relative)
                 || in_array($relative, $allowed, true)
-                || str_starts_with($relative, 'app/Shipping/Tracking/Drivers/Spediamo/')) {
+                || str_starts_with($relative, 'app/Shipping/Tracking/Drivers/Spediamo/')
+                || str_starts_with($relative, 'app/Shipping/Labels/Drivers/Spediamo/')) {
                 continue;
             }
 

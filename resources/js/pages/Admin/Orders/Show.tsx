@@ -1,6 +1,16 @@
 import OrderRefunds, { type OrderRefund, type RefundInfo } from '@/components/admin/orders/OrderRefunds';
 import OrderStatusActions from '@/components/admin/orders/OrderStatusActions';
 import OrderTimeline, { type OrderTimelineEvent } from '@/components/admin/orders/OrderTimeline';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -121,6 +131,8 @@ interface Props {
     refunds?: OrderRefund[];
     refund?: RefundInfo;
     carriers?: Carrier[];
+    // label shipments with a stored PDF (optional label layer)
+    shipments?: Array<{ id: number; carrier_code: string; tracking_number: string | null; can_cancel: boolean }>;
     stock?: StockInfo;
 }
 
@@ -167,9 +179,11 @@ export default function OrderShow({
     refunds = [],
     refund,
     carriers = [],
+    shipments = [],
     stock,
 }: Props) {
     const { t } = useTranslation();
+    const [cancelShipmentId, setCancelShipmentId] = useState<number | null>(null);
     const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
     const [isUpdating, setIsUpdating] = useState(false);
     const [isAddingTracking, setIsAddingTracking] = useState(false);
@@ -534,6 +548,41 @@ export default function OrderShow({
                                             </div>
                                         )}
 
+                                        {/* Label shipments: download the PDF, cancel at the carrier (optional label layer) */}
+                                        {shipments.length > 0 && (
+                                            <div className="space-y-2">
+                                                {shipments.map((shipment) => (
+                                                    <div
+                                                        key={shipment.id}
+                                                        className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm"
+                                                    >
+                                                        <span className="font-mono">{shipment.tracking_number ?? '—'}</span>
+                                                        <div className="ml-auto flex gap-2">
+                                                            <Button variant="outline" size="sm" asChild>
+                                                                <a
+                                                                    href={`/admin/orders/${order.id}/shipments/${shipment.id}/label`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    {t('admin.orders.ship.download_label')}
+                                                                </a>
+                                                            </Button>
+                                                            {shipment.can_cancel && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="text-red-600"
+                                                                    onClick={() => setCancelShipmentId(shipment.id)}
+                                                                >
+                                                                    {t('admin.orders.ship.cancel_shipment')}
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
                                         {/* Shipping Address */}
                                         {order.shippingAddress && (
                                             <div>
@@ -673,6 +722,30 @@ export default function OrderShow({
                     </div>
                 </div>
             </div>
+            <AlertDialog open={cancelShipmentId !== null} onOpenChange={(open) => !open && setCancelShipmentId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t('admin.orders.ship.cancel_shipment_confirm_title')}</AlertDialogTitle>
+                        <AlertDialogDescription>{t('admin.orders.ship.cancel_shipment_confirm_body')}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{t('admin.orders.keep_as_is')}</AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            onClick={() => {
+                                if (cancelShipmentId !== null) {
+                                    router.delete(`/admin/orders/${order.id}/shipments/${cancelShipmentId}`, {
+                                        preserveScroll: true,
+                                        onFinish: () => setCancelShipmentId(null),
+                                    });
+                                }
+                            }}
+                        >
+                            {t('admin.orders.ship.cancel_shipment')}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }

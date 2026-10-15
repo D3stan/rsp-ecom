@@ -22,6 +22,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::resource('orders', OrdersController::class)->only(['index', 'show', 'edit', 'update']);
     Route::get('orders/{order}/ship', [OrdersController::class, 'showShip'])->name('orders.show-ship');
     Route::post('orders/{order}/ship', [OrdersController::class, 'processShip'])->name('orders.process-ship');
+    // Optional label layer: stream a shipment's label PDF, cancel a shipment at the carrier
+    Route::get('orders/{order}/shipments/{shipment}/label', [OrdersController::class, 'downloadLabel'])->scopeBindings()->name('orders.shipments.label');
+    Route::delete('orders/{order}/shipments/{shipment}', [OrdersController::class, 'cancelShipment'])->scopeBindings()->name('orders.shipments.cancel');
     Route::patch('orders/{order}/status', [OrdersController::class, 'updateStatus'])->name('orders.update-status');
     Route::patch('orders/{order}/cancel', [OrdersController::class, 'cancel'])->name('orders.cancel');
     Route::post('orders/{order}/refund', [OrdersController::class, 'refund'])->name('orders.refund');

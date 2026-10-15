@@ -4,7 +4,6 @@ use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\User;
 use App\Shipping\Labels\LabelManager;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -98,7 +97,7 @@ it('shows the carriers message on a carrier rejection and does not change the or
 
 it('flashes an error and changes nothing when the provider is unavailable', function () {
     $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody([
-        'parcels' => [['weight' => 0]], // the fake driver treats weight 0 as "provider down"
+        'parcels' => [['weight' => 0.001]], // the fake driver treats a near-zero weight as "provider down"
     ]))->assertSessionHas('error');
 
     expect($this->order->fresh()->status)->toBe('processing')

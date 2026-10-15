@@ -12,8 +12,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderEmail;
 use App\Models\Refund;
+use App\Models\Shipment;
 use App\Services\EmailService;
 use App\Services\RefundService;
+use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
+use App\Shipping\Labels\Exceptions\LabelRejected;
+use App\Shipping\Labels\ShipmentBuilder;
 use App\Shipping\ShipInput;
 use App\Shipping\ShippingService;
 use App\Support\Revenue;
@@ -159,6 +163,14 @@ class OrdersController extends Controller
                     : (object) [],
             ],
             'carriers' => app(TrackingManager::class)->carriers(),
+            // Label shipments (created, newest first): "Download label" and "Cancel shipment" on the order page
+            'shipments' => $order->shipments()->where('status', Shipment::STATUS_CREATED)->whereNotNull('label_path')->reorder()->latest('id')->get()
+                ->map(fn (Shipment $shipment) => [
+                    'id' => $shipment->id,
+                    'carrier_code' => $shipment->carrier_code,
+                    'tracking_number' => $shipment->tracking_number,
+                    'can_cancel' => $this->driverCancels($shipment->driver),
+                ])->values()->all(),
             // Internal stock bookkeeping (hidden from every customer-facing array): units sold beyond the stock
             'stock' => [
                 'has_oversold_items' => (bool) $order->has_oversold_items,
@@ -460,13 +472,18 @@ class OrdersController extends Controller
                 ->with('error', "Order {$order->order_number} cannot ship now: it must be processing and paid.");
         }
 
-        $order->load(['user', 'orderItems.product', 'orderItems.product.defaultVariant', 'shippingAddress']);
+        $order->load(['user', 'orderItems.product', 'orderItems.product.defaultVariant', 'orderItems.size', 'shippingAddress']);
+
+        $labelsEnabled = app(ShippingService::class)->labelsEnabled();
 
         return Inertia::render('Admin/Orders/Ship', [
             'order' => $order->toFrontendArray(),
             'carriers' => app(TrackingManager::class)->carriers(),
             // false: the customer gets no shipped email at all (admin settings)
             'shipped_email_enabled' => app(EmailService::class)->isEnabled(OrderEmail::TYPE_SHIPPED),
+            // optional label creation (OFF by default): when on, the form shows parcel fields and a "create label" button
+            'labels_enabled' => $labelsEnabled,
+            'parcels' => $labelsEnabled ? app(ShipmentBuilder::class)->prefillParcels($order) : [],
         ]);
     }
 
@@ -476,21 +493,42 @@ class OrdersController extends Controller
      */
     public function processShip(Request $request, Order $order, ShippingService $shipping)
     {
+        // Label creation is honoured only while it is switched on; otherwise the manual path needs a tracking number.
+        $wantsLabel = $shipping->labelsEnabled() && $request->boolean('create_label');
+
         $data = $request->validate([
             'tracking_carrier' => ['required', 'string', 'max:50', Rule::in(app(TrackingManager::class)->carrierCodes())],
-            'tracking_number' => [Rule::requiredIf(! $request->boolean('ship_without_tracking')), 'nullable', 'string', 'max:100'],
+            'tracking_number' => [Rule::requiredIf(! $wantsLabel && ! $request->boolean('ship_without_tracking')), 'nullable', 'string', 'max:100'],
             'ship_without_tracking' => 'sometimes|boolean',
             'notify_customer' => 'sometimes|boolean',
+            'create_label' => 'sometimes|boolean',
+            'parcels' => 'sometimes|array|max:20',
+            'parcels.*.weight' => 'nullable|numeric|min:0|max:1000',
+            'parcels.*.length' => 'nullable|numeric|min:0|max:1000',
+            'parcels.*.width' => 'nullable|numeric|min:0|max:1000',
+            'parcels.*.height' => 'nullable|numeric|min:0|max:1000',
+            'insurance_amount' => 'sometimes|nullable|numeric|min:0|max:1000000',
+            'cod_amount' => 'sometimes|nullable|numeric|min:0|max:1000000',
         ]);
 
         try {
             $outcome = $shipping->ship($order, new ShipInput(
-                $data['tracking_carrier'],
-                $data['tracking_number'] ?? null, // a number typed anyway is used even with "ship without tracking"
-                $request->boolean('notify_customer'),
+                carrierCode: $data['tracking_carrier'],
+                trackingNumber: $data['tracking_number'] ?? null, // a number typed anyway is used even with "ship without tracking"
+                notifyCustomer: $request->boolean('notify_customer'),
+                createLabel: $wantsLabel,
+                parcels: $wantsLabel ? array_values($data['parcels'] ?? []) : [],
+                insuranceAmount: $wantsLabel && isset($data['insurance_amount']) ? (float) $data['insurance_amount'] : null,
+                codAmount: $wantsLabel && isset($data['cod_amount']) ? (float) $data['cod_amount'] : null,
             ), $request->user());
         } catch (InvalidOrderTransition $e) {
             return $this->refusedTransition($e);
+        } catch (LabelRejected $e) {
+            // The carrier refused (validation): show its message on the form, no state change.
+            return back()->withErrors(['label' => $e->getMessage()])->with('error', $e->getMessage());
+        } catch (LabelProviderUnavailable $e) {
+            // Transient/infrastructure problem: error flash, nothing changed (already logged with a reference id).
+            return back()->with('error', $e->getMessage());
         }
 
         $response = redirect()->route('admin.orders.show', $order)->with('success', 'Order has been shipped successfully!');
@@ -501,12 +539,66 @@ class OrdersController extends Controller
     }
 
     /**
+     * Stream a shipment's label PDF from the private disk (admin only, authorised route).
+     */
+    public function downloadLabel(Order $order, Shipment $shipment, ShippingService $shipping)
+    {
+        abort_unless($shipment->order_id === $order->id, 404);
+
+        $contents = $shipping->labelContents($shipment);
+
+        abort_if($contents === null, 404, 'The label is not available.');
+
+        return response($contents, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="label-'.$order->order_number.'.pdf"',
+        ]);
+    }
+
+    /**
+     * Cancel a shipment at the carrier (driver permitting). Does not change the order status: the admin then uses
+     * "undo ship" to move the order back to processing.
+     */
+    public function cancelShipment(Order $order, Shipment $shipment, ShippingService $shipping)
+    {
+        abort_unless($shipment->order_id === $order->id, 404);
+
+        try {
+            $shipping->cancelShipment($shipment);
+        } catch (LabelRejected $e) {
+            return back()->withErrors(['shipment' => $e->getMessage()])->with('error', $e->getMessage());
+        } catch (LabelProviderUnavailable $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Shipment cancelled at the carrier. Use "Undo shipment" to move the order back to processing.');
+    }
+
+    /**
      * A status change the order lifecycle refused: nothing was written. The message goes to the toast (flash) and to
      * the status field of the form that sent it.
      */
     private function refusedTransition(InvalidOrderTransition $e)
     {
         return back()->withErrors(['status' => $e->getMessage()])->with('error', $e->getMessage());
+    }
+
+    /**
+     * Does the label driver that created this shipment support cancelling it? Never resolves a driver while labels are
+     * off, and never throws (a misconfigured driver simply means "no cancel button").
+     */
+    private function driverCancels(string $driver): bool
+    {
+        if (! app(ShippingService::class)->labelsEnabled() || $driver === Shipment::DRIVER_MANUAL) {
+            return false;
+        }
+
+        try {
+            return app(\App\Shipping\Labels\LabelManager::class)->driver($driver)
+                instanceof \App\Shipping\Labels\Contracts\CancelsShipments;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**

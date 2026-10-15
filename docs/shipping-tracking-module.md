@@ -361,3 +361,91 @@ class ExampleCarrierProvider extends AbstractHttpProvider implements SupportsWeb
 * Spediamo: a **critical** log "cannot authenticate" (max one per hour) means the token is missing/expired/wrong: fix `SHIPPING_TRACKING_SPEDIAMO_TOKEN`
   (jobs keep retrying and back off, nothing is lost). A **warning** "returned a tracking status that is not mapped" names a new API status:
   add it to `status_map` (or ask the provider what it means).
+
+---
+
+# Label creation layer (`app/Shipping/Labels`)
+
+A second, **optional** modular layer, parallel to the tracking module: it creates the shipment and the shipping-label PDF through a carrier
+API. It is **off by default** (`shipping.labels_enabled`, admin setting, risk high). With it off **no label provider is ever resolved**: the
+admin ships by typing a carrier and a tracking number (G2). With it on, the ship form shows parcel fields and a **"Create label and ship"**
+button; the carrier returns the tracking number and the PDF.
+
+`App\Shipping\ShippingService` is the only entry point controllers use. `ship(Order, ShipInput, User)` decides, from
+`shipping.labels_enabled` and whether the admin asked for a label, between the manual path and the label path. Nothing in the controller,
+the React pages or the emails is carrier specific.
+
+## Pieces
+
+| Piece | Where |
+|---|---|
+| Contracts | `Labels\Contracts\LabelProvider` (required: `name()`, `supports()`, `createShipment()`, `label()`), `CancelsShipments` (optional) |
+| DTOs | `Labels\DTO\Address`, `Parcel`, `ShipmentRequest`, `ShipmentResult`, `LabelDocument` (provider neutral) |
+| Exceptions | `Labels\Exceptions\LabelException` ← `LabelProviderUnavailable` (retry), `LabelRejected` (show the message, don't retry) |
+| Manager | `Labels\LabelManager extends Illuminate\Support\Manager`, singleton; **no default/manual provider** — resolved only when labels are on |
+| Drivers | `Labels\Drivers\FakeLabelProvider` (tests/demos, refused in production), `Labels\Drivers\Spediamo\SpediamoLabelProvider` |
+| Builder | `Labels\ShipmentBuilder`: Order → `ShipmentRequest` (sender from `shipping.sender_*`, recipient from the order's shipping address, parcels from the order items' box sizes + default weight) |
+| Service | `App\Shipping\ShippingService` (the only entry point: labels on/off logic, the transaction, the shipped email) |
+| Data | `shipments` table (`order_id`, `carrier_code`, `driver`, `external_id`, `tracking_number`, `label_path` on the **private** disk, `status`, `request_payload`, `created_by`) |
+
+## How it ships with a label
+
+1. `ShippingService::shipWithLabel()` resolves the active `LabelProvider` (`shipping.label_driver`) and checks `supports($carrierCode)`.
+2. `ShipmentBuilder` builds a `ShipmentRequest`. The provider **creates the shipment and fetches the PDF first** (network, outside any
+   transaction), so a `LabelRejected` or `LabelProviderUnavailable` never leaves a half-shipped order.
+3. The PDF is stored on the private disk (`storage/app/private/labels/{order}/{uuid}.pdf`).
+4. In one transaction: a `shipments` row (driver, `external_id`, `tracking_number`, `label_path`) is written, the order's
+   `tracking_carrier`/`tracking_number` are set from the carrier's result, and `transitionTo('shipped')` runs. One shipped email with the
+   tracking goes out.
+5. If the DB part fails after the label was created, the shipment row is recorded anyway (so the label is not lost) and the failure is
+   surfaced with a reference id (`Log::critical`).
+
+Failures on the ship form: `LabelRejected` → the carrier's message on the form, no state change; `LabelProviderUnavailable` → an error
+flash, no state change, logged with a reference id.
+
+On the order page the admin can **Download label** (streamed from the private disk, admin-authorised route, 403 for customers) and, when the
+driver implements `CancelsShipments`, **Cancel shipment** (cancels at the carrier; does **not** change the order status — the admin then uses
+D1's "undo ship").
+
+## Settings (`shipping` group, labels/help in 5 locales)
+
+| Setting | Type | Default |
+|---|---|---|
+| `shipping.labels_enabled` | bool, risk high | **false** |
+| `shipping.label_driver` | string (validated at runtime against the registered drivers) | `spediamo` |
+| `shipping.default_parcel_weight_kg` | float | 1.0 |
+| `shipping.sender_name / _street / _city / _postal_code / _province / _country / _phone / _email` | string, depends on `shipping.labels_enabled` | from `store.*`/`contact.*` where empty |
+
+## Spediamo label adapter
+
+`Labels\Drivers\Spediamo\SpediamoLabelProvider` (+ `SpediamoLabelRequestMapper`). Built from `docs/spediamo/shipments.md` and
+`waybills.md`. It **reuses the tracking adapter's bearer authenticator and the same credentials** (`config('shipping.labels.drivers.spediamo')`
+= `SHIPPING_TRACKING_SPEDIAMO_TOKEN` / `_URL`): no duplicate env var.
+
+* `createShipment()` → `POST /v1/shipments` with the mapped sender/recipient/parcels; reads `id`, `trackingNumber`, `courier`, `status`.
+* `label()` → `GET /v1/waybills/{id}/pdf?download=true`; the PDF bytes.
+* `cancelShipment()` → `DELETE /v1/shipments/{id}`.
+* 400/404/422 → `LabelRejected` (the carrier's `message`/`error` when present); 401/403/408/429/5xx, timeouts and a missing token →
+  `LabelProviderUnavailable`. Exception messages carry the HTTP status only; the token, headers and bodies are never logged.
+
+**Open questions to the owner (Spediamo labels):** the export lists the `POST /v1/shipments` parameters as *query* parameters with no request
+body and documents no explicit "buy/pay" step; this adapter sends them as the JSON body and treats the created shipment's `trackingNumber` as
+final. The waybill endpoint's success shape in the export is an object (`filename`, `url`, `inputStream`, ...); this adapter expects the PDF
+bytes with `download=true`. Confirm the request encoding, whether a shipment must be *bought* before it has a tracking number and a waybill,
+and the waybill response format. All adapter tests use `Http::fake`; the real API is never called.
+
+## How to add a label carrier
+
+1. **Adapter folder** `app/Shipping/Labels/Drivers/<Name>/`: `<Name>LabelProvider implements LabelProvider` (and `CancelsShipments` if the
+   carrier can cancel). Map the neutral `ShipmentRequest`/`ShipmentResult` DTOs to the carrier's API; translate HTTP failures into
+   `LabelRejected` / `LabelProviderUnavailable`; never log secrets, headers or bodies.
+2. **Config** `shipping.labels.drivers.<name>` in `config/shipping.php` (secrets from env), and the env names in `.env.example`.
+3. **One registration line** in `App\Providers\LabelServiceProvider`:
+   `$manager->extend('<name>', fn () => new <Name>LabelProvider($manager->driverConfig('<name>')))`.
+4. **Certify:** add a row to the `label providers` dataset in `tests/Feature/Shipping/LabelProviderContractTest.php` (`Http::fake`, no
+   network) plus adapter tests (request/response mapping, 400 → rejected, 401/5xx → unavailable, missing token, no secrets in logs).
+5. **Switch:** turn on `shipping.labels_enabled` and set `shipping.label_driver=<name>` in the admin settings (or the env defaults). Nothing
+   in controllers, pages or emails changes.
+
+Guard rail: the Spediamo scan in `tests/Unit/Shipping/ArchitectureTest.php` allows the carrier name only in `Drivers/Spediamo/` (tracking and
+labels), `TrackingServiceProvider`, `LabelServiceProvider` and `config/shipping.php`.

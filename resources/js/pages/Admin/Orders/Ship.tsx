@@ -50,11 +50,25 @@ interface Carrier {
     name: string;
 }
 
+interface Parcel {
+    weight?: number | string | null;
+    length?: number | string | null;
+    width?: number | string | null;
+    height?: number | string | null;
+    label?: string;
+    // index signature so a parcel satisfies Inertia's useForm data constraint
+    [key: string]: number | string | null | undefined;
+}
+
 interface Props {
     order: Order;
     carriers?: Carrier[];
     // false: the shipped email is switched off in the settings
     shipped_email_enabled?: boolean;
+    // optional label creation (admin setting, off by default)
+    labels_enabled?: boolean;
+    // parcels prefilled from the order's box sizes (label mode)
+    parcels?: Parcel[];
 }
 
 type ShipForm = {
@@ -62,6 +76,8 @@ type ShipForm = {
     tracking_number: string;
     ship_without_tracking: boolean;
     notify_customer: boolean;
+    create_label: boolean;
+    parcels: Parcel[];
 };
 
 /**
@@ -69,28 +85,50 @@ type ShipForm = {
  * order to "shipped" and sends one shipped email, with the tracking. Shipping without a number is possible after an
  * explicit confirmation; the customer is then emailed now only when "notify now" is ticked.
  */
-export default function OrderShip({ order, carriers = [], shipped_email_enabled = true }: Props) {
+export default function OrderShip({ order, carriers = [], shipped_email_enabled = true, labels_enabled = false, parcels = [] }: Props) {
     const { t } = useTranslation();
     const [confirming, setConfirming] = useState(false);
+    // with labels on the default flow is "create label"; the admin can switch to typing a tracking number
+    const [labelMode, setLabelMode] = useState(labels_enabled);
     const { data, setData, post, processing, errors } = useForm<ShipForm>({
         // a carrier/number saved earlier on the order is prefilled
         tracking_carrier: carriers.some((carrier) => carrier.code === order.tracking_carrier) ? (order.tracking_carrier as string) : '',
         tracking_number: order.tracking_number ?? '',
         ship_without_tracking: false,
         notify_customer: false,
+        create_label: labels_enabled,
+        parcels: parcels.length > 0 ? parcels : [{ weight: '', length: '', width: '', height: '' }],
     });
 
     const withoutNumber = data.tracking_number.trim() === '';
-    const canSubmit = data.tracking_carrier !== '' && (!withoutNumber || data.ship_without_tracking) && !processing;
+    const canSubmit = data.tracking_carrier !== '' && (labelMode || !withoutNumber || data.ship_without_tracking) && !processing;
 
     const send = () => post(`/admin/orders/${order.id}/ship`, { preserveScroll: true, onFinish: () => setConfirming(false) });
+
+    const setParcel = (index: number, field: keyof Parcel, value: string) =>
+        setData(
+            'parcels',
+            data.parcels.map((parcel, i) => (i === index ? { ...parcel, [field]: value } : parcel)),
+        );
+
+    const addParcel = () => setData('parcels', [...data.parcels, { weight: '', length: '', width: '', height: '' }]);
+    const removeParcel = (index: number) =>
+        setData(
+            'parcels',
+            data.parcels.filter((_, i) => i !== index),
+        );
+
+    const switchLabelMode = (on: boolean) => {
+        setLabelMode(on);
+        setData('create_label', on);
+    };
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
         if (!canSubmit) return;
 
-        // no tracking number: ask first (the customer gets no tracking link now)
-        if (withoutNumber) {
+        // manual mode with no tracking number: ask first (the customer gets no tracking link now)
+        if (!labelMode && withoutNumber) {
             setConfirming(true);
             return;
         }
@@ -209,52 +247,113 @@ export default function OrderShip({ order, carriers = [], shipped_email_enabled 
                                 {errors.tracking_carrier && <p className="text-sm text-destructive">{errors.tracking_carrier}</p>}
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="tracking_number">{t('admin.orders.ship.tracking_number')}</Label>
-                                <Input
-                                    id="tracking_number"
-                                    value={data.tracking_number}
-                                    onChange={(event) => setData('tracking_number', event.target.value)}
-                                    placeholder={t('admin.orders.ship.tracking_placeholder')}
-                                    maxLength={100}
-                                    autoComplete="off"
-                                    aria-invalid={!!errors.tracking_number}
-                                />
-                                {errors.tracking_number && <p className="text-sm text-destructive">{errors.tracking_number}</p>}
-                            </div>
-
-                            {withoutNumber && (
-                                <div className="space-y-3 rounded-md border p-3">
-                                    <div className="flex items-start gap-2">
-                                        <Checkbox
-                                            id="ship_without_tracking"
-                                            checked={data.ship_without_tracking}
-                                            onCheckedChange={(checked) => setData('ship_without_tracking', checked === true)}
-                                        />
-                                        <div className="space-y-1">
-                                            <Label htmlFor="ship_without_tracking">{t('admin.orders.ship.without_tracking')}</Label>
-                                            <p className="text-xs text-muted-foreground">{t('admin.orders.ship.without_tracking_help')}</p>
-                                        </div>
+                            {labelMode ? (
+                                <div className="space-y-4">
+                                    {(errors as Record<string, string>).label && (
+                                        <p className="text-sm text-destructive">{(errors as Record<string, string>).label}</p>
+                                    )}
+                                    <div className="space-y-3">
+                                        <Label>{t('admin.orders.ship.parcels')}</Label>
+                                        {data.parcels.map((parcel, index) => (
+                                            <div key={index} className="grid grid-cols-2 gap-2 rounded-md border p-3 md:grid-cols-5">
+                                                <div className="space-y-1">
+                                                    <Label htmlFor={`weight-${index}`} className="text-xs">
+                                                        {t('admin.orders.ship.weight')}
+                                                    </Label>
+                                                    <Input
+                                                        id={`weight-${index}`}
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        value={parcel.weight ?? ''}
+                                                        onChange={(event) => setParcel(index, 'weight', event.target.value)}
+                                                    />
+                                                </div>
+                                                {(['length', 'width', 'height'] as const).map((dim) => (
+                                                    <div key={dim} className="space-y-1">
+                                                        <Label htmlFor={`${dim}-${index}`} className="text-xs">
+                                                            {t(`admin.orders.ship.${dim}`)}
+                                                        </Label>
+                                                        <Input
+                                                            id={`${dim}-${index}`}
+                                                            type="number"
+                                                            step="0.1"
+                                                            min="0"
+                                                            value={parcel[dim] ?? ''}
+                                                            onChange={(event) => setParcel(index, dim, event.target.value)}
+                                                        />
+                                                    </div>
+                                                ))}
+                                                <div className="flex items-end">
+                                                    {data.parcels.length > 1 && (
+                                                        <Button type="button" variant="ghost" size="sm" onClick={() => removeParcel(index)}>
+                                                            {t('admin.orders.ship.remove_parcel')}
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <Button type="button" variant="outline" size="sm" onClick={addParcel}>
+                                            {t('admin.orders.ship.add_parcel')}
+                                        </Button>
                                     </div>
-                                    {data.ship_without_tracking && shipped_email_enabled && (
-                                        <div className="flex items-center gap-2 pl-6">
-                                            <Checkbox
-                                                id="notify_customer"
-                                                checked={data.notify_customer}
-                                                onCheckedChange={(checked) => setData('notify_customer', checked === true)}
-                                            />
-                                            <Label htmlFor="notify_customer">{t('admin.orders.ship.notify_now')}</Label>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="tracking_number">{t('admin.orders.ship.tracking_number')}</Label>
+                                        <Input
+                                            id="tracking_number"
+                                            value={data.tracking_number}
+                                            onChange={(event) => setData('tracking_number', event.target.value)}
+                                            placeholder={t('admin.orders.ship.tracking_placeholder')}
+                                            maxLength={100}
+                                            autoComplete="off"
+                                            aria-invalid={!!errors.tracking_number}
+                                        />
+                                        {errors.tracking_number && <p className="text-sm text-destructive">{errors.tracking_number}</p>}
+                                    </div>
+
+                                    {withoutNumber && (
+                                        <div className="space-y-3 rounded-md border p-3">
+                                            <div className="flex items-start gap-2">
+                                                <Checkbox
+                                                    id="ship_without_tracking"
+                                                    checked={data.ship_without_tracking}
+                                                    onCheckedChange={(checked) => setData('ship_without_tracking', checked === true)}
+                                                />
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="ship_without_tracking">{t('admin.orders.ship.without_tracking')}</Label>
+                                                    <p className="text-xs text-muted-foreground">{t('admin.orders.ship.without_tracking_help')}</p>
+                                                </div>
+                                            </div>
+                                            {data.ship_without_tracking && shipped_email_enabled && (
+                                                <div className="flex items-center gap-2 pl-6">
+                                                    <Checkbox
+                                                        id="notify_customer"
+                                                        checked={data.notify_customer}
+                                                        onCheckedChange={(checked) => setData('notify_customer', checked === true)}
+                                                    />
+                                                    <Label htmlFor="notify_customer">{t('admin.orders.ship.notify_now')}</Label>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
-                                </div>
+                                </>
                             )}
 
-                            <p className="text-sm text-muted-foreground">{emailHint}</p>
+                            {!labelMode && <p className="text-sm text-muted-foreground">{emailHint}</p>}
+
+                            {labels_enabled && (
+                                <button type="button" className="text-sm text-muted-foreground underline" onClick={() => switchLabelMode(!labelMode)}>
+                                    {labelMode ? t('admin.orders.ship.enter_tracking_instead') : t('admin.orders.ship.create_label_instead')}
+                                </button>
+                            )}
 
                             <div className="flex justify-end">
                                 <Button type="submit" disabled={!canSubmit}>
                                     <Truck className="mr-2 h-4 w-4" />
-                                    {t('admin.orders.ship.submit')}
+                                    {labelMode ? t('admin.orders.ship.create_label') : t('admin.orders.ship.submit')}
                                 </Button>
                             </div>
                         </CardContent>
