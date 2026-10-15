@@ -140,6 +140,9 @@ return [
         ['key' => 'orders.guest_checkout_enabled', 'type' => 'bool', 'default' => true, 'public' => true, 'risk' => 'high'],
         ['key' => 'orders.public_link_days', 'type' => 'int', 'default' => 30, 'required' => true, 'min' => 1, 'max' => 365, 'unit' => 'days', 'public' => true],
         ['key' => 'orders.order_notes_max', 'type' => 'int', 'default' => 500, 'required' => true, 'min' => 50, 'max' => 500, 'unit' => 'chars', 'public' => true],
+        // Lifetime of a Stripe checkout session (Stripe accepts 30 minutes to 24 hours). The abandoned-checkout reminder
+        // is only queued once the session has expired, so a customer never holds two live payment pages for one cart.
+        ['key' => 'orders.checkout_expiry_minutes', 'type' => 'int', 'default' => 60, 'required' => true, 'min' => 30, 'max' => 1440, 'unit' => 'minutes'],
 
         // -------------------------------------------------------------- inventory
         ['key' => 'inventory.low_stock_threshold', 'type' => 'int', 'default' => 10, 'required' => true, 'min' => 0, 'max' => 1000, 'public' => true],
@@ -171,6 +174,9 @@ return [
         ['key' => 'newsletter.enabled', 'type' => 'bool', 'default' => false, 'public' => true],
         ['key' => 'newsletter.sender_name', 'type' => 'string', 'default' => '', 'max' => 120],
         ['key' => 'newsletter.send_rate_per_minute', 'type' => 'int', 'default' => 60, 'required' => true, 'min' => 1, 'max' => 600, 'unit' => '/min'],
+        // One reminder after an abandoned checkout, only to customers who ticked the marketing consent at checkout
+        ['key' => 'newsletter.abandoned_checkout_enabled', 'type' => 'bool', 'default' => false],
+        ['key' => 'newsletter.abandoned_checkout_delay_minutes', 'type' => 'int', 'default' => 60, 'required' => true, 'min' => 0, 'max' => 2880, 'unit' => 'minutes', 'depends_on' => 'newsletter.abandoned_checkout_enabled'],
     ],
 
     /*

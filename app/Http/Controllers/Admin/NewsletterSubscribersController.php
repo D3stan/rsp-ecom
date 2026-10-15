@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\NewsletterSubscriber;
+use App\Services\Newsletter\AbandonedCheckoutReminders;
 use App\Services\Newsletter\MarketingConsent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -75,6 +76,7 @@ class NewsletterSubscribersController extends Controller
                 'search' => $search,
                 'status' => $status,
             ],
+            'abandoned' => app(AbandonedCheckoutReminders::class)->stats(),
         ]);
     }
 

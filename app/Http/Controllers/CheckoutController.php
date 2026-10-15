@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Newsletter\AbandonedCheckoutReminders;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -493,12 +494,14 @@ class CheckoutController extends Controller
             // What is charged, frozen and committed BEFORE the Stripe call (no transaction around the call): the order
             // is built from it, whatever the customer does to the cart while paying
             $snapshot = CheckoutSnapshot::capture($cart, $totals, $user->id, null, $validated['coupon_code'] ?? null, $priceChanges);
+            app(AbandonedCheckoutReminders::class)->rememberContact($snapshot, $request, $validated['email'], $user);
 
             // Use Cashier's checkoutCharge for the entire cart
             try {
                 $checkoutSession = $user->checkoutCharge($totalAmountCents, 'Cart Purchase', 1, [
                 'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('checkout.cancel'),
+                'expires_at' => app(AbandonedCheckoutReminders::class)->sessionExpiresAt(),
                 'metadata' => [
                     'cart_id' => $cart->id,
                     'user_id' => $user->id,
@@ -612,6 +615,7 @@ class CheckoutController extends Controller
             
             // What is charged, frozen and committed BEFORE the Stripe call (no transaction around the call)
             $snapshot = CheckoutSnapshot::capture($cart, $totals, null, $guestSessionId, $validated['coupon_code'] ?? null, $priceChanges);
+            app(AbandonedCheckoutReminders::class)->rememberContact($snapshot, $request, $validated['email']);
 
             try {
             $checkoutSession = $stripe->checkout->sessions->create([
@@ -629,6 +633,7 @@ class CheckoutController extends Controller
                 'mode' => 'payment',
                 'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('checkout.cancel'),
+                'expires_at' => app(AbandonedCheckoutReminders::class)->sessionExpiresAt(),
                 'customer_email' => $validated['email'],
                 'metadata' => [
                     'guest_session_id' => $guestSessionId,

@@ -4,6 +4,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CheckoutRecoveryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\CategoryController;
@@ -78,6 +79,9 @@ Route::post('/guest/checkout/cart', [CheckoutController::class, 'guestCartChecko
 // Success and cancel pages - accessible to both authenticated and guest users
 Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
+
+// "Complete your order" link of the abandoned-checkout reminder (signed, 7 days): rebuilds the cart
+Route::get('/checkout/recover/{snapshot}', CheckoutRecoveryController::class)->middleware(['signed', 'throttle:30,1'])->name('checkout.recover');
 
 // Order-status page for guests, reached through the signed link in the emails (Order::publicUrl())
 Route::get('/orders/{order}', [GuestOrderController::class, 'show'])

@@ -1,3 +1,4 @@
+import AbandonedCheckoutStats, { type AbandonedCheckoutStatsData } from '@/components/admin/newsletter/AbandonedCheckoutStats';
 import NewsletterTabs from '@/components/admin/newsletter/NewsletterTabs';
 import { ConfirmDialog } from '@/components/admin/settings/ConfirmDialog';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,7 @@ interface SubscribersProps {
     };
     counts: Record<Status | 'total', number>;
     filters: { search: string; status: Status | '' };
+    abandoned: AbandonedCheckoutStatsData;
 }
 
 const ALL = 'all';
@@ -40,7 +42,7 @@ const STATUS_VARIANT: Record<Status, 'default' | 'secondary' | 'outline'> = {
     unsubscribed: 'outline',
 };
 
-export default function Subscribers({ subscribers, counts, filters }: SubscribersProps) {
+export default function Subscribers({ subscribers, counts, filters, abandoned }: SubscribersProps) {
     const { t, locale } = useTranslation();
     const [search, setSearch] = useState(filters.search);
     const [pending, setPending] = useState<{ action: 'unsubscribe' | 'erase'; row: SubscriberRow } | null>(null);
@@ -118,6 +120,8 @@ export default function Subscribers({ subscribers, counts, filters }: Subscriber
                         </Card>
                     ))}
                 </div>
+
+                <AbandonedCheckoutStats stats={abandoned} />
 
                 <div className="flex flex-col gap-3 sm:flex-row">
                     <form onSubmit={submitSearch} className="flex flex-1 gap-2">
