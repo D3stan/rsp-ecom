@@ -342,6 +342,10 @@ class ProductsController extends Controller
             // Approved reviews only (null average when there are none)
             'average_rating' => $product->approved_reviews_count > 0 ? round((float) $product->approved_reviews_avg_rating, 1) : null,
             'review_count' => (int) $product->approved_reviews_count,
+            // Count of approved reviews per star (5..1); always sums to review_count
+            'rating_distribution' => collect([5, 4, 3, 2, 1])
+                ->mapWithKeys(fn (int $star) => [(string) $star => $product->approvedReviews->where('rating', $star)->count()])
+                ->all(),
             // Same check as the product list: the wishlist heart starts from the real state
             'inWishlist' => auth()->check() && auth()->user()->hasInWishlist($product),
         ];
@@ -354,10 +358,25 @@ class ProductsController extends Controller
                 'rating' => $review->rating,
                 'comment' => $review->comment,
                 'date' => $review->created_at->toDateString(),
+                // Every review comes from a buyer of a delivered order (ReviewController), so all are verified
+                'verified_purchase' => true,
                 // Moderated photos only: pending/rejected ones never leave the admin
                 'photos' => $review->approvedMedia->map->toStorefrontArray()->values(),
             ];
         });
+
+        // Up to 5 review entries in the Product JSON-LD, the same reviews (and order) shown on the page
+        $schemaReviews = $reviews->take(5)->map(fn (array $review) => [
+            '@type' => 'Review',
+            'author' => ['@type' => 'Person', 'name' => $review['user']],
+            'reviewRating' => ['@type' => 'Rating', 'ratingValue' => (string) $review['rating'], 'bestRating' => 5, 'worstRating' => 1],
+            'reviewBody' => (string) $review['comment'],
+            'datePublished' => $review['date'],
+        ])->values()->all();
+
+        if ($schemaReviews !== []) {
+            JsonLd::addValue('review', $schemaReviews);
+        }
 
         // Get related products (using default variant for pricing)
         $relatedProducts = Product::with('defaultVariant')

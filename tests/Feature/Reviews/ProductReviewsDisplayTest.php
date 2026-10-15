@@ -49,7 +49,7 @@ it('sends a rating distribution of the approved reviews that adds up to the revi
             ->where('product.rating_distribution.3', 0)
             ->where('product.rating_distribution.2', 0)
             ->where('product.rating_distribution.1', 1)
-            ->where('product.rating_distribution', fn ($distribution) => array_sum((array) $distribution) === 4));
+            ->where('product.rating_distribution', fn ($distribution) => $distribution->sum() === 4));
 });
 
 it('sends an all-zero distribution for a product without approved reviews', function () {
@@ -59,7 +59,7 @@ it('sends an all-zero distribution for a product without approved reviews', func
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('product.review_count', 0)
-            ->where('product.rating_distribution', fn ($distribution) => array_sum((array) $distribution) === 0));
+            ->where('product.rating_distribution', fn ($distribution) => $distribution->sum() === 0));
 });
 
 it('adds aggregateRating and up to 5 review entries to the Product JSON-LD, matching what is shown', function () {

@@ -3,6 +3,7 @@ import FooterSocialLinks from '@/components/footer-social-links';
 import Header from '@/components/header';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import NewsletterSignup from '@/components/newsletter/NewsletterSignup';
+import RiderGallery, { type RiderGalleryPhoto } from '@/components/reviews/RiderGallery';
 // import { VideoPlayer } from '@/components/VideoPlayer';
 import RingMaskedImage from '@/components/RingMaskedImage/RingMaskedImage';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +62,7 @@ interface Category {
 interface HomePageProps extends SharedData {
     featuredProducts: Product[];
     categories: Category[];
+    riderGallery: RiderGalleryPhoto[];
 }
 
 // Map icon names to actual icon components
@@ -93,7 +95,7 @@ export default function Home() {
     const { t, isLoading } = useTranslation();
     const formatCurrency = useMoney();
     const storeName = useSetting('store.name', 'Store');
-    const { featuredProducts, categories } = usePage<HomePageProps>().props;
+    const { featuredProducts, categories, riderGallery } = usePage<HomePageProps>().props;
 
     // Mobile interactions for products and categories
     const productInteractions = useMobileInteractions<number>();
@@ -180,7 +182,7 @@ export default function Home() {
             <LoadingOverlay isLoading={isLoading} className="min-h-screen bg-white">
                 {/* SEO H1 - Hidden from view but visible to search engines */}
                 <h1 className="sr-only">{t('seo_h1_title')}</h1>
-                
+
                 {/* Header */}
                 <Header currentPage="home" transparent={true} />
 
@@ -202,7 +204,7 @@ export default function Home() {
                                 height={1024}
                                 fetchPriority="high"
                                 alt=""
-                                className="w-full h-full object-cover object-center"
+                                className="h-full w-full object-cover object-center"
                                 style={{
                                     minWidth: '100%',
                                     minHeight: '100%',
@@ -232,7 +234,7 @@ export default function Home() {
                             respectReducedMotion={true}
                             disableResponsiveConstraints={true}
                             preserveAspectRatio="xMidYMid meet"
-                            className="w-full h-full mx-auto max-w-[1400px]"
+                            className="mx-auto h-full w-full max-w-[1400px]"
                         />
                     </div>
 
@@ -244,12 +246,12 @@ export default function Home() {
                             height={1024}
                             alt=""
                             aria-hidden="true"
-                            className="w-full h-full mx-auto max-w-[1400px]"
+                            className="mx-auto h-full w-full max-w-[1400px]"
                             style={{
                                 filter: 'brightness(0.2) saturate(100%)',
                                 objectFit: 'contain',
                                 objectPosition: 'center',
-                                height: '100vh'
+                                height: '100vh',
                             }}
                         />
                     </div>
@@ -258,7 +260,10 @@ export default function Home() {
                     <div className="absolute inset-0 z-4" style={{ background: 'linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2))' }} />
 
                     {/* Hero Content - Positioned in the lower part */}
-                    <div className="absolute left-0 right-0 z-20 mx-auto max-w-5xl px-4 text-center text-white sm:px-6 lg:px-8" style={{ bottom: '20%' }}>
+                    <div
+                        className="absolute right-0 left-0 z-20 mx-auto max-w-5xl px-4 text-center text-white sm:px-6 lg:px-8"
+                        style={{ bottom: '20%' }}
+                    >
                         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
                             <Link href={route('products')}>
                                 <Button
@@ -359,7 +364,9 @@ export default function Home() {
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-lg font-bold text-black">{formatCurrency(Number(product.price))}</span>
                                                     {product.originalPrice && (
-                                                        <span className="text-sm text-gray-500 line-through">{formatCurrency(Number(product.originalPrice))}</span>
+                                                        <span className="text-sm text-gray-500 line-through">
+                                                            {formatCurrency(Number(product.originalPrice))}
+                                                        </span>
                                                     )}
                                                 </div>
                                             </div>
@@ -380,6 +387,8 @@ export default function Home() {
                 </section>
 
                 {/* Categories Section */}
+                <RiderGallery photos={riderGallery} />
+
                 <section className="relative z-10 bg-gray-50 py-16 lg:py-24">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="mb-12 text-center">
