@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\ReviewMedia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -114,8 +115,41 @@ class HomeController extends Controller
         return Inertia::render('home', [
             'featuredProducts' => $featuredProducts,
             'categories' => $categories,
+            'riderGallery' => $this->riderGallery(),
             'websiteJsonLd' => $websiteJsonLd,
         ]);
+    }
+
+    /**
+     * Featured customer photos for the home "Rider gallery": approved + featured photos of approved reviews on
+     * active products, newest first, capped at 12. Hidden on the frontend when empty.
+     *
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function riderGallery(): \Illuminate\Support\Collection
+    {
+        return ReviewMedia::query()
+            ->where('status', ReviewMedia::STATUS_APPROVED)
+            ->where('featured', true)
+            ->whereHas('review', fn ($review) => $review
+                ->where('is_approved', true)
+                ->whereHas('product', fn ($product) => $product->where('status', 'active')))
+            ->with('review.product:id,name,slug')
+            ->orderByDesc('id')
+            ->limit(12)
+            ->get()
+            ->map(fn (ReviewMedia $media) => [
+                'id' => $media->id,
+                'thumbnail_url' => $media->thumbnailUrl(),
+                'url' => $media->url(),
+                'width' => $media->width,
+                'height' => $media->height,
+                'product' => [
+                    'name' => $media->review->product->name,
+                    'slug' => $media->review->product->slug,
+                ],
+            ])
+            ->values();
     }
 
     /**

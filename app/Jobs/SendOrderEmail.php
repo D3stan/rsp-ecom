@@ -9,9 +9,11 @@ use App\Mail\OrderDelivered;
 use App\Mail\OrderRefunded;
 use App\Mail\OrderShipped;
 use App\Mail\OversoldOrderAlert;
+use App\Mail\ReviewRequest;
 use App\Models\Order;
 use App\Models\OrderEmail;
 use App\Services\EmailService;
+use App\Services\Newsletter\MarketingConsent;
 use App\Support\Locales;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -113,6 +115,16 @@ class SendOrderEmail implements ShouldQueue
             return;
         }
 
+        // Marketing email: re-check consent at send time (it may have been withdrawn between dispatch and now).
+        // Stop permanently rather than retry; a later re-subscribe does not revive this one-per-order request.
+        if ($this->type === OrderEmail::TYPE_REVIEW_REQUEST && ! app(MarketingConsent::class)->allows($recipient)) {
+            $record->recordFailure('Marketing consent withdrawn before the review request was sent', final: true);
+            Log::info('Review request skipped: no marketing consent', $this->context());
+            $this->delete();
+
+            return;
+        }
+
         try {
             Mail::to($recipient)
                 ->locale($this->locale($order))
@@ -173,6 +185,7 @@ class SendOrderEmail implements ShouldQueue
             OrderEmail::TYPE_REFUNDED => new OrderRefunded($order, (float) $this->amount),
             OrderEmail::TYPE_ADMIN_NEW_ORDER => new NewOrderAlert($order),
             OrderEmail::TYPE_ADMIN_OVERSOLD => new OversoldOrderAlert($order),
+            OrderEmail::TYPE_REVIEW_REQUEST => new ReviewRequest($order),
             default => throw new \InvalidArgumentException("Unknown order email type [{$this->type}]"),
         };
     }

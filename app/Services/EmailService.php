@@ -32,6 +32,8 @@ class EmailService
         OrderEmail::TYPE_DELIVERED => 'email.order_delivered',
         OrderEmail::TYPE_CANCELLED => 'email.order_cancelled',
         OrderEmail::TYPE_REFUNDED => 'email.order_refunded',
+        // Marketing email: its own toggle (default off), independent of the order-notification switches
+        OrderEmail::TYPE_REVIEW_REQUEST => 'reviews.request_enabled',
     ];
 
     /**
@@ -94,6 +96,16 @@ class EmailService
     public function sendOrderDelivered(Order $order): bool
     {
         return $this->dispatchOrderEmail($order, OrderEmail::TYPE_DELIVERED, OrderEmail::FINGERPRINT_DEFAULT);
+    }
+
+    /**
+     * Queue the consented review-request email. At most one per order (OrderEmail dedupe). The caller
+     * (reviews:send-requests) is responsible for the eligibility checks, including marketing consent; the
+     * job re-checks consent right before sending.
+     */
+    public function sendReviewRequest(Order $order): bool
+    {
+        return $this->dispatchOrderEmail($order, OrderEmail::TYPE_REVIEW_REQUEST, OrderEmail::FINGERPRINT_DEFAULT);
     }
 
     /**

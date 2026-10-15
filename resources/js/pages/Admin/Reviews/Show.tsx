@@ -1,3 +1,4 @@
+import ReviewMediaModeration, { type AdminReviewMedia } from '@/components/reviews/admin/ReviewMediaModeration';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -29,6 +30,7 @@ interface Review {
     is_approved: boolean;
     created_at: string;
     updated_at: string;
+    media?: AdminReviewMedia[];
 }
 
 interface Props {
@@ -158,6 +160,8 @@ export default function ReviewShow({ review, navigation }: Props) {
                                     <p className="text-sm leading-relaxed md:text-base">{review.comment || 'No comment provided'}</p>
                                 </div>
                             </div>
+
+                            <ReviewMediaModeration reviewId={review.id} reviewApproved={review.is_approved} media={review.media ?? []} />
 
                             {/* Product Information */}
                             <div>

@@ -163,6 +163,9 @@ return [
 
         // ---------------------------------------------------------------- reviews
         ['key' => 'reviews.auto_approve', 'type' => 'bool', 'default' => true],
+        // Consented review-request email after delivery (gated on marketing consent). Off by default.
+        ['key' => 'reviews.request_enabled', 'type' => 'bool', 'default' => false],
+        ['key' => 'reviews.request_delay_days', 'type' => 'int', 'default' => 10, 'required' => true, 'min' => 1, 'max' => 60, 'unit' => 'days', 'depends_on' => 'reviews.request_enabled'],
 
         // ------------------------------------------------------------------ email
         ['key' => 'email.enabled', 'type' => 'bool', 'default' => true, 'risk' => 'high'],

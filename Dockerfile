@@ -2,7 +2,8 @@
 
 FROM serversideup/php:8.3-fpm-nginx-v4.5.1 AS base
 USER root
-RUN install-php-extensions bcmath exif
+# gd: review photos are re-encoded to WebP (strips EXIF/GPS), see App\Services\Reviews\ReviewPhotoProcessor
+RUN install-php-extensions bcmath exif gd
 USER www-data
 
 
