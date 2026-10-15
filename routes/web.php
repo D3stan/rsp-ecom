@@ -182,13 +182,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         // Get recent orders with items and products
         $recentOrders = $user->orders()
-            ->with(['orderItems.product', 'orderItems.size', 'orderItems.productVariant'])
+            ->with(['orderItems.product', 'orderItems.size', 'orderItems.productVariant', 'trackingEvents'])
             ->latest()
             ->limit(5)
             ->get()
             ->map(function ($order) {
                 // Whitelisted fields only: the order row also holds internal notes and Stripe ids
-                $orderData = $order->toCustomerArray();
+                $orderData = $order->toCustomerArray() + $order->customerTrackingArray();
                 $orderData['total'] = $order->total_amount; // Add alias for backward compatibility
                 $orderData['order_items'] = $order->orderItems->map(function ($item) {
                     return [

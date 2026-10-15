@@ -34,6 +34,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Carrier tracking module: one manager, the active driver is injectable as TrackingProvider
         $this->app->singleton(TrackingManager::class);
+
+        // Label layer: one manager; a LabelProvider is resolved only when label creation is on (ShippingService).
+        $this->app->singleton(\App\Shipping\Labels\LabelManager::class);
         $this->app->bind(TrackingProvider::class, fn ($app) => $app->make(TrackingManager::class)->driver());
 
         // Register console commands

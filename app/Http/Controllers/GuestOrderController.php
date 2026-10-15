@@ -24,7 +24,7 @@ class GuestOrderController extends Controller
         }
 
         $model = Order::where('order_number', $order)
-            ->with(['orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant', 'shippingAddress'])
+            ->with(['orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant', 'shippingAddress', 'trackingEvents'])
             ->first();
 
         // Same answer as a bad signature, so the page never confirms whether an order number exists
@@ -41,6 +41,10 @@ class GuestOrderController extends Controller
                 'payment_status' => $model->payment_status,
                 'created_at' => $model->created_at?->toISOString(),
                 'tracking_number' => $model->tracking_number,
+                // customer-facing shipment tracking: link, carrier name, status, last update and a safe event list
+                'tracking_status' => $model->tracking_status,
+                'tracking_last_synced_at' => $model->tracking_last_synced_at?->toISOString(),
+                ...$model->customerTrackingArray(),
                 'currency' => $model->currency,
                 'subtotal' => (float) $model->subtotal,
                 'tax_amount' => (float) $model->tax_amount,

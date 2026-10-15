@@ -131,6 +131,21 @@ return [
         ],
         // Items total after the coupon discount from which shipping is free (App\Support\Shipping). 0 = off.
         ['key' => 'shipping.free_threshold', 'type' => 'float', 'default' => 1000, 'min' => 0, 'max' => 100000, 'unit' => 'EUR', 'public' => true],
+        // Optional label creation (App\Shipping\Labels). OFF by default: the admin then ships by typing carrier + tracking.
+        ['key' => 'shipping.labels_enabled', 'type' => 'bool', 'default' => (bool) $shipping['labels']['enabled'], 'risk' => 'high', 'config_bridge' => 'shipping.labels.enabled', 'seed' => false],
+        // Name of the registered label adapter to use (validated at runtime against the registered drivers).
+        ['key' => 'shipping.label_driver', 'type' => 'string', 'default' => (string) $shipping['labels']['driver'], 'max' => 50, 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.driver', 'seed' => false],
+        // Default parcel weight (kg) prefilled on the ship form when labels are on.
+        ['key' => 'shipping.default_parcel_weight_kg', 'type' => 'float', 'default' => (float) $shipping['labels']['default_parcel_weight_kg'], 'min' => 0.01, 'max' => 1000, 'unit' => 'kg', 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.default_parcel_weight_kg', 'seed' => false],
+        // Sender address printed on the label (falls back to the store identity where empty).
+        ['key' => 'shipping.sender_name', 'type' => 'string', 'default' => (string) $shipping['labels']['sender']['name'], 'max' => 120, 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.sender.name', 'seed' => false],
+        ['key' => 'shipping.sender_street', 'type' => 'string', 'default' => (string) $shipping['labels']['sender']['street'], 'max' => 255, 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.sender.street', 'seed' => false],
+        ['key' => 'shipping.sender_city', 'type' => 'string', 'default' => (string) $shipping['labels']['sender']['city'], 'max' => 120, 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.sender.city', 'seed' => false],
+        ['key' => 'shipping.sender_postal_code', 'type' => 'string', 'default' => (string) $shipping['labels']['sender']['postal_code'], 'max' => 20, 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.sender.postal_code', 'seed' => false],
+        ['key' => 'shipping.sender_province', 'type' => 'string', 'default' => (string) $shipping['labels']['sender']['province'], 'max' => 60, 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.sender.province', 'seed' => false],
+        ['key' => 'shipping.sender_country', 'type' => 'string', 'default' => (string) $shipping['labels']['sender']['country'], 'max' => 2, 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.sender.country', 'seed' => false],
+        ['key' => 'shipping.sender_phone', 'type' => 'string', 'default' => (string) $shipping['labels']['sender']['phone'], 'max' => 50, 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.sender.phone', 'seed' => false],
+        ['key' => 'shipping.sender_email', 'type' => 'string', 'default' => (string) $shipping['labels']['sender']['email'], 'max' => 255, 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.sender.email', 'seed' => false],
 
         // ------------------------------------------------------------------ legal
         // EU statutory minimum for distance sales (Directive 2011/83/EU), set in config/shipping.php. Read-only: shown in

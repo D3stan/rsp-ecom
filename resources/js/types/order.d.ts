@@ -15,11 +15,26 @@ export interface Order {
     payment_status: string;
     payment_method?: string;
     tracking_number?: string;
+    tracking_carrier?: string | null;
+    tracking_status?: string | null;
+    tracking_last_synced_at?: string | null;
+    // customer-facing tracking (Order::customerTrackingArray)
+    carrier_name?: string | null;
+    tracking_url?: string | null;
+    tracking_events?: TrackingEvent[];
     notes?: string;
     created_at: string;
     updated_at: string;
     order_items: OrderItem[];
     orderItems: OrderItem[]; // Alternative naming
+}
+
+export interface TrackingEvent {
+    // provider-neutral status value, e.g. "in_transit" (rendered via tracking_admin.status.<value>)
+    status: string;
+    description: string;
+    location?: string | null;
+    occurred_at?: string | null;
 }
 
 export interface OrderItem {

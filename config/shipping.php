@@ -90,6 +90,54 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Label creation (app/Shipping/Labels, docs/shipping-tracking-module.md)
+    |--------------------------------------------------------------------------
+    |
+    | OPTIONAL and OFF by default. When enabled from the admin settings
+    | (shipping.labels_enabled), the admin creates the shipment and the label PDF
+    | through the active carrier API instead of typing a tracking number.
+    |
+    | enabled  Mirrors the shipping.labels_enabled setting (config bridge); kept here
+    |          so console/tests can switch it. With it off no label provider is ever resolved.
+    | driver   Name of a registered label adapter (spediamo). Mirrors shipping.label_driver.
+    | sender   The sender address printed on the label (admin settings shipping.sender_*).
+    | drivers  Per-driver settings. The Spediamo label adapter reuses the SAME credentials as the
+    |          tracking adapter (SHIPPING_TRACKING_SPEDIAMO_TOKEN / _URL): no duplicate env var.
+    |
+    */
+
+    'labels' => [
+        'enabled' => (bool) env('SHIPPING_LABELS_ENABLED', false),
+
+        'driver' => env('SHIPPING_LABELS_DRIVER', 'spediamo'),
+
+        'default_parcel_weight_kg' => (float) env('SHIPPING_DEFAULT_PARCEL_WEIGHT_KG', 1.0),
+
+        'sender' => [
+            'name' => env('SHIPPING_SENDER_NAME', ''),
+            'street' => env('SHIPPING_SENDER_STREET', ''),
+            'city' => env('SHIPPING_SENDER_CITY', ''),
+            'postal_code' => env('SHIPPING_SENDER_POSTAL_CODE', ''),
+            'province' => env('SHIPPING_SENDER_PROVINCE', ''),
+            'country' => env('SHIPPING_SENDER_COUNTRY', ''),
+            'phone' => env('SHIPPING_SENDER_PHONE', ''),
+            'email' => env('SHIPPING_SENDER_EMAIL', ''),
+        ],
+
+        'drivers' => [
+            'spediamo' => [
+                // Reuse the tracking adapter's credentials (same Spediamo account): no duplicate env.
+                'base_url' => env('SHIPPING_TRACKING_SPEDIAMO_URL', 'https://api.spediamo.it'),
+                'token' => env('SHIPPING_TRACKING_SPEDIAMO_TOKEN'),
+                'timeout' => (int) env('SHIPPING_TRACKING_SPEDIAMO_TIMEOUT', 15),
+                // Our neutral carrier code => the API's courier string. Empty = every carrier accepted.
+                'carrier_map' => [],
+            ],
+        ],
+    ],
+
     'tracking' => [
         'driver' => env('SHIPPING_TRACKING_DRIVER', 'manual'),
 

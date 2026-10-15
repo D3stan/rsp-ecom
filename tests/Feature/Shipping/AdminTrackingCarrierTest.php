@@ -18,12 +18,7 @@ beforeEach(function () {
 
 function trkShipBody(array $extra = []): array
 {
-    return array_merge([
-        'sender_info' => ['company_name' => 'Shop', 'address' => 'Via Roma 1', 'phone' => '123', 'email' => 'shop@example.test'],
-        'customer_info' => ['name' => 'Guest', 'email' => 'guest@example.test'],
-        'shipping_address' => ['first_name' => 'A', 'last_name' => 'B', 'address_line_1' => 'Via 1', 'city' => 'Roma', 'state' => 'RM', 'postal_code' => '00100', 'country' => 'IT'],
-        'box_info' => ['carrier' => ''],
-    ], $extra);
+    return array_merge(['tracking_carrier' => 'acme', 'tracking_number' => 'TRK1'], $extra);
 }
 
 it('stores the chosen carrier when shipping the order', function () {
@@ -33,12 +28,11 @@ it('stores the chosen carrier when shipping the order', function () {
     expect($this->order->fresh())->status->toBe('shipped')->tracking_carrier->toBe('acme');
 });
 
-it('ships without a carrier exactly as before', function () {
-    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), trkShipBody(['box_info' => ['carrier' => 'Free text']]))
-        ->assertSessionHas('success');
+it('requires a carrier when shipping', function () {
+    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), trkShipBody(['tracking_carrier' => null]))
+        ->assertSessionHasErrors('tracking_carrier');
 
-    expect($this->order->fresh())->status->toBe('shipped')->tracking_carrier->toBeNull()
-        ->and($this->order->fresh()->notes)->toContain('Carrier: Free text');
+    expect($this->order->fresh()->status)->toBe('processing');
 });
 
 it('rejects an unconfigured carrier when shipping', function () {
@@ -58,8 +52,9 @@ it('rejects any carrier when none is configured', function () {
 it('saves, changes and clears the carrier from the edit form, and leaves it alone when not sent', function () {
     $url = route('admin.orders.update', $this->order);
 
+    // the edit form stores tracking data; it never ships the order (the ship form does)
     $this->actingAs($this->admin)->put($url, ['tracking_number' => 'TRK9', 'tracking_carrier' => 'acme'])->assertSessionHas('success');
-    expect($this->order->fresh())->tracking_carrier->toBe('acme')->tracking_number->toBe('TRK9')->status->toBe('shipped');
+    expect($this->order->fresh())->tracking_carrier->toBe('acme')->tracking_number->toBe('TRK9')->status->toBe('processing');
 
     $this->actingAs($this->admin)->put($url, ['notes' => 'only notes']);
     expect($this->order->fresh()->tracking_carrier)->toBe('acme');

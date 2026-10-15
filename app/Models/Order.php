@@ -165,6 +165,15 @@ class Order extends Model
     }
 
     /**
+     * Parcels shipped for this order (ShippingService), oldest first. The order's tracking_number / tracking_carrier
+     * are the current values.
+     */
+    public function shipments(): HasMany
+    {
+        return $this->hasMany(Shipment::class)->orderBy('id');
+    }
+
+    /**
      * Audit trail (status changes, refunds), oldest first.
      */
     public function events(): HasMany
@@ -258,7 +267,24 @@ class Order extends Model
      */
     public function allowedTransitions(): array
     {
-        return OrderTransitions::allowedFrom($this->status);
+        $allowed = OrderTransitions::allowedFrom($this->status);
+
+        // "shipped" also needs a captured payment (canShip()): never offer a move the server refuses
+        return array_values(array_filter($allowed, fn (string $to) => $to !== 'shipped' || $this->canShip()));
+    }
+
+    /**
+     * May the admin ship this order now? Only a "processing" order whose payment was captured and not refunded in
+     * full. The lifecycle map alone would also let through an unpaid order moved to processing by hand.
+     */
+    public function canShip(): bool
+    {
+        return $this->status === 'processing' && $this->hasShippablePayment();
+    }
+
+    public function hasShippablePayment(): bool
+    {
+        return in_array($this->payment_status, self::SHIPPABLE_PAYMENT_STATUSES, true);
     }
 
     /**
@@ -281,12 +307,19 @@ class Order extends Model
         }
 
         DB::transaction(function () use ($to, $actor, $reason, $meta) {
-            $stored = static::query()->whereKey($this->getKey())->lockForUpdate()->value('status');
+            $row = static::query()->whereKey($this->getKey())->lockForUpdate()->first(['status', 'payment_status']);
+            $stored = $row?->getAttribute('status');
 
             // Decide on what is stored, not on what this instance remembers
             if ($stored !== null && $stored !== $this->getOriginal('status')) {
                 $this->setAttribute('status', $stored);
                 $this->syncOriginalAttribute('status');
+            }
+
+            // Same for the payment (a refund webhook may have changed it meanwhile), unless the caller is changing it
+            if ($row !== null && ! $this->isDirty('payment_status') && $row->getAttribute('payment_status') !== $this->getOriginal('payment_status')) {
+                $this->setAttribute('payment_status', $row->getAttribute('payment_status'));
+                $this->syncOriginalAttribute('payment_status');
             }
 
             $from = $this->getOriginal('status');
@@ -306,6 +339,10 @@ class Order extends Model
 
             if ($reason === null && OrderTransitions::requiresReason($from, $to)) {
                 throw InvalidOrderTransition::reasonRequired((string) $this->order_number, $from, $to);
+            }
+
+            if ($to === 'shipped' && ! $this->hasShippablePayment()) {
+                throw InvalidOrderTransition::notPaid((string) $this->order_number, (string) $this->payment_status);
             }
 
             $this->status = $to;
@@ -399,6 +436,9 @@ class Order extends Model
 
     /** Captured money not (fully) returned yet: a cancelled order in one of these owes the customer a refund. */
     public const REFUND_DUE_PAYMENT_STATUSES = ['succeeded', 'partially_refunded'];
+
+    /** Payment states in which the order may ship: paid, and not refunded in full. */
+    public const SHIPPABLE_PAYMENT_STATUSES = ['succeeded', 'partially_refunded'];
 
     public function hasCapturedPayment(): bool
     {
@@ -605,7 +645,7 @@ class Order extends Model
     public const CUSTOMER_FIELDS = [
         'id', 'order_number', 'status', 'payment_status', 'created_at', 'currency',
         'subtotal', 'tax_amount', 'tax_rate', 'shipping_amount', 'discount_amount', 'total_amount',
-        'tracking_number', 'tracking_carrier', 'tracking_status',
+        'tracking_number', 'tracking_carrier', 'tracking_status', 'tracking_last_synced_at',
     ];
 
     /**
@@ -614,6 +654,37 @@ class Order extends Model
     public function toCustomerArray(): array
     {
         return Arr::only($this->attributesToArray(), self::CUSTOMER_FIELDS);
+    }
+
+    /**
+     * Customer-facing shipment tracking: the public tracking link, the carrier display name, and the checkpoint
+     * list a customer may see (status + description + location + time, no raw carrier codes, no provider/hashes).
+     * Merged into the customer order payloads (account orders, dashboard, guest page). trackingEvents must be
+     * eager-loaded by the caller; when it is not, no event query is run and the list is empty.
+     *
+     * @return array<string, mixed>
+     */
+    public function customerTrackingArray(): array
+    {
+        $events = $this->relationLoaded('trackingEvents')
+            ? $this->trackingEvents
+                ->sortByDesc('occurred_at')
+                ->values()
+                ->map(fn (ShipmentTrackingEvent $event) => [
+                    // provider-neutral status value (e.g. "in_transit"); the UI renders tracking_admin.status.<value>
+                    'status' => $event->status,
+                    'description' => $event->description,
+                    'location' => $event->location,
+                    'occurred_at' => $event->occurred_at?->toISOString(),
+                ])
+                ->all()
+            : [];
+
+        return [
+            'tracking_url' => $this->trackingUrl(),
+            'carrier_name' => $this->trackingCarrierName(),
+            'tracking_events' => $events,
+        ];
     }
 
     /**

@@ -1,15 +1,25 @@
 import OrderRefunds, { type OrderRefund, type RefundInfo } from '@/components/admin/orders/OrderRefunds';
-import OrderStatusActions, { forwardTransitions } from '@/components/admin/orders/OrderStatusActions';
+import OrderStatusActions from '@/components/admin/orders/OrderStatusActions';
 import OrderTimeline, { type OrderTimelineEvent } from '@/components/admin/orders/OrderTimeline';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
+import { forwardTransitions } from '@/lib/order-transitions';
 import { Head, router } from '@inertiajs/react';
 import {
     AlertTriangle,
@@ -111,6 +121,8 @@ interface Props {
     order: Order;
     // statuses this order may move to next (server-side order lifecycle)
     allowed_transitions: string[];
+    // processing and paid: the ship form is available (Order::canShip)
+    can_ship?: boolean;
     // audit trail (order_events), oldest first
     events?: OrderTimelineEvent[];
     // cancelled while money is still captured (customer service owes a refund)
@@ -119,6 +131,8 @@ interface Props {
     refunds?: OrderRefund[];
     refund?: RefundInfo;
     carriers?: Carrier[];
+    // label shipments with a stored PDF (optional label layer)
+    shipments?: Array<{ id: number; carrier_code: string; tracking_number: string | null; can_cancel: boolean }>;
     stock?: StockInfo;
 }
 
@@ -159,20 +173,21 @@ const getStatusIcon = (status: string) => {
 export default function OrderShow({
     order,
     allowed_transitions = [],
+    can_ship = false,
     refund_due = false,
     events = [],
     refunds = [],
     refund,
     carriers = [],
+    shipments = [],
     stock,
 }: Props) {
     const { t } = useTranslation();
+    const [cancelShipmentId, setCancelShipmentId] = useState<number | null>(null);
     const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
     const [isUpdating, setIsUpdating] = useState(false);
     const [isAddingTracking, setIsAddingTracking] = useState(false);
     const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || '');
-    const [showShipConfirmation, setShowShipConfirmation] = useState(false);
-    const [pendingStatus, setPendingStatus] = useState<string | null>(null);
     const [collapsedSections, setCollapsedSections] = useState({
         orderStatus: false,
         orderItems: false,
@@ -225,41 +240,10 @@ export default function OrderShow({
         };
     };
 
+    // Status buttons never offer "shipped": the order ships through the ship form (carrier, tracking, one email)
     const updateOrderStatus = (newStatus: string) => {
-        // Check if status is being changed to shipped without a tracking number
-        const isChangingToShipped = newStatus === 'shipped' && order.status !== 'shipped';
-        const hasTrackingNumber = order.tracking_number && order.tracking_number.trim() !== '';
-
-        if (isChangingToShipped && !hasTrackingNumber) {
-            // Show confirmation modal for status change to shipped without tracking
-            setPendingStatus(newStatus);
-            setShowShipConfirmation(true);
-            return;
-        }
-
-        // Proceed with status update
-        submitStatusUpdate(newStatus);
-    };
-
-    const submitStatusUpdate = (newStatus: string) => {
         setIsUpdating(true);
-        router.patch(
-            `/admin/orders/${order.id}`,
-            { status: newStatus },
-            {
-                onFinish: () => {
-                    setIsUpdating(false);
-                    setPendingStatus(null);
-                },
-            },
-        );
-    };
-
-    const handleConfirmShip = () => {
-        setShowShipConfirmation(false);
-        if (pendingStatus) {
-            submitStatusUpdate(pendingStatus);
-        }
+        router.patch(`/admin/orders/${order.id}`, { status: newStatus }, { onFinish: () => setIsUpdating(false) });
     };
 
     const getNextStatus = () => forwardTransitions(order.status, allowed_transitions)[0] ?? null;
@@ -310,6 +294,12 @@ export default function OrderShow({
                         </div>
                     </div>
                     <div className="flex items-center space-x-2">
+                        {can_ship && (
+                            <Button size="sm" onClick={() => router.visit(`/admin/orders/${order.id}/ship`)}>
+                                <Truck className="mr-2 h-4 w-4" />
+                                {t('admin.orders.ship.button')}
+                            </Button>
+                        )}
                         <Button variant="outline" size="sm" onClick={() => router.visit(`/admin/orders/${order.id}/edit`)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit Order
@@ -558,6 +548,41 @@ export default function OrderShow({
                                             </div>
                                         )}
 
+                                        {/* Label shipments: download the PDF, cancel at the carrier (optional label layer) */}
+                                        {shipments.length > 0 && (
+                                            <div className="space-y-2">
+                                                {shipments.map((shipment) => (
+                                                    <div
+                                                        key={shipment.id}
+                                                        className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm"
+                                                    >
+                                                        <span className="font-mono">{shipment.tracking_number ?? '—'}</span>
+                                                        <div className="ml-auto flex gap-2">
+                                                            <Button variant="outline" size="sm" asChild>
+                                                                <a
+                                                                    href={`/admin/orders/${order.id}/shipments/${shipment.id}/label`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    {t('admin.orders.ship.download_label')}
+                                                                </a>
+                                                            </Button>
+                                                            {shipment.can_cancel && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="text-red-600"
+                                                                    onClick={() => setCancelShipmentId(shipment.id)}
+                                                                >
+                                                                    {t('admin.orders.ship.cancel_shipment')}
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
                                         {/* Shipping Address */}
                                         {order.shippingAddress && (
                                             <div>
@@ -697,33 +722,30 @@ export default function OrderShow({
                     </div>
                 </div>
             </div>
-
-            {/* Confirmation Modal for Manual Status Change to Shipped */}
-            <Dialog open={showShipConfirmation} onOpenChange={setShowShipConfirmation}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Mark Order as Shipped?</DialogTitle>
-                        <DialogDescription>
-                            You are about to mark this order as shipped without a tracking number. A shipping notification email will be sent to the
-                            customer without tracking information.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
+            <AlertDialog open={cancelShipmentId !== null} onOpenChange={(open) => !open && setCancelShipmentId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t('admin.orders.ship.cancel_shipment_confirm_title')}</AlertDialogTitle>
+                        <AlertDialogDescription>{t('admin.orders.ship.cancel_shipment_confirm_body')}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{t('admin.orders.keep_as_is')}</AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
                             onClick={() => {
-                                setShowShipConfirmation(false);
-                                setPendingStatus(null);
+                                if (cancelShipmentId !== null) {
+                                    router.delete(`/admin/orders/${order.id}/shipments/${cancelShipmentId}`, {
+                                        preserveScroll: true,
+                                        onFinish: () => setCancelShipmentId(null),
+                                    });
+                                }
                             }}
                         >
-                            Cancel
-                        </Button>
-                        <Button onClick={handleConfirmShip} disabled={isUpdating}>
-                            {isUpdating ? 'Processing...' : 'Confirm & Send Email'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            {t('admin.orders.ship.cancel_shipment')}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }
