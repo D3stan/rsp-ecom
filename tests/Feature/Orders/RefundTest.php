@@ -1,5 +1,6 @@
 <?php
 
+use App\Events\VariantRestocked;
 use App\Jobs\SendOrderEmail;
 use App\Listeners\StripeWebhookListener;
 use App\Models\Order;
@@ -427,4 +428,21 @@ it('handles refund.updated like charge.refund.updated', function () {
 
     expect(Refund::sole()->status)->toBe('failed')
         ->and($order->fresh()->payment_status)->toBe('succeeded');
+});
+
+it('announces a sold-out variant as back in stock when a refund restocks it', function () {
+    Event::fake([VariantRestocked::class]);
+    $product = $this->makeProduct(25.00);
+    $variant = $product->defaultVariant;
+    $variant->update(['stock_quantity' => 0, 'status' => 'active']);
+    $order = refundOrder();
+    $item = $order->orderItems()->create(['product_id' => $product->id, 'product_name' => $product->name, 'quantity' => 1, 'price' => 25, 'total' => 25]);
+    Order::whereKey($order->id)->update(['stock_deducted_at' => now()]);
+    $this->stripeHttp->responses['/v1/refunds'] = refundResponse('re_back', 2500);
+
+    $this->actingAs($this->admin)->post(route('admin.orders.refund', $order), ['amount' => 25.00, 'restock' => [$item->id => 1]])
+        ->assertSessionHas('success');
+
+    expect($variant->fresh()->stock_quantity)->toBe(1);
+    Event::assertDispatched(VariantRestocked::class, fn (VariantRestocked $event) => $event->variantId === $variant->id);
 });
