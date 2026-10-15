@@ -15,6 +15,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * lines: list of {product_id, product_variant_id, size_id, quantity, price (charged unit price), product_name,
  * variant_name, sku, price_changed (bool), previous_price (when price_changed)}.
+ *
+ * Abandoned-checkout reminder: email / locale / marketing_consent / consent_ip are written at checkout (the email only
+ * with consent), reminder_sent_at once the single reminder went out, recovered_at when its link rebuilt the cart.
  */
 class CheckoutSnapshot extends Model
 {
@@ -41,6 +44,12 @@ class CheckoutSnapshot extends Model
         'coupon_code',
         'cart_hash',
         'consumed_at',
+        'email',
+        'locale',
+        'marketing_consent',
+        'consent_ip',
+        'reminder_sent_at',
+        'recovered_at',
     ];
 
     protected $casts = [
@@ -52,6 +61,9 @@ class CheckoutSnapshot extends Model
         'total' => 'decimal:2',
         'total_cents' => 'integer',
         'consumed_at' => 'datetime',
+        'marketing_consent' => 'boolean',
+        'reminder_sent_at' => 'datetime',
+        'recovered_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

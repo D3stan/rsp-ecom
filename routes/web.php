@@ -4,6 +4,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CheckoutRecoveryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\CategoryController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\GuestOrderController;
 use App\Http\Controllers\Api\PromotionController;
 use App\Http\Controllers\RestockUnsubscribeController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\Newsletter\NewsletterController;
 use App\Shipping\Tracking\Http\TrackingWebhookController;
 use App\Support\Locales;
 use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
@@ -79,6 +81,9 @@ Route::post('/guest/checkout/cart', [CheckoutController::class, 'guestCartChecko
 Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::get('/checkout/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
 
+// "Complete your order" link of the abandoned-checkout reminder (signed, 7 days): rebuilds the cart
+Route::get('/checkout/recover/{snapshot}', CheckoutRecoveryController::class)->middleware(['signed', 'throttle:30,1'])->name('checkout.recover');
+
 // Order-status page for guests, reached through the signed link in the emails (Order::publicUrl())
 Route::get('/orders/{order}', [GuestOrderController::class, 'show'])
     ->middleware('throttle:60,1')
@@ -122,6 +127,14 @@ Route::get('/shipping-returns', [PageController::class, 'shippingReturns'])->nam
 Route::get('/terms', [PageController::class, 'terms'])->name('terms');
 
 Route::get('/faq', [PageController::class, 'faq'])->name('faq');
+
+// Newsletter: sign-up + double opt-in (only while newsletter.enabled), unsubscribe (always; signed link from every
+// marketing email; the POST is also the RFC 8058 one-click target, CSRF-exempt in bootstrap/app.php)
+Route::post('/newsletter/subscribe', [NewsletterController::class, 'subscribe'])->middleware('throttle:5,1')->name('newsletter.subscribe');
+Route::get('/newsletter/confirm/{token}', [NewsletterController::class, 'showConfirm'])->middleware('throttle:30,1')->name('newsletter.confirm');
+Route::post('/newsletter/confirm/{token}', [NewsletterController::class, 'confirm'])->middleware('throttle:10,1')->name('newsletter.confirm.store');
+Route::get('/newsletter/unsubscribe/{subscriber}', [NewsletterController::class, 'showUnsubscribe'])->middleware(['signed', 'throttle:60,1'])->name('newsletter.unsubscribe');
+Route::post('/newsletter/unsubscribe/{subscriber}', [NewsletterController::class, 'unsubscribe'])->middleware(['signed', 'throttle:60,1'])->name('newsletter.unsubscribe.store');
 
 // API routes for AJAX calls
 Route::prefix('api')->group(function () {

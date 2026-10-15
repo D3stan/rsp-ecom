@@ -3,6 +3,7 @@ import {
     LayoutGrid,
     Mail,
     MapPin,
+    Newspaper,
     Percent,
     Phone,
     Scale,
@@ -34,6 +35,7 @@ const GROUP_ICONS: Record<string, LucideIcon> = {
     Mail,
     MapPin,
     Search,
+    Newspaper,
     Server,
 };
 

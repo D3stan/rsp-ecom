@@ -2,6 +2,7 @@ import FooterLegalLine from '@/components/footer-legal-line';
 import FooterSocialLinks from '@/components/footer-social-links';
 import Header from '@/components/header';
 import LoadingOverlay from '@/components/LoadingOverlay';
+import NewsletterSignup from '@/components/newsletter/NewsletterSignup';
 // import { VideoPlayer } from '@/components/VideoPlayer';
 import RingMaskedImage from '@/components/RingMaskedImage/RingMaskedImage';
 import { Badge } from '@/components/ui/badge';
@@ -484,6 +485,8 @@ export default function Home() {
 
                             <FooterSocialLinks hoverClassName="hover:text-black" />
                         </div>
+
+                        <NewsletterSignup className="mt-8" />
 
                         <div className="mt-8 border-t border-gray-800 pt-8 text-center text-gray-400">
                             <p>

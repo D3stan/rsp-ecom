@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Services\EmailService;
+use App\Services\Newsletter\AbandonedCheckoutReminders;
 use App\Services\OrderCreationService;
 use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Events\WebhookReceived;
@@ -44,6 +45,7 @@ class StripeWebhookListener
                 break;
             case 'checkout.session.expired':
                 $this->closeUnpaidSession($payload, 'expired');
+                app(AbandonedCheckoutReminders::class)->sessionExpired($payload['data']['object']);
                 break;
             default:
                 Log::info('Unhandled webhook event type: '.$payload['type']);

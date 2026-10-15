@@ -8,6 +8,7 @@ import DeleteUser from '@/components/delete-user';
 import GoogleAccountSettings from '@/components/google-account-settings';
 import HeadingSmall from '@/components/heading-small';
 import InputError from '@/components/input-error';
+import NewsletterPreference, { type NewsletterPreferenceProps } from '@/components/newsletter/NewsletterPreference';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +27,11 @@ type ProfileForm = {
     email: string;
 };
 
-export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
+export default function Profile({
+    mustVerifyEmail,
+    status,
+    newsletter = null,
+}: { mustVerifyEmail: boolean; status?: string } & Partial<NewsletterPreferenceProps>) {
     const { auth } = usePage<SharedData>().props;
 
     const { data, setData, patch, errors, processing, recentlySuccessful } = useForm<Required<ProfileForm>>({
@@ -121,6 +126,8 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                         </div>
                     </form>
                 </div>
+
+                <NewsletterPreference newsletter={newsletter} />
 
                 <BackInStockPreference />
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\NewsletterSubscriber;
 use App\Models\PendingUserVerification;
 use App\Notifications\PendingUserEmailVerification;
 use App\Services\EmailService;
@@ -59,6 +60,12 @@ class PendingUserVerificationController extends Controller
 
         // Create the verified user
         $user = $pendingUser->createVerifiedUser();
+
+        // A newsletter sign-up made with the registration form belongs to this account from now on
+        NewsletterSubscriber::query()
+            ->where('email', NewsletterSubscriber::normalizeEmail($user->email))
+            ->whereNull('user_id')
+            ->update(['user_id' => $user->id]);
 
         // Fire the registered event for any listeners
         event(new Registered($user));

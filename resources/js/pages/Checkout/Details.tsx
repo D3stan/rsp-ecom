@@ -1,3 +1,4 @@
+import MarketingConsentCheckbox from '@/components/checkout/MarketingConsentCheckbox';
 import OrderSummary, { type SummaryLine } from '@/components/checkout/OrderSummary';
 import Header from '@/components/header';
 import InputError from '@/components/input-error';
@@ -127,6 +128,7 @@ export default function CheckoutDetails() {
 
     const [couponCode, setCouponCode] = useState(initialCouponCode || '');
     const [orderNotes, setOrderNotes] = useState('');
+    const [marketingConsent, setMarketingConsent] = useState(false);
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     // Back from Stripe with the browser's back button: the page comes out of the back/forward cache still "processing"
@@ -317,6 +319,7 @@ export default function CheckoutDetails() {
             shipping_address: shippingAddress,
             order_notes: orderNotes,
             coupon_code: couponCode,
+            marketing_consent: marketingConsent,
         };
 
         if (auth?.user) {
@@ -761,6 +764,8 @@ export default function CheckoutDetails() {
                                 <p className="text-sm text-amber-800">{t('cart.min_amount_notice', { amount: formatCurrency(minAmount) })}</p>
                             </div>
                         )}
+
+                        <MarketingConsentCheckbox checked={marketingConsent} onCheckedChange={setMarketingConsent} disabled={isProcessing} />
 
                         {/* Action Buttons - Hidden on mobile, only show on desktop */}
                         <div className="grid hidden grid-cols-1 gap-4 pt-6 md:grid md:grid-cols-2">
