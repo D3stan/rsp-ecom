@@ -19,13 +19,15 @@ class OrderItem extends Model
         'price',
         'total',
         'oversold_qty',
+        'restocked_qty',
     ];
 
     /** Internal: shown to admins only (Admin\OrdersController::show). */
-    protected $hidden = ['oversold_qty'];
+    protected $hidden = ['oversold_qty', 'restocked_qty'];
 
     protected $casts = [
         'oversold_qty' => 'integer',
+        'restocked_qty' => 'integer',
         'price' => 'decimal:2',
         'total' => 'decimal:2',
         'quantity' => 'integer',

@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { ChevronDown, ChevronUp, DollarSign, Edit, Eye, Filter, MoreHorizontal, Package, Search, TrendingUp, Truck, Users } from 'lucide-react';
@@ -20,6 +21,8 @@ interface Order {
     guest_email?: string;
     status: string;
     payment_status: string;
+    // statuses this order may move to next (server-side order lifecycle)
+    allowed_transitions?: string[];
     total_amount: number;
     created_at: string;
     orderItems?: Array<{
@@ -70,6 +73,8 @@ interface Props {
     filters: {
         status?: string;
         payment_status?: string;
+        // "1": only cancelled orders whose money is still captured
+        refund_due?: string;
         search?: string;
         date_from?: string;
         date_to?: string;
@@ -89,12 +94,16 @@ const paymentStatusColors = {
     processing: 'bg-blue-100 text-blue-800',
     succeeded: 'bg-green-100 text-green-800',
     failed: 'bg-red-100 text-red-800',
+    partially_refunded: 'bg-orange-100 text-orange-800',
+    refunded: 'bg-gray-100 text-gray-800',
 };
 
 export default function OrdersIndex({ orders, kpis, filters }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [statusFilter, setStatusFilter] = useState(filters.status || '');
     const [paymentStatusFilter, setPaymentStatusFilter] = useState(filters.payment_status || '');
+    const [refundDueFilter, setRefundDueFilter] = useState(filters.refund_due === '1');
+    const { t } = useTranslation();
     const [isKPIsOpen, setIsKPIsOpen] = useState(false);
 
     // Add safety checks for orders data
@@ -111,6 +120,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                     search: search || undefined,
                     status: statusFilter || undefined,
                     payment_status: paymentStatusFilter || undefined,
+                    refund_due: refundDueFilter ? 1 : undefined,
                 },
                 {
                     preserveState: true,
@@ -121,12 +131,13 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
         }, 300); // 300ms debounce for search
 
         return () => clearTimeout(timeoutId);
-    }, [search, statusFilter, paymentStatusFilter]);
+    }, [search, statusFilter, paymentStatusFilter, refundDueFilter]);
 
     const clearFilters = () => {
         setSearch('');
         setStatusFilter('');
         setPaymentStatusFilter('');
+        setRefundDueFilter(false);
         router.get('/admin/orders');
     };
 
@@ -282,11 +293,17 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                     <option value="processing">Processing</option>
                                     <option value="succeeded">Succeeded</option>
                                     <option value="failed">Failed</option>
+                                    <option value="partially_refunded">Partially refunded</option>
+                                    <option value="refunded">Refunded</option>
                                 </select>
                             </div>
 
-                            <div className="flex items-end">
-                                {(search || statusFilter || paymentStatusFilter) && (
+                            <div className="flex items-end gap-3">
+                                <label className="flex h-9 items-center gap-2 text-sm whitespace-nowrap">
+                                    <input type="checkbox" checked={refundDueFilter} onChange={(e) => setRefundDueFilter(e.target.checked)} />
+                                    {t('admin.orders.refund_due')}
+                                </label>
+                                {(search || statusFilter || paymentStatusFilter || refundDueFilter) && (
                                     <Button onClick={clearFilters} variant="outline" size="sm" className="w-full">
                                         Clear Filters
                                     </Button>
@@ -353,7 +370,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                 </td>
                                                 <td className="p-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        {order.status === 'pending' && (
+                                                        {order.allowed_transitions?.includes('shipped') && (
                                                             <Button asChild size="sm" variant="outline">
                                                                 <Link href={`/admin/orders/${order.id}/ship`}>
                                                                     <Truck className="mr-1 h-4 w-4" />
@@ -418,7 +435,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                 <Badge className={statusColors[order.status as keyof typeof statusColors]} variant="secondary">
                                                     {order.status}
                                                 </Badge>
-                                                {order.status === 'pending' && (
+                                                {order.allowed_transitions?.includes('shipped') && (
                                                     <Button asChild size="sm" variant="outline">
                                                         <Link href={`/admin/orders/${order.id}/ship`}>
                                                             <Truck className="mr-1 h-4 w-4" />

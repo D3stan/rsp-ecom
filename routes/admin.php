@@ -25,6 +25,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('orders/{order}/status', [OrdersController::class, 'updateStatus'])->name('orders.update-status');
     Route::patch('orders/{order}/cancel', [OrdersController::class, 'cancel'])->name('orders.cancel');
     Route::post('orders/{order}/refund', [OrdersController::class, 'refund'])->name('orders.refund');
+    Route::post('orders/{order}/refunds/{refund}/retry', [OrdersController::class, 'retryRefund'])->scopeBindings()->name('orders.refunds.retry');
 
     // Products Management
     Route::resource('products', ProductController::class);

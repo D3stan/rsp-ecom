@@ -167,6 +167,26 @@ class StripeAsyncEventsTest extends TestCase
         $this->assertNull($order->stock_restored_at);
     }
 
+    public function test_an_expired_session_webhook_for_a_paid_processing_order_answers_200_and_changes_nothing(): void
+    {
+        config(['cashier.webhook.secret' => 'whsec_test_secret']);
+        $cart = $this->cart();
+        $this->dispatch('checkout.session.completed', $this->guestSessionPayload($cart));
+
+        $body = json_encode(['id' => 'evt_exp', 'type' => 'checkout.session.expired', 'data' => ['object' => $this->guestSessionPayload($cart)]]);
+        $timestamp = time();
+
+        $this->call('POST', '/stripe/webhook', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_STRIPE_SIGNATURE' => 't='.$timestamp.',v1='.hash_hmac('sha256', $timestamp.'.'.$body, 'whsec_test_secret'),
+        ], $body)->assertOk();
+
+        $order = Order::sole();
+        $this->assertSame('processing', $order->status);
+        $this->assertSame('succeeded', $order->payment_status);
+    }
+
     public function test_sessions_of_other_products_are_ignored_by_the_closing_events(): void
     {
         $this->dispatch('checkout.session.expired', $this->sessionPayload(['payment_status' => 'unpaid', 'metadata' => []]));

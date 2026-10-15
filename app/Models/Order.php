@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Domain\Orders\OrderTransitions;
+use App\Exceptions\InvalidOrderTransition;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
@@ -70,6 +73,7 @@ class Order extends Model
         'stock_deducted_at' => 'datetime',
         'stock_restored_at' => 'datetime',
         'has_oversold_items' => 'boolean',
+        'delivered_at' => 'datetime',
     ];
 
     /**
@@ -152,6 +156,22 @@ class Order extends Model
         return $this->hasMany(ShipmentTrackingEvent::class);
     }
 
+    /**
+     * Money returned for this order (RefundService).
+     */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
+    }
+
+    /**
+     * Audit trail (status changes, refunds), oldest first.
+     */
+    public function events(): HasMany
+    {
+        return $this->hasMany(OrderEvent::class)->orderBy('created_at')->orderBy('id');
+    }
+
     // Scopes
     public function scopePending($query)
     {
@@ -199,6 +219,19 @@ class Order extends Model
         return $query->where('payment_status', 'failed');
     }
 
+    /**
+     * "Refund due" (computed, never stored): cancelled while money is still captured, fully or in part.
+     */
+    public function scopeRefundDue($query)
+    {
+        return $query->where('status', 'cancelled')->whereIn('payment_status', self::REFUND_DUE_PAYMENT_STATUSES);
+    }
+
+    public function isRefundDue(): bool
+    {
+        return $this->status === 'cancelled' && in_array($this->payment_status, self::REFUND_DUE_PAYMENT_STATUSES, true);
+    }
+
     // Accessors
     public function getTotalItemsAttribute(): int
     {
@@ -217,32 +250,117 @@ class Order extends Model
 
     public function getCanBeCancelledAttribute(): bool
     {
-        return in_array($this->status, ['pending', 'processing']);
+        return OrderTransitions::allows($this->status, 'cancelled');
+    }
+
+    /**
+     * @return list<string> the statuses this order may move to next (OrderTransitions)
+     */
+    public function allowedTransitions(): array
+    {
+        return OrderTransitions::allowedFrom($this->status);
+    }
+
+    /**
+     * The one way to change the status. Checks the move against OrderTransitions on the stored (locked) status, so two
+     * admins, or an admin and the tracking sync, cannot both move the order from the same starting point. Sets
+     * delivered_at when the order enters "delivered" and saves the model, together with any other attribute the caller
+     * changed on it before. The OrderObserver then reacts as for any save (stock restore on cancel, status emails).
+     * Each actual move writes one order_events row (actor, both statuses, reason and $meta in payload).
+     *
+     * Moving to the status the order already has is a no-op for the status (other pending changes are still saved).
+     *
+     * @param  array<string, mixed>  $meta  context of the change (source, ids) for the audit trail
+     *
+     * @throws InvalidOrderTransition when the lifecycle does not allow the move, or it needs a reason and has none
+     */
+    public function transitionTo(string $to, ?User $actor = null, ?string $reason = null, array $meta = []): void
+    {
+        if (! $this->exists) {
+            throw new \LogicException('Only a saved order can change status.');
+        }
+
+        DB::transaction(function () use ($to, $actor, $reason, $meta) {
+            $stored = static::query()->whereKey($this->getKey())->lockForUpdate()->value('status');
+
+            // Decide on what is stored, not on what this instance remembers
+            if ($stored !== null && $stored !== $this->getOriginal('status')) {
+                $this->setAttribute('status', $stored);
+                $this->syncOriginalAttribute('status');
+            }
+
+            $from = $this->getOriginal('status');
+            $reason = trim((string) $reason) !== '' ? trim((string) $reason) : null;
+
+            if ($from === $to) {
+                if ($this->isDirty()) {
+                    $this->save();
+                }
+
+                return;
+            }
+
+            if (! OrderTransitions::allows($from, $to)) {
+                throw InvalidOrderTransition::notAllowed((string) $this->order_number, $from, $to);
+            }
+
+            if ($reason === null && OrderTransitions::requiresReason($from, $to)) {
+                throw InvalidOrderTransition::reasonRequired((string) $this->order_number, $from, $to);
+            }
+
+            $this->status = $to;
+
+            if ($to === 'delivered') {
+                $this->delivered_at = now();
+            }
+
+            $this->save();
+
+            $this->events()->create([
+                'actor_id' => $actor?->getKey(),
+                'type' => OrderEvent::TYPE_STATUS_CHANGED,
+                'from_status' => $from,
+                'to_status' => $to,
+                'payload' => array_filter(['reason' => $reason, 'meta' => $meta]) ?: null,
+            ]);
+        });
     }
 
     // Helper methods
-    public function cancel(): bool
+    public function cancel(?User $actor = null, ?string $reason = null): bool
     {
-        if (!$this->can_be_cancelled) {
+        if (! $this->can_be_cancelled) {
             return false;
         }
 
-        return $this->update(['status' => 'cancelled']);
+        try {
+            $this->transitionTo('cancelled', $actor, $reason);
+        } catch (InvalidOrderTransition) {
+            return false; // the stored status moved on meanwhile
+        }
+
+        return true;
     }
 
-    public function markAsProcessing(): bool
+    public function markAsProcessing(?User $actor = null): bool
     {
-        return $this->update(['status' => 'processing']);
+        $this->transitionTo('processing', $actor);
+
+        return true;
     }
 
-    public function markAsShipped(): bool
+    public function markAsShipped(?User $actor = null): bool
     {
-        return $this->update(['status' => 'shipped']);
+        $this->transitionTo('shipped', $actor);
+
+        return true;
     }
 
-    public function markAsDelivered(): bool
+    public function markAsDelivered(?User $actor = null): bool
     {
-        return $this->update(['status' => 'delivered']);
+        $this->transitionTo('delivered', $actor);
+
+        return true;
     }
 
     // Generate unique order number
@@ -274,6 +392,27 @@ class Order extends Model
     public function isPaymentPending(): bool
     {
         return in_array($this->payment_status, ['pending', 'processing']);
+    }
+
+    /** Payment states in which money was captured: the order's lines and totals are then locked (refunds only). */
+    public const CAPTURED_PAYMENT_STATUSES = ['succeeded', 'partially_refunded', 'refunded'];
+
+    /** Captured money not (fully) returned yet: a cancelled order in one of these owes the customer a refund. */
+    public const REFUND_DUE_PAYMENT_STATUSES = ['succeeded', 'partially_refunded'];
+
+    public function hasCapturedPayment(): bool
+    {
+        return in_array($this->payment_status, self::CAPTURED_PAYMENT_STATUSES, true);
+    }
+
+    /**
+     * Lines, prices and totals can no longer be edited: the money was captured, or a payment is in flight (Stripe
+     * charges the amount it was given, so an edit could only make the order disagree with it). Not the same as
+     * hasCapturedPayment(): an in-flight payment cannot be refunded.
+     */
+    public function financialsLocked(): bool
+    {
+        return $this->payment_status === 'processing' || $this->hasCapturedPayment();
     }
 
     public function isPaymentFailed(): bool

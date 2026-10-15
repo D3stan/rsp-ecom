@@ -71,7 +71,8 @@ it('never emails for orders created already delivered or cancelled (factories, s
 });
 
 it('does not email delivered for an order whose customer was never told about it', function () {
-    $order = Fx::unpaidOrder();
+    // shipped: the only status an order may be delivered from (OrderTransitions)
+    $order = Fx::unpaidOrder(['status' => 'shipped']);
 
     $order->markAsDelivered();
 
@@ -160,15 +161,4 @@ it('resolves PATCH admin/orders/bulk-status to the bulk action, not to orders/{o
     $order = Fx::paidOrder(['guest_email' => null]);
     expect(app('router')->getRoutes()->match(Illuminate\Http\Request::create('/admin/orders/'.$order->id, 'PATCH'))->getName())
         ->toBe('admin.orders.update');
-});
-
-it('does not email a refund from the placeholder refund action', function () {
-    $order = Fx::paidOrder();
-
-    $this->actingAs($this->admin)
-        ->post(route('admin.orders.refund', $order), ['amount' => 10, 'reason' => 'test'])
-        ->assertSessionHas('success');
-
-    Queue::assertNothingPushed();
-    expect(OrderEmail::where('type', OrderEmail::TYPE_REFUNDED)->count())->toBe(0);
 });

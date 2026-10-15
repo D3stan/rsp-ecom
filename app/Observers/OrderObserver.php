@@ -69,6 +69,6 @@ class OrderObserver
      */
     private function customerWasNotified(Order $order): bool
     {
-        return $order->isPaymentCompleted() || $order->hasEmailBeenSent();
+        return $order->hasCapturedPayment() || $order->hasEmailBeenSent();
     }
 }

@@ -13,16 +13,41 @@ class FakeStripeHttpClient implements ClientInterface
     /** @var array<int, array{0: string, 1: string, 2: array|null}> method, URL, request parameters */
     public array $requests = [];
 
-    /** @var array<string, array> URL fragment => JSON body */
+    /** @var array<int, array<int, string>> request headers, same order as the requests (e.g. "Idempotency-Key: ...") */
+    public array $headers = [];
+
+    /**
+     * URL fragment => JSON body. A fragment may start with the HTTP method ("GET /v1/refunds") to answer only that
+     * method. In the body, "__status" sets the HTTP status (default 200) and "__throw" => 'connection' simulates a
+     * network failure (Stripe\Exception\ApiConnectionException, as the real transport throws on a timeout).
+     *
+     * @var array<string, array>
+     */
     public array $responses = [];
 
     public function request($method, $absUrl, $headers, $params, $hasFile, $apiMode = 'v1')
     {
         $this->requests[] = [$method, $absUrl, $params];
+        $this->headers[] = $headers;
 
         foreach ($this->responses as $fragment => $body) {
+            if (preg_match('/^(GET|POST|DELETE) (.+)$/', $fragment, $match)) {
+                if (strcasecmp($match[1], $method) !== 0) {
+                    continue;
+                }
+
+                $fragment = $match[2];
+            }
+
             if (str_contains($absUrl, $fragment)) {
-                return [json_encode($body), 200, []];
+                if (($body['__throw'] ?? null) === 'connection') {
+                    throw new \Stripe\Exception\ApiConnectionException('Request timed out (simulated)');
+                }
+
+                $status = $body['__status'] ?? 200;
+                unset($body['__status']);
+
+                return [json_encode($body), $status, []];
             }
         }
 

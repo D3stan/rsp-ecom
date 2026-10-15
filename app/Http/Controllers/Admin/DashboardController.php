@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\Revenue;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,29 +23,25 @@ class DashboardController extends Controller
         $lastMonth = now()->subMonth()->startOfMonth();
         $thisYear = now()->startOfYear();
 
-        // Basic stats
+        // Basic stats. Revenue is net: cancelled orders excluded, succeeded refunds subtracted (App\Support\Revenue)
         $stats = [
             'today' => [
                 'orders' => Order::whereDate('created_at', $today)->count(),
-                'revenue' => Order::whereDate('created_at', $today)
-                    ->where('payment_status', 'succeeded')->sum('total_amount'),
+                'revenue' => Revenue::net(Order::whereDate('created_at', $today)),
                 'customers' => User::whereDate('created_at', $today)->count(),
             ],
             'yesterday' => [
                 'orders' => Order::whereDate('created_at', $yesterday)->count(),
-                'revenue' => Order::whereDate('created_at', $yesterday)
-                    ->where('payment_status', 'succeeded')->sum('total_amount'),
+                'revenue' => Revenue::net(Order::whereDate('created_at', $yesterday)),
             ],
             'month' => [
                 'orders' => Order::whereDate('created_at', '>=', $thisMonth)->count(),
-                'revenue' => Order::whereDate('created_at', '>=', $thisMonth)
-                    ->where('payment_status', 'succeeded')->sum('total_amount'),
+                'revenue' => Revenue::net(Order::whereDate('created_at', '>=', $thisMonth)),
                 'customers' => User::whereDate('created_at', '>=', $thisMonth)->count(),
             ],
             'year' => [
                 'orders' => Order::whereDate('created_at', '>=', $thisYear)->count(),
-                'revenue' => Order::whereDate('created_at', '>=', $thisYear)
-                    ->where('payment_status', 'succeeded')->sum('total_amount'),
+                'revenue' => Revenue::net(Order::whereDate('created_at', '>=', $thisYear)),
             ],
         ];
 
@@ -87,9 +84,7 @@ class DashboardController extends Controller
         $revenueChartData = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
-            $revenue = Order::whereDate('created_at', $date)
-                ->where('payment_status', 'succeeded')
-                ->sum('total_amount');
+            $revenue = Revenue::net(Order::whereDate('created_at', $date));
             
             $revenueChartData[] = [
                 'date' => $date->format('M d'),

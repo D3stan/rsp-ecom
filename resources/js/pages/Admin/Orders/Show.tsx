@@ -1,3 +1,6 @@
+import OrderRefunds, { type OrderRefund, type RefundInfo } from '@/components/admin/orders/OrderRefunds';
+import OrderStatusActions, { forwardTransitions } from '@/components/admin/orders/OrderStatusActions';
+import OrderTimeline, { type OrderTimelineEvent } from '@/components/admin/orders/OrderTimeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -106,6 +109,15 @@ interface StockInfo {
 
 interface Props {
     order: Order;
+    // statuses this order may move to next (server-side order lifecycle)
+    allowed_transitions: string[];
+    // audit trail (order_events), oldest first
+    events?: OrderTimelineEvent[];
+    // cancelled while money is still captured (customer service owes a refund)
+    refund_due?: boolean;
+    // money returned so far and what can still be refunded (RefundService)
+    refunds?: OrderRefund[];
+    refund?: RefundInfo;
     carriers?: Carrier[];
     stock?: StockInfo;
 }
@@ -123,6 +135,8 @@ const paymentStatusColors = {
     processing: 'bg-blue-100 text-blue-800',
     succeeded: 'bg-green-100 text-green-800',
     failed: 'bg-red-100 text-red-800',
+    partially_refunded: 'bg-orange-100 text-orange-800',
+    refunded: 'bg-gray-100 text-gray-800',
 };
 
 const getStatusIcon = (status: string) => {
@@ -142,7 +156,16 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-export default function OrderShow({ order, carriers = [], stock }: Props) {
+export default function OrderShow({
+    order,
+    allowed_transitions = [],
+    refund_due = false,
+    events = [],
+    refunds = [],
+    refund,
+    carriers = [],
+    stock,
+}: Props) {
     const { t } = useTranslation();
     const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
     const [isUpdating, setIsUpdating] = useState(false);
@@ -239,11 +262,7 @@ export default function OrderShow({ order, carriers = [], stock }: Props) {
         }
     };
 
-    const getNextStatus = () => {
-        const statusFlow = ['pending', 'processing', 'shipped', 'delivered'];
-        const currentIndex = statusFlow.indexOf(order.status);
-        return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
-    };
+    const getNextStatus = () => forwardTransitions(order.status, allowed_transitions)[0] ?? null;
 
     const navigateToCustomer = () => {
         // TODO: Implement customer navigation when customer management is ready
@@ -332,34 +351,24 @@ export default function OrderShow({ order, carriers = [], stock }: Props) {
                                                 <CreditCard className="mr-1 h-4 w-4" />
                                                 {order.payment_status}
                                             </Badge>
+                                            {refund_due && (
+                                                <Badge variant="secondary" className="bg-red-100 text-red-800">
+                                                    {t('admin.orders.refund_due')}
+                                                </Badge>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {/* Quick Status Update */}
-                                    <div className="flex flex-wrap gap-2">
-                                        {['pending', 'processing', 'shipped', 'delivered'].map((status) => (
-                                            <Button
-                                                key={status}
-                                                variant={order.status === status ? 'default' : 'outline'}
-                                                size="sm"
-                                                onClick={() => updateOrderStatus(status)}
-                                                disabled={isUpdating}
-                                            >
-                                                {status.charAt(0).toUpperCase() + status.slice(1)}
-                                            </Button>
-                                        ))}
-                                        {order.status !== 'cancelled' && order.status !== 'delivered' && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => updateOrderStatus('cancelled')}
-                                                disabled={isUpdating}
-                                                className="text-red-600 hover:text-red-700"
-                                            >
-                                                Cancel
-                                            </Button>
-                                        )}
-                                    </div>
+                                    {/* Quick Status Update: only the moves the order lifecycle allows */}
+                                    <OrderStatusActions
+                                        orderId={order.id}
+                                        status={order.status}
+                                        allowedTransitions={allowed_transitions}
+                                        disabled={isUpdating}
+                                        onAdvance={updateOrderStatus}
+                                        refundableCents={refund?.has_payment_intent ? refund.refundable_cents : 0}
+                                        currency={order.currency}
+                                    />
                                 </CollapsibleContent>
                             </Card>
                         </Collapsible>
@@ -373,48 +382,7 @@ export default function OrderShow({ order, carriers = [], stock }: Props) {
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
                                     <div className="space-y-4">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                                                <CheckCircle className="h-4 w-4 text-green-600" />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium">Order Placed</p>
-                                                <p className="text-sm text-muted-foreground">{formatDate(order.created_at)}</p>
-                                            </div>
-                                        </div>
-                                        {order.status !== 'pending' && (
-                                            <div className="flex items-center space-x-3">
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-                                                    <Package className="h-4 w-4 text-blue-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium">Order Confirmed</p>
-                                                    <p className="text-sm text-muted-foreground">{formatDate(order.updated_at)}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {(order.status === 'shipped' || order.status === 'delivered') && (
-                                            <div className="flex items-center space-x-3">
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100">
-                                                    <Truck className="h-4 w-4 text-purple-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium">Order Shipped</p>
-                                                    <p className="text-sm text-muted-foreground">{formatDate(order.updated_at)}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {order.status === 'delivered' && (
-                                            <div className="flex items-center space-x-3">
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                                                    <CheckCircle className="h-4 w-4 text-green-600" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium">Order Delivered</p>
-                                                    <p className="text-sm text-muted-foreground">{formatDate(order.updated_at)}</p>
-                                                </div>
-                                            </div>
-                                        )}
+                                        <OrderTimeline createdAt={order.created_at} status={order.status} events={events} formatDate={formatDate} />
                                         {getNextStatus() && (
                                             <Button size="sm" onClick={() => updateOrderStatus(getNextStatus()!)} disabled={isUpdating}>
                                                 <SkipForward className="mr-2 h-4 w-4" />
@@ -699,6 +667,18 @@ export default function OrderShow({ order, carriers = [], stock }: Props) {
                                 </CollapsibleContent>
                             </Card>
                         </Collapsible>
+
+                        {refund && (
+                            <OrderRefunds
+                                orderId={order.id}
+                                currency={order.currency}
+                                shippingAmount={Number(order.shipping_amount)}
+                                lines={order.orderItems.map((item) => ({ id: item.id, name: item.product.name, quantity: item.quantity }))}
+                                refunds={refunds}
+                                info={refund}
+                                formatDate={formatDate}
+                            />
+                        )}
 
                         {/* Notes */}
                         {order.notes && (

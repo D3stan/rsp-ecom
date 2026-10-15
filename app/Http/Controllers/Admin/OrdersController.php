@@ -2,11 +2,20 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Orders\OrderFinancialEdit;
+use App\Exceptions\InvalidOrderTransition;
+use App\Exceptions\OrderEditRefused;
+use App\Exceptions\RefundFailed;
+use App\Exceptions\RefundRefused;
+use App\Exceptions\RefundUnconfirmed;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\OrderItem;
+use App\Models\Refund;
+use App\Services\RefundService;
+use App\Support\Revenue;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -14,6 +23,10 @@ use Inertia\Response;
 
 class OrdersController extends Controller
 {
+    /** Stripe may have refunded or not (timeout, 5xx): the refund stays pending and is settled automatically. */
+    private const REFUND_UNCONFIRMED_MESSAGE = 'Stripe did not confirm the refund yet; it will be updated automatically. Do not retry with a new refund: '
+        .'if it stays pending, use "Retry" on it (it resends the same request, so it cannot be paid twice).';
+
     /**
      * Display a listing of orders
      */
@@ -29,6 +42,11 @@ class OrdersController extends Controller
 
         if ($request->filled('payment_status')) {
             $query->where('payment_status', $request->payment_status);
+        }
+
+        // Cancelled while money is still captured: customer service owes a refund
+        if ($request->boolean('refund_due')) {
+            $query->refundDue();
         }
 
         if ($request->filled('search')) {
@@ -56,7 +74,9 @@ class OrdersController extends Controller
 
         // Transform the pagination response to ensure proper structure
         $ordersData = [
-            'data' => $orders->items(),
+            'data' => collect($orders->items())
+                ->map(fn (Order $order) => $order->toArray() + ['allowed_transitions' => $order->allowedTransitions()])
+                ->all(),
             'meta' => [
                 'total' => $orders->total(),
                 'per_page' => $orders->perPage(),
@@ -68,7 +88,7 @@ class OrdersController extends Controller
             'links' => $orders->linkCollection()->toArray(),
         ];
 
-        // Calculate KPI data
+        // KPI data; revenue is net (cancelled orders excluded, succeeded refunds subtracted)
         $today = now()->startOfDay();
         $thisMonth = now()->startOfMonth();
         $thisYear = now()->startOfYear();
@@ -76,25 +96,22 @@ class OrdersController extends Controller
         $kpis = [
             'today' => [
                 'orders' => Order::whereDate('created_at', $today)->count(),
-                'revenue' => Order::whereDate('created_at', $today)
-                    ->where('payment_status', 'succeeded')->sum('total_amount'),
+                'revenue' => Revenue::net(Order::whereDate('created_at', $today)),
             ],
             'month' => [
                 'orders' => Order::whereDate('created_at', '>=', $thisMonth)->count(),
-                'revenue' => Order::whereDate('created_at', '>=', $thisMonth)
-                    ->where('payment_status', 'succeeded')->sum('total_amount'),
+                'revenue' => Revenue::net(Order::whereDate('created_at', '>=', $thisMonth)),
             ],
             'year' => [
                 'orders' => Order::whereDate('created_at', '>=', $thisYear)->count(),
-                'revenue' => Order::whereDate('created_at', '>=', $thisYear)
-                    ->where('payment_status', 'succeeded')->sum('total_amount'),
+                'revenue' => Revenue::net(Order::whereDate('created_at', '>=', $thisYear)),
             ],
         ];
 
         return Inertia::render('Admin/Orders/Index', [
             'orders' => $ordersData,
             'kpis' => $kpis,
-            'filters' => $request->only(['status', 'payment_status', 'search', 'date_from', 'date_to']),
+            'filters' => $request->only(['status', 'payment_status', 'refund_due', 'search', 'date_from', 'date_to']),
         ]);
     }
 
@@ -113,6 +130,21 @@ class OrdersController extends Controller
 
         return Inertia::render('Admin/Orders/Show', [
             'order' => $order->toFrontendArray(),
+            'allowed_transitions' => $order->allowedTransitions(),
+            // cancelled while money is still captured (computed)
+            'refund_due' => $order->isRefundDue(),
+            // Audit trail for the timeline, oldest first (empty for orders from before it existed)
+            'events' => $order->events()->with('actor:id,name')->get()->map->toTimelineArray()->values()->all(),
+            // Money returned so far (newest first) and what can still be refunded through Stripe
+            'refunds' => $order->refunds()->with('creator:id,name')->orderByDesc('id')->get()->map->toAdminArray()->values()->all(),
+            'refund' => [
+                'refundable_cents' => app(RefundService::class)->refundableCents($order),
+                'has_payment_intent' => ! empty($order->stripe_payment_intent_id),
+                // units each line can still put back in stock (empty when the stock was never taken or already returned)
+                'restockable' => $order->stock_deducted_at !== null && $order->stock_restored_at === null
+                    ? $order->orderItems->mapWithKeys(fn ($item) => [$item->id => max(0, (int) $item->quantity - (int) $item->oversold_qty - (int) $item->restocked_qty)])->all()
+                    : (object) [],
+            ],
             'carriers' => app(TrackingManager::class)->carriers(),
             // Internal stock bookkeeping (hidden from every customer-facing array): units sold beyond the stock
             'stock' => [
@@ -139,12 +171,17 @@ class OrdersController extends Controller
 
         return Inertia::render('Admin/Orders/Edit', [
             'order' => $order->toFrontendArray(),
+            'allowed_transitions' => $order->allowedTransitions(),
+            // paid or payment in flight: lines, prices and totals are read-only (money goes back through a refund)
+            'financials_locked' => $order->financialsLocked(),
             'carriers' => app(TrackingManager::class)->carriers(),
         ]);
     }
 
     /**
-     * Update the specified order
+     * Update the specified order. Always editable: notes, tracking, addresses, and the status (through the order
+     * lifecycle). Money (lines, shipping, totals) only while the order is unpaid, and the payment status never:
+     * OrderFinancialEdit decides. Everything is written in one transaction, or nothing is.
      */
     public function update(Request $request, Order $order)
     {
@@ -156,7 +193,8 @@ class OrdersController extends Controller
 
             $request->validate([
                 'status' => 'sometimes|string|in:pending,processing,shipped,delivered,cancelled',
-                'payment_status' => 'sometimes|string|in:pending,processing,succeeded,failed,cancelled',
+                'reason' => 'sometimes|nullable|string|max:500',
+                'payment_status' => 'sometimes|string',
                 'notes' => 'sometimes|nullable|string|max:1000',
                 'tracking_number' => 'sometimes|nullable|string|max:100',
                 'tracking_carrier' => ['sometimes', 'nullable', 'string', 'max:50', Rule::in(app(TrackingManager::class)->carrierCodes())],
@@ -164,14 +202,16 @@ class OrdersController extends Controller
                 'tax_amount' => 'sometimes|numeric|min:0',
                 'subtotal' => 'sometimes|numeric|min:0',
                 'total_amount' => 'sometimes|numeric|min:0',
+                'discount_amount' => 'sometimes|numeric|min:0',
                 'order_items' => 'sometimes|string', // JSON string
                 'billing_address' => 'sometimes|nullable|string', // JSON string
                 'shipping_address' => 'sometimes|nullable|string', // JSON string
             ]);
 
-            \Log::info('Validation passed, updating order', [
-                'order_id' => $order->id
-            ]);
+            // Refused (paid order, payment status, invalid lines) before anything is written
+            $financial = OrderFinancialEdit::plan($order, $request->only([
+                'payment_status', 'order_items', 'subtotal', 'shipping_amount', 'tax_amount', 'discount_amount', 'total_amount',
+            ]));
 
             // Get original status and tracking number to detect changes
             $originalStatus = $order->status;
@@ -182,30 +222,41 @@ class OrdersController extends Controller
             $newStatus = $request->input('status', $order->status);
             $newTrackingNumber = $request->input('tracking_number', $order->tracking_number);
 
-            // Scenario 2: If tracking number is being added for the first time, auto-change status to shipped
-            $trackingNumberAdded = $newTrackingNumber && !$originalTrackingNumber;
-            if ($trackingNumberAdded && $newStatus !== 'shipped') {
+            // Scenario 2: a tracking number added for the first time ships the order, when the admin did not ask for
+            // another status and the order may ship now (OrderTransitions)
+            $trackingNumberAdded = $newTrackingNumber && ! $originalTrackingNumber;
+            if ($trackingNumberAdded && $newStatus === $originalStatus && in_array('shipped', $order->allowedTransitions(), true)) {
                 $newStatus = 'shipped';
             }
 
-            // Update order with all data (including potentially modified status)
-            $order->update([
-                'status' => $newStatus,
-                'payment_status' => $request->input('payment_status', $order->payment_status),
-                'notes' => $request->input('notes', $order->notes),
-                'tracking_number' => $newTrackingNumber,
-                'tracking_carrier' => $request->input('tracking_carrier', $order->tracking_carrier),
-                'shipping_amount' => $request->input('shipping_amount', $order->shipping_amount),
-                'tax_amount' => $request->input('tax_amount', $order->tax_amount),
-                'subtotal' => $request->input('subtotal', $order->subtotal),
-                'total_amount' => $request->input('total_amount', $order->total_amount),
-            ]);
+            DB::transaction(function () use ($request, $order, $financial, $newStatus, $newTrackingNumber, $originalStatus) {
+                $order->fill([
+                    'notes' => $request->input('notes', $order->notes),
+                    'tracking_number' => $newTrackingNumber,
+                    'tracking_carrier' => $request->input('tracking_carrier', $order->tracking_carrier),
+                ]);
 
-            // The stored VAT portion follows the edited total (orders created with a VAT rate snapshot only):
-            // an admin who changes shipping or the total must not leave a stale "of which VAT" behind.
-            if ($order->tax_rate !== null && $order->wasChanged(['total_amount', 'shipping_amount', 'subtotal'])) {
-                $order->update(['tax_amount' => \App\Support\Vat::portion((float) $order->total_amount, (float) $order->tax_rate)]);
-            }
+                if ($financial !== null) {
+                    OrderFinancialEdit::apply($order, $financial);
+                }
+
+                // One save: through transitionTo() when the status changes (a refused move rolls everything back)
+                if ($newStatus !== $originalStatus) {
+                    $order->transitionTo($newStatus, $request->user(), $request->input('reason'));
+                } else {
+                    $order->save();
+                }
+
+                foreach (['billing_address' => $order->billingAddress, 'shipping_address' => $order->shippingAddress] as $field => $address) {
+                    $data = $request->filled($field) ? json_decode((string) $request->input($field), true) : null;
+
+                    if (is_array($data) && $address) {
+                        $address->update($data);
+                    }
+                }
+            });
+
+            $newStatus = $order->status;
 
             // Send shipping notification email
             $statusChangedToShipped = $originalStatus !== 'shipped' && $newStatus === 'shipped';
@@ -252,50 +303,22 @@ class OrdersController extends Controller
                 ]);
             }
 
-            // Update order items if provided
-        if ($request->has('order_items')) {
-            $orderItems = json_decode($request->order_items, true);
-            if (is_array($orderItems)) {
-                foreach ($orderItems as $itemData) {
-                    $orderItem = OrderItem::find($itemData['id']);
-                    if ($orderItem && $orderItem->order_id === $order->id) {
-                        $orderItem->update([
-                            'quantity' => $itemData['quantity'],
-                            'price' => $itemData['price'],
-                            'total' => $itemData['total'],
-                        ]);
-                    }
-                }
-            }
-        }
+            Log::info('Order updated successfully', ['order_id' => $order->id]);
+            $response = back()->with('success', 'Order updated successfully.');
 
-        // Update addresses if provided
-        if ($request->has('billing_address') && $request->billing_address) {
-            $billingAddress = json_decode($request->billing_address, true);
-            if (is_array($billingAddress) && $order->billingAddress) {
-                $order->billingAddress->update($billingAddress);
-            }
-        }
-
-        if ($request->has('shipping_address') && $request->shipping_address) {
-            $shippingAddress = json_decode($request->shipping_address, true);
-            if (is_array($shippingAddress) && $order->shippingAddress) {
-                $order->shippingAddress->update($shippingAddress);
-            }
-        }
-
-        Log::info('Order updated successfully', ['order_id' => $order->id]);
-        $response = back()->with('success', 'Order updated successfully.');
-
-        return $emailWarning ? $response->with('warning', $emailWarning) : $response;
-        
+            return $emailWarning ? $response->with('warning', $emailWarning) : $response;
+        } catch (OrderEditRefused $e) {
+            return back()->withErrors(['order' => $e->getMessage()])->with('error', $e->getMessage());
+        } catch (InvalidOrderTransition $e) {
+            return $this->refusedTransition($e);
         } catch (\Exception $e) {
             Log::error('Failed to update order', [
                 'order_id' => $order->id ?? 'unknown',
                 'exception' => get_class($e),
                 'error' => $e->getMessage(),
             ]);
-            return back()->with('error', 'Failed to update order: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to update order: '.$e->getMessage());
         }
     }
 
@@ -306,11 +329,16 @@ class OrdersController extends Controller
     {
         $request->validate([
             'status' => 'required|string|in:pending,processing,shipped,delivered,cancelled',
+            'reason' => 'nullable|string|max:500',
         ]);
 
         $wasShipped = $order->status === 'shipped';
 
-        $order->update(['status' => $request->status]);
+        try {
+            $order->transitionTo($request->status, $request->user(), $request->input('reason'));
+        } catch (InvalidOrderTransition $e) {
+            return $this->refusedTransition($e);
+        }
 
         $response = back()->with('success', 'Order status updated successfully.');
 
@@ -340,24 +368,41 @@ class OrdersController extends Controller
 
         $emailService = app(\App\Services\EmailService::class);
         $emailFailures = 0;
+        $updated = 0;
+        $skipped = [];
 
-        // Per model (not a bulk query) so model events keep status/payment_status consistent
-        Order::with('user')->whereIn('id', $request->order_ids)->get()
-            ->each(function (Order $order) use ($request, $emailService, &$emailFailures) {
-                $wasShipped = $order->status === 'shipped';
+        // Per model (not a bulk query) so model events keep status/payment_status consistent. Each order moves only if
+        // the lifecycle allows it; the others are reported back and left untouched.
+        Order::with('user')->whereIn('id', $request->order_ids)->orderBy('id')->get()
+            ->each(function (Order $order) use ($request, $emailService, &$emailFailures, &$updated, &$skipped) {
+                $from = $order->status;
 
-                $order->update(['status' => $request->status]);
+                if ($from === $request->status) {
+                    $skipped[] = "{$order->order_number} (already {$from})";
+
+                    return;
+                }
+
+                try {
+                    $order->transitionTo($request->status, $request->user());
+                } catch (InvalidOrderTransition) {
+                    $skipped[] = "{$order->order_number} ({$from} → {$request->status} not allowed)";
+
+                    return;
+                }
+
+                $updated++;
 
                 // Same deduped path as update()/processShip(): no tracking number -> fingerprint without tracking
-                if ($request->status === 'shipped' && ! $wasShipped
+                if ($request->status === 'shipped'
                     && $emailService->isEnabled(\App\Models\OrderEmail::TYPE_SHIPPED)
                     && ! $emailService->sendOrderShipped($order, $order->tracking_number)) {
                     $emailFailures++;
                 }
             });
 
-        $count = count($request->order_ids);
-        $response = back()->with('success', "{$count} orders updated successfully.");
+        $summary = "{$updated} updated, ".count($skipped).' skipped'.($skipped ? ': '.implode(', ', $skipped) : '').'.';
+        $response = back()->with($updated > 0 ? 'success' : 'error', $summary);
 
         return $emailFailures > 0
             ? $response->with('warning', "{$emailFailures} shipping email(s) could not be queued. Please check the application logs.")
@@ -367,39 +412,91 @@ class OrdersController extends Controller
     /**
      * Cancel an order
      */
-    public function cancel(Order $order)
+    public function cancel(Request $request, Order $order, RefundService $refunds)
     {
-        if (!$order->can_be_cancelled) {
-            return back()->withErrors(['error' => 'This order cannot be cancelled.']);
+        $request->validate([
+            'reason' => 'nullable|string|max:500',
+            // paid orders: "now" refunds everything still refundable first, "later" leaves the order as "Refund due"
+            'refund' => 'nullable|in:now,later',
+        ]);
+
+        if (! $order->can_be_cancelled) {
+            return back()->with('error', "Order {$order->order_number} cannot be cancelled from \"{$order->status}\".");
         }
 
-        $order->cancel();
+        $warning = null;
+        $refundable = $refunds->refundableCents($order);
 
-        return back()->with('success', 'Order cancelled successfully.');
+        if ($request->input('refund') === 'now' && $refundable > 0) {
+            try {
+                $refunds->refund($order, $refundable, $request->input('reason') ?: 'Order cancelled', $request->user());
+            } catch (RefundRefused|RefundFailed $e) {
+                // Not cancelled either: the admin can retry, or cancel and refund later
+                return back()->with('error', 'The order was not cancelled: the refund failed. '.$e->getMessage());
+            } catch (RefundUnconfirmed) {
+                $warning = self::REFUND_UNCONFIRMED_MESSAGE;
+            }
+        }
+
+        if (! $order->fresh()->cancel($request->user(), $request->input('reason'))) {
+            return back()->with('error', "Order {$order->order_number} cannot be cancelled from \"{$order->status}\".");
+        }
+
+        $response = back()->with('success', 'Order cancelled successfully.');
+
+        return $warning ? $response->with('warning', $warning) : $response;
     }
 
     /**
-     * Refund an order (placeholder for Stripe integration)
+     * Refund money through Stripe (RefundService): amount in EUR from the form, converted to cents; optional reason and
+     * units per line to put back in stock. Refused refunds change nothing; a Stripe failure is recorded on the order.
      */
-    public function refund(Request $request, Order $order)
+    public function refund(Request $request, Order $order, RefundService $refunds)
     {
-        $request->validate([
-            'amount' => 'sometimes|numeric|min:0.01|max:' . $order->total_amount,
-            'reason' => 'sometimes|string|max:500',
+        $data = $request->validate([
+            'amount' => 'required|numeric|min:0.01|max:1000000',
+            'reason' => 'nullable|string|max:500',
+            'restock' => 'sometimes|array',
+            'restock.*' => 'integer|min:0',
         ]);
 
-        // TODO: Implement Stripe refund logic here, then call EmailService::sendOrderRefunded($order, $refundAmount).
-        //       Until money really moves the customer must NOT be emailed (no refund email from this placeholder).
-        // For now, just mark as refunded in notes
-        $refundAmount = $request->amount ?? $order->total_amount;
-        $reason = $request->reason ?? 'Admin refund';
-        
-        $order->update([
-            'notes' => ($order->notes ? $order->notes . "\n\n" : '') . 
-                      "REFUND: $" . number_format($refundAmount, 2) . " - {$reason} (Processed on " . now()->format('Y-m-d H:i:s') . ")"
-        ]);
+        try {
+            $refund = $refunds->refund(
+                $order,
+                (int) round((float) $data['amount'] * 100),
+                $data['reason'] ?? null,
+                $request->user(),
+                Refund::SOURCE_ADMIN,
+                array_filter($data['restock'] ?? [], fn ($quantity) => (int) $quantity > 0),
+            );
+        } catch (RefundRefused $e) {
+            return back()->withErrors(['amount' => $e->getMessage()])->with('error', $e->getMessage());
+        } catch (RefundFailed $e) {
+            return back()->with('error', 'Stripe did not execute the refund: '.$e->getMessage());
+        } catch (RefundUnconfirmed) {
+            return back()->with('warning', self::REFUND_UNCONFIRMED_MESSAGE);
+        }
 
-        return back()->with('success', 'Refund processed successfully.');
+        return back()->with('success', sprintf('Refund of %s %s issued.', number_format($refund->amount(), 2, ',', '.'), $refund->currency));
+    }
+
+    /**
+     * Settle a refund Stripe did not confirm (still pending): looks it up at Stripe, else re-sends it under the same
+     * idempotency key, so it can never be paid twice.
+     */
+    public function retryRefund(Request $request, Order $order, Refund $refund, RefundService $refunds)
+    {
+        try {
+            $refund = $refunds->retry($refund, $request->user());
+        } catch (RefundRefused $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (RefundFailed $e) {
+            return back()->with('error', 'Stripe did not execute the refund: '.$e->getMessage());
+        } catch (RefundUnconfirmed) {
+            return back()->with('warning', self::REFUND_UNCONFIRMED_MESSAGE);
+        }
+
+        return back()->with('success', sprintf('Refund of %s %s confirmed by Stripe.', number_format($refund->amount(), 2, ',', '.'), $refund->currency));
     }
 
     /**
@@ -475,9 +572,8 @@ class OrdersController extends Controller
         ]);
 
         try {
-            // Update order with shipping information
+            // Shipping information, saved together with the move to "shipped" (refused unless the order may ship)
             $updateData = [
-                'status' => 'shipped',
                 'notes' => $this->buildShippingNotes($order, $request->all()),
             ];
 
@@ -486,7 +582,7 @@ class OrdersController extends Controller
                 $updateData['tracking_carrier'] = $request->input('tracking_carrier');
             }
 
-            $order->update($updateData);
+            $order->fill($updateData)->transitionTo('shipped', $request->user());
 
             // Queue the shipping notification (deduped per status + tracking number)
             $emailService = app(\App\Services\EmailService::class);
@@ -505,6 +601,8 @@ class OrdersController extends Controller
                 ? $response
                 : $response->with('warning', 'The order was marked as shipped, but the shipping email could not be queued. Please check the application logs.');
 
+        } catch (InvalidOrderTransition $e) {
+            return $this->refusedTransition($e);
         } catch (\Exception $e) {
             Log::error('Failed to process order shipping', [
                 'order_id' => $order->id,
@@ -514,6 +612,15 @@ class OrdersController extends Controller
 
             return back()->with('error', 'Failed to process shipping: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * A status change the order lifecycle refused: nothing was written. The message goes to the toast (flash) and to
+     * the status field of the form that sent it.
+     */
+    private function refusedTransition(InvalidOrderTransition $e)
+    {
+        return back()->withErrors(['status' => $e->getMessage()])->with('error', $e->getMessage());
     }
 
     /**
