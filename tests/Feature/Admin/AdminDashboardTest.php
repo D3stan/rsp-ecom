@@ -75,3 +75,12 @@ it('shares the threshold with the frontend as a public setting', function () {
         ->get(route('admin.dashboard'))
         ->assertInertia(fn ($page) => $page->where('settings', fn ($shared) => collect($shared)->get('inventory.low_stock_threshold') === 7));
 });
+
+it('shares the real pending-order count with admins only', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    Order::factory()->count(2)->create(['status' => 'pending']);
+    Order::factory()->create(['status' => 'processing']);
+
+    $this->actingAs($admin)->get(route('admin.dashboard'))
+        ->assertInertia(fn ($page) => $page->where('adminPendingOrders', 2));
+});

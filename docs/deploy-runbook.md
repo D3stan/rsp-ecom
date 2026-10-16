@@ -39,9 +39,7 @@ git checkout public/robots.txt                # the tests rewrite it; never comm
 docker build -t rsp-ecom:preflight .
 ```
 
-Expected test result when this runbook was written: **1164 passed, 11 failed**. All 11 are `ProductListPerPageTest`, which hits
-`/categories/{slug}`; that page is missing from the repo (see "Known issues"). It was also missing in the production build, so
-it is not a regression of this deploy. Any *other* failure: stop and investigate.
+Expected test result: **all tests pass**. Any failure: stop and investigate.
 
 (Without `APP_KEY` in the environment the local suite shows ~225 `MissingAppKeyException` failures. That is a local `.env` issue, not a bug.)
 
@@ -303,11 +301,8 @@ gunzip -c ~/backups/rsp-pre-fixes-<timestamp>.sql.gz | docker exec -i <MYSQL_CON
 
 ## Known issues this deploy does not fix
 
-- **`/categories/{slug}` returns HTTP 500.** `CategoryController` renders the React page `Categories/Show`, but `resources/js/pages/Categories/Show.tsx`
-  does not exist (not at `5e03dd1` either, so production has this today). The sitemap still lists these URLs. It also causes the 11 `ProductListPerPageTest` failures.
-  Needs either the page restored or the route/sitemap entries removed. Separate follow-up.
 - **Spediamo label creation** (`shipping.labels_enabled`, default off): the adapter was built from the docs with assumptions (JSON body on
   `POST /v1/shipments`, no explicit pay step, waybill PDF via `?download=true`). Test it with one real shipment before switching it on in the admin settings.
-- **Workstream I (i18n sweep)** is not on `fixes` yet. Deploying now ships without it.
-- The new compose file has no `depends_on`, and `app` has no healthcheck. The workers may log errors for a minute while `app` migrates.
+- The new compose file has no `depends_on`, and `app` has no healthcheck. The workers may log errors for a minute while `app` migrates (accepted).
 - The Dockerfile still keeps `config:cache` off by choice. Do not turn it on during this deploy.
+- Deactivating a customer (admin > Customers) blocks login but is not GDPR erasure; erasure stays a manual job.

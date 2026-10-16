@@ -5,6 +5,7 @@ use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\CaptureGuestSessionId;
 use App\Http\Middleware\DetectLanguage;
 use App\Http\Middleware\HandleAppearance;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ShareTranslations;
 use App\Http\Middleware\TrustProxies;
@@ -36,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             DetectLanguage::class,
             ShareTranslations::class,
+            EnsureUserIsActive::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             CaptureGuestSessionId::class,

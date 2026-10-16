@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\CustomersController;
 use App\Http\Controllers\Admin\OrdersController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
@@ -85,7 +86,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('/newsletter/campaigns/{campaign}/schedule', [NewsletterCampaignsController::class, 'schedule'])->name('newsletter.campaigns.schedule');
     Route::post('/newsletter/campaigns/{campaign}/cancel', [NewsletterCampaignsController::class, 'cancel'])->name('newsletter.campaigns.cancel');
 
-    // TODO: Add other admin routes as they are implemented
-    // Route::resource('customers', CustomersController::class);
+    // Customers
+    Route::resource('customers', CustomersController::class)->only(['index', 'show', 'update']);
+    Route::patch('customers/{customer}/active', [CustomersController::class, 'toggleActive'])->name('customers.toggle-active');
+    Route::post('customers/{customer}/reset-link', [CustomersController::class, 'sendResetLink'])->middleware('throttle:6,1')->name('customers.reset-link');
     
 });

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Order;
 use App\Settings\Settings;
 use App\Support\Locales;
 use Illuminate\Foundation\Inspiring;
@@ -57,6 +58,8 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            // Admin sidebar badge; lazy so it only runs for admins and only when a page reads it.
+            'adminPendingOrders' => fn (): ?int => $request->user()?->isAdmin() ? Order::pending()->count() : null,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // Session flashes set by controllers (->with('success'|'error'|'warning', ...)); rendered as toasts by the
             // FlashToaster. `id` is fresh per flash (null when there is no message) so the client shows each one once.

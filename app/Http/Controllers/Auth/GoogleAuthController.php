@@ -90,6 +90,10 @@ class GoogleAuthController extends Controller
             // Check if user exists with the same email
             $existingUser = User::where('email', $googleUser->getEmail())->first();
             
+            if ($existingUser && ! $existingUser->is_active) {
+                return redirect()->route('login')->withErrors(['email' => __('auth.failed')]);
+            }
+
             if ($existingUser) {
                 // Link Google account to existing user
                 $existingUser->update([

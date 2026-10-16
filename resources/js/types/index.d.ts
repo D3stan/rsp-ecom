@@ -40,6 +40,7 @@ export interface SharedData {
     auth: Auth;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
+    adminPendingOrders?: number;
     flash?: { success: string | null; error: string | null; warning: string | null; id: string | null };
     [key: string]: unknown;
 }

@@ -1,4 +1,3 @@
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Button } from '@/components/ui/button';
@@ -14,13 +13,11 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
     BarChart3,
-    BookOpen,
-    Folder,
     LayoutGrid,
     MessageSquare,
     Newspaper,
@@ -76,21 +73,8 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
-
 export function AdminSidebar() {
-    const pendingOrders = 8; // This would come from props in real implementation
+    const { adminPendingOrders: pendingOrders = 0 } = usePage<SharedData>().props;
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -147,7 +131,6 @@ export function AdminSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
