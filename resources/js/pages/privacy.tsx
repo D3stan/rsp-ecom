@@ -4,7 +4,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { Head } from '@inertiajs/react';
 
 export default function Privacy() {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const email = useSetting('contact.support_email', '');
 
     return (
@@ -92,7 +92,9 @@ export default function Privacy() {
                     </div>
 
                     <div className="mt-12 border-t border-gray-200 pt-8 text-center">
-                        <p className="text-sm text-gray-500">Last updated: {new Date().toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-500">
+                            {t('last_updated')}: {new Date().toLocaleDateString(locale)}
+                        </p>
                     </div>
                 </div>
             </div>

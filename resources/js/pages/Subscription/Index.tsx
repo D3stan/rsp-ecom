@@ -1,15 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import React from 'react';
 import AppLayout from '@/layouts/app-layout';
-
-// Simple currency formatter
-const formatCurrency = (amount: string | number) => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: 'EUR',
-    }).format(num / 100); // Stripe amounts are in cents
-};
+import useTranslation from '@/hooks/useTranslation';
 
 interface Subscription {
     id: string;
@@ -32,6 +24,16 @@ interface Props {
 }
 
 const Index: React.FC<Props> = ({ subscriptions }) => {
+    const { t, locale } = useTranslation();
+
+    // Stripe amounts are in cents
+    const formatCurrency = (amount: string | number) => {
+        const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+        return new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }).format(num / 100);
+    };
+
+    const formatDate = (value: string) => new Date(value).toLocaleDateString(locale);
+
     const getStatusBadge = (status: string) => {
         const statusClasses = {
             active: 'bg-green-100 text-green-800',
@@ -52,7 +54,7 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
 
     return (
         <AppLayout>
-            <Head title="My Subscriptions" />
+            <Head title={t('subscription.head_title')} />
 
             <div className="py-12">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -74,26 +76,26 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
                                             d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
                                         />
                                     </svg>
-                                    <h3 className="mt-2 text-sm font-medium text-gray-900">No subscriptions</h3>
-                                    <p className="mt-1 text-sm text-gray-500">You don't have any active subscriptions yet.</p>
+                                    <h3 className="mt-2 text-sm font-medium text-gray-900">{t('subscription.none_title')}</h3>
+                                    <p className="mt-1 text-sm text-gray-500">{t('subscription.none_body')}</p>
                                     <div className="mt-6">
                                         <Link
                                             href="/products"
                                             className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                                         >
-                                            Browse Products
+                                            {t('subscription.browse_products')}
                                         </Link>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-lg font-medium text-gray-900">Your Subscriptions</h3>
+                                        <h3 className="text-lg font-medium text-gray-900">{t('subscription.your_title')}</h3>
                                         <Link
                                             href="/products"
                                             className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                                         >
-                                            Browse More Products
+                                            {t('subscription.browse_more')}
                                         </Link>
                                     </div>
 
@@ -107,19 +109,23 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
                                                     </div>
 
                                                     <div className="mt-4 space-y-2">
-                                                        <p className="text-sm text-gray-600">Price: {formatCurrency(subscription.stripe_price)}</p>
-                                                        <p className="text-sm text-gray-600">Quantity: {subscription.quantity}</p>
                                                         <p className="text-sm text-gray-600">
-                                                            Started: {new Date(subscription.created_at).toLocaleDateString()}
+                                                            {t('subscription.price', { price: formatCurrency(subscription.stripe_price) })}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">
+                                                            {t('subscription.quantity', { quantity: subscription.quantity })}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">
+                                                            {t('subscription.started', { date: formatDate(subscription.created_at) })}
                                                         </p>
                                                         {subscription.trial_ends_at && (
                                                             <p className="text-sm text-blue-600">
-                                                                Trial ends: {new Date(subscription.trial_ends_at).toLocaleDateString()}
+                                                                {t('subscription.trial_ends', { date: formatDate(subscription.trial_ends_at) })}
                                                             </p>
                                                         )}
                                                         {subscription.ends_at && (
                                                             <p className="text-sm text-red-600">
-                                                                Ends: {new Date(subscription.ends_at).toLocaleDateString()}
+                                                                {t('subscription.ends', { date: formatDate(subscription.ends_at) })}
                                                             </p>
                                                         )}
                                                     </div>
@@ -128,14 +134,14 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
                                                         {subscription.stripe_status === 'active' && (
                                                             <button
                                                                 onClick={() => {
-                                                                    if (confirm('Are you sure you want to cancel this subscription?')) {
+                                                                    if (confirm(t('subscription.cancel_confirm'))) {
                                                                         // Handle cancellation
                                                                         window.location.href = `/subscription/cancel?subscription_id=${subscription.id}`;
                                                                     }
                                                                 }}
                                                                 className="flex-1 rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 shadow-sm hover:bg-red-50 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none"
                                                             >
-                                                                Cancel
+                                                                {t('subscription.cancel')}
                                                             </button>
                                                         )}
                                                         {subscription.stripe_status === 'canceled' && !subscription.ends_at && (
@@ -145,7 +151,7 @@ const Index: React.FC<Props> = ({ subscriptions }) => {
                                                                 }}
                                                                 className="flex-1 rounded-md border border-transparent bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                                                             >
-                                                                Resume
+                                                                {t('subscription.resume')}
                                                             </button>
                                                         )}
                                                     </div>

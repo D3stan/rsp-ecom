@@ -41,7 +41,7 @@ export default function Contact() {
 
     return (
         <PublicLayout currentPage="contact">
-            <Head title="Contact Us - Your Store" />
+            <Head title={t('contact.head_title')} />
 
             {/* Main Content */}
             <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -68,7 +68,7 @@ export default function Contact() {
                                                 id="firstName"
                                                 value={data.firstName}
                                                 onChange={(e) => setData('firstName', e.target.value)}
-                                                placeholder="John"
+                                                placeholder={t('contact.form.first_name_placeholder')}
                                                 className={`border-gray-300 focus:border-black focus:ring-black ${errors.firstName ? 'border-red-500' : ''}`}
                                                 required
                                             />
@@ -82,7 +82,7 @@ export default function Contact() {
                                                 id="lastName"
                                                 value={data.lastName}
                                                 onChange={(e) => setData('lastName', e.target.value)}
-                                                placeholder="Doe"
+                                                placeholder={t('contact.form.last_name_placeholder')}
                                                 className={`border-gray-300 focus:border-black focus:ring-black ${errors.lastName ? 'border-red-500' : ''}`}
                                                 required
                                             />
@@ -98,7 +98,7 @@ export default function Contact() {
                                             type="email"
                                             value={data.email}
                                             onChange={(e) => setData('email', e.target.value)}
-                                            placeholder="john@example.com"
+                                            placeholder={t('contact.form.email_placeholder')}
                                             className={`border-gray-300 focus:border-black focus:ring-black ${errors.email ? 'border-red-500' : ''}`}
                                             required
                                         />
@@ -112,7 +112,7 @@ export default function Contact() {
                                             id="subject"
                                             value={data.subject}
                                             onChange={(e) => setData('subject', e.target.value)}
-                                            placeholder="How can we help you?"
+                                            placeholder={t('contact.form.subject_placeholder')}
                                             className={`border-gray-300 focus:border-black focus:ring-black ${errors.subject ? 'border-red-500' : ''}`}
                                             required
                                         />
@@ -127,7 +127,7 @@ export default function Contact() {
                                             value={data.message}
                                             onChange={(e) => setData('message', e.target.value)}
                                             className={`min-h-[120px] w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-black focus:ring-2 focus:ring-black focus:outline-none ${errors.message ? 'border-red-500' : ''}`}
-                                            placeholder="Tell us more about your inquiry..."
+                                            placeholder={t('contact.form.message_placeholder')}
                                             required
                                         />
                                         {errors.message && <p className="mt-1 text-sm text-red-500">{errors.message}</p>}

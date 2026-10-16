@@ -63,7 +63,7 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                     <DialogTitle className="text-gray-900">{t('products.quick_view')}</DialogTitle>
                 </DialogHeader>
                 <div id="quick-view-description" className="sr-only">
-                    Quick view modal for {product.name}. View product details, select quantity, and add to cart.
+                    {t('product.quick_view_description', { name: product.name })}
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -355,7 +355,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                         }}
                     >
                         <Eye className="mr-2 h-4 w-4" />
-                        Quick View
+                        {t('products.quick_view')}
                     </Button>
                 </div>
             </div>

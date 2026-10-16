@@ -10,12 +10,12 @@ import { useMoney } from '@/hooks/use-money';
 export const LatestOrderCard = () => {
     const { props } = usePage<SharedData & { recentOrders?: Order[] }>();
     const recentOrders = props.recentOrders || [];
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
 
     const formatCurrency = useMoney();
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
+        return new Date(dateString).toLocaleDateString(locale, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -99,7 +99,7 @@ export const LatestOrderCard = () => {
                                             )}
                                         </div>
                                         <div className="text-muted-foreground flex-shrink-0">
-                                            {item.quantity}x {formatCurrency(item.price)}
+                                            {t('dashboard.qty_price', { qty: item.quantity, price: formatCurrency(item.price) })}
                                         </div>
                                     </div>
                                 ))}

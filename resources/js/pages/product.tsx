@@ -216,7 +216,7 @@ export default function Product() {
 
                 {/* Breadcrumb */}
                 <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-                    <nav className="flex" aria-label="Breadcrumb">
+                    <nav className="flex" aria-label={t('product.breadcrumb_label')}>
                         <ol className="flex items-center space-x-2 text-sm">
                             {breadcrumb.map((item, index) => (
                                 <li key={index} className="flex items-center">

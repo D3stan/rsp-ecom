@@ -278,7 +278,7 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
 
   // Debug geometry once
   useEffect(() => {
-    console.log('RingMaskedImage geometry:', { engine, mode, radiusPx, strokeWidth, sliceLength, circumference, dashArray: initialDashArray });
+    console.log('RingMaskedImage geometry:', { engine, mode, radiusPx, strokeWidth, sliceLength, circumference, dashArray });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

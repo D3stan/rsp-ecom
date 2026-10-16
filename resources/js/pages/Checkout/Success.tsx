@@ -90,6 +90,21 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
         }
     };
 
+    // Order date in the viewer's language (M11: formatting follows the active locale, not a fixed one)
+    const formatOrderDate = (iso: string) => {
+        try {
+            return new Date(iso).toLocaleDateString(locale, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        } catch {
+            return new Date(iso).toLocaleDateString(locale);
+        }
+    };
+
     const shippingAmount = order.shipping_amount ?? order.shipping_cost ?? 0;
     const discountAmount = order.discount_amount ?? 0;
     // Orders that stored their VAT rate: prices and total include the VAT (tax_amount is the portion of it). Older orders
@@ -108,7 +123,7 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
     if (isPending) {
         return (
             <>
-                <Head title="Order Confirmation" />
+                <Head title={t('checkout.success.head_title')} />
                 <Header />
                 <PendingOrderNotice total={formatMoney(session.amount_total ?? order.total_amount ?? 0)} reference={session.id} />
             </>
@@ -117,7 +132,7 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
 
     return (
         <>
-            <Head title="Order Confirmation" />
+            <Head title={t('checkout.success.head_title')} />
             <Header />
 
             <>
@@ -157,15 +172,7 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-600">{t('checkout.success.order_date')}</span>
-                                                <span className="text-sm text-black">
-                                                    {new Date(order.created_at).toLocaleDateString(locale, {
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric',
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
-                                                </span>
+                                                <span className="text-sm text-black">{formatOrderDate(order.created_at)}</span>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-600">{t('checkout.success.payment_status')}</span>
@@ -350,7 +357,7 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                             <p className="text-center text-xs text-gray-300">
                                                 {t('checkout.success.need_help')}{' '}
                                                 <Link href={route('contact')} className="underline">
-                                                    Contact Support
+                                                    {t('checkout.success.pending_contact')}
                                                 </Link>
                                             </p>
                                             {isGuest && (

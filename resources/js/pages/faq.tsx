@@ -191,7 +191,7 @@ export default function FAQ() {
 
     return (
         <>
-            <Head title="FAQ - Frequently Asked Questions" />
+            <Head title={t('faq.head_title')} />
 
             <div className="min-h-screen bg-white">
                 <Header />

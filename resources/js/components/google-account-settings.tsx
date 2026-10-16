@@ -3,31 +3,33 @@ import { type SharedData } from '@/types';
 
 import GoogleButton from '@/components/google-button';
 import HeadingSmall from '@/components/heading-small';
+import useTranslation from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function GoogleAccountSettings() {
     const { auth } = usePage<SharedData>().props;
     const user = auth.user!;
-    
+    const { t } = useTranslation();
+
     const { post, processing } = useForm();
 
     const handleUnlinkGoogle = () => {
-        if (confirm('Are you sure you want to unlink your Google account? You will need to set a password to continue logging in.')) {
+        if (confirm(t('account.google.unlink_confirm'))) {
             post(route('auth.google.unlink'));
         }
     };
 
     return (
         <div className="space-y-6">
-            <HeadingSmall 
-                title="Connected Accounts" 
-                description="Manage your social media account connections" 
+            <HeadingSmall
+                title={t('account.google.heading')}
+                description={t('account.google.heading_desc')}
             />
 
             <Card>
                 <CardHeader className="pb-4">
-                    <CardTitle className="text-base">Google Account</CardTitle>
+                    <CardTitle className="text-base">{t('account.google.card_title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {user.google_id ? (
@@ -54,17 +56,17 @@ export default function GoogleAccountSettings() {
                                     </svg>
                                 </div>
                                 <div>
-                                    <p className="font-medium">Google</p>
-                                    <p className="text-sm text-muted-foreground">Connected to {user.email}</p>
+                                    <p className="font-medium">{t('account.google.provider')}</p>
+                                    <p className="text-sm text-muted-foreground">{t('account.google.connected_to', { email: user.email })}</p>
                                 </div>
                             </div>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={handleUnlinkGoogle}
                                 disabled={processing || !user.has_password}
                             >
-                                Unlink
+                                {t('account.google.unlink')}
                             </Button>
                         </div>
                     ) : (
@@ -91,12 +93,12 @@ export default function GoogleAccountSettings() {
                                     </svg>
                                 </div>
                                 <div>
-                                    <p className="font-medium">Google</p>
-                                    <p className="text-sm text-muted-foreground">Not connected</p>
+                                    <p className="font-medium">{t('account.google.provider')}</p>
+                                    <p className="text-sm text-muted-foreground">{t('account.google.not_connected')}</p>
                                 </div>
                             </div>
                             <GoogleButton className="w-auto px-4">
-                                Connect
+                                {t('account.google.connect')}
                             </GoogleButton>
                         </div>
                     )}
@@ -104,7 +106,7 @@ export default function GoogleAccountSettings() {
                     {user.google_id && !user.has_password && (
                         <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
                             <p className="text-sm text-amber-800">
-                                <strong>Note:</strong> You need to set a password before you can unlink your Google account.
+                                <strong>{t('account.google.note_label')}</strong> {t('account.google.note_body')}
                             </p>
                         </div>
                     )}

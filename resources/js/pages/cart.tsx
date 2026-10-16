@@ -256,7 +256,7 @@ export default function Cart() {
                             </div>
 
                             <h1 className="mb-4 text-3xl font-bold text-gray-900">{t('cart.empty_cart')}</h1>
-                            <p className="mb-8 text-lg text-gray-600">Add items to get started</p>
+                            <p className="mb-8 text-lg text-gray-600">{t('cart.empty_cart_hint')}</p>
 
                             <Button asChild size="lg" className="px-8">
                                 <Link href="/products">

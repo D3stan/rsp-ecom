@@ -122,7 +122,7 @@ export const UserSidebar = () => {
                                     </Badge>
                                     {user.google_id && (
                                         <Badge variant="outline" className="text-xs px-1 py-0">
-                                            Google
+                                            {t('nav.google_badge')}
                                         </Badge>
                                     )}
                                 </div>

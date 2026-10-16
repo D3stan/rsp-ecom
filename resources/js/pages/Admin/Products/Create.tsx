@@ -12,10 +12,6 @@ import AdminLayout from '@/layouts/admin-layout';
 import { Head, useForm } from '@inertiajs/react';
 import { ChevronDown, Package, Settings, Star } from 'lucide-react';
 import { useState } from 'react';
-
-interface ValidationErrors {
-    [key: string]: boolean;
-}
 import { route } from 'ziggy-js';
 
 interface FormData {
@@ -140,7 +136,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
         formData.append('safety_information', data.safety_information);
 
         // Add variants as JSON (without images)
-        const variantsForJson = data.variants.map((v, index) => ({
+        const variantsForJson = data.variants.map((v) => ({
             name: v.name,
             sku_suffix: v.sku_suffix,
             price: v.price,
