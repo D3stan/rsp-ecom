@@ -22,12 +22,10 @@ beforeEach(function () {
 
 function storefrontListUrl(string $list, array $query = []): string
 {
-    return $list === 'category'
-        ? route('categories.show', ['slug' => Category::first()->slug] + $query)
-        : route('products', $query);
+    return route('products', $query);
 }
 
-dataset('storefront lists', ['products', 'category']);
+dataset('storefront lists', ['products']);
 
 it('uses catalog.per_page (default 12) and echoes the effective value in filters and pagination', function (string $list) {
     $this->get(storefrontListUrl($list))

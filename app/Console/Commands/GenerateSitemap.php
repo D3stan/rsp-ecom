@@ -82,7 +82,7 @@ class GenerateSitemap extends Command
                         continue;
                     }
                     $sitemap->add(
-                        Url::create("/categories/{$category->slug}")
+                        Url::create("/products?category={$category->slug}")
                             ->setLastModificationDate($category->updated_at)
                             ->setChangeFrequency(Url::CHANGE_FREQUENCY_WEEKLY)
                             ->setPriority(0.8)
