@@ -183,3 +183,40 @@ it('accepts a POST without CSRF token (middleware really enforced, as in product
 it('does not echo secrets, headers or payloads in error responses', function () {
     trkPost('fake', trkPayload(), 'wrong')->assertForbidden()->assertExactJson(['error' => 'forbidden']);
 });
+
+it('isolates webhooks onto orders with tracking_driver null based on the default driver', function () {
+    $order = Fx::shippedOrder(['tracking_number' => 'TRK-WEBHOOK-ISO', 'tracking_driver' => null]);
+
+    // 1. Matches webhook from the default driver ('fake')
+    config(['shipping.tracking.driver' => 'fake']);
+    trkPost('fake', trkPayload('TRK-WEBHOOK-ISO'))->assertOk()->assertJson(['status' => 'ok', 'applied' => 1]);
+    expect($order->fresh()->tracking_status)->toBe('in_transit');
+
+    // Reset tracking status for next check
+    $order->fresh()->update(['tracking_status' => null]);
+
+    // 2. Does NOT match webhook when the default driver is 'manual'
+    config(['shipping.tracking.driver' => 'manual']);
+    trkPost('fake', trkPayload('TRK-WEBHOOK-ISO'))->assertOk()->assertJson(['status' => 'ok', 'applied' => 0]);
+    expect($order->fresh()->tracking_status)->toBeNull();
+
+    // 3. Does NOT match webhook from a non-default provider
+    config(['shipping.tracking.driver' => 'fake']);
+    $altProvider = new class extends FakeProvider
+    {
+        public function name(): string
+        {
+            return 'alt';
+        }
+
+        public function verifySignature(\Illuminate\Http\Request $request): bool
+        {
+            return true;
+        }
+    };
+    app(TrackingManager::class)->extend('alt', fn () => $altProvider);
+    config(['shipping.tracking.drivers.alt.webhook_secret' => 'test-secret']);
+
+    trkPost('alt', trkPayload('TRK-WEBHOOK-ISO'), null)->assertOk()->assertJson(['status' => 'ok', 'applied' => 0]);
+    expect($order->fresh()->tracking_status)->toBeNull();
+});

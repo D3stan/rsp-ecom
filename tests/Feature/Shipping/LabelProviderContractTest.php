@@ -13,7 +13,7 @@
 use App\Shipping\Labels\Contracts\CancelsShipments;
 use App\Shipping\Labels\Contracts\LabelProvider;
 use App\Shipping\Labels\Drivers\FakeLabelProvider;
-use App\Shipping\Labels\Drivers\Spediamo\SpediamoLabelProvider;
+use App\Shipping\Providers\Spediamo\SpediamoLabelProvider;
 use App\Shipping\Labels\DTO\Address;
 use App\Shipping\Labels\DTO\LabelDocument;
 use App\Shipping\Labels\DTO\Parcel;

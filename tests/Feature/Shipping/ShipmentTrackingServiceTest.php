@@ -200,6 +200,38 @@ it('starts a fresh tracking cycle when the tracking number or carrier is correct
     expect($order->fresh()->tracking_status)->toBeNull();
 });
 
+it('does not reset tracking state on no-op tracking_driver or tracking_carrier edits, but resets when changed', function () {
+    $order = Fx::shippedOrder(['tracking_driver' => null]);
+    $this->service->apply($order, 'fake', Fx::result(S::InTransit, Fx::event(S::InTransit, '-1 hour', 'e1')));
+    $order->update(['tracking_next_sync_at' => now()->addHour()]);
+    expect($order->fresh()->tracking_status)->toBe('in_transit')
+        ->and($order->fresh()->tracking_next_sync_at)->not->toBeNull();
+
+    // 1. updating tracking_driver from null to '' does NOT wipe tracking_status or tracking_next_sync_at
+    $order->update(['tracking_driver' => '']);
+    $fresh = $order->fresh();
+    expect($fresh->tracking_status)->toBe('in_transit')
+        ->and($fresh->tracking_next_sync_at)->not->toBeNull();
+
+    // 2. updating to same driver with whitespace / case does NOT wipe tracking_status
+    $order->update(['tracking_driver' => 'fake']);
+    $this->service->apply($order, 'fake', Fx::result(S::InTransit, Fx::event(S::InTransit, '-1 hour', 'e2')));
+    $order->update(['tracking_next_sync_at' => now()->addHour()]);
+    expect($order->fresh()->tracking_status)->toBe('in_transit');
+
+    $order->update(['tracking_driver' => '  FAKE  ']);
+    $fresh = $order->fresh();
+    expect($fresh->tracking_status)->toBe('in_transit')
+        ->and($fresh->tracking_next_sync_at)->not->toBeNull();
+
+    // 3. changing tracking_driver to a different driver DOES reset tracking_status and tracking_next_sync_at
+    $order->update(['tracking_driver' => 'manual']);
+    $fresh = $order->fresh();
+    expect($fresh->tracking_status)->toBeNull()
+        ->and($fresh->tracking_next_sync_at)->toBeNull()
+        ->and($fresh->tracking_started_at)->toBeNull();
+});
+
 it('finds shipped orders by tracking number ignoring case and spaces, honouring the carrier', function () {
     $a = Fx::shippedOrder(['tracking_number' => 'AB 123', 'tracking_carrier' => 'acme']);
     $b = Fx::shippedOrder(['tracking_number' => 'ab123']);                                  // same parcel, no carrier chosen
@@ -211,6 +243,27 @@ it('finds shipped orders by tracking number ignoring case and spaces, honouring 
         ->and($this->service->ordersForTrackingNumber('AB123')->count())->toBe(3)
         ->and($this->service->ordersForTrackingNumber('  ')->count())->toBe(0)
         ->and($this->service->ordersForTrackingNumber('nope')->count())->toBe(0);
+});
+
+it('isolates orders by tracking_driver and default driver when matching tracking number with provider', function () {
+    config(['shipping.tracking.driver' => 'fake']);
+    $orderNullDriver = Fx::shippedOrder(['tracking_number' => 'AB999', 'tracking_driver' => null]);
+    $orderManualDriver = Fx::shippedOrder(['tracking_number' => 'AB999', 'tracking_driver' => 'manual']);
+
+    // Matches default driver ('fake') when order tracking_driver is null
+    expect($this->service->ordersForTrackingNumber('AB999', null, 'fake')->pluck('id')->all())->toBe([$orderNullDriver->id]);
+
+    // Does NOT match non-default provider when order tracking_driver is null
+    expect($this->service->ordersForTrackingNumber('AB999', null, 'other')->count())->toBe(0);
+
+    // Does NOT match when default driver is 'manual' and order tracking_driver is null
+    config(['shipping.tracking.driver' => 'manual']);
+    expect($this->service->ordersForTrackingNumber('AB999', null, 'fake')->count())->toBe(0);
+
+    // Reset default driver to 'fake'
+    config(['shipping.tracking.driver' => 'fake']);
+    // Matches explicit driver, while order with tracking_driver null is isolated to 'fake'
+    expect($this->service->ordersForTrackingNumber('AB999', null, 'manual')->pluck('id')->all())->toBe([$orderManualDriver->id]);
 });
 
 it('plans the next poll with the normal interval, then the slow one, and closes the window', function () {

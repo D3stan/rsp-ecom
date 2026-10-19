@@ -133,7 +133,9 @@ it('gives the ship page the labels flag, driver and prefilled parcels', function
         ->assertInertia(fn (Assert $page) => $page
             ->where('labels_enabled', true)
             ->has('parcels')
-            ->where('carriers.0.code', 'acme'));
+            ->where('carriers.0.code', 'acme')
+            ->has('label_driver_carriers')
+            ->where('label_driver_carriers.fake.0', 'acme'));
 });
 
 it('does not resolve a provider when labels are off even if create_label is sent', function () {
@@ -144,4 +146,41 @@ it('does not resolve a provider when labels are off even if create_label is sent
         ->assertSessionHasErrors('tracking_number');
 
     expect($this->order->fresh()->status)->toBe('processing');
+});
+
+it('ignores manual tracking_driver when creating a label and assigns the label provider tracking driver', function () {
+    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody([
+        'tracking_driver' => 'manual',
+    ]))->assertRedirect(route('admin.orders.show', $this->order))->assertSessionHas('success');
+
+    $order = $this->order->fresh();
+    expect($order->status)->toBe('shipped')
+        ->and($order->tracking_driver)->toBe('fake');
+});
+
+it('clears stale tracking_driver when shipping manually with default tracking driver', function () {
+    settings()->set('shipping.labels_enabled', false);
+    $this->order->update(['tracking_driver' => 'manual']);
+
+    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), [
+        'tracking_carrier' => 'acme',
+        'tracking_number' => 'MANUAL-123',
+        'tracking_driver' => '',
+    ])->assertRedirect(route('admin.orders.show', $this->order))->assertSessionHas('success');
+
+    expect($this->order->fresh()->tracking_driver)->toBeNull();
+});
+
+it('provides empty label_driver_carriers when labels are disabled without resolving drivers', function () {
+    settings()->set('shipping.labels_enabled', false);
+
+    $this->mock(LabelManager::class, function ($mock) {
+        $mock->shouldNotReceive('driver');
+        $mock->shouldNotReceive('supportedCarriersFor');
+    });
+
+    $this->actingAs($this->admin)->get(route('admin.orders.show-ship', $this->order))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('labels_enabled', false)
+            ->where('label_driver_carriers', []));
 });

@@ -1,6 +1,6 @@
 <?php
 
-use App\Shipping\Labels\Drivers\Spediamo\SpediamoLabelProvider;
+use App\Shipping\Providers\Spediamo\SpediamoLabelProvider;
 use App\Shipping\Labels\DTO\Address;
 use App\Shipping\Labels\DTO\Parcel;
 use App\Shipping\Labels\DTO\ShipmentRequest;

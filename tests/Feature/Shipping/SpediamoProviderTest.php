@@ -7,7 +7,7 @@
 
 use App\Mail\OrderDelivered;
 use App\Models\ShipmentTrackingEvent;
-use App\Shipping\Tracking\Drivers\Spediamo\SpediamoProvider;
+use App\Shipping\Providers\Spediamo\SpediamoProvider;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\Enums\TrackingStatus as S;
 use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;

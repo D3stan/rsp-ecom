@@ -2,22 +2,37 @@
 
 /*
 |--------------------------------------------------------------------------
-| Guard rails for swappable carrier adapters
+| Guard rails for coexisting modular shipping providers
 |--------------------------------------------------------------------------
 |
-| Swapping the carrier API must mean: a new folder in Drivers/, one registration line in
-| TrackingServiceProvider, one env var. These tests fail the build when the core starts to know
-| about a concrete adapter, or an adapter leaks into the rest of the application.
+| Adding or removing an external carrier provider must mean: a single self-contained folder in
+| app/Shipping/Providers/<Provider>/ and one manifest entry in config/shipping.php.
+| These tests fail the build when:
+|  - core shipping services, models, or commands depend on concrete drivers or providers;
+|  - Labels and Tracking import from each other instead of shared App\Shipping\{Auth,Support,Contracts};
+|  - a provider folder imports from another provider folder;
+|  - a provider name leaks outside its own folder and config/shipping.php.
 */
 
+use App\Shipping\Contracts\ShippingProviderManifest;
 use App\Shipping\Tracking\Contracts\TrackingProvider;
-use App\Shipping\Tracking\Drivers\Spediamo\SpediamoResponseMapper;
-use App\Shipping\Tracking\Drivers\Spediamo\SpediamoStatusMap;
 
 const TRK_DRIVERS = 'App\Shipping\Tracking\Drivers';
+const LBL_DRIVERS = 'App\Shipping\Labels\Drivers';
+const EXT_PROVIDERS = 'App\Shipping\Providers';
 
-// (ii) the core never depends on a concrete driver (one rule per target: array targets are not checked one by one)
+// (i) the core never depends on concrete drivers or external providers
 foreach ([
+    'App\Shipping\ShippingService',
+    'App\Shipping\ShipInput',
+    'App\Shipping\Auth',
+    'App\Shipping\Support',
+    'App\Shipping\Contracts',
+    'App\Shipping\Exceptions',
+    'App\Shipping\Labels\ShipmentBuilder',
+    'App\Shipping\Labels\Contracts',
+    'App\Shipping\Labels\DTO',
+    'App\Shipping\Labels\Exceptions',
     'App\Shipping\Tracking\ShipmentTrackingService',
     'App\Shipping\Tracking\Jobs',
     'App\Shipping\Tracking\Http',
@@ -30,23 +45,40 @@ foreach ([
     'App\Models\Order',
     'App\Console\Commands\SyncShipmentTracking',
 ] as $coreTarget) {
-    arch("core {$coreTarget} does not depend on concrete drivers")
+    arch("core {$coreTarget} does not depend on concrete tracking drivers")
         ->expect($coreTarget)
         ->not->toUse(TRK_DRIVERS);
+
+    arch("core {$coreTarget} does not depend on concrete label drivers")
+        ->expect($coreTarget)
+        ->not->toUse(LBL_DRIVERS);
+
+    arch("core {$coreTarget} does not depend on external provider modules")
+        ->expect($coreTarget)
+        ->not->toUse(EXT_PROVIDERS);
 }
 
-// Only the manager (built-in manual/null/fake creators) and the registering provider may name a driver outside Drivers/.
-// A file scan on purpose: arch()'s toOnlyBeUsedIn() parses the whole application and exhausts the 128 MB default memory limit.
-it('names concrete drivers only in the manager, the registering provider and the Drivers folder', function () {
+// (ii) zero hidden dependencies between Labels and Tracking subsystems
+arch('Labels subsystem never depends on Tracking subsystem')
+    ->expect('App\Shipping\Labels')
+    ->not->toUse('App\Shipping\Tracking');
+
+arch('Tracking subsystem never depends on Labels subsystem')
+    ->expect('App\Shipping\Tracking')
+    ->not->toUse('App\Shipping\Labels');
+
+// Only TrackingManager, built-in Drivers, and external Providers (extending AbstractHttpProvider) may reference Shipping\Tracking\Drivers.
+it('names concrete tracking drivers only in TrackingManager, Drivers, and Providers', function () {
     $root = dirname(__DIR__, 3);
-    $allowed = ['app/Shipping/Tracking/TrackingManager.php', 'app/Providers/TrackingServiceProvider.php'];
+    $allowed = ['app/Shipping/Tracking/TrackingManager.php'];
     $offenders = [];
 
     foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator("{$root}/app", FilesystemIterator::SKIP_DOTS)) as $file) {
         $relative = ltrim(substr($file->getPathname(), strlen($root)), '/');
 
         if (! $file->isFile() || ! str_ends_with($relative, '.php') || in_array($relative, $allowed, true)
-            || str_starts_with($relative, 'app/Shipping/Tracking/Drivers/')) {
+            || str_starts_with($relative, 'app/Shipping/Tracking/Drivers/')
+            || str_starts_with($relative, 'app/Shipping/Providers/')) {
             continue;
         }
 
@@ -58,83 +90,102 @@ it('names concrete drivers only in the manager, the registering provider and the
     expect($offenders)->toBe([]);
 });
 
-// (iii) every concrete driver is a TrackingProvider
-arch('every driver implements TrackingProvider')
+// (iii) every built-in driver in App\Shipping\Tracking\Drivers is a TrackingProvider
+arch('every built-in tracking driver implements TrackingProvider')
     ->expect(TRK_DRIVERS)
     ->toImplement(TrackingProvider::class)
     ->ignoring([
         'App\Shipping\Tracking\Drivers\Concerns',
-        SpediamoResponseMapper::class,
-        SpediamoStatusMap::class,
     ]);
 
 // (iv) contracts are interfaces only
-arch('contracts contain only interfaces')
+arch('shipping contracts contain only interfaces')
+    ->expect('App\Shipping\Contracts')
+    ->toBeInterfaces();
+
+arch('tracking contracts contain only interfaces')
     ->expect('App\Shipping\Tracking\Contracts')
+    ->toBeInterfaces();
+
+arch('label contracts contain only interfaces')
+    ->expect('App\Shipping\Labels\Contracts')
     ->toBeInterfaces();
 
 arch('shared driver helpers are traits')
     ->expect('App\Shipping\Tracking\Drivers\Concerns')
     ->toBeTraits();
 
-// (i) the provider-specific name stays inside its adapter
-it('mentions the Spediamo adapter only in its own folder, its registration, its config key, docs and tests', function () {
+// (v) every external provider folder is self-contained, isolated from other providers, and never leaks into the app
+it('keeps every provider in app/Shipping/Providers/<Provider> isolated and self-contained', function () {
     $root = dirname(__DIR__, 3);
+    $providerDirs = glob("{$root}/app/Shipping/Providers/*", GLOB_ONLYDIR) ?: [];
 
-    // The two registration lines (tracking + label adapters) and the config key. Everything else is scanned.
-    $allowed = [
-        'app/Providers/TrackingServiceProvider.php',
-        'app/Providers/LabelServiceProvider.php',
-        'config/shipping.php',
-    ];
+    expect($providerDirs)->not->toBeEmpty();
 
-    $offenders = [];
+    // Service providers must be manifest-driven and never hardcode a concrete provider name
+    foreach (['app/Providers/TrackingServiceProvider.php', 'app/Providers/LabelServiceProvider.php'] as $spFile) {
+        $spContents = (string) file_get_contents("{$root}/{$spFile}");
+        expect($spContents)->toContain('ShippingProviderManifest')
+            ->and($spContents)->not->toContain('Providers\\');
+    }
 
-    foreach (['app', 'bootstrap', 'config', 'database', 'routes', 'resources/js', 'resources/views', 'resources/css'] as $dir) {
-        if (! is_dir("{$root}/{$dir}")) {
-            continue;
-        }
+    foreach ($providerDirs as $dirPath) {
+        $folderName = basename($dirPath);
+        $providerSlug = strtolower($folderName);
+        $manifestClass = "App\\Shipping\\Providers\\{$folderName}\\{$folderName}Manifest";
 
-        $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator("{$root}/{$dir}", FilesystemIterator::SKIP_DOTS));
+        expect(class_exists($manifestClass))->toBeTrue("{$manifestClass} must exist")
+            ->and(is_subclass_of($manifestClass, ShippingProviderManifest::class))->toBeTrue();
 
-        foreach ($files as $file) {
-            $relative = ltrim(substr($file->getPathname(), strlen($root)), '/');
-
-            if (! $file->isFile() || ! preg_match('/\.(php|tsx?|jsx?|css|json)$/', $relative)
-                || in_array($relative, $allowed, true)
-                || str_starts_with($relative, 'app/Shipping/Tracking/Drivers/Spediamo/')
-                || str_starts_with($relative, 'app/Shipping/Labels/Drivers/Spediamo/')) {
+        // 1. Every file inside the provider folder may only import allowed core/shipping namespaces and never another provider
+        $providerFiles = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dirPath, FilesystemIterator::SKIP_DOTS));
+        foreach ($providerFiles as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
                 continue;
             }
 
-            if (stripos((string) file_get_contents($file->getPathname()), 'spediamo') !== false) {
-                $offenders[] = $relative;
+            preg_match_all('/^use ([^;]+);/m', (string) file_get_contents($file->getPathname()), $imports);
+
+            foreach ($imports[1] as $import) {
+                $pattern = '/^(App\\\\Shipping\\\\Providers\\\\'.preg_quote($folderName, '/').'\\\\|App\\\\Shipping\\\\(Auth|Contracts|Exceptions|Support|Tracking|Labels)\\\\|Illuminate\\\\|Carbon\\\\|Closure$|DateTimeZone$|Throwable$)/';
+                expect($import)->toMatch($pattern, $file->getBasename()." imports forbidden {$import}");
             }
         }
-    }
 
-    // Translations: "Spediamo" is also the Italian verb "we ship", so only look for the company, API or env names.
-    foreach (glob("{$root}/lang/*.json") ?: [] as $file) {
-        if (preg_match('/spediamo\.it|spediamo\s+(api|provider|adapter|tracking)|SPEDIAMO_/i', (string) file_get_contents($file))) {
-            $offenders[] = 'lang/'.basename($file);
+        // 2. No file outside the provider's own folder and config/shipping.php mentions the provider name
+        $allowed = ['config/shipping.php'];
+        $offenders = [];
+
+        foreach (['app', 'bootstrap', 'config', 'database', 'routes', 'resources/js', 'resources/views', 'resources/css'] as $scanDir) {
+            if (! is_dir("{$root}/{$scanDir}")) {
+                continue;
+            }
+
+            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator("{$root}/{$scanDir}", FilesystemIterator::SKIP_DOTS));
+
+            foreach ($files as $file) {
+                $relative = ltrim(substr($file->getPathname(), strlen($root)), '/');
+
+                if (! $file->isFile() || ! preg_match('/\.(php|tsx?|jsx?|css|json)$/', $relative)
+                    || in_array($relative, $allowed, true)
+                    || str_starts_with($relative, "app/Shipping/Providers/{$folderName}/")) {
+                    continue;
+                }
+
+                if (preg_match('/\b'.preg_quote($providerSlug, '/').'\b/i', (string) file_get_contents($file->getPathname()))) {
+                    $offenders[] = $relative;
+                }
+            }
         }
-    }
 
-    expect($offenders)->toBe([], 'carrier-specific code must stay in app/Shipping/Tracking/Drivers/Spediamo');
-});
-
-it('keeps all adapter settings under shipping.tracking.drivers.spediamo and the registration to one line', function () {
-    $root = dirname(__DIR__, 3);
-
-    $provider = (string) file_get_contents("{$root}/app/Providers/TrackingServiceProvider.php");
-    expect(substr_count($provider, "->extend('"))->toBe(1);
-
-    // the adapter folder contains no other carrier's code and is self-contained: only core namespaces are imported
-    foreach (glob("{$root}/app/Shipping/Tracking/Drivers/Spediamo/*.php") as $file) {
-        preg_match_all('/^use ([^;]+);/m', (string) file_get_contents($file), $imports);
-
-        foreach ($imports[1] as $import) {
-            expect($import)->toMatch('/^(App\\\\Shipping\\\\Tracking\\\\|Illuminate\\\\|Carbon\\\\|Closure$|DateTimeZone$|Throwable$)/', basename($file)." imports {$import}");
+        // Translations: "Spediamo" is also the Italian verb "we ship", so only look for the company, API or env names.
+        foreach (glob("{$root}/lang/*.json") ?: [] as $file) {
+            $regex = '/'.preg_quote($providerSlug, '/').'\.it|'.preg_quote($providerSlug, '/').'\s+(api|provider|adapter|tracking)|'.strtoupper(preg_quote($providerSlug, '/')).'_/i';
+            if (preg_match($regex, (string) file_get_contents($file))) {
+                $offenders[] = 'lang/'.basename($file);
+            }
         }
+
+        expect($offenders)->toBe([], "Provider [{$folderName}] leaked outside app/Shipping/Providers/{$folderName}");
     }
 });

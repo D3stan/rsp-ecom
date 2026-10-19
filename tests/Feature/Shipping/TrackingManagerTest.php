@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Order;
+use App\Shipping\Labels\LabelManager;
 use App\Shipping\Tracking\Contracts\TrackingProvider;
 use App\Shipping\Tracking\Drivers\FakeProvider;
 use App\Shipping\Tracking\Drivers\ManualProvider;
@@ -90,6 +91,40 @@ it('reads per-driver settings from config', function () {
 
     expect(trkManager()->driverConfig('example'))->toBe(['base_url' => 'https://api.example.test'])
         ->and(trkManager()->driverConfig('missing'))->toBe([]);
+});
+
+it('merges shared provider config with driver-specific overrides without overwriting by null', function () {
+    config([
+        'shipping.providers.spediamo.token' => 'provider-token',
+        'shipping.providers.spediamo.base_url' => 'https://provider.test',
+    ]);
+
+    $trackingConfig = trkManager()->driverConfig('spediamo');
+    $labelConfig = app(LabelManager::class)->driverConfig('spediamo');
+
+    expect($trackingConfig['token'])->toBe('provider-token')
+        ->and($trackingConfig['base_url'])->toBe('https://provider.test')
+        ->and($labelConfig['token'])->toBe('provider-token')
+        ->and($labelConfig['base_url'])->toBe('https://provider.test');
+
+    config(['shipping.tracking.drivers.spediamo.token' => 'tracking-override']);
+
+    $trackingUpdated = trkManager()->driverConfig('spediamo');
+    $labelUpdated = app(LabelManager::class)->driverConfig('spediamo');
+
+    expect($trackingUpdated['token'])->toBe('tracking-override')
+        ->and($labelUpdated['token'])->toBe('provider-token');
+});
+
+it('cleanly overrides dictionary keys like carrier_map shallowly without recursive merging', function () {
+    config([
+        'shipping.providers.spediamo.carrier_map' => ['sda' => 'SDA'],
+        'shipping.tracking.drivers.spediamo.carrier_map' => ['gls' => 'GLS'],
+    ]);
+
+    $trackingConfig = trkManager()->driverConfig('spediamo');
+
+    expect($trackingConfig['carrier_map'])->toBe(['gls' => 'GLS']);
 });
 
 it('keeps the manual driver identical to the old Order::trackingUrl behaviour', function () {

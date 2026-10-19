@@ -1,7 +1,7 @@
 <?php
 
-use App\Shipping\Tracking\Drivers\Spediamo\SpediamoResponseMapper;
-use App\Shipping\Tracking\Drivers\Spediamo\SpediamoStatusMap;
+use App\Shipping\Providers\Spediamo\SpediamoResponseMapper;
+use App\Shipping\Providers\Spediamo\SpediamoStatusMap;
 use App\Shipping\Tracking\Enums\TrackingStatus as S;
 
 function spdScan(string $date, array $time, string $status = 'CURRENT', string $description = 'Scan', string $long = '', string $site = 'Hub'): array
