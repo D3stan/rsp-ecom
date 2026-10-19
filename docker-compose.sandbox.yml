@@ -1,0 +1,109 @@
+# Big Sandbox Docker Compose
+# Fully isolated from production: dedicated DB, Redis, Mailpit email capture,
+# and separate volume namespaces.
+
+x-app-common: &app-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  restart: unless-stopped
+  env_file:
+    - .env
+  volumes:
+    - sandbox-storage-app:/var/www/html/storage/app
+    - sandbox-storage-logs:/var/www/html/storage/logs
+
+services:
+  app:
+    <<: *app-common
+    networks:
+      - dokploy-network
+      - default
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  queue:
+    <<: *app-common
+    command: ["php", "/var/www/html/artisan", "queue:work", "--tries=3", "--max-time=3600", "--sleep=3", "--timeout=60"]
+    environment:
+      AUTORUN_ENABLED: "false"
+      RSP_STARTUP_TASKS: "false"
+    stop_signal: SIGTERM
+    stop_grace_period: 90s
+    healthcheck:
+      test: ["CMD", "healthcheck-queue"]
+      start_period: 10s
+    networks:
+      - default
+    depends_on:
+      - app
+
+  scheduler:
+    <<: *app-common
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    environment:
+      AUTORUN_ENABLED: "false"
+      RSP_STARTUP_TASKS: "false"
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
+      start_period: 10s
+    networks:
+      - default
+    depends_on:
+      - app
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    volumes:
+      - sandbox-mailpit-data:/data
+    networks:
+      - dokploy-network
+      - default
+
+  db:
+    image: mariadb:11.2
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: sandbox_root_pass
+      MYSQL_DATABASE: rsp_sandbox
+      MYSQL_USER: rsp_user
+      MYSQL_PASSWORD: sandbox_secret_pass
+    volumes:
+      - sandbox-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - sandbox-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+
+volumes:
+  sandbox-storage-app:
+  sandbox-storage-logs:
+  sandbox-mailpit-data:
+  sandbox-db-data:
+  sandbox-redis-data:
+
+networks:
+  dokploy-network:
+    external: true
+  default:
