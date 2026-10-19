@@ -20,6 +20,7 @@ use App\Shipping\Contracts\ShippingProviderManifest;
 use App\Shipping\Labels\Contracts\CancelsShipments;
 use App\Shipping\Labels\Contracts\LabelProvider;
 use App\Shipping\Labels\DTO\LabelDocument;
+use App\Shipping\Rates\Contracts\RateProvider;
 use App\Shipping\Labels\DTO\ShipmentRequest;
 use App\Shipping\Labels\DTO\ShipmentResult;
 use App\Shipping\Labels\LabelManager;
@@ -342,12 +343,22 @@ it('registers partial manifests only for their declared capabilities (tracking o
             return false;
         }
 
+        public static function hasRates(): bool
+        {
+            return false;
+        }
+
         public static function createTrackingDriver(array $config): ?TrackingProvider
         {
             return null;
         }
 
         public static function createLabelDriver(array $config): ?LabelProvider
+        {
+            return null;
+        }
+
+        public static function createRateDriver(array $config): ?RateProvider
         {
             return null;
         }
@@ -370,12 +381,22 @@ it('registers partial manifests only for their declared capabilities (tracking o
             return true;
         }
 
+        public static function hasRates(): bool
+        {
+            return false;
+        }
+
         public static function createTrackingDriver(array $config): ?TrackingProvider
         {
             return null;
         }
 
         public static function createLabelDriver(array $config): ?LabelProvider
+        {
+            return null;
+        }
+
+        public static function createRateDriver(array $config): ?RateProvider
         {
             return null;
         }

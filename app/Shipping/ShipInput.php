@@ -19,6 +19,8 @@ final readonly class ShipInput
 
     public ?string $trackingDriver;
 
+    public ?string $quoteToken;
+
     /**
      * @param  list<array<string, mixed>>  $parcels  weight/length/width/height per parcel (label mode)
      */
@@ -34,6 +36,7 @@ final readonly class ShipInput
         public ?float $codAmount = null,
         ?string $labelDriver = null,
         ?string $trackingDriver = null,
+        ?string $quoteToken = null,
     ) {
         $trackingNumber = trim((string) $trackingNumber);
         $this->trackingNumber = $trackingNumber !== '' ? $trackingNumber : null;
@@ -43,5 +46,8 @@ final readonly class ShipInput
 
         $trackingDriver = trim((string) $trackingDriver);
         $this->trackingDriver = $trackingDriver !== '' ? $trackingDriver : null;
+
+        $quoteToken = trim((string) $quoteToken);
+        $this->quoteToken = $quoteToken !== '' ? $quoteToken : null;
     }
 }

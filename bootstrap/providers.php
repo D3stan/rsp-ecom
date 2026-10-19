@@ -7,4 +7,5 @@ return [
     App\Providers\SocialiteServiceProvider::class,
     App\Providers\TrackingServiceProvider::class,
     App\Providers\LabelServiceProvider::class,
+    App\Providers\RateServiceProvider::class,
 ];

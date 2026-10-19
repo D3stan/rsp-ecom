@@ -115,7 +115,7 @@ class ShippingService
             throw new \App\Shipping\Labels\Exceptions\LabelRejected('The selected carrier is not available for label creation.');
         }
 
-        $request = $this->builder->build($order, $input->carrierCode, $input->parcels, $input->insuranceAmount, $input->codAmount);
+        $request = $this->builder->build($order, $input->carrierCode, $input->parcels, $input->insuranceAmount, $input->codAmount, $input->quoteToken);
 
         // 1. Carrier creates the shipment and the label (may throw LabelRejected / LabelProviderUnavailable)
         $result = $provider->createShipment($request);

@@ -19,5 +19,6 @@ final readonly class ShipmentRequest
         public ?float $insuranceAmount = null,
         public ?float $codAmount = null,
         public string $notes = '',
+        public ?string $quoteToken = null,
     ) {}
 }

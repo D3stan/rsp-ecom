@@ -17,8 +17,14 @@ class ShipmentBuilder
     /**
      * @param  list<array{weight?: float|int|string|null, length?: mixed, width?: mixed, height?: mixed}>  $parcels
      */
-    public function build(Order $order, string $carrierCode, array $parcels = [], ?float $insurance = null, ?float $cod = null): ShipmentRequest
-    {
+    public function build(
+        Order $order,
+        string $carrierCode,
+        array $parcels = [],
+        ?float $insurance = null,
+        ?float $cod = null,
+        ?string $quoteToken = null,
+    ): ShipmentRequest {
         return new ShipmentRequest(
             carrierCode: $carrierCode,
             sender: $this->sender(),
@@ -27,6 +33,7 @@ class ShipmentBuilder
             reference: (string) $order->order_number,
             insuranceAmount: $insurance,
             codAmount: $cod,
+            quoteToken: $quoteToken,
         );
     }
 
