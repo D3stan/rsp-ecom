@@ -27,6 +27,7 @@ import {
     Settings,
     ShoppingCart,
     Tags,
+    Truck,
     Users,
 } from 'lucide-react';
 import AppLogo from './app-logo';
@@ -45,6 +46,11 @@ export function AdminSidebar() {
             title: t('admin.nav.orders'),
             href: '/admin/orders',
             icon: ShoppingCart,
+        },
+        {
+            title: t('admin.nav.shipping_quotes', { defaultValue: 'Shipping Quotes' }),
+            href: '/admin/shipping/quotes',
+            icon: Truck,
         },
         {
             title: t('admin.nav.products'),
