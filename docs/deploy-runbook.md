@@ -1,308 +1,363 @@
-# Deploy runbook: `fixes` branch to production
+# Production Migration & Deploy Runbook: VPS (`laravel.service`) to Dokploy
 
-Written 2026-10-16. Takes production from commit `5e03dd1` (what Dokploy last deployed, 2026-09-28) to the head of `fixes`
-(117 commits, 602 files, 26 new migrations, two new worker containers).
+This guide covers the complete cutover of production from the legacy systemd/host setup on the VPS to the Docker Compose stack managed by Dokploy (`fixes` merged into `main`: 26 new migrations, `queue` and `scheduler` containers, updated Stripe webhooks, and Brevo SMTP).
 
-Run the phases **in order**. Anything in `<angle brackets>` is a value you look up (the step says where).
-Commands marked **[laptop]** run in this repo, **[server]** run over SSH on the Dokploy host, **[app]** run inside the `app` container
-(`docker exec -it <APP_CONTAINER> <command>`, or Dokploy > ecommerce > Terminal), **[mysql]** run inside the MySQL container.
-
-## What production looks like today (read from Dokploy, read-only)
-
-| Item | Value |
-|---|---|
-| Dokploy project / service | `RSP` / compose app `ecommerce` (`composeType: docker-compose`, `./docker-compose.yml`) |
-| Source | GitHub `D3stan/rsp-ecom`, branch **`main`**, `autoDeploy: true`, `triggerType: tag` |
-| Domain | `ecom.rsp-industries.com` -> service `app`, port 8080, `https: false` in Dokploy (TLS is presumably terminated in front, e.g. the Cloudflare tunnel) |
-| Database | a Dokploy MySQL service in the same project (`RSP` > production) |
-| Last deploy | commit `5e03dd1`, status done. `origin/main` is still `5e03dd1`, so `fixes` is a pure fast-forward of `main`. |
-| Services today | only `app`. The new compose file adds `queue` and `scheduler`. |
-
-Why this order matters: the new code needs env vars that the old code did not (real mail transport, webhook secret), the migration
-step can abort the `app` container, and `autoDeploy` is on. So: **back up, check, set env, and only then trigger the deploy.**
+Because brief downtime (~10 minutes, mostly image build and migration time) is acceptable, this runbook uses a **single-phase direct hotswap**: prepare and verify prerequisites first, then put the old site into maintenance mode, dump the database **once**, import it into Dokploy, deploy, copy uploads, and switch the Cloudflare tunnel.
 
 ---
 
-## Phase 0: preflight on your laptop
+## Where Commands Run & Naming Reference
+
+- **`[laptop]`** — Run locally in this repository (`~/Documents/GitHub/rsp-ecom`).
+- **`[vps]`** — Run over SSH on the VPS (`ssh vps`, user `deploy`). Docker commands require `sudo`.
+- **`[app]`** — Run inside the Dokploy `app` container:
+  ```bash
+  sudo docker exec -it rsp-ecommerce-web-jp6mz0-app-1 php artisan <command>
+  ```
+- **`[mysql]`** — Run against the Dokploy MySQL container (`rsp-db-kydbyt`).
+
+| Component | Old Production (VPS Host) | New Production (Dokploy) |
+|---|---|---|
+| **Code & Runtime** | `~/ecommerce/current` (`systemd laravel.service`, port `8000`) | Compose app `ecommerce`: `app` (`rsp-ecommerce-web-jp6mz0-app-1`, port `8080`), `queue`, `scheduler` |
+| **Database** | Host MySQL, db `rsp_ecom`, user `rsp_user` | Container `rsp-db-kydbyt`, db `rsp`, user `mysql` |
+| **Uploads** | `~/ecommerce/shared/storage/app` | Docker volume `storage-app` $\rightarrow$ `/var/www/html/storage/app` |
+| **Git Source** | Deployer (`deploy.php`) from `main` | GitHub `D3stan/rsp-ecom`, branch `main` (`./docker-compose.yml`) |
+
+---
+
+## Phase 1: Prerequisites & Pre-Cutover Preparation (No Downtime)
+
+Everything in this section is read-only on old production or staged in Dokploy without affecting live traffic.
+
+### 1.1 Code Preflight (If `fixes` is not yet on `main`)
+
+Dokploy builds from `main`. If you haven't merged `fixes` into `main` yet, verify tests and fast-forward `main` on your laptop:
 
 ```bash
-# [laptop] 0.1 you are on fixes, clean and pushed
+# [laptop] Verify tests pass and fast-forward main
 cd ~/Documents/GitHub/rsp-ecom
-git checkout fixes && git status -sb          # expect: "## fixes...origin/fixes", nothing modified
-
-# [laptop] 0.2 fresh frontend build (this is what the Docker image does) and the full test suite
+git checkout fixes && git status -sb
 npm ci && npm run build
 APP_KEY=base64:$(openssl rand -base64 32) php artisan test --compact
-git checkout public/robots.txt                # the tests rewrite it; never commit that change
+git checkout public/robots.txt                # tests rewrite robots.txt; discard that change
 
-# [laptop] 0.3 (optional, slow) prove the production image builds, incl. the new gd extension
-docker build -t rsp-ecom:preflight .
-```
-
-Expected test result: **all tests pass**. Any failure: stop and investigate.
-
-(Without `APP_KEY` in the environment the local suite shows ~225 `MissingAppKeyException` failures. That is a local `.env` issue, not a bug.)
-
----
-
-## Phase 1: inspect production and take a backup (nothing changes yet)
-
-```bash
-# [laptop] 1.1 log in to the Dokploy host
-ssh deploy@37.27.26.211        # host/user are from deploy.php; use whatever you normally use for the Dokploy server
-
-# [server] 1.2 find the containers
-docker ps --format '{{.Names}}\t{{.Image}}\t{{.Status}}' | grep -i -E 'rsp|mysql'
-#   -> APP_CONTAINER   = the one named rsp-ecommerce-web-jp6mz0-app-1 (or similar)
-#   -> MYSQL_CONTAINER = the Dokploy MySQL service container
-```
-
-```bash
-# [server] 1.3 BACKUP. Do not continue without a file you have checked.
-# The database name and root password: Dokploy > RSP > MySQL > General, or DB_DATABASE / DB_PASSWORD in the ecommerce Environment tab.
-mkdir -p ~/backups
-docker exec <MYSQL_CONTAINER> sh -c 'mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" --single-transaction --routines --triggers <DB_NAME>' \
-  | gzip > ~/backups/rsp-pre-fixes-$(date +%F-%H%M).sql.gz
-ls -lh ~/backups/                       # not empty, more than a few KB
-gunzip -c ~/backups/rsp-pre-fixes-*.sql.gz | tail -3     # should end with "-- Dump completed on ..."
-```
-
-Also copy the dump off the server (`scp deploy@37.27.26.211:backups/rsp-pre-fixes-*.sql.gz .`). Dokploy's MySQL > Backups tab is an alternative.
-The `ecommerce` compose app has no backups configured, and the uploaded files live in the `storage-app` Docker volume.
-
-```bash
-# [server] 1.4 open a MySQL shell
-docker exec -it <MYSQL_CONTAINER> sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" <DB_NAME>'
-```
-
-Run these SQL checks in that shell:
-
-```sql
--- 1.5 BLOCKER CHECK: duplicate Stripe sessions. Must return ZERO rows, or the migration aborts and the app container fails to start.
--- (The `orders:duplicate-sessions` artisan command is not in the old production image, hence raw SQL.)
-SELECT stripe_checkout_session_id, COUNT(*) AS n, GROUP_CONCAT(id) AS order_ids
-FROM orders WHERE stripe_checkout_session_id IS NOT NULL
-GROUP BY stripe_checkout_session_id HAVING COUNT(*) > 1;
-
--- 1.6 who can log in as admin? You need a REAL admin before the demo one is removed.
-SELECT id, email, role, is_active FROM users WHERE role = 'admin';
-SELECT id, email FROM users WHERE email = 'admin@example.com';     -- the demo admin: row here means delete it in Phase 5
-
--- 1.7 which Stripe keys does the DATABASE hold? (names only, never print values)
-SELECT `key` FROM settings WHERE `key` LIKE 'stripe%';
-```
-
-- **1.5 returns rows:** open each pair in the admin, decide which order is the real one, and merge/remove the other by hand
-  (the migration never touches data). Re-run until empty.
-- **1.6 shows only `admin@example.com`:** you will create your real admin in Phase 4 (via `ADMIN_EMAIL`/`ADMIN_PASSWORD`) before deleting it.
-- **1.7 lists `stripe_secret_key`:** the live key may be stored only in the DB. The new code still falls back to it
-  (`StripeService`: `config('cashier.secret') ?: Setting::get('stripe_secret_key')`), so payments keep working, but copy the keys into the
-  environment anyway (Phase 2) so the purge command in Phase 6 can be used.
-
----
-
-## Phase 2: set the environment in Dokploy (before any deploy)
-
-Dokploy > RSP > `ecommerce` > **Environment**. Keep every variable that is already there and add or change the ones below.
-(Dokploy writes this tab to `.env`, which all three containers read.)
-
-```dotenv
-# --- must be exactly these in production ---
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://<the exact public URL customers open>      # signed order/unsubscribe links and the sitemap use it
-QUEUE_CONNECTION=database
-CACHE_STORE=database                                       # shared by all containers; the login fix (A6) keeps a one-time nonce here
-SESSION_DRIVER=database
-
-# --- database: ONE shared MySQL for app, queue and scheduler (never sqlite) ---
-DB_CONNECTION=mysql
-DB_HOST=<Dokploy MySQL internal host name>
-DB_PORT=3306
-DB_DATABASE=<DB_NAME>
-DB_USERNAME=<user>
-DB_PASSWORD=<password>
-
-# --- mail: a real transport, or no customer email ever leaves the server ---
-MAIL_MAILER=smtp
-MAIL_HOST=<smtp host>
-MAIL_PORT=<587 or 465>
-MAIL_USERNAME=<user>
-MAIL_PASSWORD=<password>
-MAIL_FROM_ADDRESS="noreply@<your domain>"                  # real address, SPF/DKIM/DMARC set up on that domain
-MAIL_FROM_NAME="<shop name>"
-MAIL_SUPPORT_ADDRESS="support@<your domain>"               # monitored inbox, shown in every email
-
-# --- Stripe ---
-STRIPE_KEY=<pk_live_...>
-STRIPE_SECRET=<sk_live_...>
-STRIPE_WEBHOOK_SECRET=<whsec_...>                          # REQUIRED now: without it the webhook answers 403 in production
-
-# --- first admin (used once by db:seed in Phase 4, then delete ADMIN_PASSWORD) ---
-ADMIN_EMAIL=<your real admin email>
-ADMIN_PASSWORD=<strong password>
-```
-
-Do **not** set `AUTORUN_ENABLED`. Leave `SHIPPING_*` unset: tracking defaults to `manual` and label creation to off.
-Optional: `SHIPPING_TRACKING_SPEDIAMO_TOKEN` (only for the `spediamo` tracking driver).
-
-Check `STRIPE_WEBHOOK_SECRET` against Stripe (Developers > Webhooks > your endpoint > Signing secret). If the secret you have is for
-a different endpoint, signatures fail.
-
-Save the Environment tab. **Do not click Deploy yet.**
-
----
-
-## Phase 3: ship the code and deploy
-
-`autoDeploy` is on and the trigger type is `tag`. Both Dokploy and `deploy.php` use `main`, so `fixes` has to land on `main`.
-Because production is exactly `5e03dd1` and `origin/main` has not moved, this is a fast-forward:
-
-```bash
-# [laptop] 3.1 merge fixes into main
 git fetch origin
 git checkout main && git pull --ff-only origin main
-git merge --ff-only fixes          # if this refuses, main moved: stop and look, do not force
-git push origin main               # may start a deploy by itself (depending on the trigger); that is fine now that env is set
+git merge --ff-only fixes
+git push origin main
 ```
+
+### 1.2 Inspect Old Production `.env`
+
+On the VPS, list all environment variable names currently in old production (names only, no values):
 
 ```bash
-# [laptop] 3.2 only if Dokploy did NOT start a deploy within a minute: tag, or press Deploy in the UI
-git tag release-2026-10-16 && git push origin release-2026-10-16
+# [vps]
+grep -oE '^[A-Z_]+=' ~/ecommerce/current/.env
 ```
 
-Otherwise: Dokploy > `ecommerce` > **Deploy** (it also lets you watch the log live).
+Compare that list with the environment table in **Step 1.6** below. If old production has a variable the app reads that isn't in the table (for example `APP_NAME`, `APP_LOCALE`, or `CONTACT_EMAIL`), include it in Dokploy. Skip `DB_*`, `REDIS_*`, and `PHP_CLI_SERVER_WORKERS`.
 
-What happens, in order: image build (composer, `npm run build`, the `gd` extension) -> three containers start -> `app` runs
-`php artisan migrate --force` (26 migrations; the settings merge and the unique index run here) -> `storage:link` -> entrypoint clears caches
-and regenerates the sitemap. The `queue` and `scheduler` containers skip migrations and startup tasks (`AUTORUN_ENABLED=false`, `RSP_STARTUP_TASKS=false`).
+### 1.3 Verify Stripe Webhook Secret & `APP_URL`
+
+1. **Check that old production has a Stripe webhook signing secret:**
+   ```bash
+   # [vps]
+   grep -c '^STRIPE_WEBHOOK_SECRET=whsec_' ~/ecommerce/current/.env    # must print 1
+   ```
+   If this prints `0`, copy the signing secret from **Stripe Dashboard > Developers > Webhooks > `<PROD_URL>/stripe/webhook`**. The new code returns HTTP `403` to every webhook in production without a valid `STRIPE_WEBHOOK_SECRET`.
+
+2. **Check old production's exact `APP_URL` (apex or `www`):**
+   ```bash
+   # [vps]
+   grep '^APP_URL=' ~/ecommerce/current/.env
+   ```
+   Use that exact host as `<PROD_URL>` everywhere below. Both the Stripe webhook endpoint and the Google OAuth redirect URI are registered on it, and signed order/unsubscribe links plus `sitemap.xml`/`robots.txt` depend on it.
+
+3. **Read the secret values to copy into Dokploy:**
+   ```bash
+   # [vps]
+   grep -E '^(APP_KEY|STRIPE_[A-Z_]+|GOOGLE_CLIENT_[A-Z]+|MAIL_[A-Z_]+)=' ~/ecommerce/current/.env
+   ```
+
+### 1.4 Pre-Cutover Database Checks on Old Production
+
+Connect to the old host MySQL database to verify there are no migration blockers and preview recent orders:
 
 ```bash
-# [server] 3.3 watch it come up (a minute or two)
-docker ps --format '{{.Names}}\t{{.Status}}' | grep rsp-ecommerce      # expect app, queue, scheduler all "Up", queue/scheduler "(healthy)"
-docker logs --tail 80 <APP_CONTAINER> 2>&1 | grep -i -E "migrat|error|exception|fail"
-curl -s -o /dev/null -w '%{http_code}\n' https://<domain>/up           # 200
+# [vps]
+cd ~/ecommerce/current
+export MYSQL_PWD="$(grep '^DB_PASSWORD=' .env | cut -d= -f2- | sed 's/^"\(.*\)"$/\1/')"
 ```
 
-**If `app` restarts in a loop** and the log shows `Cannot add a unique index on orders.stripe_checkout_session_id`: you skipped 1.5. Fix the duplicates
-(MySQL shell from 1.4), then `docker restart <APP_CONTAINER>`; the migration is safe to re-run ("No data was changed").
-Any other migration error: go to **Rollback**.
+1. **Blocker check — duplicate Stripe checkout sessions (MUST return zero rows):**
+   The new migrations add a unique index on `orders.stripe_checkout_session_id`. If duplicates exist, the migration will abort and the `app` container will fail to start.
+   ```bash
+   # [vps]
+   mysql -u rsp_user rsp_ecom -e "SELECT stripe_checkout_session_id, COUNT(*) AS n, GROUP_CONCAT(id) AS order_ids
+     FROM orders WHERE stripe_checkout_session_id IS NOT NULL
+     GROUP BY stripe_checkout_session_id HAVING COUNT(*) > 1;"
+   ```
+   *If rows are returned:* inspect those orders in the admin panel and merge/remove the duplicate before starting cutover.
 
-The workers start at the same moment as `app`, before its migrations finish, so the first minute of their logs may show a few
-errors. Ignore that unless it continues; confirm in Phase 4.
+2. **Preview recent orders that the new scheduler would email again:**
+   The new scheduler looks back 7 days for succeeded orders with `confirmation_email_sent = 0`. Step 2.4 below sets `confirmation_email_sent = 1` on all existing succeeded orders so customers do not receive duplicate emails. Run this first in case an order in the last 7 days genuinely missed its confirmation email:
+   ```bash
+   # [vps]
+   mysql -u rsp_user rsp_ecom -e "SELECT order_number, created_at, confirmation_email_sent FROM orders
+     WHERE payment_status='succeeded' AND created_at >= NOW() - INTERVAL 7 DAY;"
+   ```
+
+3. **Check admin accounts and legacy DB settings:**
+   ```bash
+   # [vps]
+   mysql -u rsp_user rsp_ecom -e "SELECT id, email, role, is_active FROM users WHERE role = 'admin';
+     SELECT id, email FROM users WHERE email = 'admin@example.com';
+     SELECT \`key\` FROM settings WHERE \`key\` LIKE 'stripe%';"
+   ```
+
+### 1.5 Configure Dokploy Domains
+
+In **Dokploy > `RSP` > `ecommerce` > Domains**:
+- Add `rsp-industries.com` and `www.rsp-industries.com`, each pointing to:
+  - **Service:** `app`
+  - **Port:** `8080`
+  - **Path:** `/`
+  - **HTTPS:** `off` (TLS is terminated by the Cloudflare tunnel in front of Traefik)
+
+These domain rules have no effect on live traffic until the Cloudflare tunnel is updated in Step 2.8.
+
+### 1.6 Configure Dokploy Environment (Final Cutover Values)
+
+In **Dokploy > `RSP` > `ecommerce` > Environment**, set the production variables directly. **Save, but do not click Deploy yet.**
+
+| Variable | Value to Set | Notes |
+|---|---|---|
+| `APP_ENV` / `APP_DEBUG` / `LOG_LEVEL` | `production` / `false` / `warning` | Must be `production` before running `db:seed`. |
+| `APP_KEY` | Copy from old prod `.env` | **Never generate a new one** (encrypts sessions/cookies/data). |
+| `APP_URL` | `<PROD_URL>` | Exact URL from Step 1.3 (e.g. `https://rsp-industries.com`). |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Copy from old prod `.env` | Google OAuth credentials. |
+| `GOOGLE_REDIRECT_URL` | `<PROD_URL>/auth/google/callback` | Set as a literal value matching `<PROD_URL>`. |
+| `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET` | Copy from old prod `.env` | See Step 1.3. Webhook secret is required (`whsec_...`). |
+| `MAIL_MAILER` | `smtp` | Real SMTP transport for production. |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` *(+ `MAIL_SCHEME` if set in prod)* | Copy old prod's Brevo values | Replaces the old Mailgun variables. Ensure SPF/DKIM/DMARC are set on the sender domain. |
+| `MAIL_SUPPORT_ADDRESS` | Monitored support inbox | Shown in customer emails (e.g. `support@rsp-industries.com`). |
+| `QUEUE_CONNECTION`, `CACHE_STORE`, `SESSION_DRIVER` | `database` | Shared across `app`, `queue`, and `scheduler` (required for one-time registration login nonce). |
+| `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | Keep Dokploy values (`host: rsp-db-kydbyt`, `db: rsp`, `user: mysql`) | Shared MySQL container for all three services. |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Delete if present | Real admin (`admin@rsp.com`) is imported with the prod DB dump. |
+| `AUTORUN_ENABLED` | **Do not set** | Leave unset; `docker-compose.yml` controls container startup behavior. |
+| `SHIPPING_*` | Leave unset | Tracking defaults to `manual` and label creation defaults to `off` (optional: `SHIPPING_TRACKING_SPEDIAMO_TOKEN`). |
 
 ---
 
-## Phase 4: post-deploy commands in the `app` container
+## Phase 2: Cutover & Hotswap (~10 Minutes Downtime)
+
+Execute these steps in order. Because we put the old site down first, we only dump the database and copy uploads once.
+
+### 2.1 Put Old Production into Maintenance Mode
 
 ```bash
-# [app] 4.1 sanity: MUST say production before the seeder below (non-production seeds demo users with a known password)
-php artisan env                              # -> production
-php artisan migrate:status | tail -30        # every row "Ran", last one 2026_10_16_200100_add_featured_to_review_media_table
-
-# [app] 4.2 settings defaults + your real admin. Safe on live data: never overwrites existing settings, no demo data in production.
-php artisan db:seed --force                  # prints "Production: demo data skipped" and "Admin user created/updated: <ADMIN_EMAIL>"
-php artisan settings:list --group=tax        # shows the settings catalogue reading correctly
-
-# [app] 4.3 configuration checks
-php artisan stripe:check-config              # STRIPE_SECRET / STRIPE_KEY set (and shows whether the DB still holds legacy copies)
-php artisan schedule:list                    # includes ops:check-queue, newsletter:dispatch-scheduled, reviews:send-requests, tracking:sync
-
-# [app] 4.4 mail end to end (this one sends synchronously, so you see success or failure immediately)
-php artisan email:send-test <your-own-address>
+# [vps] Stop taking new orders or file uploads on the old site
+cd ~/ecommerce/current && php artisan down
 ```
+
+### 2.2 Dump the Old Production Database (Single Final Dump)
 
 ```bash
-# [server] 4.5 workers are alive and healthy
-docker logs --tail 30 <QUEUE_CONTAINER>
-docker logs --tail 30 <SCHEDULER_CONTAINER>        # "Running scheduled tasks" lines
+# [vps]
+mkdir -p ~/pgbackup && cd ~/ecommerce/current
+export MYSQL_PWD="$(grep '^DB_PASSWORD=' .env | cut -d= -f2- | sed 's/^"\(.*\)"$/\1/')"
+D=~/pgbackup/rsp-prod-$(date +%F-%H%M).sql.gz
+
+mysqldump -u rsp_user --single-transaction --routines --triggers --no-tablespaces --set-gtid-purged=OFF \
+  --default-character-set=utf8mb4 rsp_ecom | gzip > "$D"
+
+gunzip -c "$D" | tail -1        # must print "-- Dump completed on …"
+ls -lh "$D"                     # verify non-empty size
 ```
 
-Then in the **admin panel**: log in with `ADMIN_EMAIL`, open Settings, confirm tax rate, shipping destinations and support email look right.
+*(Optional but recommended)* From your laptop, copy this dump off the server as a permanent pre-migration backup:
+```bash
+# [laptop]
+scp vps:pgbackup/rsp-prod-*.sql.gz .
+```
+
+### 2.3 Stop the Dokploy Stack
+
+In **Dokploy > `RSP` > `ecommerce`**, click **Stop**.
+
+Wait until `rsp-ecommerce-web-jp6mz0-app-1`, `queue`, and `scheduler` are stopped before touching the Dokploy database.
+
+### 2.4 Replace the Dokploy Database with the Production Dump
+
+Wiping the `rsp` database first is required: otherwise, importing the dump replaces the `migrations` table with old production's 37 rows while leaving tables created by earlier Dokploy runs behind, causing the 26 new migrations to fail on existing tables.
 
 ```bash
-# [laptop] 4.6 remove the seed password from the environment
-#   Dokploy > Environment: delete ADMIN_PASSWORD (and ADMIN_EMAIL), save, then Redeploy.
+# [vps]
+D=$(ls -t ~/pgbackup/rsp-prod-*.sql.gz | head -1)          # newest dump only
+M=$(sudo docker ps -q -f name=rsp-db-kydbyt)
+sql() { sudo docker exec -i "$M" sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$@"' _ "$@"; }
+
+# 1. Wipe and recreate with utf8mb4
+sql -e "DROP DATABASE IF EXISTS rsp; CREATE DATABASE rsp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 2. Import the production dump
+gunzip -c "$D" | sql rsp
+
+# 3. Verify counts (expect 37 migrations, existing orders & users, and grants on `rsp`.* for 'mysql'@'%')
+sql rsp -e "SELECT COUNT(*) migrations FROM migrations; SELECT COUNT(*) orders FROM orders; SELECT COUNT(*) users FROM users; SHOW GRANTS FOR 'mysql'@'%';"
+
+# 4. Mark existing succeeded orders as confirmed so the new scheduler does not re-email old customers
+sql rsp -e "UPDATE orders SET confirmation_email_sent=1 WHERE payment_status='succeeded' AND confirmation_email_sent=0;"
 ```
+
+### 2.5 Deploy in Dokploy
+
+In **Dokploy > `RSP` > `ecommerce`**, click **Deploy**.
+
+What happens during Deploy:
+1. Builds the Docker image (`composer install`, `npm run build`, PHP `gd` extension).
+2. Applies the cutover environment variables and Traefik domain rules (`rsp-industries.com` and `www`).
+3. Starts `app`, `queue`, and `scheduler`.
+4. `app` runs `php artisan migrate --force` (executing the 26 new migrations to reach 63 total, merging legacy settings, and adding the unique index on `orders.stripe_checkout_session_id`), runs `storage:link`, clears caches, and regenerates the sitemap.
+
+> [!NOTE]
+> The `queue` and `scheduler` containers start at the same moment as `app`, before its migrations finish. Their logs may show a few transient errors during the first minute while `app` migrates — this is expected as long as they settle once migrations complete.
+
+### 2.6 Copy Uploaded Files into the Dokploy Volume
+
+Once the `app` container is running, stream all uploaded files from the old shared directory into the container's `/var/www/html/storage/app` volume and fix ownership:
+
+```bash
+# [vps]
+APP=$(sudo docker ps -q -f name=rsp-ecommerce-web-jp6mz0-app-1)
+tar -C ~/ecommerce/shared/storage/app -cf - . \
+  | sudo docker exec -i -u root "$APP" sh -c 'tar -C /var/www/html/storage/app -xf - && chown -R www-data:www-data /var/www/html/storage/app'
+
+# Verify file count (expect >= 102)
+sudo docker exec "$APP" sh -c 'find /var/www/html/storage/app/public -type f | wc -l'
+```
+
+### 2.7 Post-Boot Verification & Seeding
+
+1. **Check container logs and health on the VPS:**
+   ```bash
+   # [vps]
+   sudo docker logs --tail 80 rsp-ecommerce-web-jp6mz0-app-1 2>&1 | grep -iE "migrat|error|exception"
+   sudo docker ps --format '{{.Names}}\t{{.Status}}' | grep rsp-ecommerce
+   # Expect: app, queue, scheduler all "Up", and queue/scheduler "(healthy)"
+   ```
+
+2. **Run post-deploy Artisan checks inside the `app` container:**
+   ```bash
+   # [app] Run via: sudo docker exec -it rsp-ecommerce-web-jp6mz0-app-1 php artisan <command>
+   php artisan env                                   # -> production (REQUIRED before running db:seed)
+   php artisan migrate:status | grep -v ' Ran'       # nothing but the header: all 63 migrations ran
+   php artisan db:seed --force                       # adds missing settings defaults; "no admin user created" is expected
+   php artisan settings:list --group=tax
+   php artisan stripe:check-config
+   php artisan schedule:list
+   php artisan email:send-test <your-email-address>  # must arrive in your inbox via Brevo SMTP
+   ```
+
+3. **Remove demo admin if present:**
+   If Step 1.4 showed a row for `admin@example.com`, remove it now:
+   ```bash
+   # [vps]
+   sql rsp -e "DELETE FROM users WHERE email = 'admin@example.com';"
+   ```
+
+### 2.8 Hotswap the Cloudflare Tunnel
+
+Update your Cloudflare tunnel configuration so `rsp-industries.com` and `www.rsp-industries.com` point to the Dokploy/Traefik ingress instead of `http://localhost:8000`.
+
+### 2.9 Update & Test Stripe Webhooks
+
+In **Stripe Dashboard > Developers > Webhooks > `<PROD_URL>/stripe/webhook`**:
+1. Keep the existing events (`checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`).
+2. **Add** the three refund events:
+   - `charge.refunded`
+   - `charge.refund.updated`
+   - `refund.updated`
+3. Send a **test webhook** from Stripe and verify it returns HTTP `200` (an HTTP `403` means `STRIPE_WEBHOOK_SECRET` in Dokploy does not match this endpoint).
+
+### 2.10 Smoke Test & Live Order Verification
+
+1. **Automated HTTP & SEO check:**
+   ```bash
+   # [vps or laptop]
+   for p in / /products /cart /contact /up /sitemap.xml /robots.txt; do
+     printf '%s ' "$p"
+     curl -s -o /dev/null -w '%{http_code}\n' "<PROD_URL>$p"
+   done
+   # Expect 200 on every route
+
+   curl -s "<PROD_URL>/robots.txt" | tail -2
+   # Sitemap: line must show <PROD_URL>/sitemap.xml
+   ```
+
+2. **Admin & Customer UI check:**
+   - Verify `/products` loads with product images from the migrated storage volume.
+   - Log in as `admin@rsp.com`. Open an existing order, verify the dashboard and pending-orders badge look right, and confirm **Settings** (tax rate, shipping destinations, support email).
+   - Log in as an existing customer (or register a new test customer to verify the verification email and post-registration one-time login nonce).
+
+3. **End-to-end live order check:**
+   - Place **one small real order**. Confirm it appears as paid in the admin panel and the order confirmation email arrives.
+   - Check the email audit table in MySQL:
+     ```bash
+     # [vps]
+     sql rsp -e "SELECT type, sent_at, failed_at, error FROM order_emails ORDER BY id DESC LIMIT 5;"
+     # Expect: sent_at set, failed_at NULL
+     ```
+   - Mark the order **shipped** in the admin panel $\rightarrow$ verify one "shipped" email arrives.
+   - Refund the order from the admin panel $\rightarrow$ verify the refund email arrives and the order's payment status updates.
+   - Check the queue tables:
+     ```bash
+     # [vps]
+     sql rsp -e "SELECT COUNT(*) AS jobs FROM jobs; SELECT COUNT(*) AS failed_jobs FROM failed_jobs;"
+     # Expect: jobs ~ 0, failed_jobs = 0
+     ```
+
+4. **Purge legacy Stripe secrets from the database:**
+   Once your first real payment has succeeded and `STRIPE_KEY` / `STRIPE_SECRET` are confirmed working from the environment:
+   ```bash
+   # [app]
+   php artisan settings:purge-legacy-secrets
+   ```
 
 ---
 
-## Phase 5: security cleanup
+## Rollback Plan (Decide Quickly)
 
-```bash
-# [mysql] 5.1 delete the demo admin, ONLY after you have logged in as the real admin in Phase 4
-#   (the shop has a real admin: SELECT email FROM users WHERE role='admin')
-DELETE FROM users WHERE email = 'admin@example.com';
-SELECT COUNT(*) FROM users WHERE email = 'admin@example.com';     -- 0
-```
+Because old production (`~/ecommerce/current` and host MySQL `rsp_ecom`) was never modified after Step 2.1, rolling back is immediate:
 
-This matters even with the A6 fix deployed: a known `admin@example.com` / `password` login must not exist in production.
-
----
-
-## Phase 6: Stripe dashboard
-
-Stripe > Developers > Webhooks > your endpoint `https://<domain>/stripe/webhook` (the URL did not change).
-Keep the existing events and **add**:
-
-- `charge.refunded`
-- `charge.refund.updated`
-- `refund.updated`
-
-The already-handled ones are `checkout.session.completed`, `.async_payment_succeeded`, `.async_payment_failed`, `.expired`.
-Use "Send test webhook" and confirm a `200` (a `403` means `STRIPE_WEBHOOK_SECRET` is wrong or missing).
-
-After one successful real payment (Phase 7), and only then:
-
-```bash
-# [app] 6.1 remove the legacy Stripe keys the old settings page stored in the database (it refuses unless STRIPE_KEY and STRIPE_SECRET are in the env)
-php artisan settings:purge-legacy-secrets
-```
+1. **Point the Cloudflare tunnel back** at `http://localhost:8000`.
+2. **Bring the old site out of maintenance mode:**
+   ```bash
+   # [vps]
+   cd ~/ecommerce/current && php artisan up
+   ```
+3. **Reconcile any post-cutover orders:** Any orders placed while traffic was routed to Dokploy exist only in the Dokploy `rsp` database. Check the Stripe dashboard for payments created after the cutover timestamp and recreate those orders by hand if needed.
 
 ---
 
-## Phase 7: smoke test
+## Post-Migration Cleanup (After One Week of Stable Running)
 
-```bash
-# [laptop] 7.1 public pages and SEO files
-for p in / /products /cart /contact /up /sitemap.xml /robots.txt; do printf '%s ' $p; curl -s -o /dev/null -w '%{http_code}\n' https://<domain>$p; done
-curl -s https://<domain>/robots.txt | tail -2        # "Sitemap:" line must show your real https domain; if it shows localhost, APP_URL is wrong
-```
-
-Manual checks:
-
-1. Place a **real order** with a small amount (or your usual Stripe test procedure). Confirm the order appears in the admin, paid, and
-   the confirmation email arrives.
-2. In MySQL: `SELECT type, sent_at, failed_at, error FROM order_emails ORDER BY id DESC LIMIT 5;` -> `sent_at` set, `failed_at` null.
-3. Mark the order shipped in the admin. One "shipped" email goes out (the payment guard on the ship form is part of this release).
-4. Issue a partial refund from the admin. The refund email goes out and the order's payment status updates.
-5. `SELECT COUNT(*) FROM jobs;` goes back to ~0 and `SELECT COUNT(*) FROM failed_jobs;` stays 0.
-6. Register a new test customer: verification email arrives, and the one-time login after registration works (this is the A6 fix; it relies on the shared cache).
+- **Stop the legacy systemd service:**
+  ```bash
+  # [vps]
+  sudo systemctl stop laravel.service
+  sudo systemctl disable laravel.service
+  ```
+- **Clean up old tunnel routes:** Remove the unused `localhost:8000` route from `cloudflared` if nothing else uses it.
+- **Archive and drop the old host database:** Verify you have copied the final dump from `~/pgbackup/rsp-prod-*.sql.gz` off the server, then drop `rsp_ecom` from host MySQL.
+- **Optional Dokploy domain cleanup:** Remove `rsp.0xpuddu.com` from **Dokploy > `RSP` > `ecommerce` > Domains** if you no longer need it.
 
 ---
 
-## Rollback
+## Operational Notes & Known Behaviors
 
-Decide quickly. The longer the new version takes real orders, the more a rollback costs.
-
-- **Code only** (the migrations ran but the app is misbehaving, and nothing important was written): Dokploy > `ecommerce` > Deployments > pick the
-  `5e03dd1` deployment > Rollback. The old code runs against the new schema; the schema is additive apart from the foreign-key changes and the unique index, which the old code tolerates.
-- **Full rollback** (migration failed halfway, or data is wrong): stop the stack in Dokploy, restore the dump from 1.3, redeploy `5e03dd1`:
-
-```bash
-# [server]
-gunzip -c ~/backups/rsp-pre-fixes-<timestamp>.sql.gz | docker exec -i <MYSQL_CONTAINER> sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" <DB_NAME>'
-```
-
-  This loses any order placed after the backup. Check Stripe for payments made in that window.
-- Do not rely on `php artisan migrate:rollback`: the legacy-settings merge cannot restore keys it deleted.
-
----
-
-## Known issues this deploy does not fix
-
-- **Spediamo label creation** (`shipping.labels_enabled`, default off): the adapter was built from the docs with assumptions (JSON body on
-  `POST /v1/shipments`, no explicit pay step, waybill PDF via `?download=true`). Test it with one real shipment before switching it on in the admin settings.
-- The new compose file has no `depends_on`, and `app` has no healthcheck. The workers may log errors for a minute while `app` migrates (accepted).
-- The Dockerfile still keeps `config:cache` off by choice. Do not turn it on during this deploy.
-- Deactivating a customer (admin > Customers) blocks login but is not GDPR erasure; erasure stays a manual job.
+- **Spediamo label creation (`shipping.labels_enabled`, default `off`):** The adapter was built against the Spediamo API docs (`POST /v1/shipments` JSON body, no separate pay call, waybill PDF via `?download=true`). Test with one real shipment before enabling it in Admin > Settings.
+- **Worker startup race:** `docker-compose.yml` does not block `queue` and `scheduler` on `app` migration completion. Transient log errors during the first 60 seconds of a fresh deploy are benign.
+- **Config caching:** The Dockerfile keeps `config:cache` off by design. Do not run `php artisan config:cache` manually inside the container.
+- **Customer deactivation vs. GDPR erasure:** Deactivating a customer in Admin > Customers blocks login, but full GDPR erasure remains a manual process.
