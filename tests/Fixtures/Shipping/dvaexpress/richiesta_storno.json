@@ -1,0 +1,23 @@
+{
+  "result": "OK",
+  "errorcode": "0",
+  "errormessage": "Ordini con storno richiesto: 1 su 1",
+  "solo_verifica": false,
+  "esiti": [
+    {
+      "id_ordine": 160855,
+      "ammesso": true,
+      "richiesto": true,
+      "codice": "ammesso",
+      "messaggio": "Storno richiesto correttamente",
+      "stato": 13,
+      "ldv": "2875561502819",
+      "tracking": null
+    }
+  ],
+  "ammessi": 1,
+  "rifiutati": 0,
+  "richiesti": 1,
+  "timestamp": "2026-10-19 12:19:18",
+  "version": "1.1.20"
+}

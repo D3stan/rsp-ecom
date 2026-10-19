@@ -1,0 +1,23 @@
+{
+  "result": "OK",
+  "errorcode": "",
+  "errormessage": "",
+  "codice_offerta": "5dcc4a53b00fd",
+  "custom": "ORD-1001",
+  "ordine": "ORD-160855",
+  "id_ordine": 160855,
+  "importo": "6.90",
+  "lettera_vettura": "2875561502819",
+  "url_ldv": "https://www.easyparcel.it/ldv/160855.pdf",
+  "codice_ritiro": "RIT-160855",
+  "url_bordero": "https://www.easyparcel.it/tmp/bordero_160855.pdf",
+  "ldv_base64": "JVBERi0xLjQKJeLjz9MK",
+  "single_waybills": [
+    {
+      "lettera_vettura": "2875561502819",
+      "ldv_base64": "JVBERi0xLjQKJeLjz9MK"
+    }
+  ],
+  "timestamp": "2026-10-19 12:19:18",
+  "version": "1.1.20"
+}

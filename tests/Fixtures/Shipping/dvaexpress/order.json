@@ -1,0 +1,12 @@
+{
+  "result": "OK",
+  "errorcode": "",
+  "errormessage": "ACQUISTO OK",
+  "codice_offerta": "5dcc4a53b00fc",
+  "custom": "ORD-1001",
+  "ordine": "EAS-5dcc4a53b00fc",
+  "id_ordine": "160854",
+  "importo": "6.90",
+  "timestamp": "2026-10-19 12:19:18",
+  "version": "1.1.20"
+}

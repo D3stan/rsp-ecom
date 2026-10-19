@@ -1,0 +1,22 @@
+{
+  "result": "OK",
+  "error_code": "0",
+  "error_message": "",
+  "order_id": "160855",
+  "custom": "ORD-1001",
+  "waybill_number": [
+    "2875561502819"
+  ],
+  "waybill_url": "https://www.easyparcel.it/ldv/160855.pdf",
+  "pickup_code": "CP95599292",
+  "bordero_url": "https://www.easyparcel.it/tmp/bordero_160855.pdf",
+  "waybill_base64": "JVBERi0xLjQKJeLjz9MK",
+  "single_waybills": [
+    {
+      "waybill_number": "2875561502819",
+      "waybill_base64": "JVBERi0xLjQKJeLjz9MK"
+    }
+  ],
+  "timestamp": "2026-10-19 12:19:18",
+  "version": "1.1.20"
+}

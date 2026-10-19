@@ -1,0 +1,105 @@
+{
+  "result": "OK",
+  "errorcode": 0,
+  "errormessage": "QUOTATION OK",
+  "quotation": [
+    {
+      "codice_offerta": "5dcc4a53b00fc",
+      "vettore": "SDAM",
+      "famiglia": "SDA",
+      "nome_vettore": "SDA",
+      "logo_vettore": "https://www.easyparcel.it/api/loghi/logo_sda.png",
+      "consegna": "E",
+      "tempiconsegna": "24/48 ore",
+      "messaggio_tariffa": null,
+      "importo_tariffa": "10.62",
+      "totale_dovuto": "6.90",
+      "peso_volumetrico": 3,
+      "flag_scontonazionale": null,
+      "flag_localitadisagiata": false,
+      "flag_localitaperiferica": false,
+      "flag_timecritical": false,
+      "percentualeiva": "22.00",
+      "serviziopzionali": {
+        "contrassegno": {
+          "attivabile": "S",
+          "importo": "5.00",
+          "limite_massimo": "1999.99",
+          "servizi": "C-A"
+        },
+        "assicurazione": {
+          "attivabile": "S",
+          "importo": "7.70",
+          "limite_massimo": "3000.00",
+          "valore_simulato": 500
+        },
+        "consegnaalpiano": {
+          "attivabile": "S",
+          "importo": "4.00"
+        },
+        "consegnasuappuntamento": {
+          "attivabile": "S",
+          "importo": "6.00"
+        },
+        "trackingavanzato": {
+          "attivabile": "S",
+          "importo": "0.15"
+        },
+        "ritiro": {
+          "attivabile": "S",
+          "importo": "0.00"
+        }
+      }
+    },
+    {
+      "codice_offerta": "5dcc4a53b00fd",
+      "vettore": "BRT",
+      "famiglia": "BRT",
+      "nome_vettore": "BRT",
+      "logo_vettore": "https://www.easyparcel.it/api/loghi/logo_brt.png",
+      "consegna": "E",
+      "tempiconsegna": "24/48 ore",
+      "messaggio_tariffa": null,
+      "importo_tariffa": "12.50",
+      "totale_dovuto": "8.50",
+      "peso_volumetrico": 3,
+      "flag_scontonazionale": null,
+      "flag_localitadisagiata": false,
+      "flag_localitaperiferica": false,
+      "flag_timecritical": false,
+      "percentualeiva": "22.00",
+      "serviziopzionali": {
+        "contrassegno": {
+          "attivabile": "S",
+          "importo": "5.00",
+          "limite_massimo": "1999.99",
+          "servizi": "C-A"
+        },
+        "assicurazione": {
+          "attivabile": "S",
+          "importo": "7.70",
+          "limite_massimo": "3000.00",
+          "valore_simulato": 500
+        },
+        "consegnaalpiano": {
+          "attivabile": "S",
+          "importo": "4.00"
+        },
+        "consegnasuappuntamento": {
+          "attivabile": "S",
+          "importo": "6.00"
+        },
+        "trackingavanzato": {
+          "attivabile": "S",
+          "importo": "0.15"
+        },
+        "ritiro": {
+          "attivabile": "S",
+          "importo": "0.00"
+        }
+      }
+    }
+  ],
+  "timestamp": "2026-10-19 12:19:18",
+  "version": "1.1.20"
+}

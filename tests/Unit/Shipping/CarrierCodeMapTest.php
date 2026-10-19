@@ -1,6 +1,6 @@
 <?php
 
-use App\Shipping\Tracking\Support\CarrierCodeMap;
+use App\Shipping\Support\CarrierCodeMap;
 
 it('translates both ways, case-insensitively', function () {
     $map = new CarrierCodeMap(['sda' => 'SDA', 'Brt' => ' Bartolini ']);

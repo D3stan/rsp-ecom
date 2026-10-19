@@ -1,0 +1,79 @@
+{
+  "result": "OK",
+  "errorcode": 0,
+  "errormessage": "TRACKING OK",
+  "tracking": {
+    "codice_offerta": "5e95d42de07a6",
+    "custom": "XYZ123456",
+    "lettera_vettura": "288016E049120",
+    "url_tracking": "https://www.poste.it/cerca/index.html#/risultati-spedizioni/288364I031083",
+    "codice_prenotazione": "CP1234567890"
+  },
+  "dettagli": [
+    {
+      "id": 1,
+      "data": "2020-04-15",
+      "ora": "12:41:00",
+      "status": "RIT",
+      "descrizione": "RITIRATA",
+      "note": "LA SPEDIZIONE E' STATA RITIRATA PRESSO IL MITTENTE",
+      "filiale": "Catanzaro"
+    },
+    {
+      "id": 2,
+      "data": "2020-04-15",
+      "ora": "16:10:02",
+      "status": "PPP",
+      "descrizione": "PARTITA",
+      "note": "LA SPEDIZIONE E' PARTITA",
+      "filiale": "Catanzaro"
+    },
+    {
+      "id": 3,
+      "data": "2020-04-16",
+      "ora": "10:54:00",
+      "status": "PPP",
+      "descrizione": "PARTITA",
+      "note": "LA SPEDIZIONE E' PARTITA",
+      "filiale": "Roma Hub Espresso"
+    },
+    {
+      "id": 4,
+      "data": "2020-04-16",
+      "ora": "10:55:00",
+      "status": "THE",
+      "descrizione": "SMISTATO HUB ED INOLTRATO",
+      "note": "IN TRANSITO",
+      "filiale": "Roma Hub Espresso"
+    },
+    {
+      "id": 5,
+      "data": "2020-04-17",
+      "ora": "04:18:00",
+      "status": "PPP",
+      "descrizione": "PARTITA",
+      "note": "LA SPEDIZIONE E' PARTITA",
+      "filiale": "Hub Espresso Piacenza"
+    },
+    {
+      "id": 6,
+      "data": "2020-04-17",
+      "ora": "04:18:00",
+      "status": "THE",
+      "descrizione": "SMISTATO HUB ED INOLTRATO",
+      "note": "IN TRANSITO",
+      "filiale": "Hub Espresso Piacenza"
+    },
+    {
+      "id": 7,
+      "data": "2020-04-17",
+      "ora": "12:25:00",
+      "status": "000",
+      "descrizione": "LA SPEDIZIONE E' STATA CONSEGNATA",
+      "note": "LA SPEDIZIONE E' STATA CONSEGNATA",
+      "filiale": "Hub Espresso Piacenza",
+      "firma": "Rossi Mario"
+    }
+  ],
+  "timestamp": "2024-01-19 09:31:59"
+}

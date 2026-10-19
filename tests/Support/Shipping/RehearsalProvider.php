@@ -2,7 +2,7 @@
 
 namespace Tests\Support\Shipping;
 
-use App\Shipping\Tracking\Auth\ApiKeyHeaderAuthenticator;
+use App\Shipping\Auth\ApiKeyHeaderAuthenticator;
 use App\Shipping\Tracking\Drivers\AbstractHttpProvider;
 use App\Shipping\Tracking\DTO\TrackingEvent;
 use App\Shipping\Tracking\DTO\TrackingRequest;

@@ -5,10 +5,10 @@
 | refresh-on-401 and the ETag trait. Exercised through a throwaway adapter for a fictitious API.
 */
 
-use App\Shipping\Tracking\Auth\ApiKeyHeaderAuthenticator;
-use App\Shipping\Tracking\Auth\BearerTokenAuthenticator;
-use App\Shipping\Tracking\Auth\CachedClientCredentialsAuthenticator;
-use App\Shipping\Tracking\Contracts\Authenticator;
+use App\Shipping\Auth\ApiKeyHeaderAuthenticator;
+use App\Shipping\Auth\BearerTokenAuthenticator;
+use App\Shipping\Auth\CachedClientCredentialsAuthenticator;
+use App\Shipping\Contracts\Authenticator;
 use App\Shipping\Tracking\Drivers\AbstractHttpProvider;
 use App\Shipping\Tracking\Drivers\Concerns\CachesConditionalRequests;
 use App\Shipping\Tracking\DTO\TrackingRequest;
