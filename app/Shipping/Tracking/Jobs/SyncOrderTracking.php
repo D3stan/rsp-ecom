@@ -7,6 +7,7 @@ use App\Shipping\Tracking\Contracts\PassiveProvider;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\Enums\TrackingStatus;
 use App\Shipping\Tracking\Exceptions\TrackingRejected;
+use App\Shipping\Tracking\Exceptions\UnknownTrackingDriver;
 use App\Shipping\Tracking\ShipmentTrackingService;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Bus\Queueable;
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Polls the active tracking driver for ONE order and applies the answer.
+ * Polls the order's tracking driver (or the default driver when null) for ONE order and applies the answer.
  *
  * Only the order id is serialized; the order is loaded when the job runs, so an order that was
  * delivered, cancelled or re-tracked in the meantime is simply skipped.
@@ -26,7 +27,7 @@ use Throwable;
  * Failures: a TrackingProviderUnavailable (or any unexpected error) is rethrown and retried with
  * backoff; when all attempts are used up failed() postpones the next poll. A TrackingRejected
  * means retrying cannot help: polling for that order is switched off (editing its tracking
- * number or carrier switches it back on).
+ * number, carrier, or provider switches it back on).
  */
 class SyncOrderTracking implements ShouldQueue
 {
@@ -70,7 +71,21 @@ class SyncOrderTracking implements ShouldQueue
             return;
         }
 
-        $provider = $manager->driver();
+        $driverName = is_string($order->tracking_driver) && trim($order->tracking_driver) !== ''
+            ? trim($order->tracking_driver)
+            : $manager->getDefaultDriver();
+
+        try {
+            $provider = $manager->driver($driverName);
+        } catch (UnknownTrackingDriver $e) {
+            Log::warning('Order tracking driver cannot be resolved, skipping poll', [
+                'order_id' => $order->id,
+                'tracking_driver' => $driverName,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
 
         if ($provider instanceof PassiveProvider) {
             return; // the driver was switched off since this job was queued

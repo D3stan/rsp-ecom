@@ -77,10 +77,12 @@ class ShipmentTrackingService
      * Shipped orders carrying this tracking number (the same parcel can hold several orders).
      * Matching ignores case and spaces. When the update names a carrier and the order has a carrier
      * chosen, they must agree: carriers recycle numbers, and this avoids crossing two shipments.
+     * When $provider is passed (webhooks), orders must match $provider (using explicit tracking_driver
+     * or falling back to the default tracking driver).
      *
      * @return Collection<int, Order>
      */
-    public function ordersForTrackingNumber(string $trackingNumber, ?string $carrierCode = null): Collection
+    public function ordersForTrackingNumber(string $trackingNumber, ?string $carrierCode = null, ?string $provider = null): Collection
     {
         $normalized = mb_strtolower(TrackingRequest::normalizeNumber($trackingNumber));
 
@@ -88,16 +90,36 @@ class ShipmentTrackingService
             return new Collection;
         }
 
+        $providerName = $provider !== null && trim($provider) !== '' ? trim($provider) : null;
+
         return Order::query()
             ->where('status', 'shipped')
             ->whereRaw("LOWER(REPLACE(tracking_number, ' ', '')) = ?", [$normalized])
             ->orderByDesc('id')
             ->limit(25)
             ->get()
-            ->filter(fn (Order $order) => $carrierCode === null
-                || ! is_string($order->tracking_carrier)
-                || $order->tracking_carrier === ''
-                || strcasecmp($order->tracking_carrier, $carrierCode) === 0)
+            ->filter(function (Order $order) use ($carrierCode, $providerName) {
+                if ($carrierCode !== null
+                    && is_string($order->tracking_carrier)
+                    && $order->tracking_carrier !== ''
+                    && strcasecmp($order->tracking_carrier, $carrierCode) !== 0) {
+                    return false;
+                }
+
+                if ($providerName !== null) {
+                    $orderDriver = is_string($order->tracking_driver) && trim($order->tracking_driver) !== ''
+                        ? trim($order->tracking_driver)
+                        : null;
+
+                    $effectiveDriver = $orderDriver ?? app(TrackingManager::class)->getDefaultDriver();
+
+                    if (strcasecmp($effectiveDriver, $providerName) !== 0) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
             ->values();
     }
 

@@ -32,7 +32,7 @@ class SyncShipmentTracking extends Command
 
     public function handle(TrackingManager $manager): int
     {
-        if (! $manager->canPoll()) {
+        if (! $manager->canPollAny()) {
             $this->info('The active tracking driver does not poll carriers (manual, null or unresolvable): nothing to do.');
 
             return self::SUCCESS;
@@ -41,6 +41,7 @@ class SyncShipmentTracking extends Command
         $orders = $this->dueOrders(
             max(1, (int) $this->option('limit')),
             $this->option('order') !== null ? (int) $this->option('order') : null,
+            $manager,
         );
 
         $queued = 0;
@@ -81,12 +82,22 @@ class SyncShipmentTracking extends Command
     /**
      * @return \Illuminate\Support\Collection<int, Order>
      */
-    private function dueOrders(int $limit, ?int $onlyOrder)
+    private function dueOrders(int $limit, ?int $onlyOrder, TrackingManager $manager)
     {
+        $pollable = $manager->pollableDriverNames();
+        $defaultPolls = $manager->canPoll();
+
         $query = Order::query()
             ->where('status', 'shipped')
             ->whereNotNull('tracking_number')
             ->where('tracking_number', '!=', '')
+            ->where(function ($q) use ($pollable, $defaultPolls) {
+                $q->whereIn('tracking_driver', $pollable);
+
+                if ($defaultPolls) {
+                    $q->orWhereNull('tracking_driver');
+                }
+            })
             ->where(fn ($q) => $q->whereNull('tracking_status')
                 ->orWhereNotIn('tracking_status', [TrackingStatus::Delivered->value, TrackingStatus::Returned->value]))
             ->orderBy('id')

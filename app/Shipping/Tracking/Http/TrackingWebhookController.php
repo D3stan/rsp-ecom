@@ -72,7 +72,7 @@ class TrackingWebhookController extends Controller
             $applied = 0;
 
             foreach ($updates as $update) {
-                foreach ($service->ordersForTrackingNumber($update->trackingNumber, $update->carrierCode) as $order) {
+                foreach ($service->ordersForTrackingNumber($update->trackingNumber, $update->carrierCode, $provider->name()) as $order) {
                     $service->apply($order, $provider->name(), $update->result);
                     $applied++;
                 }

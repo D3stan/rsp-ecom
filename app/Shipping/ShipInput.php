@@ -6,12 +6,18 @@ namespace App\Shipping;
  * What the admin entered on the ship form. Carrier codes are the neutral keys of the shipping.carriers setting.
  *
  * Two modes:
- *  - manual (labels off, the default): carrierCode + trackingNumber (or ship without one).
- *  - label  (labels on, createLabel): carrierCode + parcels; the carrier returns the tracking number and the label PDF.
+ *  - manual (labels off, or createLabel false): carrierCode + trackingNumber (or ship without one), optionally paired
+ *    with a specific trackingDriver (e.g. 'manual' for URL-only or a pollable provider when the label was created externally).
+ *  - label  (labels on, createLabel true): carrierCode + parcels + optional labelDriver; the provider returns the
+ *    tracking number and the label PDF.
  */
 final readonly class ShipInput
 {
     public ?string $trackingNumber;
+
+    public ?string $labelDriver;
+
+    public ?string $trackingDriver;
 
     /**
      * @param  list<array<string, mixed>>  $parcels  weight/length/width/height per parcel (label mode)
@@ -26,8 +32,16 @@ final readonly class ShipInput
         public array $parcels = [],
         public ?float $insuranceAmount = null,
         public ?float $codAmount = null,
+        ?string $labelDriver = null,
+        ?string $trackingDriver = null,
     ) {
         $trackingNumber = trim((string) $trackingNumber);
         $this->trackingNumber = $trackingNumber !== '' ? $trackingNumber : null;
+
+        $labelDriver = trim((string) $labelDriver);
+        $this->labelDriver = $labelDriver !== '' ? $labelDriver : null;
+
+        $trackingDriver = trim((string) $trackingDriver);
+        $this->trackingDriver = $trackingDriver !== '' ? $trackingDriver : null;
     }
 }

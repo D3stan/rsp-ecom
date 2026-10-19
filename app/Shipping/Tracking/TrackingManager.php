@@ -58,13 +58,20 @@ class TrackingManager extends Manager
     }
 
     /**
-     * Settings of one driver: shipping.tracking.drivers.<name> (base_url, api_key, timeout, webhook_secret, ...).
+     * Settings of one driver: merges shipping.providers.<name> with shipping.tracking.drivers.<name>
+     * at resolution time so runtime config overrides in tests take precedence.
      *
      * @return array<string, mixed>
      */
     public function driverConfig(string $name): array
     {
-        return (array) $this->config->get("shipping.tracking.drivers.{$name}", []);
+        $providerConfig = (array) $this->config->get("shipping.providers.{$name}", []);
+        $driverConfig = (array) $this->config->get("shipping.tracking.drivers.{$name}", []);
+
+        return array_replace(
+            $providerConfig,
+            array_filter($driverConfig, static fn (mixed $value): bool => $value !== null),
+        );
     }
 
     /**
@@ -81,6 +88,35 @@ class TrackingManager extends Manager
         }
 
         return array_values(array_unique(array_merge($names, array_keys($this->customCreators))));
+    }
+
+    /**
+     * Driver names selectable by an admin for per-order tracking (excludes 'null', and excludes 'fake'
+     * unless 'fake' is the configured default driver).
+     *
+     * @return list<string>
+     */
+    public function selectableDriverNames(): array
+    {
+        $default = $this->getDefaultDriver();
+
+        return array_values(array_filter(
+            $this->driverNames(),
+            fn (string $name) => $name !== 'null' && ($name !== 'fake' || $default === 'fake'),
+        ));
+    }
+
+    /**
+     * All registered driver names that actively poll a carrier API (non-passive).
+     *
+     * @return list<string>
+     */
+    public function pollableDriverNames(): array
+    {
+        return array_values(array_filter(
+            $this->driverNames(),
+            fn (string $name) => $this->canPoll($name),
+        ));
     }
 
     /**
@@ -118,13 +154,15 @@ class TrackingManager extends Manager
     }
 
     /**
-     * Does the active driver actually contact a carrier (so that polling makes sense)?
+     * Does the given driver (or the default driver when null) actually contact a carrier so polling makes sense?
      * Never throws: a broken configuration simply means "no".
      */
-    public function canPoll(): bool
+    public function canPoll(?string $driver = null): bool
     {
         try {
-            return ! $this->driver() instanceof PassiveProvider;
+            $target = $driver !== null && trim($driver) !== '' ? trim($driver) : null;
+
+            return ! $this->driver($target) instanceof PassiveProvider;
         } catch (Throwable $e) {
             Log::warning('Shipping tracking driver cannot be resolved', ['error' => $e->getMessage()]);
 
@@ -133,17 +171,45 @@ class TrackingManager extends Manager
     }
 
     /**
-     * Public tracking page for a shipment: the active driver's answer, else the manual templates
-     * (not when tracking is disabled with the null driver). Never throws and never calls the network:
-     * a misconfigured driver must not break the emails that render this link.
+     * Should the scheduler / sync command run? True when the default driver is pollable OR when any
+     * shipped order in the database is assigned to a pollable tracking_driver.
      */
-    public function trackingUrl(string $trackingNumber, ?string $carrierCode): ?string
+    public function canPollAny(): bool
+    {
+        if ($this->canPoll()) {
+            return true;
+        }
+
+        $pollable = $this->pollableDriverNames();
+
+        if ($pollable === []) {
+            return false;
+        }
+
+        try {
+            return \App\Models\Order::query()
+                ->where('status', 'shipped')
+                ->whereNotNull('tracking_driver')
+                ->whereIn('tracking_driver', $pollable)
+                ->exists();
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * Public tracking page for a shipment: the specified (or default) driver's answer, else the manual
+     * templates (not when tracking is disabled with the null driver). Never throws and never calls the
+     * network: a misconfigured driver must not break the emails that render this link.
+     */
+    public function trackingUrl(string $trackingNumber, ?string $carrierCode, ?string $driver = null): ?string
     {
         try {
-            $driver = $this->driver();
-            $url = $driver->trackingUrl($trackingNumber, $carrierCode);
+            $target = $driver !== null && trim($driver) !== '' ? trim($driver) : null;
+            $resolved = $this->driver($target);
+            $url = $resolved->trackingUrl($trackingNumber, $carrierCode);
 
-            if ($url === null && ! $driver instanceof PassiveProvider) {
+            if ($url === null && ! $resolved instanceof PassiveProvider) {
                 $url = $this->driver('manual')->trackingUrl($trackingNumber, $carrierCode);
             }
 

@@ -42,13 +42,20 @@ class LabelManager extends Manager
     }
 
     /**
-     * Settings of one driver: shipping.labels.drivers.<name>.
+     * Settings of one driver: merges shipping.providers.<name> with shipping.labels.drivers.<name>
+     * at resolution time so runtime config overrides in tests take precedence.
      *
      * @return array<string, mixed>
      */
     public function driverConfig(string $name): array
     {
-        return (array) $this->config->get("shipping.labels.drivers.{$name}", []);
+        $providerConfig = (array) $this->config->get("shipping.providers.{$name}", []);
+        $driverConfig = (array) $this->config->get("shipping.labels.drivers.{$name}", []);
+
+        return array_replace(
+            $providerConfig,
+            array_filter($driverConfig, static fn (mixed $value): bool => $value !== null),
+        );
     }
 
     /**
@@ -65,6 +72,24 @@ class LabelManager extends Manager
         }
 
         return array_values(array_unique($names));
+    }
+
+    /**
+     * Filter configured carrier codes to those supported by a label driver.
+     * An empty carrier_map in aggregator mode accepts all carriers.
+     *
+     * @param  list<string>  $carrierCodes
+     * @return list<string>
+     */
+    public function supportedCarriersFor(string $driver, array $carrierCodes): array
+    {
+        try {
+            $provider = $this->driver($driver);
+
+            return array_values(array_filter($carrierCodes, fn (string $code) => $provider->supports($code)));
+        } catch (\Throwable) {
+            return $carrierCodes;
+        }
     }
 
     /**

@@ -46,12 +46,12 @@ Schedule::command('ops:check-queue')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
-// Poll carriers for shipment updates. Runs only while the configured tracking driver actually contacts a
-// carrier (SHIPPING_TRACKING_DRIVER); with manual/null it never runs. See docs/shipping-tracking-module.md.
+// Poll carriers for shipment updates. Runs while the default tracking driver or any shipped order's
+// tracking_driver contacts a carrier; when all orders are manual/null it never runs.
 Schedule::command('tracking:sync')
     ->everyFifteenMinutes()
     ->withoutOverlapping()
-    ->when(fn () => app(TrackingManager::class)->canPoll());
+    ->when(fn () => app(TrackingManager::class)->canPollAny());
 
 // Checkout snapshots: drop abandoned ones after 7 days and consumed ones after 90 days (see CheckoutSnapshot::prunable)
 Schedule::command('model:prune', ['--model' => \App\Models\CheckoutSnapshot::class])
