@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Shipping\Tracking\Drivers\Spediamo;
+namespace App\Shipping\Providers\Spediamo;
 
-use App\Shipping\Tracking\Auth\BearerTokenAuthenticator;
-use App\Shipping\Tracking\Contracts\Authenticator;
+use App\Shipping\Auth\BearerTokenAuthenticator;
+use App\Shipping\Contracts\Authenticator;
+use App\Shipping\Support\CarrierCodeMap;
 use App\Shipping\Tracking\Drivers\AbstractHttpProvider;
 use App\Shipping\Tracking\Drivers\Concerns\CachesConditionalRequests;
 use App\Shipping\Tracking\Drivers\ManualProvider;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\DTO\TrackingResult;
 use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;
-use App\Shipping\Tracking\Support\CarrierCodeMap;
 use DateTimeZone;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
@@ -30,8 +30,7 @@ use Illuminate\Support\Facades\Log;
  *   401/403, 429, 5xx, timeouts: TrackingProviderUnavailable (retried by the job). 401/403 and a missing
  *        token also log one critical line per hour: nothing works until the token is fixed.
  *
- * Everything lives in this folder and in shipping.tracking.drivers.spediamo; the only other reference is
- * the one registration line in App\Providers\TrackingServiceProvider. Nothing here logs request headers
+ * Everything lives in this folder and in config/shipping.php. Nothing here logs request headers
  * or bodies, and the token never reaches a log line or an exception message.
  */
 class SpediamoProvider extends AbstractHttpProvider

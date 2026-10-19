@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shipping\Labels\Drivers\Spediamo;
+namespace App\Shipping\Providers\Spediamo;
 
 use App\Shipping\Labels\DTO\ShipmentRequest;
 

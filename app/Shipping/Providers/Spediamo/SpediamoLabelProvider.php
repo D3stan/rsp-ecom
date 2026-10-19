@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Shipping\Labels\Drivers\Spediamo;
+namespace App\Shipping\Providers\Spediamo;
 
+use App\Shipping\Auth\BearerTokenAuthenticator;
+use App\Shipping\Exceptions\ShippingCredentialsException;
 use App\Shipping\Labels\Contracts\CancelsShipments;
 use App\Shipping\Labels\Contracts\LabelProvider;
 use App\Shipping\Labels\DTO\LabelDocument;
@@ -9,8 +11,7 @@ use App\Shipping\Labels\DTO\ShipmentRequest;
 use App\Shipping\Labels\DTO\ShipmentResult;
 use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
 use App\Shipping\Labels\Exceptions\LabelRejected;
-use App\Shipping\Tracking\Auth\BearerTokenAuthenticator;
-use App\Shipping\Tracking\Support\CarrierCodeMap;
+use App\Shipping\Support\CarrierCodeMap;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -24,7 +25,7 @@ use Throwable;
  *   GET  {base_url}/v1/waybills/{id}/pdf    download the label PDF
  *       Authorization: Bearer {token}
  *
- * It reuses the tracking adapter's bearer authenticator and the SAME credentials
+ * It reuses the shared bearer authenticator and the SAME credentials
  * (shipping.tracking.drivers.spediamo via config('shipping.labels.drivers.spediamo')): no duplicate env var.
  * Failures become the label layer's own exceptions: 400/404/422 -> LabelRejected (shown to the admin);
  * 401/403/408/429/5xx, timeouts and a missing token -> LabelProviderUnavailable (retry). Nothing here logs the token,
@@ -118,16 +119,14 @@ class SpediamoLabelProvider implements CancelsShipments, LabelProvider
      */
     private function send(callable $call): Response
     {
-        if (trim($this->token) === '') {
-            throw new LabelProviderUnavailable(self::NAME.': API token is not configured');
-        }
-
         try {
             $http = (new BearerTokenAuthenticator($this->token, self::NAME))->authenticate(
                 Http::baseUrl($this->baseUrl)->acceptJson()->timeout($this->timeout)->connectTimeout(5),
             );
 
             $response = $call($http);
+        } catch (ShippingCredentialsException $e) {
+            throw (new LabelProviderUnavailable($e->getMessage(), 0, $e))->withHttpStatus($e->httpStatus);
         } catch (ConnectionException $e) {
             throw new LabelProviderUnavailable(self::NAME.': connection failed', 0, $e);
         }

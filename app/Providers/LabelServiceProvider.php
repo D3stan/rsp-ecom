@@ -2,22 +2,29 @@
 
 namespace App\Providers;
 
-use App\Shipping\Labels\Drivers\Spediamo\SpediamoLabelProvider;
+use App\Shipping\Contracts\ShippingProviderManifest;
 use App\Shipping\Labels\LabelManager;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * Registers the label adapters with the LabelManager (the manager itself is bound in AppServiceProvider). One line per
- * adapter: adding or replacing a label carrier never touches anything else. Which adapter is active is decided by the
- * shipping.label_driver setting; an adapter that is registered but not selected costs nothing, and nothing is resolved
- * at all while label creation is off.
+ * Registers label adapters declared in config('shipping.manifests') with LabelManager.
+ * Adding or removing a provider requires only its folder in app/Shipping/Providers/ and its manifest
+ * entry in config/shipping.php: this service provider never names a concrete carrier, and nothing is
+ * resolved at all while label creation is off.
  */
 class LabelServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->callAfterResolving(LabelManager::class, function (LabelManager $manager) {
-            $manager->extend('spediamo', fn () => new SpediamoLabelProvider($manager->driverConfig('spediamo')));
+            foreach ((array) config('shipping.manifests', []) as $manifest) {
+                if (! is_string($manifest) || ! is_subclass_of($manifest, ShippingProviderManifest::class) || ! $manifest::hasLabels()) {
+                    continue;
+                }
+
+                $name = $manifest::name();
+                $manager->extend($name, fn () => $manifest::createLabelDriver($manager->driverConfig($name)));
+            }
         });
     }
 }

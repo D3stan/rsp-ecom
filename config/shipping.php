@@ -56,6 +56,31 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Modular Shipping Providers (app/Shipping/Providers/*)
+    |--------------------------------------------------------------------------
+    |
+    | Each external provider lives in its own folder under app/Shipping/Providers/<Name>
+    | and implements App\Shipping\Contracts\ShippingProviderManifest. Listing a manifest
+    | here registers its tracking and/or label drivers automatically so multiple providers
+    | can coexist and be selected per order.
+    |
+    */
+
+    'manifests' => [
+        \App\Shipping\Providers\Spediamo\SpediamoManifest::class,
+    ],
+
+    'providers' => [
+        'spediamo' => [
+            'base_url' => env('SHIPPING_TRACKING_SPEDIAMO_URL', 'https://api.spediamo.it'),
+            'token' => env('SHIPPING_TRACKING_SPEDIAMO_TOKEN'),
+            'carrier_map' => [],
+            'status_map' => [],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Carrier tracking module (app/Shipping/Tracking, docs/shipping-tracking-module.md)
     |--------------------------------------------------------------------------
     |
@@ -128,12 +153,7 @@ return [
 
         'drivers' => [
             'spediamo' => [
-                // Reuse the tracking adapter's credentials (same Spediamo account): no duplicate env.
-                'base_url' => env('SHIPPING_TRACKING_SPEDIAMO_URL', 'https://api.spediamo.it'),
-                'token' => env('SHIPPING_TRACKING_SPEDIAMO_TOKEN'),
                 'timeout' => (int) env('SHIPPING_TRACKING_SPEDIAMO_TIMEOUT', 15),
-                // Our neutral carrier code => the API's courier string. Empty = every carrier accepted.
-                'carrier_map' => [],
             ],
         ],
     ],
@@ -160,18 +180,10 @@ return [
 
             // Polling adapter for a shipping platform's API (tracking only). Needs a bearer token.
             'spediamo' => [
-                'base_url' => env('SHIPPING_TRACKING_SPEDIAMO_URL', 'https://api.spediamo.it'),
-                'token' => env('SHIPPING_TRACKING_SPEDIAMO_TOKEN'),
                 'timeout' => (int) env('SHIPPING_TRACKING_SPEDIAMO_TIMEOUT', 10),
                 'retries' => 1,
                 // Timezone of the event dates the API returns (converted to UTC when stored).
                 'timezone' => 'Europe/Rome',
-                // Our neutral carrier code => the API's `courier` string. Empty = every carrier is accepted.
-                // Example: ['sda' => 'SDA']. Fill it once the contracted couriers are known.
-                'carrier_map' => [],
-                // Overrides for the built-in status map: API status => TrackingStatus value
-                // (info_received, in_transit, out_for_delivery, delivered, exception, returned, unknown).
-                'status_map' => [],
             ],
         ],
     ],

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shipping\Tracking\Drivers\Spediamo;
+namespace App\Shipping\Providers\Spediamo;
 
 use App\Shipping\Tracking\DTO\TrackingEvent;
 use App\Shipping\Tracking\DTO\TrackingResult;

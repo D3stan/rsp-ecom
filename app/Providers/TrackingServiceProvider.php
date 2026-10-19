@@ -2,22 +2,28 @@
 
 namespace App\Providers;
 
-use App\Shipping\Tracking\Drivers\Spediamo\SpediamoProvider;
+use App\Shipping\Contracts\ShippingProviderManifest;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * Registers the carrier tracking adapters with the TrackingManager (the manager itself and the
- * TrackingProvider binding are set up in AppServiceProvider). One line per adapter: adding or replacing
- * a carrier API never touches anything else. Which adapter is active is decided by config only
- * (SHIPPING_TRACKING_DRIVER); an adapter that is registered but not selected costs nothing.
+ * Registers carrier tracking adapters declared in config('shipping.manifests') with TrackingManager.
+ * Adding or removing a provider requires only its folder in app/Shipping/Providers/ and its manifest
+ * entry in config/shipping.php: this service provider never names a concrete carrier.
  */
 class TrackingServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->callAfterResolving(TrackingManager::class, function (TrackingManager $manager) {
-            $manager->extend('spediamo', fn () => new SpediamoProvider($manager->driverConfig('spediamo')));
+            foreach ((array) config('shipping.manifests', []) as $manifest) {
+                if (! is_string($manifest) || ! is_subclass_of($manifest, ShippingProviderManifest::class) || ! $manifest::hasTracking()) {
+                    continue;
+                }
+
+                $name = $manifest::name();
+                $manager->extend($name, fn () => $manifest::createTrackingDriver($manager->driverConfig($name)));
+            }
         });
     }
 }
