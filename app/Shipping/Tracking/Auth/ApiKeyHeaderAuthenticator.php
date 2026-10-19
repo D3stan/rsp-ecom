@@ -2,27 +2,25 @@
 
 namespace App\Shipping\Tracking\Auth;
 
+use App\Shipping\Auth\ApiKeyHeaderAuthenticator as BaseApiKeyHeaderAuthenticator;
 use App\Shipping\Tracking\Contracts\Authenticator;
 use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;
-use Illuminate\Http\Client\PendingRequest;
 
 /**
  * Static API key sent in a custom header, e.g. "X-Api-Key: <key>".
  */
-final class ApiKeyHeaderAuthenticator implements Authenticator
+final class ApiKeyHeaderAuthenticator extends BaseApiKeyHeaderAuthenticator implements Authenticator
 {
     public function __construct(
-        private readonly string $key,
-        private readonly string $header = 'X-Api-Key',
-        private readonly string $provider = 'tracking',
-    ) {}
+        string $key,
+        string $header = 'X-Api-Key',
+        string $provider = 'tracking',
+    ) {
+        parent::__construct($key, $header, $provider);
+    }
 
-    public function authenticate(PendingRequest $request): PendingRequest
+    protected function fail(string $message): never
     {
-        if (trim($this->key) === '') {
-            throw new TrackingProviderUnavailable("{$this->provider}: API key is not configured");
-        }
-
-        return $request->withHeaders([$this->header => trim($this->key)]);
+        throw new TrackingProviderUnavailable($message);
     }
 }

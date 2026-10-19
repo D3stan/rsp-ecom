@@ -2,8 +2,9 @@
 
 namespace App\Shipping\Tracking\Drivers;
 
-use App\Shipping\Tracking\Contracts\Authenticator;
-use App\Shipping\Tracking\Contracts\RefreshesCredentials;
+use App\Shipping\Contracts\Authenticator;
+use App\Shipping\Contracts\RefreshesCredentials;
+use App\Shipping\Exceptions\ShippingCredentialsException;
 use App\Shipping\Tracking\Contracts\TrackingProvider;
 use App\Shipping\Tracking\Enums\TrackingStatus;
 use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;
@@ -124,6 +125,8 @@ abstract class AbstractHttpProvider implements TrackingProvider
     {
         try {
             return $call($this->http());
+        } catch (ShippingCredentialsException $e) {
+            throw (new TrackingProviderUnavailable($e->getMessage(), 0, $e))->withHttpStatus($e->httpStatus);
         } catch (ConnectionException $e) {
             throw new TrackingProviderUnavailable($this->name().': connection failed', 0, $e);
         }
