@@ -60,7 +60,7 @@ export function TranslationProvider({
             if (savedLocale) {
                 return savedLocale;
             }
-            
+
             // Detect browser language
             const browserLocale = detectBrowserLanguage(availableLocales);
             if (browserLocale) {
@@ -137,12 +137,17 @@ export function TranslationProvider({
     };
 
     const t = (key: string, replacements?: { [key: string]: string | number }): string => {
+        const getFallback = () => {
+            if (typeof replacements?.defaultValue === 'string') {
+                return replacements.defaultValue.replace(/\{\{?(\w+)\}?\}/g, (match, placeholder) => replacements[placeholder]?.toString() || match);
+            }
+            return key;
+        };
+
         // Flat keys (e.g. "settings.ui.save", "emails.*") are stored as one top-level entry, shared with the PHP side
         const direct = translations[key] ?? globalTranslationCache[locale]?.[key];
         if (typeof direct === 'string') {
-            return replacements
-                ? direct.replace(/\{\{?(\w+)\}?\}/g, (match, placeholder) => replacements[placeholder]?.toString() || match)
-                : direct;
+            return replacements ? direct.replace(/\{\{?(\w+)\}?\}/g, (match, placeholder) => replacements[placeholder]?.toString() || match) : direct;
         }
 
         const keys = key.split('.');
@@ -160,18 +165,18 @@ export function TranslationProvider({
                         if (cachedValue && typeof cachedValue === 'object' && ck in cachedValue) {
                             cachedValue = (cachedValue as Record<string, unknown>)[ck];
                         } else {
-                            return key; // Return key if translation not found
+                            return getFallback();
                         }
                     }
                     value = cachedValue;
                     break;
                 }
-                return key; // Return key if translation not found
+                return getFallback();
             }
         }
 
         if (typeof value !== 'string') {
-            return key;
+            return getFallback();
         }
 
         // Handle replacements with both {placeholder} and {{placeholder}} formats
@@ -197,7 +202,7 @@ export function TranslationProvider({
             try {
                 // First, try to load translations (this will use cache if available)
                 await loadTranslations(newLocale);
-                
+
                 // Then update backend session
                 const response = await fetch('/change-language', {
                     method: 'POST',
@@ -207,7 +212,7 @@ export function TranslationProvider({
                     },
                     body: JSON.stringify({ locale: newLocale }),
                 });
-                
+
                 if (!response.ok) {
                     console.warn('Failed to update backend locale, but frontend translation will still work');
                 }

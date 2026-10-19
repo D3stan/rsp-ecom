@@ -11,7 +11,7 @@ export default defineConfig({
         },
     },
     test: {
-        include: ['resources/js/**/*.test.ts'],
+        include: ['resources/js/**/*.test.ts', 'resources/js/**/*.test.tsx'],
         environment: 'node',
     },
 });
