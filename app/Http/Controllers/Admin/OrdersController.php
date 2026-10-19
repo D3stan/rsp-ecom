@@ -168,8 +168,9 @@ class OrdersController extends Controller
                 ->map(fn (Shipment $shipment) => [
                     'id' => $shipment->id,
                     'carrier_code' => $shipment->carrier_code,
+                    'driver' => $shipment->driver,
                     'tracking_number' => $shipment->tracking_number,
-                    'can_cancel' => $this->driverCancels($shipment->driver),
+                    'can_cancel' => $this->driverCancels($shipment),
                 ])->values()->all(),
             // Internal stock bookkeeping (hidden from every customer-facing array): units sold beyond the stock
             'stock' => [
@@ -200,6 +201,7 @@ class OrdersController extends Controller
             // paid or payment in flight: lines, prices and totals are read-only (money goes back through a refund)
             'financials_locked' => $order->financialsLocked(),
             'carriers' => app(TrackingManager::class)->carriers(),
+            'tracking_drivers' => app(TrackingManager::class)->selectableDriverNames(),
         ]);
     }
 
@@ -223,6 +225,7 @@ class OrdersController extends Controller
                 'notes' => 'sometimes|nullable|string|max:1000',
                 'tracking_number' => 'sometimes|nullable|string|max:100',
                 'tracking_carrier' => ['sometimes', 'nullable', 'string', 'max:50', Rule::in(app(TrackingManager::class)->carrierCodes())],
+                'tracking_driver' => ['sometimes', 'nullable', 'string', 'max:50', Rule::in(app(TrackingManager::class)->driverNames())],
                 'shipping_amount' => 'sometimes|numeric|min:0',
                 'tax_amount' => 'sometimes|numeric|min:0',
                 'subtotal' => 'sometimes|numeric|min:0',
@@ -251,11 +254,18 @@ class OrdersController extends Controller
             $newTrackingNumber = $request->input('tracking_number', $order->tracking_number);
 
             DB::transaction(function () use ($request, $order, $financial, $newStatus, $newTrackingNumber, $originalStatus) {
-                $order->fill([
+                $attributes = [
                     'notes' => $request->input('notes', $order->notes),
                     'tracking_number' => $newTrackingNumber,
                     'tracking_carrier' => $request->input('tracking_carrier', $order->tracking_carrier),
-                ]);
+                ];
+
+                if ($request->has('tracking_driver')) {
+                    $driverInput = trim((string) $request->input('tracking_driver', ''));
+                    $attributes['tracking_driver'] = $driverInput !== '' ? $driverInput : null;
+                }
+
+                $order->fill($attributes);
 
                 if ($financial !== null) {
                     OrderFinancialEdit::apply($order, $financial);
@@ -462,7 +472,7 @@ class OrdersController extends Controller
     }
 
     /**
-     * The ship form: carrier and tracking number (ShippingService does the rest).
+     * The ship form: carrier, provider, and tracking number or label parcels (ShippingService does the rest).
      */
     public function showShip(Order $order): Response|RedirectResponse
     {
@@ -475,15 +485,34 @@ class OrdersController extends Controller
         $order->load(['user', 'orderItems.product', 'orderItems.product.defaultVariant', 'orderItems.size', 'shippingAddress']);
 
         $labelsEnabled = app(ShippingService::class)->labelsEnabled();
+        $trackingManager = app(TrackingManager::class);
+
+        $labelDrivers = [];
+        $labelDriverCarriers = [];
+
+        if ($labelsEnabled) {
+            $labelManager = app(\App\Shipping\Labels\LabelManager::class);
+            $labelDrivers = $labelManager->driverNames();
+            $carrierCodes = $trackingManager->carrierCodes();
+
+            foreach ($labelDrivers as $driver) {
+                $labelDriverCarriers[$driver] = $labelManager->supportedCarriersFor($driver, $carrierCodes);
+            }
+        }
 
         return Inertia::render('Admin/Orders/Ship', [
             'order' => $order->toFrontendArray(),
-            'carriers' => app(TrackingManager::class)->carriers(),
+            'carriers' => $trackingManager->carriers(),
             // false: the customer gets no shipped email at all (admin settings)
             'shipped_email_enabled' => app(EmailService::class)->isEnabled(OrderEmail::TYPE_SHIPPED),
             // optional label creation (OFF by default): when on, the form shows parcel fields and a "create label" button
             'labels_enabled' => $labelsEnabled,
             'parcels' => $labelsEnabled ? app(ShipmentBuilder::class)->prefillParcels($order) : [],
+            'label_drivers' => $labelDrivers,
+            'label_driver_carriers' => $labelDriverCarriers,
+            'default_label_driver' => $labelsEnabled ? (string) settings('shipping.label_driver', '') : '',
+            'tracking_drivers' => $trackingManager->selectableDriverNames(),
+            'default_tracking_driver' => $trackingManager->getDefaultDriver(),
         ]);
     }
 
@@ -495,10 +524,15 @@ class OrdersController extends Controller
     {
         // Label creation is honoured only while it is switched on; otherwise the manual path needs a tracking number.
         $wantsLabel = $shipping->labelsEnabled() && $request->boolean('create_label');
+        $trackingManager = app(TrackingManager::class);
 
-        $data = $request->validate([
-            'tracking_carrier' => ['required', 'string', 'max:50', Rule::in(app(TrackingManager::class)->carrierCodes())],
+        $rules = [
+            'tracking_carrier' => ['required', 'string', 'max:50', Rule::in($trackingManager->carrierCodes())],
             'tracking_number' => [Rule::requiredIf(! $wantsLabel && ! $request->boolean('ship_without_tracking')), 'nullable', 'string', 'max:100'],
+            'tracking_driver' => ['sometimes', 'nullable', 'string', 'max:50', Rule::in(array_merge($trackingManager->driverNames(), ['']))],
+            'label_driver' => $wantsLabel
+                ? ['sometimes', 'nullable', 'string', 'max:50', Rule::in(app(\App\Shipping\Labels\LabelManager::class)->driverNames())]
+                : ['sometimes', 'nullable', 'string', 'max:50'],
             'ship_without_tracking' => 'sometimes|boolean',
             'notify_customer' => 'sometimes|boolean',
             'create_label' => 'sometimes|boolean',
@@ -509,7 +543,15 @@ class OrdersController extends Controller
             'parcels.*.height' => 'nullable|numeric|min:0|max:1000',
             'insurance_amount' => 'sometimes|nullable|numeric|min:0|max:1000000',
             'cod_amount' => 'sometimes|nullable|numeric|min:0|max:1000000',
-        ]);
+        ];
+
+        $data = $request->validate($rules);
+
+        $trackingDriver = null;
+        if (! $wantsLabel && $request->has('tracking_driver')) {
+            $driverInput = trim((string) $request->input('tracking_driver', ''));
+            $trackingDriver = $driverInput !== '' ? $driverInput : null;
+        }
 
         try {
             $outcome = $shipping->ship($order, new ShipInput(
@@ -520,6 +562,8 @@ class OrdersController extends Controller
                 parcels: $wantsLabel ? array_values($data['parcels'] ?? []) : [],
                 insuranceAmount: $wantsLabel && isset($data['insurance_amount']) ? (float) $data['insurance_amount'] : null,
                 codAmount: $wantsLabel && isset($data['cod_amount']) ? (float) $data['cod_amount'] : null,
+                labelDriver: $wantsLabel ? ($data['label_driver'] ?? null) : null,
+                trackingDriver: $trackingDriver,
             ), $request->user());
         } catch (InvalidOrderTransition $e) {
             return $this->refusedTransition($e);
@@ -587,14 +631,14 @@ class OrdersController extends Controller
      * Does the label driver that created this shipment support cancelling it? Never resolves a driver while labels are
      * off, and never throws (a misconfigured driver simply means "no cancel button").
      */
-    private function driverCancels(string $driver): bool
+    private function driverCancels(Shipment $shipment): bool
     {
-        if (! app(ShippingService::class)->labelsEnabled() || $driver === Shipment::DRIVER_MANUAL) {
+        if (! app(ShippingService::class)->labelsEnabled() || $shipment->isManual() || ! $shipment->external_id) {
             return false;
         }
 
         try {
-            return app(\App\Shipping\Labels\LabelManager::class)->driver($driver)
+            return app(\App\Shipping\Labels\LabelManager::class)->driver($shipment->driver)
                 instanceof \App\Shipping\Labels\Contracts\CancelsShipments;
         } catch (\Throwable) {
             return false;
@@ -610,10 +654,12 @@ class OrdersController extends Controller
     }
 
     /**
-     * Tracking number + carrier as compared for "changed" (case and spaces ignored, as the shipped email fingerprint).
+     * Tracking number + carrier + tracking driver as compared for "changed" (case and spaces ignored).
      */
     private function trackingKey(Order $order): string
     {
-        return mb_strtolower(trim((string) $order->tracking_number)).'|'.mb_strtolower(trim((string) $order->getAttribute('tracking_carrier')));
+        return mb_strtolower(trim((string) $order->tracking_number))
+            .'|'.mb_strtolower(trim((string) $order->getAttribute('tracking_carrier')))
+            .'|'.mb_strtolower(trim((string) $order->getAttribute('tracking_driver')));
     }
 }

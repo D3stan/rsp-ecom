@@ -88,6 +88,7 @@ interface Order {
     notes?: string;
     tracking_number?: string;
     tracking_carrier?: string | null;
+    tracking_driver?: string | null;
     tracking_status?: string | null;
     tracking_last_synced_at?: string | null;
     tracking_events?: TrackingEvent[];
@@ -132,7 +133,7 @@ interface Props {
     refund?: RefundInfo;
     carriers?: Carrier[];
     // label shipments with a stored PDF (optional label layer)
-    shipments?: Array<{ id: number; carrier_code: string; tracking_number: string | null; can_cancel: boolean }>;
+    shipments?: Array<{ id: number; carrier_code: string; driver?: string; tracking_number: string | null; can_cancel: boolean }>;
     stock?: StockInfo;
 }
 
@@ -497,12 +498,22 @@ export default function OrderShow({
                                         </div>
 
                                         {/* Carrier tracking (set from the edit page; updated automatically when a tracking driver is active) */}
-                                        {(carrierName || order.tracking_status) && (
+                                        {(carrierName || order.tracking_driver || order.tracking_status) && (
                                             <div className="grid grid-cols-1 gap-2">
                                                 {carrierName && (
                                                     <div>
                                                         <p className="text-sm font-medium text-muted-foreground">{t('tracking_admin.carrier')}</p>
                                                         <p className="text-sm">{carrierName}</p>
+                                                    </div>
+                                                )}
+                                                {order.tracking_driver && (
+                                                    <div>
+                                                        <p className="text-sm font-medium text-muted-foreground">
+                                                            {t('tracking_admin.provider', { defaultValue: 'Tracking Provider' })}
+                                                        </p>
+                                                        <Badge variant="outline" className="mt-0.5 text-xs">
+                                                            {order.tracking_driver}
+                                                        </Badge>
                                                     </div>
                                                 )}
                                                 {order.tracking_status && (
@@ -564,6 +575,11 @@ export default function OrderShow({
                                                         className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm"
                                                     >
                                                         <span className="font-mono">{shipment.tracking_number ?? '—'}</span>
+                                                        {shipment.driver && (
+                                                            <Badge variant="secondary" className="text-xs">
+                                                                {shipment.driver}
+                                                            </Badge>
+                                                        )}
                                                         <div className="ml-auto flex gap-2">
                                                             <Button variant="outline" size="sm" asChild>
                                                                 <a

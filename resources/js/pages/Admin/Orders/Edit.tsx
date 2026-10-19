@@ -72,6 +72,7 @@ interface Order {
     shipping_address?: Address;
     tracking_number?: string;
     tracking_carrier?: string | null;
+    tracking_driver?: string | null;
     shipping_method?: string;
     estimated_delivery_date?: string;
 }
@@ -85,6 +86,7 @@ interface FormData {
     shipping_address: Address | null;
     tracking_number: string;
     tracking_carrier: string;
+    tracking_driver: string;
 }
 
 interface Carrier {
@@ -99,6 +101,7 @@ interface Props {
     // paid order, or payment in flight: lines, prices and amounts are read-only (money goes back through a refund)
     financials_locked?: boolean;
     carriers?: Carrier[];
+    tracking_drivers?: string[];
 }
 
 // Radix Select cannot hold an empty value: this stands for "other / unknown" (sent as no carrier)
@@ -112,7 +115,7 @@ const statusOptions = [
     { value: 'cancelled', label: 'Cancelled' },
 ];
 
-export default function Edit({ order, allowed_transitions = [], financials_locked = false, carriers = [] }: Props) {
+export default function Edit({ order, allowed_transitions = [], financials_locked = false, carriers = [], tracking_drivers = [] }: Props) {
     const { addToast } = useToast();
     const { t, locale } = useTranslation();
     const [processing, setProcessing] = useState(false);
@@ -126,6 +129,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
         shipping_address: order.shipping_address || null,
         tracking_number: order.tracking_number || '',
         tracking_carrier: order.tracking_carrier || '',
+        tracking_driver: order.tracking_driver || '',
     });
 
     const [openSections, setOpenSections] = useState({
@@ -281,6 +285,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
             tracking_number: formData.tracking_number,
             // only sent when carriers are configured, so nothing changes for installations without any
             ...(carriers.length > 0 ? { tracking_carrier: formData.tracking_carrier || null } : {}),
+            ...(tracking_drivers.length > 0 ? { tracking_driver: formData.tracking_driver || null } : {}),
             ...(financials_locked
                 ? {}
                 : {
@@ -457,6 +462,33 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                         </SelectItem>
                                                     ))}
                                                     <SelectItem value={NO_CARRIER}>{t('tracking_admin.carrier_unknown')}</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
+                                    {tracking_drivers.length > 1 && (
+                                        <div>
+                                            <Label htmlFor="tracking_driver">
+                                                {t('tracking_admin.provider', { defaultValue: 'Tracking Provider' })}
+                                            </Label>
+                                            <Select
+                                                value={formData.tracking_driver || NO_CARRIER}
+                                                onValueChange={(value) =>
+                                                    setFormData((prev) => ({ ...prev, tracking_driver: value === NO_CARRIER ? '' : value }))
+                                                }
+                                            >
+                                                <SelectTrigger id="tracking_driver">
+                                                    <SelectValue placeholder={t('tracking_admin.provider_default', { defaultValue: 'Default' })} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value={NO_CARRIER}>
+                                                        {t('tracking_admin.provider_default', { defaultValue: 'Default' })}
+                                                    </SelectItem>
+                                                    {tracking_drivers.map((driver) => (
+                                                        <SelectItem key={driver} value={driver}>
+                                                            {driver}
+                                                        </SelectItem>
+                                                    ))}
                                                 </SelectContent>
                                             </Select>
                                         </div>
