@@ -3,6 +3,7 @@
 namespace App\Shipping\Providers\Spediamo;
 
 use App\Shipping\Labels\DTO\ShipmentRequest;
+use App\Shipping\Support\CarrierCodeMap;
 
 /**
  * Maps a provider-neutral ShipmentRequest to the Spediamo POST /v1/shipments parameters
@@ -10,6 +11,12 @@ use App\Shipping\Labels\DTO\ShipmentRequest;
  */
 class SpediamoLabelRequestMapper
 {
+    public function __construct(
+        private readonly array $defaultParcel = [],
+        private readonly ?CarrierCodeMap $carriers = null,
+        private readonly array $config = [],
+    ) {}
+
     /**
      * @return array<string, scalar>
      */
@@ -43,6 +50,13 @@ class SpediamoLabelRequestMapper
             'packages' => $this->packages($request),
         ];
 
+        if ($request->carrierCode !== '') {
+            $courier = $this->carriers?->toProvider($request->carrierCode) ?? strtoupper($request->carrierCode);
+            if ($courier !== '') {
+                $params['courier'] = $courier;
+            }
+        }
+
         if ($request->notes !== '') {
             $params['deliveryNotes'] = $request->notes;
         }
@@ -55,6 +69,17 @@ class SpediamoLabelRequestMapper
         if ($request->codAmount !== null && $request->codAmount > 0) {
             $params['cashOnDelivery'] = 'true';
             $params['cashOnDeliveryAmount'] = number_format($request->codAmount, 2, '.', '');
+
+            $iban = trim((string) ($this->config['iban'] ?? (function_exists('settings') ? settings('store.company_iban', '') : '')));
+            $holder = trim((string) ($this->config['bank_account_holder'] ?? (function_exists('settings') ? settings('store.account_holder', '') : '')));
+
+            if ($iban !== '') {
+                $params['iban'] = $iban;
+            }
+
+            if ($holder !== '') {
+                $params['bankAccountHolder'] = $holder;
+            }
         }
 
         return array_filter($params, fn ($value) => $value !== '' && $value !== null);
@@ -70,6 +95,20 @@ class SpediamoLabelRequestMapper
                 $this->num($parcel->lengthCm ?? 0),
                 $this->num($parcel->widthCm ?? 0),
                 $this->num($parcel->heightCm ?? 0),
+            ]);
+        }
+
+        if (empty($lines) && ! empty($this->defaultParcel)) {
+            $weight = (float) ($this->defaultParcel['weight'] ?? $this->defaultParcel['weightKg'] ?? $this->defaultParcel['weight_kg'] ?? 1);
+            $length = (float) ($this->defaultParcel['length'] ?? $this->defaultParcel['lengthCm'] ?? $this->defaultParcel['length_cm'] ?? 0);
+            $width = (float) ($this->defaultParcel['width'] ?? $this->defaultParcel['widthCm'] ?? $this->defaultParcel['width_cm'] ?? 0);
+            $height = (float) ($this->defaultParcel['height'] ?? $this->defaultParcel['heightCm'] ?? $this->defaultParcel['height_cm'] ?? 0);
+
+            $lines[] = implode('x', [
+                $this->num($weight),
+                $this->num($length),
+                $this->num($width),
+                $this->num($height),
             ]);
         }
 

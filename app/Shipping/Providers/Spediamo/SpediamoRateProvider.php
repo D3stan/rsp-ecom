@@ -1,0 +1,315 @@
+<?php
+
+namespace App\Shipping\Providers\Spediamo;
+
+use App\Shipping\Contracts\Authenticator;
+use App\Shipping\Exceptions\ShippingCredentialsException;
+use App\Shipping\Rates\Contracts\RateProvider;
+use App\Shipping\Rates\DTO\RateQuote;
+use App\Shipping\Rates\DTO\RateRequest;
+use App\Shipping\Rates\Exceptions\RateProviderUnavailable;
+use App\Shipping\Rates\Exceptions\RateRejected;
+use App\Shipping\Support\CarrierCodeMap;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Http;
+use Throwable;
+
+class SpediamoRateProvider implements RateProvider
+{
+    public const NAME = 'spediamo';
+
+    private const DEFAULT_BASE_URL = 'https://api.spediamo.it';
+
+    private readonly string $baseUrl;
+
+    private readonly int $timeout;
+
+    private readonly CarrierCodeMap $carriers;
+
+    public function __construct(
+        private readonly array $config,
+        private readonly Authenticator $authenticator,
+        private readonly ?SpediamoLabelRequestMapper $mapper = null,
+    ) {
+        $this->baseUrl = trim((string) ($config['base_url'] ?? '')) ?: self::DEFAULT_BASE_URL;
+        $this->timeout = max(1, (int) ($config['timeout'] ?? 15));
+        $this->carriers = CarrierCodeMap::fromDriverConfig($config);
+    }
+
+    public function name(): string
+    {
+        return self::NAME;
+    }
+
+    /**
+     * @return list<RateQuote>
+     */
+    public function quote(RateRequest $request): array
+    {
+        $payload = $this->buildPayload($request);
+
+        $cleanup = (bool) ($this->config['cleanup_quote_drafts'] ?? true);
+        $shipmentId = null;
+
+        try {
+            $response = $this->send(fn (PendingRequest $http) => $http->post('/v1/shipments', $payload));
+            $data = $response->json();
+
+            if (! is_array($data)) {
+                $e = new RateProviderUnavailable(self::NAME.': unexpected response');
+                if (method_exists($e, 'withHttpStatus')) {
+                    $e->withHttpStatus($response->status());
+                }
+                throw $e;
+            }
+
+            $shipmentId = trim((string) ($data['id'] ?? ''));
+
+            if (! empty($data['errors']) && is_array($data['errors'])) {
+                $errorMsg = implode(', ', array_map(
+                    fn ($k, $v) => is_scalar($v) ? "$k: $v" : (is_array($v) ? "$k: ".implode(';', $v) : $k),
+                    array_keys($data['errors']),
+                    $data['errors'],
+                ));
+                $e = new RateRejected(self::NAME.': '.$errorMsg);
+                if (method_exists($e, 'withHttpStatus')) {
+                    $e->withHttpStatus($response->status());
+                }
+                throw $e;
+            }
+
+            return [$this->mapQuote($data, $shipmentId)];
+        } finally {
+            if ($cleanup && $shipmentId !== null && $shipmentId !== '') {
+                try {
+                    $this->send(fn (PendingRequest $http) => $http->delete("/v1/shipments/{$shipmentId}"));
+                } catch (Throwable) {
+                    // ignore cleanup errors so quoting never fails because of cleanup
+                }
+            }
+        }
+    }
+
+    /**
+     * @return array<string, scalar>
+     */
+    private function buildPayload(RateRequest $request): array
+    {
+        $sender = $request->sender;
+        $recipient = $request->recipient;
+
+        $senderCountry = strtoupper(trim((string) $sender->country));
+        $recipientCountry = strtoupper(trim((string) $recipient->country));
+        $type = ($senderCountry === 'IT' && $recipientCountry === 'IT') ? 'DOMESTIC' : 'INTERNATIONAL';
+
+        $senderName = property_exists($sender, 'company') && ! empty($sender->company) ? $sender->company : $sender->name;
+        $recipientName = property_exists($recipient, 'company') && ! empty($recipient->company) ? $recipient->company : $recipient->name;
+
+        $payload = [
+            'type' => $type,
+            'senderName' => $senderName,
+            'senderContactName' => $sender->name,
+            'senderCountry' => $sender->country,
+            'senderProvince' => $sender->province,
+            'senderTown' => $sender->city,
+            'senderPostalCode' => $sender->postalCode,
+            'senderAddress' => $sender->street,
+            'senderPhone' => $sender->phone,
+            'senderEmail' => $sender->email,
+            'recipientName' => $recipientName,
+            'recipientContactName' => $recipient->name,
+            'recipientCountry' => $recipient->country,
+            'recipientProvince' => $recipient->province,
+            'recipientTown' => $recipient->city,
+            'recipientPostalCode' => $recipient->postalCode,
+            'recipientAddress' => $recipient->street,
+            'recipientPhone' => $recipient->phone,
+            'recipientEmail' => $recipient->email,
+            'packages' => $this->formatPackages($request->parcels),
+        ];
+
+        if ($request->carrierCode !== null && trim($request->carrierCode) !== '') {
+            $courier = $this->carriers->toProvider($request->carrierCode) ?? strtoupper(trim($request->carrierCode));
+            if ($courier !== '') {
+                $payload['courier'] = $courier;
+            }
+        }
+
+        if ($request->insuranceAmount !== null && $request->insuranceAmount > 0) {
+            $payload['insurance'] = 'true';
+            $payload['insuranceAmount'] = number_format($request->insuranceAmount, 2, '.', '');
+        }
+
+        if ($request->codAmount !== null && $request->codAmount > 0) {
+            $payload['cashOnDelivery'] = 'true';
+            $payload['cashOnDeliveryAmount'] = number_format($request->codAmount, 2, '.', '');
+        }
+
+        if ($request->coupon !== null && trim($request->coupon) !== '') {
+            $payload['coupon'] = trim($request->coupon);
+        }
+
+        return array_filter($payload, fn ($v) => $v !== '' && $v !== null);
+    }
+
+    private function formatPackages(array $parcels): string
+    {
+        $lines = [];
+
+        foreach ($parcels as $parcel) {
+            $qty = max(1, (int) ($parcel->quantity ?? 1));
+            $line = implode('x', [
+                $this->formatNum((float) $parcel->weightKg),
+                $this->formatNum((float) ($parcel->lengthCm ?? 0)),
+                $this->formatNum((float) ($parcel->widthCm ?? 0)),
+                $this->formatNum((float) ($parcel->heightCm ?? 0)),
+            ]);
+
+            for ($i = 0; $i < $qty; $i++) {
+                $lines[] = $line;
+            }
+        }
+
+        if (empty($lines)) {
+            $lines[] = '1x0x0x0';
+        }
+
+        return implode(',', $lines);
+    }
+
+    private function formatNum(float $value): string
+    {
+        $formatted = rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+
+        return $formatted !== '' ? $formatted : '0';
+    }
+
+    private function mapQuote(array $data, ?string $shipmentId): RateQuote
+    {
+        $rawCourier = strtoupper(trim((string) ($data['courier'] ?? 'SDA')));
+        if ($rawCourier === '') {
+            $rawCourier = 'SDA';
+        }
+
+        $carrierCode = $this->carriers->fromProvider($rawCourier) ?? strtolower($rawCourier);
+
+        $cleanup = (bool) ($this->config['cleanup_quote_drafts'] ?? true);
+        $quoteToken = $cleanup ? null : ($shipmentId !== '' && $shipmentId !== null ? $shipmentId : null);
+
+        $surcharges = array_filter([
+            'fuel' => (float) ($data['fuelSurcharge'] ?? 0),
+            'destination' => (float) ($data['destinationSurcharge'] ?? 0),
+            'cod' => (float) ($data['cashOnDeliveryCommission'] ?? 0),
+            'insurance' => (float) ($data['insuranceCommission'] ?? 0),
+        ], fn (float $val) => abs($val) > 0.0001);
+
+        $warnings = [];
+        if (! empty($data['warnings'])) {
+            if (is_array($data['warnings'])) {
+                foreach ($data['warnings'] as $warning) {
+                    if (is_string($warning) && trim($warning) !== '') {
+                        $warnings[] = trim($warning);
+                    } elseif (is_scalar($warning)) {
+                        $warnings[] = (string) $warning;
+                    }
+                }
+            } elseif (is_scalar($data['warnings'])) {
+                $warnings[] = (string) $data['warnings'];
+            }
+        }
+
+        return new RateQuote(
+            provider: self::NAME,
+            carrierCode: $carrierCode,
+            carrierName: $rawCourier,
+            rawCarrierCode: $rawCourier,
+            serviceName: (string) ($data['type'] ?? 'DOMESTIC'),
+            netPrice: (float) ($data['netPrice'] ?? $data['basePrice'] ?? 0.0),
+            totalPrice: (float) ($data['totalPrice'] ?? $data['netPrice'] ?? 0.0),
+            listPrice: isset($data['basePrice']) ? (float) $data['basePrice'] : null,
+            currency: (string) ($data['currency'] ?? 'EUR'),
+            taxableWeightKg: isset($data['taxableWeight']) ? (float) $data['taxableWeight'] : null,
+            dimensionalWeightApplied: (bool) ($data['dimensionalWeightApplied'] ?? false),
+            estimatedDelivery: isset($data['expectedDeliveryDate']) && (string) $data['expectedDeliveryDate'] !== '' ? (string) $data['expectedDeliveryDate'] : null,
+            quoteToken: $quoteToken,
+            surcharges: $surcharges,
+            warnings: $warnings,
+            raw: $data,
+        );
+    }
+
+    /**
+     * @param  callable(PendingRequest): Response  $call
+     */
+    private function send(callable $call): Response
+    {
+        try {
+            $pending = Http::baseUrl($this->baseUrl)
+                ->acceptJson()
+                ->timeout($this->timeout)
+                ->connectTimeout(5);
+
+            $http = $this->authenticator->authenticate($pending);
+
+            $response = $call($http);
+        } catch (ShippingCredentialsException $e) {
+            $ex = new RateProviderUnavailable($e->getMessage(), 0, $e);
+            if (method_exists($ex, 'withHttpStatus')) {
+                $ex->withHttpStatus($e->httpStatus);
+            }
+            throw $ex;
+        } catch (ConnectionException $e) {
+            throw new RateProviderUnavailable(self::NAME.': connection failed', 0, $e);
+        }
+
+        if ($response->successful()) {
+            return $response;
+        }
+
+        $status = $response->status();
+
+        if (in_array($status, [400, 404, 422], true)) {
+            $msg = $this->extractErrorMessage($response);
+            $ex = new RateRejected($msg ?? self::NAME.': HTTP '.$status);
+            if (method_exists($ex, 'withHttpStatus')) {
+                $ex->withHttpStatus($status);
+            }
+            throw $ex;
+        }
+
+        // 401, 403, 429, 5xx, etc.
+        $msg = $this->extractErrorMessage($response);
+        $ex = new RateProviderUnavailable($msg ?? self::NAME.': HTTP '.$status);
+        if (method_exists($ex, 'withHttpStatus')) {
+            $ex->withHttpStatus($status);
+        }
+        throw $ex;
+    }
+
+    private function extractErrorMessage(Response $response): ?string
+    {
+        try {
+            $body = $response->json();
+        } catch (Throwable) {
+            return null;
+        }
+
+        if (! is_array($body)) {
+            return null;
+        }
+
+        if (! empty($body['errors']) && is_array($body['errors'])) {
+            return implode(', ', array_map(
+                fn ($k, $v) => is_scalar($v) ? "$k: $v" : (is_array($v) ? "$k: ".implode(';', $v) : $k),
+                array_keys($body['errors']),
+                $body['errors'],
+            ));
+        }
+
+        $message = $body['message'] ?? $body['error'] ?? $body['description'] ?? null;
+
+        return is_string($message) && trim($message) !== '' ? trim($message) : null;
+    }
+}

@@ -1,6 +1,8 @@
 <?php
 
 use App\Shipping\Providers\Spediamo\SpediamoLabelProvider;
+use App\Shipping\Providers\Spediamo\SpediamoLabelRequestMapper;
+use App\Shipping\Support\CarrierCodeMap;
 use App\Shipping\Labels\DTO\Address;
 use App\Shipping\Labels\DTO\Parcel;
 use App\Shipping\Labels\DTO\ShipmentRequest;
@@ -102,4 +104,121 @@ it('never logs the token or request bodies', function () {
     } catch (LabelProviderUnavailable $e) {
         expect($e->getMessage())->not->toContain('label-token')->not->toContain('secret body');
     }
+});
+
+it('S1: SpediamoLabelRequestMapper maps carrierCode via CarrierCodeMap into courier', function () {
+    $carrierMap = new CarrierCodeMap(['sda' => 'SDA', 'brt' => 'BARTOLINI']);
+    $mapper = new SpediamoLabelRequestMapper(carriers: $carrierMap);
+
+    $req = new ShipmentRequest(
+        carrierCode: 'sda',
+        sender: new Address(name: 'Sender', street: 'Via 1', city: 'Milano', postalCode: '20100', province: 'MI', country: 'IT', phone: '02', email: 's@test.com'),
+        recipient: new Address(name: 'Recip', street: 'Via 2', city: 'Roma', postalCode: '00100', province: 'RM', country: 'IT', phone: '06', email: 'r@test.com'),
+        parcels: [new Parcel(weightKg: 2.0)],
+        reference: 'REF-S1',
+    );
+
+    $params = $mapper->map($req);
+    expect($params['courier'])->toBe('SDA');
+
+    $reqBrt = new ShipmentRequest(
+        carrierCode: 'brt',
+        sender: $req->sender,
+        recipient: $req->recipient,
+        parcels: $req->parcels,
+        reference: 'REF-S1-BRT',
+    );
+    expect($mapper->map($reqBrt)['courier'])->toBe('BARTOLINI');
+});
+
+it('S2: SpediamoLabelRequestMapper includes iban and bankAccountHolder when codAmount > 0', function () {
+    $mapper = new SpediamoLabelRequestMapper(
+        config: ['iban' => 'IT60X0542811101000000123456', 'bank_account_holder' => 'RSP Shop Srl'],
+    );
+
+    $req = new ShipmentRequest(
+        carrierCode: 'sda',
+        sender: new Address(name: 'Sender', street: 'Via 1', city: 'Milano', postalCode: '20100', province: 'MI', country: 'IT', phone: '02', email: 's@test.com'),
+        recipient: new Address(name: 'Recip', street: 'Via 2', city: 'Roma', postalCode: '00100', province: 'RM', country: 'IT', phone: '06', email: 'r@test.com'),
+        parcels: [new Parcel(weightKg: 2.0)],
+        reference: 'REF-S2',
+        codAmount: 75.50,
+    );
+
+    $params = $mapper->map($req);
+    expect($params['cashOnDelivery'])->toBe('true')
+        ->and($params['cashOnDeliveryAmount'])->toBe('75.50')
+        ->and($params['iban'])->toBe('IT60X0542811101000000123456')
+        ->and($params['bankAccountHolder'])->toBe('RSP Shop Srl');
+});
+
+it('S2: SpediamoLabelProvider reuses existing draft via GET /v1/shipments/{quoteToken} and falls back to id when status is DRAFT and trackingNumber is empty', function () {
+    Http::fake([
+        'https://api.spediamo.test/v1/shipments/spd-draft-123' => Http::response([
+            'id' => 'spd-draft-123',
+            'status' => 'DRAFT',
+            'trackingNumber' => '',
+            'courier' => 'SDA',
+            'waybillAvailable' => false,
+        ], 200),
+    ]);
+
+    $req = new ShipmentRequest(
+        carrierCode: 'sda',
+        sender: new Address(name: 'Sender', street: 'Via 1', city: 'Milano', postalCode: '20100', province: 'MI', country: 'IT', phone: '02', email: 's@test.com'),
+        recipient: new Address(name: 'Recip', street: 'Via 2', city: 'Roma', postalCode: '00100', province: 'RM', country: 'IT', phone: '06', email: 'r@test.com'),
+        parcels: [new Parcel(weightKg: 1.0)],
+        reference: 'ORD-DRAFT-1',
+        quoteToken: 'spd-draft-123',
+    );
+
+    $provider = new SpediamoLabelProvider(spediamoLabelConfig());
+    $result = $provider->createShipment($req);
+
+    expect($result->externalId)->toBe('spd-draft-123')
+        ->and($result->trackingNumber)->toBe('spd-draft-123');
+
+    Http::assertSent(fn ($request) => $request->method() === 'GET' && str_contains($request->url(), '/v1/shipments/spd-draft-123'));
+    Http::assertNotSent(fn ($request) => $request->method() === 'POST');
+});
+
+it('S3: SpediamoLabelProvider label() sends Accept header and handles both raw PDF and JSON base64 payloads', function () {
+    // 1. Raw %PDF binary
+    Http::fake([
+        'https://api.spediamo.test/v1/waybills/shp_raw/pdf*' => Http::response('%PDF-1.4 binary content', 200, ['Content-Type' => 'application/pdf']),
+    ]);
+
+    $provider = new SpediamoLabelProvider(spediamoLabelConfig());
+    $docRaw = $provider->label('shp_raw');
+
+    expect($docRaw->contents)->toBe('%PDF-1.4 binary content')
+        ->and($docRaw->filename)->toBe('label-shp_raw.pdf');
+
+    Http::assertSent(function ($request) {
+        return str_contains($request->url(), '/v1/waybills/shp_raw/pdf')
+            && $request->hasHeader('Accept', 'application/pdf, application/json');
+    });
+
+    // 2. JSON base64 payload {"data": "JVBERi0xLjQK..."}
+    $b64Pdf = base64_encode('%PDF-1.5 json base64 content');
+    Http::fake([
+        'https://api.spediamo.test/v1/waybills/shp_b64/pdf*' => Http::response(['data' => $b64Pdf], 200, ['Content-Type' => 'application/json']),
+    ]);
+
+    $docB64 = $provider->label('shp_b64');
+    expect($docB64->contents)->toBe('%PDF-1.5 json base64 content')
+        ->and($docB64->filename)->toBe('label-shp_b64.pdf');
+});
+
+it('S4: SpediamoLabelProvider cancelShipment() throws LabelRejected when DELETE returns 403 with draft status restriction', function () {
+    Http::fake([
+        'https://api.spediamo.test/v1/shipments/shp_locked' => Http::response([
+            'message' => 'Only shipments with status DRAFT can be cancelled',
+        ], 403),
+    ]);
+
+    $provider = new SpediamoLabelProvider(spediamoLabelConfig());
+
+    expect(fn () => $provider->cancelShipment('shp_locked'))
+        ->toThrow(LabelRejected::class, 'Only shipments with status DRAFT can be cancelled');
 });

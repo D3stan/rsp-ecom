@@ -50,13 +50,17 @@ class SpediamoLabelProvider implements CancelsShipments, LabelProvider
     /**
      * @param  array<string, mixed>  $config  shipping.labels.drivers.spediamo (reuses the tracking token/base_url)
      */
-    public function __construct(array $config = [])
+    public function __construct(private readonly array $config = [])
     {
         $this->baseUrl = trim((string) ($config['base_url'] ?? '')) ?: self::DEFAULT_BASE_URL;
         $this->token = (string) ($config['token'] ?? '');
         $this->timeout = max(1, (int) ($config['timeout'] ?? 15));
         $this->carriers = CarrierCodeMap::fromDriverConfig($config);
-        $this->mapper = new SpediamoLabelRequestMapper;
+        $this->mapper = new SpediamoLabelRequestMapper(
+            (array) ($config['default_parcel'] ?? []),
+            $this->carriers,
+            $config,
+        );
     }
 
     public function name(): string
@@ -71,26 +75,61 @@ class SpediamoLabelProvider implements CancelsShipments, LabelProvider
 
     public function createShipment(ShipmentRequest $request): ShipmentResult
     {
-        $response = $this->send(fn (PendingRequest $http) => $http->post('/v1/shipments', $this->mapper->map($request)));
+        $data = null;
+        $quoteToken = isset($request->quoteToken) && $request->quoteToken !== null ? trim($request->quoteToken) : '';
 
-        $data = $response->json();
-
-        if (! is_array($data) || ! isset($data['id'])) {
-            throw (new LabelProviderUnavailable(self::NAME.': unexpected response'))->withHttpStatus($response->status());
+        if ($quoteToken !== '') {
+            try {
+                $response = $this->send(fn (PendingRequest $http) => $http->get("/v1/shipments/{$quoteToken}"), method: 'get');
+                if ($response->successful()) {
+                    $shipmentData = $response->json();
+                    if (is_array($shipmentData)) {
+                        $draftId = trim((string) ($shipmentData['id'] ?? $shipmentData['shipmentId'] ?? ''));
+                        $status = strtoupper(trim((string) ($shipmentData['status'] ?? '')));
+                        if ($draftId !== '' && ($status === '' || $status === 'DRAFT')) {
+                            $data = $shipmentData;
+                        }
+                    }
+                }
+            } catch (Throwable) {
+                $data = null;
+            }
         }
 
-        $tracking = trim((string) ($data['trackingNumber'] ?? ''));
+        if ($data === null) {
+            $response = $this->send(fn (PendingRequest $http) => $http->post('/v1/shipments', $this->mapper->map($request)), method: 'post');
+            $data = $response->json();
+        }
 
-        if ($tracking === '') {
-            // created but not yet assigned a tracking number: treat as a carrier rejection so nothing is shipped blind
+        if (! is_array($data)) {
+            throw (new LabelProviderUnavailable(self::NAME.': unexpected response'))->withHttpStatus(isset($response) ? $response->status() : null);
+        }
+
+        $id = trim((string) ($data['id'] ?? $data['shipmentId'] ?? ''));
+        $tracking = trim((string) ($data['trackingNumber'] ?? $data['code'] ?? $data['tracking_code'] ?? ''));
+        $status = strtoupper(trim((string) ($data['status'] ?? '')));
+
+        if ($tracking === '' && $id !== '' && $status === 'DRAFT') {
+            $tracking = $id;
+        }
+
+        if ($id === '' && $tracking === '') {
             throw new LabelRejected(self::NAME.': the shipment has no tracking number yet.');
         }
 
+        if ($tracking === '') {
+            throw new LabelRejected(self::NAME.': the shipment has no tracking number yet.');
+        }
+
+        if ($id === '') {
+            $id = $tracking;
+        }
+
         return new ShipmentResult(
-            externalId: (string) $data['id'],
+            externalId: $id,
             trackingNumber: $tracking,
             carrierCode: $request->carrierCode,
-            raw: array_intersect_key($data, array_flip(['id', 'trackingNumber', 'courier', 'status', 'waybillAvailable'])),
+            raw: array_intersect_key($data, array_flip(['id', 'shipmentId', 'trackingNumber', 'code', 'tracking_code', 'courier', 'status', 'waybillAvailable'])),
         );
     }
 
@@ -98,31 +137,41 @@ class SpediamoLabelProvider implements CancelsShipments, LabelProvider
     {
         $id = $externalId instanceof ShipmentResult ? $externalId->externalId : $externalId;
 
-        $response = $this->send(fn (PendingRequest $http) => $http->get("/v1/waybills/{$id}/pdf", ['download' => 'true']));
+        $response = $this->send(
+            fn (PendingRequest $http) => $http->get("/v1/waybills/{$id}/pdf", ['download' => 'true']),
+            acceptPdf: true,
+            method: 'get',
+        );
 
         $contents = $response->body();
+        $pdf = $this->extractPdf($contents, $response);
 
-        if (! str_starts_with($contents, '%PDF')) {
-            throw (new LabelProviderUnavailable(self::NAME.': waybill is not a PDF'))->withHttpStatus($response->status());
+        if ($pdf === null || ! str_starts_with($pdf, '%PDF')) {
+            throw (new LabelProviderUnavailable('Spediamo returned an invalid PDF label.'))->withHttpStatus($response->status());
         }
 
-        return new LabelDocument($contents, 'label-'.$id.'.pdf');
+        return new LabelDocument($pdf, 'label-'.$id.'.pdf');
     }
 
     public function cancelShipment(string $externalId): void
     {
-        $this->send(fn (PendingRequest $http) => $http->delete("/v1/shipments/{$externalId}"));
+        $this->send(fn (PendingRequest $http) => $http->delete("/v1/shipments/{$externalId}"), method: 'delete');
     }
 
     /**
      * @param  callable(PendingRequest): Response  $call
      */
-    private function send(callable $call): Response
+    private function send(callable $call, bool $acceptPdf = false, string $method = 'get'): Response
     {
         try {
-            $http = (new BearerTokenAuthenticator($this->token, self::NAME))->authenticate(
-                Http::baseUrl($this->baseUrl)->acceptJson()->timeout($this->timeout)->connectTimeout(5),
-            );
+            $pending = Http::baseUrl($this->baseUrl)->timeout($this->timeout)->connectTimeout(5);
+            if ($acceptPdf) {
+                $pending = $pending->accept('application/pdf, application/json');
+            } else {
+                $pending = $pending->acceptJson();
+            }
+
+            $http = (new BearerTokenAuthenticator($this->token, self::NAME))->authenticate($pending);
 
             $response = $call($http);
         } catch (ShippingCredentialsException $e) {
@@ -137,11 +186,75 @@ class SpediamoLabelProvider implements CancelsShipments, LabelProvider
 
         $status = $response->status();
 
+        if (strtolower($method) === 'delete' && $status === 403) {
+            $carrierMsg = $this->carrierMessage($response);
+            $body = $response->body();
+            if ($carrierMsg !== null || str_contains(strtolower($body), 'draft') || str_contains(strtolower($body), 'status')) {
+                $msg = $this->errorMessage($response, 'Shipment cannot be cancelled because it is no longer in DRAFT status.');
+                throw (new LabelRejected($msg))->withHttpStatus(403);
+            }
+        }
+
         if (in_array($status, [401, 403, 408, 425, 429], true) || $status >= 500) {
             throw (new LabelProviderUnavailable(self::NAME.': HTTP '.$status))->withHttpStatus($status);
         }
 
-        throw (new LabelRejected($this->carrierMessage($response) ?? self::NAME.': HTTP '.$status))->withHttpStatus($status);
+        throw (new LabelRejected($this->errorMessage($response)))->withHttpStatus($status);
+    }
+
+    private function extractPdf(string $contents, Response $response): ?string
+    {
+        if (str_starts_with($contents, '%PDF')) {
+            return $contents;
+        }
+
+        $trimmed = trim($contents);
+        if ($trimmed !== '') {
+            $decoded = base64_decode($trimmed, true);
+            if ($decoded !== false && str_starts_with($decoded, '%PDF')) {
+                return $decoded;
+            }
+        }
+
+        $data = null;
+        try {
+            $data = $response->json();
+        } catch (Throwable) {
+            // ignore
+        }
+
+        if (! is_array($data)) {
+            $decodedJson = json_decode($contents, true);
+            if (is_array($decodedJson)) {
+                $data = $decodedJson;
+            }
+        }
+
+        if (is_array($data)) {
+            $candidate = $data['data'] ?? $data['content'] ?? $data['pdf'] ?? $data['file'] ?? null;
+            if (is_string($candidate)) {
+                if (str_starts_with($candidate, '%PDF')) {
+                    return $candidate;
+                }
+                $decoded = base64_decode(trim($candidate), true);
+                if ($decoded !== false && str_starts_with($decoded, '%PDF')) {
+                    return $decoded;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function errorMessage(Response $response, string $default = ''): string
+    {
+        $message = $this->carrierMessage($response);
+
+        if ($message !== null && $message !== '') {
+            return $message;
+        }
+
+        return $default !== '' ? $default : self::NAME.': HTTP '.$response->status();
     }
 
     /**
@@ -155,7 +268,11 @@ class SpediamoLabelProvider implements CancelsShipments, LabelProvider
             return null;
         }
 
-        $message = is_array($body) ? ($body['message'] ?? $body['error'] ?? null) : null;
+        if (! is_array($body)) {
+            return null;
+        }
+
+        $message = $body['message'] ?? $body['error'] ?? $body['description'] ?? null;
 
         return is_string($message) && trim($message) !== '' ? trim($message) : null;
     }
