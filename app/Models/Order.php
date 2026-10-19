@@ -43,6 +43,7 @@ class Order extends Model
         'tracking_number',
         // Carrier tracking module (App\Shipping\Tracking)
         'tracking_carrier',
+        'tracking_driver',
         'tracking_status',
         'tracking_last_synced_at',
         'tracking_next_sync_at',
@@ -91,6 +92,16 @@ class Order extends Model
             if (empty($order->order_number)) {
                 $order->order_number = static::generateOrderNumber();
             }
+
+            if ($order->tracking_carrier !== null) {
+                $carrier = trim((string) $order->tracking_carrier);
+                $order->tracking_carrier = $carrier !== '' ? $carrier : null;
+            }
+
+            if ($order->tracking_driver !== null) {
+                $driver = trim((string) $order->tracking_driver);
+                $order->tracking_driver = $driver !== '' ? $driver : null;
+            }
         });
 
         // Cancelling an order whose payment never completed also closes the payment. A captured
@@ -104,10 +115,20 @@ class Order extends Model
             }
         });
 
-        // A corrected tracking number or carrier starts a fresh tracking cycle (old status and
-        // schedule belong to the previous parcel; this also re-enables polling switched off for it).
+        // A corrected tracking number, carrier, or provider starts a fresh tracking cycle (old status
+        // and schedule belong to the previous parcel; this also re-enables polling switched off for it).
         static::updating(function ($order) {
-            if (! $order->isDirty('tracking_number') && ! $order->isDirty('tracking_carrier')) {
+            if ($order->isDirty('tracking_carrier')) {
+                $carrier = trim((string) $order->tracking_carrier);
+                $order->tracking_carrier = $carrier !== '' ? $carrier : null;
+            }
+
+            if ($order->isDirty('tracking_driver')) {
+                $driver = trim((string) $order->tracking_driver);
+                $order->tracking_driver = $driver !== '' ? $driver : null;
+            }
+
+            if (! $order->isDirty('tracking_number') && ! $order->isDirty('tracking_carrier') && ! $order->isDirty('tracking_driver')) {
                 return;
             }
 
@@ -116,7 +137,17 @@ class Order extends Model
                 TrackingRequest::normalizeNumber($order->tracking_number),
             ) !== 0;
 
-            if ($numberChanged || $order->isDirty('tracking_carrier')) {
+            $carrierChanged = strcasecmp(
+                trim((string) $order->getOriginal('tracking_carrier')),
+                trim((string) $order->tracking_carrier),
+            ) !== 0;
+
+            $driverChanged = strcasecmp(
+                trim((string) $order->getOriginal('tracking_driver')),
+                trim((string) $order->tracking_driver),
+            ) !== 0;
+
+            if ($numberChanged || $carrierChanged || $driverChanged) {
                 $order->tracking_status = null;
                 $order->tracking_last_synced_at = null;
                 $order->tracking_next_sync_at = null;
@@ -548,21 +579,26 @@ class Order extends Model
     }
 
     /**
-     * Public tracking page for the shipment, as given by the active tracking driver (App\Shipping\Tracking),
-     * which falls back to the carrier's URL template in config/shipping.php. Null when none is known
-     * (the number is then shown without a link). Reads the carrier through getAttribute() so it keeps
-     * working before and after the column exists.
+     * Public tracking page for the shipment, as given by the order's tracking driver (or the default
+     * driver when null), which falls back to the carrier's URL template in config/shipping.php. Null
+     * when none is known (the number is then shown without a link). Reads carrier and driver through
+     * getAttribute() so it keeps working before and after the columns exist.
      */
     public function trackingUrl(?string $trackingNumber = null): ?string
     {
         $number = trim((string) ($trackingNumber ?? $this->tracking_number));
         $carrier = $this->getAttribute('tracking_carrier');
+        $driver = $this->getAttribute('tracking_driver');
 
         if ($number === '') {
             return null;
         }
 
-        return app(TrackingManager::class)->trackingUrl($number, is_string($carrier) && $carrier !== '' ? $carrier : null);
+        return app(TrackingManager::class)->trackingUrl(
+            $number,
+            is_string($carrier) && $carrier !== '' ? $carrier : null,
+            is_string($driver) && $driver !== '' ? $driver : null,
+        );
     }
 
     /**
