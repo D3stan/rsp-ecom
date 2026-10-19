@@ -40,8 +40,10 @@ foreach ([
     'App\Shipping\Tracking\DTO',
     'App\Shipping\Tracking\Enums',
     'App\Shipping\Tracking\Exceptions',
-    'App\Shipping\Tracking\Support',
-    'App\Shipping\Tracking\Auth',
+    'App\Shipping\Rates\RateManager',
+    'App\Shipping\Rates\Contracts',
+    'App\Shipping\Rates\DTO',
+    'App\Shipping\Rates\Exceptions',
     'App\Models\Order',
     'App\Console\Commands\SyncShipmentTracking',
 ] as $coreTarget) {
@@ -66,6 +68,22 @@ arch('Labels subsystem never depends on Tracking subsystem')
 arch('Tracking subsystem never depends on Labels subsystem')
     ->expect('App\Shipping\Tracking')
     ->not->toUse('App\Shipping\Labels');
+
+arch('Rates subsystem never depends on Tracking subsystem')
+    ->expect('App\Shipping\Rates')
+    ->not->toUse('App\Shipping\Tracking');
+
+arch('Rates subsystem never depends on Labels subsystem')
+    ->expect('App\Shipping\Rates')
+    ->not->toUse('App\Shipping\Labels');
+
+arch('Labels subsystem never depends on Rates subsystem')
+    ->expect('App\Shipping\Labels')
+    ->not->toUse('App\Shipping\Rates');
+
+arch('Tracking subsystem never depends on Rates subsystem')
+    ->expect('App\Shipping\Tracking')
+    ->not->toUse('App\Shipping\Rates');
 
 // Only TrackingManager, built-in Drivers, and external Providers (extending AbstractHttpProvider) may reference Shipping\Tracking\Drivers.
 it('names concrete tracking drivers only in TrackingManager, Drivers, and Providers', function () {
@@ -111,6 +129,10 @@ arch('label contracts contain only interfaces')
     ->expect('App\Shipping\Labels\Contracts')
     ->toBeInterfaces();
 
+arch('rate contracts contain only interfaces')
+    ->expect('App\Shipping\Rates\Contracts')
+    ->toBeInterfaces();
+
 arch('shared driver helpers are traits')
     ->expect('App\Shipping\Tracking\Drivers\Concerns')
     ->toBeTraits();
@@ -123,7 +145,7 @@ it('keeps every provider in app/Shipping/Providers/<Provider> isolated and self-
     expect($providerDirs)->not->toBeEmpty();
 
     // Service providers must be manifest-driven and never hardcode a concrete provider name
-    foreach (['app/Providers/TrackingServiceProvider.php', 'app/Providers/LabelServiceProvider.php'] as $spFile) {
+    foreach (['app/Providers/TrackingServiceProvider.php', 'app/Providers/LabelServiceProvider.php', 'app/Providers/RateServiceProvider.php'] as $spFile) {
         $spContents = (string) file_get_contents("{$root}/{$spFile}");
         expect($spContents)->toContain('ShippingProviderManifest')
             ->and($spContents)->not->toContain('Providers\\');
@@ -147,7 +169,7 @@ it('keeps every provider in app/Shipping/Providers/<Provider> isolated and self-
             preg_match_all('/^use ([^;]+);/m', (string) file_get_contents($file->getPathname()), $imports);
 
             foreach ($imports[1] as $import) {
-                $pattern = '/^(App\\\\Shipping\\\\Providers\\\\'.preg_quote($folderName, '/').'\\\\|App\\\\Shipping\\\\(Auth|Contracts|Exceptions|Support|Tracking|Labels)\\\\|Illuminate\\\\|Carbon\\\\|Closure$|DateTimeZone$|Throwable$)/';
+                $pattern = '/^(App\\\\Shipping\\\\Providers\\\\'.preg_quote($folderName, '/').'\\\\|App\\\\Shipping\\\\(Auth|Contracts|Exceptions|Support|Tracking|Labels|Rates)\\\\|Illuminate\\\\|Carbon\\\\|Closure$|DateTimeZone$|Throwable$)/';
                 expect($import)->toMatch($pattern, $file->getBasename()." imports forbidden {$import}");
             }
         }

@@ -90,6 +90,51 @@ dataset('tracking providers', function () {
 
             return app(TrackingManager::class)->driver('spediamo');
         }, null, 'acme'],
+        'dvaexpress' => [function () {
+            config([
+                'shipping.providers.dvaexpress' => [
+                    'base_url' => 'https://api.easyparcel.it',
+                    'api_key' => 'contract-dva-key',
+                    'carrier_map' => [],
+                    'retries' => 1,
+                    'retry_sleep_ms' => 0,
+                ],
+                'shipping.tracking.drivers.dvaexpress' => [
+                    'base_url' => 'https://api.easyparcel.it',
+                    'api_key' => 'contract-dva-key',
+                    'carrier_map' => [],
+                    'retries' => 1,
+                    'retry_sleep_ms' => 0,
+                ],
+            ]);
+            trkContractFake(
+                fn ($request) => (string) ($request->data()['dettagli']['ldv'] ?? ''),
+                function (string $number, string $kind, $at) {
+                    $local = $at->setTimezone('Europe/Rome');
+                    $statusCode = ['delivered' => '000', 'exception' => 'GIAC', 'transit' => 'PPP'][$kind];
+                    $desc = ['delivered' => 'CONSEGNATA', 'exception' => 'GIACENZA', 'transit' => 'PARTITA'][$kind];
+
+                    return Http::response([
+                        'result' => 'OK',
+                        'errorcode' => 0,
+                        'errormessage' => 'OK',
+                        'tracking' => ['lettera_vettura' => $number],
+                        'dettagli' => [
+                            [
+                                'id' => 1,
+                                'data' => $local->format('Y-m-d'),
+                                'ora' => $local->format('H:i:s'),
+                                'status' => $statusCode,
+                                'descrizione' => $desc,
+                                'filiale' => 'Hub Roma',
+                            ],
+                        ],
+                    ], 200);
+                },
+            );
+
+            return app(TrackingManager::class)->driver('dvaexpress');
+        }, null, 'acme'],
         'rehearsal' => [function () {
             trkContractFake(
                 fn ($request) => rawurldecode(basename(parse_url($request->url(), PHP_URL_PATH))),

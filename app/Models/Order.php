@@ -594,11 +594,61 @@ class Order extends Model
             return null;
         }
 
-        return app(TrackingManager::class)->trackingUrl(
+        $url = app(TrackingManager::class)->trackingUrl(
             $number,
             is_string($carrier) && $carrier !== '' ? $carrier : null,
             is_string($driver) && $driver !== '' ? $driver : null,
         );
+
+        if ($url !== null) {
+            return $url;
+        }
+
+        if ($this->exists) {
+            $shipments = $this->relationLoaded('shipments')
+                ? $this->shipments
+                : $this->shipments()->where('status', Shipment::STATUS_CREATED)->get();
+
+            foreach ($shipments as $shipment) {
+                if ($shipment->status !== Shipment::STATUS_CREATED || $shipment->tracking_number !== $number) {
+                    continue;
+                }
+
+                $payload = $shipment->request_payload;
+                if (! is_array($payload)) {
+                    continue;
+                }
+
+                $trackingUrl = $payload['url_tracking'] ?? null;
+                if (is_string($trackingUrl)
+                    && (str_starts_with($trackingUrl, 'http://') || str_starts_with($trackingUrl, 'https://'))
+                    && filter_var($trackingUrl, FILTER_VALIDATE_URL) !== false
+                ) {
+                    return $trackingUrl;
+                }
+            }
+
+            foreach ($shipments as $shipment) {
+                if ($shipment->status !== Shipment::STATUS_CREATED) {
+                    continue;
+                }
+
+                $payload = $shipment->request_payload;
+                if (! is_array($payload)) {
+                    continue;
+                }
+
+                $trackingUrl = $payload['url_tracking'] ?? null;
+                if (is_string($trackingUrl)
+                    && (str_starts_with($trackingUrl, 'http://') || str_starts_with($trackingUrl, 'https://'))
+                    && filter_var($trackingUrl, FILTER_VALIDATE_URL) !== false
+                ) {
+                    return $trackingUrl;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -68,6 +68,7 @@ return [
 
     'manifests' => [
         \App\Shipping\Providers\Spediamo\SpediamoManifest::class,
+        \App\Shipping\Providers\Dvaexpress\DvaexpressManifest::class,
     ],
 
     'providers' => [
@@ -76,6 +77,34 @@ return [
             'token' => env('SHIPPING_TRACKING_SPEDIAMO_TOKEN'),
             'carrier_map' => [],
             'status_map' => [],
+        ],
+        'dvaexpress' => [
+            'base_url' => env('DVAEXPRESS_BASE_URL', 'https://api.easyparcel.it'),
+            'api_key' => env('DVAEXPRESS_API_KEY'),
+            'default_vettore' => env('DVAEXPRESS_DEFAULT_VETTORE', 'SDAM'),
+            'default_cosa_spedire' => env('DVAEXPRESS_DEFAULT_COSA_SPEDIRE', 'M'),
+            'sender_tax_code' => env('DVAEXPRESS_SENDER_TAX_CODE'),
+            'carrier_map' => [
+                'sda' => 'SDAM',
+                'brt' => 'BRT',
+                'gls' => 'GLS',
+                'pdb' => 'PDB',
+                'poste' => 'PDB',
+                'inpost' => 'INPOST',
+                'dhl' => 'DHL',
+                'ups' => 'UPS',
+                'fedex' => 'FEDEX',
+            ],
+            'status_map' => [],
+            'pickup' => [
+                'enabled' => env('DVAEXPRESS_PICKUP_ENABLED', 'S'),
+                'location' => 'M',
+                'time' => '09:00',
+                'morning_from' => '09:00',
+                'morning_to' => '13:00',
+                'afternoon_from' => '14:00',
+                'afternoon_to' => '18:00',
+            ],
         ],
     ],
 
@@ -155,6 +184,15 @@ return [
             'spediamo' => [
                 'timeout' => (int) env('SHIPPING_TRACKING_SPEDIAMO_TIMEOUT', 15),
             ],
+            'dvaexpress' => [
+                'timeout' => (int) env('DVAEXPRESS_TIMEOUT', 15),
+                'default_parcel' => [
+                    'weight_kg' => 1.0,
+                    'length_cm' => 30,
+                    'width_cm' => 20,
+                    'height_cm' => 15,
+                ],
+            ],
         ],
     ],
 
@@ -184,6 +222,26 @@ return [
                 'retries' => 1,
                 // Timezone of the event dates the API returns (converted to UTC when stored).
                 'timezone' => 'Europe/Rome',
+            ],
+
+            'dvaexpress' => [
+                'timeout' => (int) env('DVAEXPRESS_TIMEOUT', 10),
+                'retries' => 1,
+                'timezone' => 'Europe/Rome',
+            ],
+        ],
+    ],
+
+    'rates' => [
+        'default' => env('SHIPPING_RATES_DRIVER', 'fake'),
+        'drivers' => [
+            'fake' => [],
+            'spediamo' => [
+                'timeout' => (int) env('SHIPPING_TRACKING_SPEDIAMO_TIMEOUT', 15),
+                'cleanup_quote_drafts' => true,
+            ],
+            'dvaexpress' => [
+                'timeout' => (int) env('DVAEXPRESS_TIMEOUT', 15),
             ],
         ],
     ],
