@@ -109,7 +109,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState<number | null>(null);
     const { addToast } = useToast();
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
 
     // Add safety checks for reviews data
     const reviewsData = reviews?.data || [];
@@ -145,7 +145,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
     };
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('it-IT', {
+        return new Date(dateString).toLocaleDateString(locale, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -185,7 +185,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
         } catch {
             addToast({
                 type: 'error',
-                title: 'Failed to update review status',
+                title: t('admin.reviews.toast_update_failed'),
             });
             setIsUpdating(null);
         }
@@ -195,7 +195,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
         if (selectedReviews.length === 0) {
             addToast({
                 type: 'error',
-                title: 'Please select reviews to update',
+                title: t('admin.reviews.toast_select_reviews'),
             });
             return;
         }
@@ -219,7 +219,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
         } catch {
             addToast({
                 type: 'error',
-                title: `Failed to ${action} reviews`,
+                title: t('admin.reviews.toast_bulk_failed', { action }),
             });
         }
     };
@@ -234,7 +234,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
         } catch {
             addToast({
                 type: 'error',
-                title: 'Failed to delete review',
+                title: t('admin.reviews.toast_delete_failed'),
             });
         }
         setDeleteDialogOpen(false);
@@ -273,18 +273,18 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
-                { title: 'Reviews', href: '/admin/reviews' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.reviews.title'), href: '/admin/reviews' },
             ]}
         >
-            <Head title="Reviews Moderation - Admin" />
+            <Head title={t('admin.reviews.meta_title')} />
 
             <div className="space-y-4 p-4 md:p-6">
                 {/* Mobile-First Page Header */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Reviews Moderation</h1>
-                        <p className="text-sm text-muted-foreground md:text-base">Approve, reject or manage customer reviews</p>
+                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('admin.reviews.heading')}</h1>
+                        <p className="text-sm text-muted-foreground md:text-base">{t('admin.reviews.subheading')}</p>
                     </div>
                 </div>
 
@@ -294,7 +294,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                         <Button variant="outline" className="w-full justify-between" size="sm">
                             <span className="flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4" />
-                                Review Stats
+                                {t('admin.reviews.review_stats')}
                             </span>
                             {isKPIsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
@@ -304,23 +304,23 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <MessageSquare className="h-4 w-4 text-blue-600" />
-                                    <h3 className="text-xs font-medium">Total</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.reviews.kpi_total')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{kpis.total}</p>
-                                    <p className="text-xs text-muted-foreground">All reviews</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.reviews.kpi_all_reviews')}</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <CheckCircle className="h-4 w-4 text-green-600" />
-                                    <h3 className="text-xs font-medium">Approved</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.reviews.kpi_approved')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{kpis.approved}</p>
                                     <p className="text-xs text-muted-foreground">
-                                        {kpis.total > 0 ? Math.round((kpis.approved / kpis.total) * 100) : 0}% of total
+                                        {t('admin.reviews.kpi_percent_of_total', { percent: kpis.total > 0 ? Math.round((kpis.approved / kpis.total) * 100) : 0 })}
                                     </p>
                                 </div>
                             </Card>
@@ -328,33 +328,33 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <Clock className="h-4 w-4 text-yellow-600" />
-                                    <h3 className="text-xs font-medium">Pending</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.reviews.kpi_pending')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{kpis.pending}</p>
-                                    <p className="text-xs text-muted-foreground">Need review</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.reviews.kpi_need_review')}</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <Star className="h-4 w-4 text-purple-600" />
-                                    <h3 className="text-xs font-medium">Avg Rating</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.reviews.kpi_avg_rating')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{(kpis.average_rating || 0).toFixed(1)}</p>
-                                    <p className="text-xs text-muted-foreground">Out of 5.0</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.reviews.kpi_out_of_five')}</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <TrendingUp className="h-4 w-4 text-indigo-600" />
-                                    <h3 className="text-xs font-medium">This Week</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.reviews.kpi_this_week')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{kpis.this_week}</p>
-                                    <p className="text-xs text-muted-foreground">New reviews</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.reviews.kpi_new_reviews')}</p>
                                 </div>
                             </Card>
 
@@ -379,7 +379,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                         <div className="relative">
                             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                             <Input
-                                placeholder="Search reviews, products, customers..."
+                                placeholder={t('admin.reviews.search_placeholder')}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="pl-10"
@@ -389,39 +389,39 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                         {/* Filter Dropdowns */}
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-muted-foreground">Status</label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.reviews.filter_status_label')}</label>
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
                                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 >
-                                    <option value="">All Status</option>
-                                    <option value="approved">Approved</option>
-                                    <option value="pending">Pending</option>
+                                    <option value="">{t('admin.reviews.filter_all_status')}</option>
+                                    <option value="approved">{t('admin.reviews.filter_approved')}</option>
+                                    <option value="pending">{t('admin.reviews.filter_pending')}</option>
                                     <option value="photos">{t('reviews.admin.filter_photos')}</option>
                                 </select>
                             </div>
 
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-muted-foreground">Rating</label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.reviews.filter_rating_label')}</label>
                                 <select
                                     value={ratingFilter}
                                     onChange={(e) => setRatingFilter(e.target.value)}
                                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 >
-                                    <option value="">All Ratings</option>
-                                    <option value="5">5 Stars</option>
-                                    <option value="4">4 Stars</option>
-                                    <option value="3">3 Stars</option>
-                                    <option value="2">2 Stars</option>
-                                    <option value="1">1 Star</option>
+                                    <option value="">{t('admin.reviews.filter_all_ratings')}</option>
+                                    <option value="5">{t('admin.reviews.filter_5_stars')}</option>
+                                    <option value="4">{t('admin.reviews.filter_4_stars')}</option>
+                                    <option value="3">{t('admin.reviews.filter_3_stars')}</option>
+                                    <option value="2">{t('admin.reviews.filter_2_stars')}</option>
+                                    <option value="1">{t('admin.reviews.filter_1_star')}</option>
                                 </select>
                             </div>
 
                             <div className="flex items-end">
                                 {(search || statusFilter !== 'pending' || ratingFilter) && (
                                     <Button onClick={clearFilters} variant="outline" size="sm" className="w-full">
-                                        Clear Filters
+                                        {t('admin.reviews.clear_filters')}
                                     </Button>
                                 )}
                             </div>
@@ -434,7 +434,9 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                     <Card className="p-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <span className="text-sm font-medium">
-                                {selectedReviews.length} review{selectedReviews.length > 1 ? 's' : ''} selected
+                                {selectedReviews.length === 1
+                                    ? t('admin.reviews.selected_single')
+                                    : t('admin.reviews.selected_multiple', { count: selectedReviews.length })}
                             </span>
                             <br></br>
                             <div className="flex gap-2">
@@ -445,11 +447,11 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                     className="bg-green-600 hover:bg-green-700"
                                 >
                                     <Check className="mr-1 h-4 w-4" />
-                                    Approve All
+                                    {t('admin.reviews.approve_all')}
                                 </Button>
                                 <Button size="sm" variant="destructive" onClick={() => handleBulkAction('reject')}>
                                     <X className="mr-1 h-4 w-4" />
-                                    Reject All
+                                    {t('admin.reviews.reject_all')}
                                 </Button>
                             </div>
                         </div>
@@ -469,13 +471,13 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                             onCheckedChange={toggleSelectAll}
                                         />
                                     </th>
-                                    <th className="p-4 text-left font-medium">Review</th>
-                                    <th className="p-4 text-left font-medium">Product</th>
-                                    <th className="p-4 text-left font-medium">Customer</th>
-                                    <th className="p-4 text-left font-medium">Rating</th>
-                                    <th className="p-4 text-left font-medium">Status</th>
-                                    <th className="p-4 text-left font-medium">Date</th>
-                                    <th className="p-4 text-right font-medium">Actions</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.reviews.th_review')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.reviews.th_product')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.reviews.th_customer')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.reviews.th_rating')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.reviews.th_status')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.reviews.th_date')}</th>
+                                    <th className="p-4 text-right font-medium">{t('admin.reviews.th_actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -490,7 +492,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                             </td>
                                             <td className="p-4">
                                                 <div className="max-w-xs space-y-2">
-                                                    <p className="line-clamp-2 text-sm">{review.comment || 'No comment provided'}</p>
+                                                    <p className="line-clamp-2 text-sm">{review.comment || t('admin.reviews.no_comment')}</p>
                                                     <ReviewMediaModeration
                                                         reviewId={review.id}
                                                         reviewApproved={review.is_approved}
@@ -509,15 +511,15 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                             </td>
                                             <td className="p-4">
                                                 <div>
-                                                    <p className="font-medium">{review.user?.name || 'Guest User'}</p>
-                                                    <p className="text-sm text-muted-foreground">{review.user?.email || 'N/A'}</p>
+                                                    <p className="font-medium">{review.user?.name || t('admin.reviews.guest_user')}</p>
+                                                    <p className="text-sm text-muted-foreground">{review.user?.email || t('admin.reviews.not_available')}</p>
                                                 </div>
                                             </td>
                                             <td className="p-4">{renderStars(review.rating)}</td>
                                             <td className="p-4">
                                                 <div className="flex items-center gap-2">
                                                     <Badge className={statusColors[review.is_approved ? 'approved' : 'pending']} variant="secondary">
-                                                        {review.is_approved ? 'Approved' : 'Pending'}
+                                                        {review.is_approved ? t('admin.reviews.status_approved') : t('admin.reviews.status_pending')}
                                                     </Badge>
                                                     {!review.is_approved && (
                                                         <div className="flex gap-1">
@@ -557,7 +559,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                         <DropdownMenuItem asChild>
                                                             <Link href={`/admin/reviews/${review.id}`}>
                                                                 <Eye className="mr-2 h-4 w-4" />
-                                                                View Details
+                                                                {t('admin.reviews.action_view_details')}
                                                             </Link>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
@@ -565,7 +567,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                             <DropdownMenuItem asChild>
                                                                 <Link href={`/admin/reviews/${getPreviousReviewId(review.id)}`}>
                                                                     <ChevronLeft className="mr-2 h-4 w-4" />
-                                                                    Previous Review
+                                                                    {t('admin.reviews.action_previous_review')}
                                                                 </Link>
                                                             </DropdownMenuItem>
                                                         )}
@@ -573,7 +575,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                             <DropdownMenuItem asChild>
                                                                 <Link href={`/admin/reviews/${getNextReviewId(review.id)}`}>
                                                                     <ChevronRight className="mr-2 h-4 w-4" />
-                                                                    Next Review
+                                                                    {t('admin.reviews.action_next_review')}
                                                                 </Link>
                                                             </DropdownMenuItem>
                                                         )}
@@ -585,7 +587,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                             }}
                                                         >
                                                             <Trash2 className="mr-2 h-4 w-4" />
-                                                            Delete Review
+                                                            {t('admin.reviews.action_delete_review')}
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
@@ -595,7 +597,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                 ) : (
                                     <tr>
                                         <td colSpan={8} className="py-8 text-center text-muted-foreground">
-                                            No reviews found
+                                            {t('admin.reviews.no_reviews')}
                                         </td>
                                     </tr>
                                 )}
@@ -617,7 +619,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                     onCheckedChange={() => toggleReviewSelection(review.id)}
                                                 />
                                                 <Badge className={statusColors[review.is_approved ? 'approved' : 'pending']} variant="secondary">
-                                                    {review.is_approved ? 'Approved' : 'Pending'}
+                                                    {review.is_approved ? t('admin.reviews.status_approved') : t('admin.reviews.status_pending')}
                                                 </Badge>
                                             </div>
                                             <DropdownMenu>
@@ -630,7 +632,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                     <DropdownMenuItem asChild>
                                                         <Link href={`/admin/reviews/${review.id}`}>
                                                             <Eye className="mr-2 h-4 w-4" />
-                                                            View Details
+                                                            {t('admin.reviews.action_view_details')}
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
@@ -638,7 +640,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                         <DropdownMenuItem asChild>
                                                             <Link href={`/admin/reviews/${getPreviousReviewId(review.id)}`}>
                                                                 <ChevronLeft className="mr-2 h-4 w-4" />
-                                                                Previous Review
+                                                                {t('admin.reviews.action_previous_review')}
                                                             </Link>
                                                         </DropdownMenuItem>
                                                     )}
@@ -646,7 +648,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                         <DropdownMenuItem asChild>
                                                             <Link href={`/admin/reviews/${getNextReviewId(review.id)}`}>
                                                                 <ChevronRight className="mr-2 h-4 w-4" />
-                                                                Next Review
+                                                                {t('admin.reviews.action_next_review')}
                                                             </Link>
                                                         </DropdownMenuItem>
                                                     )}
@@ -658,7 +660,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                         }}
                                                     >
                                                         <Trash2 className="mr-2 h-4 w-4" />
-                                                        Delete Review
+                                                        {t('admin.reviews.action_delete_review')}
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -669,7 +671,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
 
                                         {/* Review Content */}
                                         <div className="space-y-2">
-                                            <p className="text-sm">{review.comment || 'No comment provided'}</p>
+                                            <p className="text-sm">{review.comment || t('admin.reviews.no_comment')}</p>
                                             <ReviewMediaModeration
                                                 reviewId={review.id}
                                                 reviewApproved={review.is_approved}
@@ -681,7 +683,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                         {/* Product & Customer Info */}
                                         <div className="space-y-2 text-sm">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-muted-foreground">Product:</span>
+                                                <span className="text-muted-foreground">{t('admin.reviews.label_product')}</span>
                                                 <Link
                                                     href={`/admin/products/${review.product.id}`}
                                                     className="font-medium text-primary hover:underline"
@@ -691,15 +693,15 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                             </div>
 
                                             <div className="flex items-center justify-between">
-                                                <span className="text-muted-foreground">Customer:</span>
+                                                <span className="text-muted-foreground">{t('admin.reviews.label_customer')}</span>
                                                 <div className="text-right">
-                                                    <p className="font-medium">{review.user?.name || 'Guest User'}</p>
+                                                    <p className="font-medium">{review.user?.name || t('admin.reviews.guest_user')}</p>
                                                     {review.user?.email && <p className="text-xs text-muted-foreground">{review.user.email}</p>}
                                                 </div>
                                             </div>
 
                                             <div className="flex items-center justify-between">
-                                                <span className="text-muted-foreground">Date:</span>
+                                                <span className="text-muted-foreground">{t('admin.reviews.label_date')}</span>
                                                 <span>{formatDate(review.created_at)}</span>
                                             </div>
                                         </div>
@@ -715,7 +717,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                     className="flex-1 bg-green-600 hover:bg-green-700"
                                                 >
                                                     <Check className="mr-1 h-4 w-4" />
-                                                    Approve
+                                                    {t('admin.reviews.action_approve')}
                                                 </Button>
                                                 <Button
                                                     size="sm"
@@ -725,7 +727,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                                     className="flex-1"
                                                 >
                                                     <X className="mr-1 h-4 w-4" />
-                                                    Reject
+                                                    {t('admin.reviews.action_reject')}
                                                 </Button>
                                             </div>
                                         )}
@@ -733,7 +735,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                 </Card>
                             ))
                         ) : (
-                            <div className="py-8 text-center text-muted-foreground">No reviews found</div>
+                            <div className="py-8 text-center text-muted-foreground">{t('admin.reviews.no_reviews')}</div>
                         )}
                     </div>
 
@@ -742,7 +744,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                         <div className="border-t px-4 py-4">
                             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                 <p className="text-center text-sm text-muted-foreground md:text-left">
-                                    Showing {reviewsMeta.from} to {reviewsMeta.to} of {reviewsMeta.total} results
+                                    {t('admin.reviews.showing_results', { from: reviewsMeta.from, to: reviewsMeta.to, total: reviewsMeta.total })}
                                 </p>
                                 <div className="flex items-center justify-center space-x-1 md:space-x-2">
                                     {reviewsLinks.map((link, index) => {
@@ -804,7 +806,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                 className="h-12 flex-1 text-xs"
                             >
                                 <ChevronLeft className="mr-1 h-4 w-4" />
-                                Prev Page
+                                {t('admin.reviews.prev_page')}
                             </Button>
                             <Button
                                 variant="outline"
@@ -813,7 +815,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                 className="h-12 flex-1 text-xs"
                             >
                                 <Filter className="mr-1 h-4 w-4" />
-                                Filters
+                                {t('admin.reviews.filters_button')}
                             </Button>
                             <Button
                                 variant="outline"
@@ -836,7 +838,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                 disabled={reviewsMeta.current_page >= reviewsMeta.last_page}
                                 className="h-12 flex-1 text-xs"
                             >
-                                Next Page
+                                {t('admin.reviews.next_page')}
                                 <ChevronRight className="ml-1 h-4 w-4" />
                             </Button>
                         </div>
@@ -848,15 +850,15 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Delete Review</DialogTitle>
-                        <DialogDescription>Are you sure you want to delete this review? This action cannot be undone.</DialogDescription>
+                        <DialogTitle>{t('admin.reviews.dialog_delete_title')}</DialogTitle>
+                        <DialogDescription>{t('admin.reviews.dialog_delete_description')}</DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-                            Cancel
+                            {t('admin.reviews.dialog_cancel')}
                         </Button>
                         <Button variant="destructive" onClick={() => reviewToDelete && handleDeleteReview(reviewToDelete)}>
-                            Delete
+                            {t('admin.reviews.dialog_delete')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

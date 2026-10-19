@@ -88,7 +88,7 @@ export default function Subscribers({ subscribers, counts, filters, abandoned }:
     return (
         <AdminLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
                 { title: t('newsletter.admin.title'), href: route('admin.newsletter.subscribers') },
             ]}
         >

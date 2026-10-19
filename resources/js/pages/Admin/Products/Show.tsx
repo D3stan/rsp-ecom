@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useSetting } from '@/hooks/use-setting';
+import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { DollarSign, Edit2, MessageSquare, Package, Percent, Plus, Star, TrendingUp } from 'lucide-react';
@@ -58,6 +59,7 @@ interface Props {
 }
 
 export default function ProductsShow({ product }: Props) {
+    const { t, locale } = useTranslation();
     const lowStockThreshold = useSetting('inventory.low_stock_threshold', 10);
     const [isRestocking, setIsRestocking] = useState(false);
     const [isDiscounting, setIsDiscounting] = useState(false);
@@ -97,7 +99,7 @@ export default function ProductsShow({ product }: Props) {
     });
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('it-IT', {
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
             currency: 'EUR',
         }).format(amount);
@@ -116,27 +118,33 @@ export default function ProductsShow({ product }: Props) {
             draft: 'bg-yellow-500',
         };
 
+        const labels: Record<string, string> = {
+            active: t('admin.products.status_active'),
+            inactive: t('admin.products.status_inactive'),
+            draft: t('admin.products.status_draft'),
+        };
+
         return (
             <Badge variant={variants[status as keyof typeof variants]} className={colors[status as keyof typeof colors]}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {labels[status] || status.charAt(0).toUpperCase() + status.slice(1)}
             </Badge>
         );
     };
 
     const getStockBadge = (stock: number) => {
         if (stock === 0) {
-            return <Badge variant="destructive">Out of Stock</Badge>;
+            return <Badge variant="destructive">{t('admin.products.stock_out_of_stock')}</Badge>;
         }
         if (stock <= lowStockThreshold) {
             return (
                 <Badge variant="outline" className="border-orange-600 text-orange-600">
-                    Low Stock
+                    {t('admin.products.stock_low_stock')}
                 </Badge>
             );
         }
         return (
             <Badge variant="default" className="bg-green-600">
-                In Stock
+                {t('admin.products.stock_in_stock')}
             </Badge>
         );
     };
@@ -166,20 +174,26 @@ export default function ProductsShow({ product }: Props) {
     };
 
     return (
-        <AdminLayout>
-            <Head title={`Product: ${product.name}`} />
+        <AdminLayout
+            breadcrumbs={[
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.products.title'), href: '/admin/products' },
+                { title: product.name, href: route('admin.products.show', product.id) },
+            ]}
+        >
+            <Head title={t('admin.products.head_show', { name: product.name })} />
 
             <div className="space-y-6 p-4 sm:p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-white">{product.name}</h1>
-                        <p className="text-gray-500">SKU: {product.sku || 'N/A'}</p>
+                        <p className="text-gray-500">{t('admin.products.sku_display', { sku: product.sku || t('admin.products.not_available') })}</p>
                     </div>
                     <Button size="sm" asChild>
                         <Link href={route('admin.products.edit', product.id)}>
                             <Edit2 className="mr-2 h-4 w-4" />
-                            Edit
+                            {t('admin.products.edit')}
                         </Link>
                     </Button>
                 </div>
@@ -188,7 +202,7 @@ export default function ProductsShow({ product }: Props) {
                     {/* Product Images */}
                     <Card>
                         <CardHeader className="pb-4">
-                            <CardTitle className="text-lg">Product Images</CardTitle>
+                            <CardTitle className="text-lg">{t('admin.products.product_images')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {product.image_urls.length > 0 ? (
@@ -233,18 +247,18 @@ export default function ProductsShow({ product }: Props) {
                         <CardHeader className="pb-4">
                             <div className="flex items-center gap-2">
                                 <Package className="h-5 w-5 text-blue-600" />
-                                <CardTitle className="text-lg">Product Information</CardTitle>
+                                <CardTitle className="text-lg">{t('admin.products.product_information')}</CardTitle>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <span className="text-sm font-medium text-gray-500">Status</span>
+                                    <span className="text-sm font-medium text-gray-500">{t('admin.products.status')}</span>
                                     <div className="mt-1">{getStatusBadge(product.status)}</div>
                                 </div>
 
                                 <div>
-                                    <span className="text-sm font-medium text-gray-500">Stock</span>
+                                    <span className="text-sm font-medium text-gray-500">{t('admin.products.stock')}</span>
                                     <div className="mt-1 flex items-center gap-2">
                                         <span className="font-bold">{product.stock_quantity}</span>
                                         {getStockBadge(product.stock_quantity)}
@@ -252,13 +266,13 @@ export default function ProductsShow({ product }: Props) {
                                 </div>
 
                                 <div>
-                                    <span className="text-sm font-medium text-gray-500">Category</span>
-                                    <div className="mt-1">{product.category?.name || 'No category'}</div>
+                                    <span className="text-sm font-medium text-gray-500">{t('admin.products.category')}</span>
+                                    <div className="mt-1">{product.category?.name || t('admin.products.no_category')}</div>
                                 </div>
 
                                 <div>
-                                    <span className="text-sm font-medium text-gray-500">Size</span>
-                                    <div className="mt-1">{product.size?.name || 'No size'}</div>
+                                    <span className="text-sm font-medium text-gray-500">{t('admin.products.size')}</span>
+                                    <div className="mt-1">{product.size?.name || t('admin.products.no_size')}</div>
                                 </div>
                             </div>
 
@@ -266,7 +280,7 @@ export default function ProductsShow({ product }: Props) {
                                 <div className="mt-4">
                                     <Badge variant="outline" className="border-yellow-600 text-yellow-600">
                                         <Star className="mr-1 h-3 w-3" />
-                                        Featured Product
+                                        {t('admin.products.featured_product')}
                                     </Badge>
                                 </div>
                             )}
@@ -276,26 +290,26 @@ export default function ProductsShow({ product }: Props) {
                                 {!isRestocking ? (
                                     <Button variant="outline" size="sm" onClick={() => setIsRestocking(true)} className="w-full">
                                         <TrendingUp className="mr-2 h-4 w-4" />
-                                        Quick Restock
+                                        {t('admin.products.quick_restock')}
                                     </Button>
                                 ) : (
                                     <form onSubmit={handleQuickRestock} className="space-y-3">
                                         <Label htmlFor="stock_quantity" className="text-sm">
-                                            New Stock Quantity
+                                            {t('admin.products.new_stock_quantity')}
                                         </Label>
                                         <Input
                                             id="stock_quantity"
                                             type="number"
                                             value={restockData.stock_quantity}
                                             onChange={(e) => setRestockData('stock_quantity', e.target.value)}
-                                            placeholder="Enter new stock quantity"
+                                            placeholder={t('admin.products.placeholder_new_stock')}
                                         />
                                         <div className="flex gap-2">
                                             <Button type="submit" size="sm" disabled={restockProcessing} className="flex-1">
-                                                {restockProcessing ? 'Updating...' : 'Update Stock'}
+                                                {restockProcessing ? t('admin.products.updating') : t('admin.products.update_stock')}
                                             </Button>
                                             <Button type="button" variant="outline" size="sm" onClick={() => setIsRestocking(false)}>
-                                                Cancel
+                                                {t('admin.products.cancel')}
                                             </Button>
                                         </div>
                                     </form>
@@ -310,25 +324,25 @@ export default function ProductsShow({ product }: Props) {
                     <CardHeader className="pb-4">
                         <div className="flex items-center gap-2">
                             <DollarSign className="h-5 w-5 text-green-600" />
-                            <CardTitle className="text-lg">Pricing</CardTitle>
+                            <CardTitle className="text-lg">{t('admin.products.pricing')}</CardTitle>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div>
-                                <span className="text-sm font-medium text-gray-500">Current Price</span>
+                                <span className="text-sm font-medium text-gray-500">{t('admin.products.current_price')}</span>
                                 <div className="mt-1 text-2xl font-bold">{formatCurrency(product.price)}</div>
                             </div>
 
                             {product.compare_price && product.compare_price > product.price && (
                                 <>
                                     <div>
-                                        <span className="text-sm font-medium text-gray-500">Compare Price</span>
+                                        <span className="text-sm font-medium text-gray-500">{t('admin.products.compare_price')}</span>
                                         <div className="mt-1 text-lg text-gray-500 line-through">{formatCurrency(product.compare_price)}</div>
                                     </div>
                                     {product.discount_percentage && (
                                         <div>
-                                            <span className="text-sm font-medium text-gray-500">Discount</span>
+                                            <span className="text-sm font-medium text-gray-500">{t('admin.products.discount')}</span>
                                             <div className="mt-1">
                                                 <Badge variant="destructive" className="text-lg">
                                                     -{product.discount_percentage}%
@@ -345,12 +359,12 @@ export default function ProductsShow({ product }: Props) {
                             {!isDiscounting ? (
                                 <Button variant="outline" size="sm" onClick={() => setIsDiscounting(true)} className="w-full">
                                     <Percent className="mr-2 h-4 w-4" />
-                                    Quick Discount
+                                    {t('admin.products.quick_discount')}
                                 </Button>
                             ) : (
                                 <form onSubmit={handleQuickDiscount} className="space-y-3">
                                     <Label htmlFor="compare_price" className="text-sm">
-                                        Compare Price (for discount)
+                                        {t('admin.products.compare_price_for_discount')}
                                     </Label>
                                     <Input
                                         id="compare_price"
@@ -358,14 +372,14 @@ export default function ProductsShow({ product }: Props) {
                                         step="0.01"
                                         value={discountData.compare_price}
                                         onChange={(e) => setDiscountData('compare_price', e.target.value)}
-                                        placeholder="Enter compare price"
+                                        placeholder={t('admin.products.placeholder_compare_price')}
                                     />
                                     <div className="flex gap-2">
                                         <Button type="submit" size="sm" disabled={discountProcessing} className="flex-1">
-                                            {discountProcessing ? 'Updating...' : 'Set Discount'}
+                                            {discountProcessing ? t('admin.products.updating') : t('admin.products.set_discount')}
                                         </Button>
                                         <Button type="button" variant="outline" size="sm" onClick={() => setIsDiscounting(false)}>
-                                            Cancel
+                                            {t('admin.products.cancel')}
                                         </Button>
                                     </div>
                                 </form>
@@ -378,7 +392,7 @@ export default function ProductsShow({ product }: Props) {
                 {product.description && (
                     <Card>
                         <CardHeader className="pb-4">
-                            <CardTitle className="text-lg">Description</CardTitle>
+                            <CardTitle className="text-lg">{t('admin.products.description')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="whitespace-pre-wrap text-gray-600">{product.description}</p>
@@ -392,14 +406,14 @@ export default function ProductsShow({ product }: Props) {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Star className="h-5 w-5 text-yellow-500" />
-                                <CardTitle className="text-lg">Reviews</CardTitle>
+                                <CardTitle className="text-lg">{t('admin.products.reviews')}</CardTitle>
                             </div>
                             <Button variant="outline" size="sm" onClick={() => setIsAddingReview(true)}>
                                 <Plus className="mr-2 h-4 w-4" />
-                                Add Review
+                                {t('admin.products.add_review')}
                             </Button>
                         </div>
-                        <CardDescription>Customer reviews and ratings for this product</CardDescription>
+                        <CardDescription>{t('admin.products.reviews_description')}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {/* Review Summary */}
@@ -409,27 +423,29 @@ export default function ProductsShow({ product }: Props) {
                                 <span className="text-lg font-bold">{product.average_rating.toFixed(1)}</span>
                             </div>
                             <div className="text-gray-600">
-                                {product.review_count} {product.review_count === 1 ? 'review' : 'reviews'}
+                                {product.review_count === 1
+                                    ? t('admin.products.review_count_singular', { count: product.review_count })
+                                    : t('admin.products.review_count_plural', { count: product.review_count })}
                             </div>
                         </div>
 
                         {/* Add Review Form */}
                         {isAddingReview && (
                             <form onSubmit={handleAddReview} className="space-y-4 rounded-lg border bg-gray-50 p-4">
-                                <h4 className="font-medium">Add New Review</h4>
+                                <h4 className="font-medium">{t('admin.products.add_new_review')}</h4>
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
-                                        <Label htmlFor="user_name">Customer Name</Label>
+                                        <Label htmlFor="user_name">{t('admin.products.customer_name')}</Label>
                                         <Input
                                             id="user_name"
                                             value={reviewData.user_name}
                                             onChange={(e) => setReviewData('user_name', e.target.value)}
-                                            placeholder="Enter customer name"
+                                            placeholder={t('admin.products.placeholder_customer_name')}
                                             required
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="rating">Rating</Label>
+                                        <Label htmlFor="rating">{t('admin.products.rating')}</Label>
                                         <Select value={reviewData.rating} onValueChange={(value) => setReviewData('rating', value)}>
                                             <SelectTrigger>
                                                 <SelectValue />
@@ -441,7 +457,7 @@ export default function ProductsShow({ product }: Props) {
                                                             {Array.from({ length: rating }, (_, i) => (
                                                                 <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                                                             ))}
-                                                            <span className="ml-2">{rating} Stars</span>
+                                                            <span className="ml-2">{t('admin.products.stars_count', { count: rating })}</span>
                                                         </div>
                                                     </SelectItem>
                                                 ))}
@@ -450,22 +466,22 @@ export default function ProductsShow({ product }: Props) {
                                     </div>
                                 </div>
                                 <div>
-                                    <Label htmlFor="comment">Review Comment</Label>
+                                    <Label htmlFor="comment">{t('admin.products.review_comment')}</Label>
                                     <Textarea
                                         id="comment"
                                         value={reviewData.comment}
                                         onChange={(e) => setReviewData('comment', e.target.value)}
-                                        placeholder="Enter review comment"
+                                        placeholder={t('admin.products.placeholder_review_comment')}
                                         rows={3}
                                         required
                                     />
                                 </div>
                                 <div className="flex gap-2">
                                     <Button type="submit" size="sm" disabled={reviewProcessing} className="flex-1">
-                                        {reviewProcessing ? 'Adding...' : 'Add Review'}
+                                        {reviewProcessing ? t('admin.products.adding') : t('admin.products.add_review')}
                                     </Button>
                                     <Button type="button" variant="outline" size="sm" onClick={() => setIsAddingReview(false)}>
-                                        Cancel
+                                        {t('admin.products.cancel')}
                                     </Button>
                                 </div>
                             </form>
@@ -490,7 +506,7 @@ export default function ProductsShow({ product }: Props) {
                                                     ))}
                                                 </div>
                                             </div>
-                                            <span className="text-sm text-gray-500">{new Date(review.created_at).toLocaleDateString()}</span>
+                                            <span className="text-sm text-gray-500">{new Date(review.created_at).toLocaleDateString(locale)}</span>
                                         </div>
                                         <p className="text-gray-600">{review.comment}</p>
                                     </div>
@@ -499,8 +515,8 @@ export default function ProductsShow({ product }: Props) {
                         ) : (
                             <div className="py-8 text-center text-gray-500">
                                 <MessageSquare className="mx-auto mb-4 h-12 w-12 text-gray-300" />
-                                <p>No reviews yet</p>
-                                <p className="text-sm">Be the first to add a review for this product</p>
+                                <p>{t('admin.products.no_reviews_yet')}</p>
+                                <p className="text-sm">{t('admin.products.be_first_to_review')}</p>
                             </div>
                         )}
                     </CardContent>

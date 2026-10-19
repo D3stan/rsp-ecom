@@ -77,7 +77,7 @@ const OrderStatusTimeline: React.FC<{ status: string }> = ({ status }) => {
 };
 
 const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -92,7 +92,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
     const formatCurrency = useMoney();
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
+        return new Date(dateString).toLocaleDateString(locale, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',

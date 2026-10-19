@@ -21,12 +21,12 @@ interface TrackedOrder {
  * refunded). Shared by the account orders page and the signed guest order page. No raw carrier codes are shown.
  */
 export default function OrderTracking({ order }: { order: TrackedOrder }) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const status = order.status.toLowerCase();
     const payment = (order.payment_status ?? '').toLowerCase();
 
     const statusLabel = (value?: string | null) => (value ? t(`tracking_admin.status.${value}`) : null);
-    const formatTime = (value?: string | null) => (value ? new Date(value).toLocaleString() : '');
+    const formatTime = (value?: string | null) => (value ? new Date(value).toLocaleString(locale) : '');
 
     if (status === 'cancelled') {
         const refunded = payment === 'refunded' || payment === 'partially_refunded';

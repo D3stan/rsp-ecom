@@ -114,7 +114,7 @@ const statusOptions = [
 
 export default function Edit({ order, allowed_transitions = [], financials_locked = false, carriers = [] }: Props) {
     const { addToast } = useToast();
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const [processing, setProcessing] = useState(false);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [formData, setFormData] = useState<FormData>({
@@ -136,7 +136,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
     });
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('it-IT', {
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
             currency: 'EUR',
         }).format(amount);
@@ -202,21 +202,21 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
 
         // Check required fields
         if (!formData.status || formData.status.trim() === '') {
-            errors.push('Order status is required');
+            errors.push(t('admin.orders.validation.status_required'));
         }
 
         // Check if at least one order item exists
         if (!formData.order_items || formData.order_items.length === 0) {
-            errors.push('At least one order item is required');
+            errors.push(t('admin.orders.validation.item_required'));
         }
 
         // Validate order items
         formData.order_items.forEach((item, index) => {
             if (!item.quantity || item.quantity <= 0) {
-                errors.push(`Item ${index + 1}: Quantity must be greater than 0`);
+                errors.push(t('admin.orders.validation.item_quantity_min', { number: index + 1 }));
             }
             if (Number(item.price) < 0) {
-                errors.push(`Item ${index + 1}: Price cannot be negative`);
+                errors.push(t('admin.orders.validation.item_price_negative', { number: index + 1 }));
             }
         });
 
@@ -226,7 +226,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
             required.forEach((field) => {
                 const value = formData.billing_address?.[field as keyof Address];
                 if (!value || value.toString().trim() === '') {
-                    errors.push(`Billing address: ${field.replace('_', ' ')} is required`);
+                    errors.push(t('admin.orders.validation.billing_field_required', { field: field.replace('_', ' ') }));
                 }
             });
         }
@@ -237,7 +237,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
             required.forEach((field) => {
                 const value = formData.shipping_address?.[field as keyof Address];
                 if (!value || value.toString().trim() === '') {
-                    errors.push(`Shipping address: ${field.replace('_', ' ')} is required`);
+                    errors.push(t('admin.orders.validation.shipping_field_required', { field: field.replace('_', ' ') }));
                 }
             });
         }
@@ -259,7 +259,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
             setValidationErrors(validation.errors);
             addToast({
                 type: 'error',
-                title: 'Validation Error',
+                title: t('admin.orders.validation.title'),
                 description: validation.errors[0], // Show the first error
                 duration: 5000,
             });
@@ -345,15 +345,28 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
     };
 
     return (
-        <AppLayout>
-            <Head title={`Edit Order #${order.order_number}`} />
+        <AppLayout
+            breadcrumbs={[
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.orders.title'), href: '/admin/orders' },
+                { title: order.order_number, href: `/admin/orders/${order.id}` },
+                { title: t('admin.orders.edit_order'), href: `/admin/orders/${order.id}/edit` },
+            ]}
+        >
+            <Head title={t('admin.orders.edit_head_title', { order_number: order.order_number })} />
 
             <div className="space-y-6 p-4 sm:p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-white">Edit Order #{order.order_number}</h1>
-                        <p className="text-gray-500">Last updated: {new Date(order.updated_at).toLocaleDateString()}</p>
+                        <h1 className="text-2xl font-bold text-white">
+                            {t('admin.orders.edit_title', { order_number: order.order_number })}
+                        </h1>
+                        <p className="text-gray-500">
+                            {t('admin.orders.last_updated', {
+                                date: new Date(order.updated_at).toLocaleDateString(locale),
+                            })}
+                        </p>
                     </div>
                 </div>
 
@@ -366,7 +379,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Package className="h-5 w-5 text-blue-600" />
-                                            <CardTitle className="text-lg">Order Details</CardTitle>
+                                            <CardTitle className="text-lg">{t('admin.orders.section_order_details')}</CardTitle>
                                         </div>
                                         <ChevronDown className={`h-4 w-4 transition-transform ${openSections.orderDetails ? 'rotate-180' : ''}`} />
                                     </div>
@@ -376,7 +389,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div>
-                                            <Label htmlFor="status">Order Status</Label>
+                                            <Label htmlFor="status">{t('admin.orders.filter_status')}</Label>
                                             <Select
                                                 value={formData.status}
                                                 onValueChange={(value: string) => {
@@ -397,30 +410,32 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                         )
                                                         .map((option) => (
                                                             <SelectItem key={option.value} value={option.value}>
-                                                                {option.label}
+                                                                {t(`admin.orders.status.${option.value}`)}
                                                             </SelectItem>
                                                         ))}
                                                 </SelectContent>
                                             </Select>
                                             {hasValidationError('order status') && (
-                                                <p className="mt-1 text-sm text-red-500">Order status is required</p>
+                                                <p className="mt-1 text-sm text-red-500">{t('admin.orders.validation.status_required')}</p>
                                             )}
                                         </div>
                                         <div>
-                                            <Label>Payment Status</Label>
+                                            <Label>{t('admin.orders.filter_payment_status')}</Label>
                                             {/* read-only: it follows Stripe and refunds */}
                                             <div className="mt-2">
-                                                <Badge variant="secondary">{order.payment_status}</Badge>
+                                                <Badge variant="secondary">
+                                                    {t(`admin.orders.payment_status.${order.payment_status}`)}
+                                                </Badge>
                                             </div>
                                         </div>
                                     </div>
                                     <div>
-                                        <Label htmlFor="tracking_number">Tracking Number</Label>
+                                        <Label htmlFor="tracking_number">{t('admin.orders.tracking_number')}</Label>
                                         <Input
                                             id="tracking_number"
                                             value={formData.tracking_number}
                                             onChange={(e) => setFormData((prev) => ({ ...prev, tracking_number: e.target.value }))}
-                                            placeholder="Enter tracking number"
+                                            placeholder={t('admin.orders.enter_tracking_number')}
                                         />
                                     </div>
                                     {carriers.length > 0 && (
@@ -447,12 +462,12 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                         </div>
                                     )}
                                     <div>
-                                        <Label htmlFor="notes">Order Notes</Label>
+                                        <Label htmlFor="notes">{t('admin.orders.notes')}</Label>
                                         <Textarea
                                             id="notes"
                                             value={formData.notes}
                                             onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-                                            placeholder="Add any notes about this order..."
+                                            placeholder={t('admin.orders.notes_placeholder')}
                                             rows={3}
                                         />
                                     </div>
@@ -469,8 +484,10 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Package className="h-5 w-5 text-blue-600" />
-                                            <CardTitle className="text-lg">Order Items</CardTitle>
-                                            <Badge variant="secondary">{formData.order_items.length} items</Badge>
+                                            <CardTitle className="text-lg">{t('admin.orders.section_order_items')}</CardTitle>
+                                            <Badge variant="secondary">
+                                                {t('admin.orders.items_count', { count: formData.order_items.length })}
+                                            </Badge>
                                         </div>
                                         <ChevronDown className={`h-4 w-4 transition-transform ${openSections.orderItems ? 'rotate-180' : ''}`} />
                                     </div>
@@ -495,13 +512,15 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     )}
                                                     <div className="min-w-0 flex-1">
                                                         <h4 className="truncate font-medium">{item.product.name}</h4>
-                                                        <p className="text-sm text-gray-600">{formatCurrency(item.price)} each</p>
+                                                        <p className="text-sm text-gray-600">
+                                                            {t('admin.orders.price_each', { price: formatCurrency(item.price) })}
+                                                        </p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center justify-between gap-4 sm:justify-end">
                                                     <div className="flex items-center gap-2">
                                                         <Label htmlFor={`quantity-${item.id}`} className="text-sm whitespace-nowrap">
-                                                            Qty:
+                                                            {t('admin.orders.label_qty')}
                                                         </Label>
                                                         <Input
                                                             id={`quantity-${item.id}`}
@@ -526,7 +545,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                             onClick={() => removeOrderItem(item.id)}
                                                             className="whitespace-nowrap text-red-600 hover:text-red-800"
                                                         >
-                                                            Remove
+                                                            {t('admin.orders.remove')}
                                                         </Button>
                                                     )}
                                                 </div>
@@ -535,7 +554,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
 
                                         {hasValidationError('order item') && formData.order_items.length === 0 && (
                                             <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                                                <p className="text-sm text-red-600">At least one order item is required</p>
+                                                <p className="text-sm text-red-600">{t('admin.orders.validation.item_required')}</p>
                                             </div>
                                         )}
                                     </div>
@@ -552,7 +571,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <DollarSign className="h-5 w-5 text-green-600" />
-                                            <CardTitle className="text-lg">Financial Summary</CardTitle>
+                                            <CardTitle className="text-lg">{t('admin.orders.section_financial_summary')}</CardTitle>
                                         </div>
                                         <ChevronDown className={`h-4 w-4 transition-transform ${openSections.financial ? 'rotate-180' : ''}`} />
                                     </div>
@@ -563,7 +582,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div className="space-y-4">
                                             <div>
-                                                <Label htmlFor="shipping_amount">Shipping Amount</Label>
+                                                <Label htmlFor="shipping_amount">{t('admin.orders.shipping_amount')}</Label>
                                                 <Input
                                                     id="shipping_amount"
                                                     type="number"
@@ -581,29 +600,33 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                             )}
                                         </div>
                                         <div>
-                                            <h3 className="mb-4 font-medium">Order Summary</h3>
+                                            <h3 className="mb-4 font-medium">{t('admin.orders.order_summary')}</h3>
                                             <div className="space-y-2 rounded-lg p-4">
                                                 <div className="flex justify-between text-sm">
-                                                    <span>Subtotal:</span>
+                                                    <span>{t('admin.orders.label_subtotal')}</span>
                                                     <span>{formatCurrency(preview.subtotal)}</span>
                                                 </div>
                                                 <div className="flex justify-between text-sm">
-                                                    <span>Shipping:</span>
+                                                    <span>{t('admin.orders.label_shipping')}</span>
                                                     <span>{formatCurrency(formData.shipping_amount)}</span>
                                                 </div>
                                                 {Number(order.discount_amount ?? 0) > 0 && (
                                                     <div className="flex justify-between text-sm">
-                                                        <span>Discount:</span>
+                                                        <span>{t('admin.orders.label_discount')}</span>
                                                         <span>-{formatCurrency(Number(order.discount_amount))}</span>
                                                     </div>
                                                 )}
                                                 <div className="flex justify-between text-sm">
-                                                    <span>{order.tax_rate != null ? `Included VAT (${order.tax_rate}%):` : 'Tax:'}</span>
+                                                    <span>
+                                                        {order.tax_rate != null
+                                                            ? t('admin.orders.included_vat_rate', { rate: order.tax_rate })
+                                                            : t('admin.orders.label_tax')}
+                                                    </span>
                                                     <span>{formatCurrency(preview.tax)}</span>
                                                 </div>
                                                 <Separator />
                                                 <div className="flex justify-between text-lg font-medium">
-                                                    <span>Total:</span>
+                                                    <span>{t('admin.orders.label_total')}</span>
                                                     <span>{formatCurrency(preview.total)}</span>
                                                 </div>
                                             </div>
@@ -622,7 +645,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <MapPin className="h-5 w-5 text-red-600" />
-                                            <CardTitle className="text-lg">Addresses</CardTitle>
+                                            <CardTitle className="text-lg">{t('admin.orders.section_addresses')}</CardTitle>
                                         </div>
                                         <ChevronDown className={`h-4 w-4 transition-transform ${openSections.addresses ? 'rotate-180' : ''}`} />
                                     </div>
@@ -632,11 +655,11 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                 <CardContent className="space-y-6">
                                     {/* Billing Address */}
                                     <div>
-                                        <h3 className="mb-4 font-medium">Billing Address</h3>
+                                        <h3 className="mb-4 font-medium">{t('admin.orders.billing_address')}</h3>
                                         {formData.billing_address && (
                                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                                 <div>
-                                                    <Label htmlFor="billing_first_name">First Name</Label>
+                                                    <Label htmlFor="billing_first_name">{t('admin.orders.first_name')}</Label>
                                                     <Input
                                                         id="billing_first_name"
                                                         value={formData.billing_address.first_name}
@@ -644,7 +667,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="billing_last_name">Last Name</Label>
+                                                    <Label htmlFor="billing_last_name">{t('admin.orders.last_name')}</Label>
                                                     <Input
                                                         id="billing_last_name"
                                                         value={formData.billing_address.last_name}
@@ -652,7 +675,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div className="md:col-span-2">
-                                                    <Label htmlFor="billing_address_line_1">Address Line 1</Label>
+                                                    <Label htmlFor="billing_address_line_1">{t('admin.orders.address_line_1')}</Label>
                                                     <Input
                                                         id="billing_address_line_1"
                                                         value={formData.billing_address.address_line_1}
@@ -660,7 +683,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div className="md:col-span-2">
-                                                    <Label htmlFor="billing_address_line_2">Address Line 2</Label>
+                                                    <Label htmlFor="billing_address_line_2">{t('admin.orders.address_line_2')}</Label>
                                                     <Input
                                                         id="billing_address_line_2"
                                                         value={formData.billing_address.address_line_2 || ''}
@@ -668,7 +691,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="billing_city">City</Label>
+                                                    <Label htmlFor="billing_city">{t('admin.orders.city')}</Label>
                                                     <Input
                                                         id="billing_city"
                                                         value={formData.billing_address.city}
@@ -676,7 +699,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="billing_postal_code">Postal Code</Label>
+                                                    <Label htmlFor="billing_postal_code">{t('admin.orders.postal_code')}</Label>
                                                     <Input
                                                         id="billing_postal_code"
                                                         value={formData.billing_address.postal_code}
@@ -684,7 +707,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="billing_state">State</Label>
+                                                    <Label htmlFor="billing_state">{t('admin.orders.state')}</Label>
                                                     <Input
                                                         id="billing_state"
                                                         value={formData.billing_address.state}
@@ -692,7 +715,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="billing_country">Country</Label>
+                                                    <Label htmlFor="billing_country">{t('admin.orders.country')}</Label>
                                                     <Input
                                                         id="billing_country"
                                                         value={formData.billing_address.country}
@@ -705,11 +728,11 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
 
                                     {/* Shipping Address */}
                                     <div>
-                                        <h3 className="mb-4 font-medium">Shipping Address</h3>
+                                        <h3 className="mb-4 font-medium">{t('admin.orders.shipping_address')}</h3>
                                         {formData.shipping_address && (
                                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                                 <div>
-                                                    <Label htmlFor="shipping_first_name">First Name</Label>
+                                                    <Label htmlFor="shipping_first_name">{t('admin.orders.first_name')}</Label>
                                                     <Input
                                                         id="shipping_first_name"
                                                         value={formData.shipping_address.first_name}
@@ -717,7 +740,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="shipping_last_name">Last Name</Label>
+                                                    <Label htmlFor="shipping_last_name">{t('admin.orders.last_name')}</Label>
                                                     <Input
                                                         id="shipping_last_name"
                                                         value={formData.shipping_address.last_name}
@@ -725,7 +748,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div className="md:col-span-2">
-                                                    <Label htmlFor="shipping_address_line_1">Address Line 1</Label>
+                                                    <Label htmlFor="shipping_address_line_1">{t('admin.orders.address_line_1')}</Label>
                                                     <Input
                                                         id="shipping_address_line_1"
                                                         value={formData.shipping_address.address_line_1}
@@ -733,7 +756,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div className="md:col-span-2">
-                                                    <Label htmlFor="shipping_address_line_2">Address Line 2</Label>
+                                                    <Label htmlFor="shipping_address_line_2">{t('admin.orders.address_line_2')}</Label>
                                                     <Input
                                                         id="shipping_address_line_2"
                                                         value={formData.shipping_address.address_line_2 || ''}
@@ -741,7 +764,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="shipping_city">City</Label>
+                                                    <Label htmlFor="shipping_city">{t('admin.orders.city')}</Label>
                                                     <Input
                                                         id="shipping_city"
                                                         value={formData.shipping_address.city}
@@ -749,7 +772,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="shipping_postal_code">Postal Code</Label>
+                                                    <Label htmlFor="shipping_postal_code">{t('admin.orders.postal_code')}</Label>
                                                     <Input
                                                         id="shipping_postal_code"
                                                         value={formData.shipping_address.postal_code}
@@ -757,7 +780,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="shipping_state">State</Label>
+                                                    <Label htmlFor="shipping_state">{t('admin.orders.state')}</Label>
                                                     <Input
                                                         id="shipping_state"
                                                         value={formData.shipping_address.state}
@@ -765,7 +788,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                     />
                                                 </div>
                                                 <div>
-                                                    <Label htmlFor="shipping_country">Country</Label>
+                                                    <Label htmlFor="shipping_country">{t('admin.orders.country')}</Label>
                                                     <Input
                                                         id="shipping_country"
                                                         value={formData.shipping_address.country}
@@ -788,11 +811,11 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                             onClick={() => router.visit(`/admin/orders/${order.id}`)}
                             className="order-2 sm:order-1"
                         >
-                            Cancel
+                            {t('admin.orders.cancel')}
                         </Button>
                         <Button type="submit" disabled={processing} className="order-1 flex items-center justify-center gap-2 sm:order-2">
                             {processing ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                            <span>{processing ? 'Saving...' : 'Save Changes'}</span>
+                            <span>{processing ? t('admin.orders.saving') : t('admin.orders.save_changes')}</span>
                         </Button>
                     </div>
                 </form>

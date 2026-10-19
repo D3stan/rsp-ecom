@@ -17,13 +17,6 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Profile settings',
-        href: '/settings/profile',
-    },
-];
-
 type ProfileForm = {
     name: string;
     email: string;
@@ -36,6 +29,13 @@ export default function Profile({
 }: { mustVerifyEmail: boolean; status?: string } & Partial<NewsletterPreferenceProps>) {
     const { auth } = usePage<SharedData>().props;
     const { t } = useTranslation();
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: t('account.profile.page_title'),
+            href: '/settings/profile',
+        },
+    ];
 
     const { data, setData, patch, errors, processing, recentlySuccessful } = useForm<Required<ProfileForm>>({
         name: auth.user!.name,

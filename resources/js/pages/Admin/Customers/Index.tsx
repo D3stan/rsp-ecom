@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
@@ -23,9 +24,10 @@ interface Props {
     filters: { search: string };
 }
 
-export const money = (value: number) => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EUR' }).format(value);
+export const money = (value: number, locale?: string) => new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }).format(value);
 
 export default function CustomersIndex({ customers, filters }: Props) {
+    const { t, locale } = useTranslation();
     const [search, setSearch] = useState(filters.search);
 
     const load = (params: { search?: string; page?: number }) =>
@@ -41,22 +43,22 @@ export default function CustomersIndex({ customers, filters }: Props) {
     };
 
     return (
-        <AdminLayout breadcrumbs={[{ title: 'Admin', href: '/admin/dashboard' }, { title: 'Customers', href: route('admin.customers.index') }]}>
-            <Head title="Customers" />
+        <AdminLayout breadcrumbs={[{ title: t('admin.nav.admin'), href: '/admin/dashboard' }, { title: t('admin.customers.title'), href: route('admin.customers.index') }]}>
+            <Head title={t('admin.customers.title')} />
             <div className="space-y-6 p-4 md:p-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Customers</h1>
-                    <p className="text-muted-foreground">{customers.total} registered customers</p>
+                    <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('admin.customers.title')}</h1>
+                    <p className="text-muted-foreground">{t('admin.customers.registered_count', { count: customers.total })}</p>
                 </div>
 
                 <form onSubmit={submit} className="flex gap-2">
                     <label htmlFor="customer-search" className="sr-only">
-                        Search customers
+                        {t('admin.customers.search_label')}
                     </label>
-                    <Input id="customer-search" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or email" />
+                    <Input id="customer-search" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('admin.customers.search_placeholder')} />
                     <Button type="submit" variant="secondary">
                         <Search className="h-4 w-4" />
-                        <span className="sr-only sm:not-sr-only sm:ml-2">Search</span>
+                        <span className="sr-only sm:not-sr-only sm:ml-2">{t('admin.customers.search_button')}</span>
                     </Button>
                 </form>
 
@@ -65,18 +67,18 @@ export default function CustomersIndex({ customers, filters }: Props) {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b text-left">
-                                    <th className="p-4 font-medium">Customer</th>
-                                    <th className="p-4 font-medium">Status</th>
-                                    <th className="p-4 text-right font-medium">Orders</th>
-                                    <th className="hidden p-4 text-right font-medium md:table-cell">Paid total</th>
-                                    <th className="hidden p-4 font-medium lg:table-cell">Joined</th>
+                                    <th className="p-4 font-medium">{t('admin.customers.th_customer')}</th>
+                                    <th className="p-4 font-medium">{t('admin.customers.th_status')}</th>
+                                    <th className="p-4 text-right font-medium">{t('admin.customers.th_orders')}</th>
+                                    <th className="hidden p-4 text-right font-medium md:table-cell">{t('admin.customers.th_paid_total')}</th>
+                                    <th className="hidden p-4 font-medium lg:table-cell">{t('admin.customers.th_joined')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {customers.data.length === 0 && (
                                     <tr>
                                         <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                                            No customers found.
+                                            {t('admin.customers.no_customers')}
                                         </td>
                                     </tr>
                                 )}
@@ -89,12 +91,12 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                             <span className="block truncate text-muted-foreground">{c.email}</span>
                                         </td>
                                         <td className="space-x-1 p-4">
-                                            <Badge variant={c.is_active ? 'default' : 'outline'}>{c.is_active ? 'Active' : 'Deactivated'}</Badge>
-                                            {!c.verified && <Badge variant="secondary">Unverified</Badge>}
+                                            <Badge variant={c.is_active ? 'default' : 'outline'}>{c.is_active ? t('admin.customers.status_active') : t('admin.customers.status_deactivated')}</Badge>
+                                            {!c.verified && <Badge variant="secondary">{t('admin.customers.status_unverified')}</Badge>}
                                         </td>
                                         <td className="p-4 text-right tabular-nums">{c.orders_count}</td>
-                                        <td className="hidden p-4 text-right tabular-nums md:table-cell">{money(c.total_spent)}</td>
-                                        <td className="hidden p-4 tabular-nums lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString() : '–'}</td>
+                                        <td className="hidden p-4 text-right tabular-nums md:table-cell">{money(c.total_spent, locale)}</td>
+                                        <td className="hidden p-4 tabular-nums lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString(locale) : '–'}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -104,14 +106,14 @@ export default function CustomersIndex({ customers, filters }: Props) {
                     {customers.last_page > 1 && (
                         <div className="flex items-center justify-between gap-4 p-4">
                             <p className="text-sm text-muted-foreground">
-                                Page {customers.current_page} of {customers.last_page}
+                                {t('admin.customers.pagination_page', { current: customers.current_page, total: customers.last_page })}
                             </p>
                             <div className="flex gap-2">
                                 <Button variant="outline" size="sm" disabled={customers.current_page <= 1} onClick={() => load({ page: customers.current_page - 1 })}>
-                                    <ChevronLeft className="h-4 w-4" /> Previous
+                                    <ChevronLeft className="h-4 w-4" /> {t('admin.customers.pagination_previous')}
                                 </Button>
                                 <Button variant="outline" size="sm" disabled={customers.current_page >= customers.last_page} onClick={() => load({ page: customers.current_page + 1 })}>
-                                    Next <ChevronRight className="h-4 w-4" />
+                                    {t('admin.customers.pagination_next')} <ChevronRight className="h-4 w-4" />
                                 </Button>
                             </div>
                         </div>

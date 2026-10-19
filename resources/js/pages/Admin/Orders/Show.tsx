@@ -182,7 +182,7 @@ export default function OrderShow({
     shipments = [],
     stock,
 }: Props) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const [cancelShipmentId, setCancelShipmentId] = useState<number | null>(null);
     const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
     const [isUpdating, setIsUpdating] = useState(false);
@@ -207,14 +207,14 @@ export default function OrderShow({
     };
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('it-IT', {
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
             currency: order.currency || 'EUR',
         }).format(amount);
     };
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('it-IT', {
+        return new Date(dateString).toLocaleDateString(locale, {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
@@ -229,14 +229,14 @@ export default function OrderShow({
                 name: order.user.name,
                 email: order.user.email,
                 phone: order.user.phone || order.shippingAddress?.phone,
-                type: 'Registered Customer',
+                type: t('admin.orders.registered_customer'),
             };
         }
         return {
-            name: 'Guest Customer',
-            email: order.guest_email || 'N/A',
+            name: t('admin.orders.guest_customer'),
+            email: order.guest_email || t('admin.orders.not_available'),
             phone: order.guest_phone || order.shippingAddress?.phone,
-            type: 'Guest',
+            type: t('admin.orders.guest'),
         };
     };
 
@@ -277,12 +277,12 @@ export default function OrderShow({
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
-                { title: 'Orders', href: '/admin/orders' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.orders.title'), href: '/admin/orders' },
                 { title: order.order_number, href: `/admin/orders/${order.id}` },
             ]}
         >
-            <Head title={`Order ${order.order_number} - Admin`} />
+            <Head title={t('admin.orders.show_head_title', { order_number: order.order_number })} />
 
             <div className="space-y-6 p-6">
                 {/* Header */}
@@ -290,7 +290,7 @@ export default function OrderShow({
                     <div className="flex items-center space-x-4">
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">{order.order_number}</h1>
-                            <p className="text-muted-foreground">Placed on {formatDate(order.created_at)}</p>
+                            <p className="text-muted-foreground">{t('admin.orders.placed_on', { date: formatDate(order.created_at) })}</p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -302,7 +302,7 @@ export default function OrderShow({
                         )}
                         <Button variant="outline" size="sm" onClick={() => router.visit(`/admin/orders/${order.id}/edit`)}>
                             <Edit className="mr-2 h-4 w-4" />
-                            Edit Order
+                            {t('admin.orders.edit_order')}
                         </Button>
                     </div>
                 </div>
@@ -324,7 +324,7 @@ export default function OrderShow({
                         <Collapsible open={!collapsedSections.orderStatus} onOpenChange={() => toggleSection('orderStatus')}>
                             <Card className="p-6">
                                 <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
-                                    <h2 className="text-lg font-semibold">Order Status</h2>
+                                    <h2 className="text-lg font-semibold">{t('admin.orders.section_order_status')}</h2>
                                     {collapsedSections.orderStatus ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
@@ -332,14 +332,14 @@ export default function OrderShow({
                                         <div className="flex items-center space-x-2">
                                             <Badge className={statusColors[order.status as keyof typeof statusColors]} variant="secondary">
                                                 {getStatusIcon(order.status)}
-                                                <span className="ml-1 capitalize">{order.status}</span>
+                                                <span className="ml-1 capitalize">{t(`admin.orders.status.${order.status}`)}</span>
                                             </Badge>
                                             <Badge
                                                 className={paymentStatusColors[order.payment_status as keyof typeof paymentStatusColors]}
                                                 variant="secondary"
                                             >
                                                 <CreditCard className="mr-1 h-4 w-4" />
-                                                {order.payment_status}
+                                                {t(`admin.orders.payment_status.${order.payment_status}`)}
                                             </Badge>
                                             {refund_due && (
                                                 <Badge variant="secondary" className="bg-red-100 text-red-800">
@@ -367,7 +367,7 @@ export default function OrderShow({
                         <Collapsible open={!collapsedSections.timeline} onOpenChange={() => toggleSection('timeline')}>
                             <Card className="p-6">
                                 <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
-                                    <h2 className="text-lg font-semibold">Order Timeline</h2>
+                                    <h2 className="text-lg font-semibold">{t('admin.orders.section_order_timeline')}</h2>
                                     {collapsedSections.timeline ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
@@ -376,7 +376,7 @@ export default function OrderShow({
                                         {getNextStatus() && (
                                             <Button size="sm" onClick={() => updateOrderStatus(getNextStatus()!)} disabled={isUpdating}>
                                                 <SkipForward className="mr-2 h-4 w-4" />
-                                                Mark as {getNextStatus()!.charAt(0).toUpperCase() + getNextStatus()!.slice(1)}
+                                                {t('admin.orders.mark_as', { status: t(`admin.orders.status.${getNextStatus()!}`) })}
                                             </Button>
                                         )}
                                     </div>
@@ -388,7 +388,7 @@ export default function OrderShow({
                         <Collapsible open={!collapsedSections.orderItems} onOpenChange={() => toggleSection('orderItems')}>
                             <Card className="p-6">
                                 <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
-                                    <h2 className="text-lg font-semibold">Order Items</h2>
+                                    <h2 className="text-lg font-semibold">{t('admin.orders.section_order_items')}</h2>
                                     {collapsedSections.orderItems ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
@@ -409,7 +409,10 @@ export default function OrderShow({
                                                 <div className="flex-1">
                                                     <h3 className="font-medium">{item.product.name}</h3>
                                                     <p className="text-sm text-muted-foreground">
-                                                        Qty: {item.quantity} × {formatCurrency(item.price)}
+                                                        {t('admin.orders.qty_price', {
+                                                            quantity: item.quantity,
+                                                            price: formatCurrency(item.price),
+                                                        })}
                                                     </p>
                                                     {stock?.oversold[item.id] ? (
                                                         <p className="text-sm font-medium text-amber-700">
@@ -436,7 +439,7 @@ export default function OrderShow({
                                 <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
                                     <h2 className="flex items-center text-lg font-semibold">
                                         <Truck className="mr-2 h-5 w-5" />
-                                        Shipping Information
+                                        {t('admin.orders.section_shipping_info')}
                                     </h2>
                                     {collapsedSections.shipping ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                 </CollapsibleTrigger>
@@ -444,7 +447,7 @@ export default function OrderShow({
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-1 gap-4">
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">Shipping Cost</p>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('admin.orders.shipping_cost')}</p>
                                                 <p className="text-sm">{formatCurrency(order.shipping_amount)}</p>
                                             </div>
                                         </div>
@@ -452,7 +455,7 @@ export default function OrderShow({
                                         {/* Tracking Number Section */}
                                         <div className="grid grid-cols-1 gap-4">
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">Tracking Number</p>
+                                                <p className="text-sm font-medium text-muted-foreground">{t('admin.orders.tracking_number')}</p>
                                                 {order.tracking_number ? (
                                                     <p className="font-mono text-sm">{order.tracking_number}</p>
                                                 ) : isAddingTracking ? (
@@ -460,7 +463,7 @@ export default function OrderShow({
                                                         <Input
                                                             value={trackingNumber}
                                                             onChange={(e) => setTrackingNumber(e.target.value)}
-                                                            placeholder="Enter tracking number"
+                                                            placeholder={t('admin.orders.enter_tracking_number')}
                                                             className="text-sm"
                                                         />
                                                         <Button
@@ -468,7 +471,7 @@ export default function OrderShow({
                                                             onClick={updateTrackingNumber}
                                                             disabled={isUpdating || !trackingNumber.trim()}
                                                         >
-                                                            Save
+                                                            {t('admin.orders.save')}
                                                         </Button>
                                                         <Button
                                                             size="sm"
@@ -478,15 +481,15 @@ export default function OrderShow({
                                                                 setTrackingNumber(order.tracking_number || '');
                                                             }}
                                                         >
-                                                            Cancel
+                                                            {t('admin.orders.cancel')}
                                                         </Button>
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center space-x-2">
-                                                        <p className="text-sm text-muted-foreground">Not assigned</p>
+                                                        <p className="text-sm text-muted-foreground">{t('admin.orders.not_assigned')}</p>
                                                         <Button size="sm" variant="outline" onClick={() => setIsAddingTracking(true)}>
                                                             <Plus className="mr-1 h-3 w-3" />
-                                                            Add
+                                                            {t('admin.orders.add')}
                                                         </Button>
                                                     </div>
                                                 )}
@@ -535,16 +538,20 @@ export default function OrderShow({
                                         {/* Status Display */}
                                         {order.status === 'shipped' || order.status === 'delivered' ? (
                                             <div className="rounded-lg bg-blue-50 p-3">
-                                                <p className="text-sm font-medium text-blue-900">Package Status</p>
-                                                <p className="text-sm text-blue-700">{order.status === 'shipped' ? 'In Transit' : 'Delivered'}</p>
+                                                <p className="text-sm font-medium text-blue-900">{t('admin.orders.package_status')}</p>
+                                                <p className="text-sm text-blue-700">
+                                                    {order.status === 'shipped' ? t('admin.orders.in_transit') : t('admin.orders.status.delivered')}
+                                                </p>
                                                 {order.tracking_number && (
-                                                    <p className="mt-1 text-xs text-blue-600">Track your package with: {order.tracking_number}</p>
+                                                    <p className="mt-1 text-xs text-blue-600">
+                                                        {t('admin.orders.track_package_with', { tracking_number: order.tracking_number })}
+                                                    </p>
                                                 )}
                                             </div>
                                         ) : (
                                             <div className="rounded-lg bg-yellow-50 p-3">
-                                                <p className="text-sm font-medium text-yellow-900">Preparing for Shipment</p>
-                                                <p className="text-sm text-yellow-700">Order is being processed</p>
+                                                <p className="text-sm font-medium text-yellow-900">{t('admin.orders.preparing_shipment')}</p>
+                                                <p className="text-sm text-yellow-700">{t('admin.orders.order_being_processed')}</p>
                                             </div>
                                         )}
 
@@ -586,7 +593,7 @@ export default function OrderShow({
                                         {/* Shipping Address */}
                                         {order.shippingAddress && (
                                             <div>
-                                                <p className="mb-2 text-sm font-medium text-muted-foreground">Shipping To</p>
+                                                <p className="mb-2 text-sm font-medium text-muted-foreground">{t('admin.orders.shipping_to')}</p>
                                                 <div className="rounded-lg bg-muted p-3 text-sm">
                                                     <p className="font-medium">
                                                         {order.shippingAddress.first_name} {order.shippingAddress.last_name}
@@ -618,7 +625,7 @@ export default function OrderShow({
                                 <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
                                     <h2 className="flex items-center text-lg font-semibold">
                                         <User className="mr-2 h-5 w-5" />
-                                        Customer
+                                        {t('admin.orders.customer')}
                                     </h2>
                                     {collapsedSections.customer ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                 </CollapsibleTrigger>
@@ -637,10 +644,10 @@ export default function OrderShow({
                                                     variant="outline"
                                                     onClick={navigateToCustomer}
                                                     disabled
-                                                    title="Customer management not yet implemented"
+                                                    title={t('admin.orders.customer_management_not_implemented')}
                                                 >
                                                     <ArrowRight className="mr-2 h-4 w-4" />
-                                                    View Profile
+                                                    {t('admin.orders.view_profile')}
                                                 </Button>
                                             </div>
                                         )}
@@ -655,36 +662,36 @@ export default function OrderShow({
                                 <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
                                     <h2 className="flex items-center text-lg font-semibold">
                                         <DollarSign className="mr-2 h-5 w-5" />
-                                        Order Summary
+                                        {t('admin.orders.order_summary')}
                                     </h2>
                                     {collapsedSections.summary ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
-                                            <span>Subtotal</span>
+                                            <span>{t('admin.orders.subtotal')}</span>
                                             <span>{formatCurrency(order.subtotal)}</span>
                                         </div>
                                         {order.tax_amount > 0 && order.tax_rate == null && (
                                             <div className="flex justify-between">
-                                                <span>Tax</span>
+                                                <span>{t('admin.orders.tax')}</span>
                                                 <span>{formatCurrency(order.tax_amount)}</span>
                                             </div>
                                         )}
                                         {order.shipping_amount > 0 && (
                                             <div className="flex justify-between">
-                                                <span>Shipping</span>
+                                                <span>{t('admin.orders.shipping')}</span>
                                                 <span>{formatCurrency(order.shipping_amount)}</span>
                                             </div>
                                         )}
                                         <Separator />
                                         <div className="flex justify-between font-semibold">
-                                            <span>Total</span>
+                                            <span>{t('admin.orders.total')}</span>
                                             <span>{formatCurrency(order.total_amount)}</span>
                                         </div>
                                         {order.tax_rate != null && (
                                             <div className="flex justify-between text-sm text-muted-foreground">
-                                                <span>Of which VAT ({order.tax_rate}%)</span>
+                                                <span>{t('admin.orders.vat_portion', { rate: order.tax_rate })}</span>
                                                 <span>{formatCurrency(order.tax_amount)}</span>
                                             </div>
                                         )}
@@ -710,7 +717,7 @@ export default function OrderShow({
                             <Collapsible open={!collapsedSections.notes} onOpenChange={() => toggleSection('notes')}>
                                 <Card className="p-6">
                                     <CollapsibleTrigger className="mb-4 flex w-full items-center justify-between">
-                                        <h2 className="text-lg font-semibold">Notes</h2>
+                                        <h2 className="text-lg font-semibold">{t('admin.orders.notes')}</h2>
                                         {collapsedSections.notes ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>

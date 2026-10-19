@@ -117,7 +117,7 @@ export default function SettingsIndex({ groups, system }: SettingsPageProps) {
     return (
         <AdminLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
                 { title: t('settings.ui.title'), href: '/admin/settings' },
             ]}
         >

@@ -121,7 +121,7 @@ export default function Edit({ campaign, recipientCounts, locales, newsletterEna
     return (
         <AdminLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
                 { title: t('newsletter.admin.title'), href: route('admin.newsletter.subscribers') },
                 { title: t('newsletter.admin.tabs.campaigns'), href: route('admin.newsletter.campaigns.index') },
                 { title, href: campaign ? route('admin.newsletter.campaigns.edit', campaign.id) : route('admin.newsletter.campaigns.create') },

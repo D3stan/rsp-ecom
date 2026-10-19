@@ -80,7 +80,7 @@ export const UserSidebar = () => {
             icon: HelpCircle,
         },
         {
-            title: 'FAQ',
+            title: t('faq'),
             href: route('faq'),
             icon: HelpCircle,
         },

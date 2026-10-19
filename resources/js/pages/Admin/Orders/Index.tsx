@@ -105,7 +105,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
     const [statusFilter, setStatusFilter] = useState(filters.status || '');
     const [paymentStatusFilter, setPaymentStatusFilter] = useState(filters.payment_status || '');
     const [refundDueFilter, setRefundDueFilter] = useState(filters.refund_due === '1');
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const [isKPIsOpen, setIsKPIsOpen] = useState(false);
 
     // Add safety checks for orders data
@@ -144,14 +144,14 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
     };
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('it-IT', {
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
             currency: 'EUR',
         }).format(amount);
     };
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('it-IT', {
+        return new Date(dateString).toLocaleDateString(locale, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -168,26 +168,26 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
             };
         }
         return {
-            name: 'Guest',
-            email: order.guest_email || 'N/A',
+            name: t('admin.orders.guest'),
+            email: order.guest_email || t('admin.orders.not_available'),
         };
     };
 
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
-                { title: 'Orders', href: '/admin/orders' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.orders.title'), href: '/admin/orders' },
             ]}
         >
-            <Head title="Orders - Admin" />
+            <Head title={t('admin.orders.head_title')} />
 
             <div className="space-y-4 p-4 md:p-6">
                 {/* Mobile-First Page Header */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Orders</h1>
-                        <p className="text-sm text-muted-foreground md:text-base">Manage and track all orders</p>
+                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('admin.orders.title')}</h1>
+                        <p className="text-sm text-muted-foreground md:text-base">{t('admin.orders.manage_description')}</p>
                     </div>
                 </div>
 
@@ -197,7 +197,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                         <Button variant="outline" className="w-full justify-between" size="sm">
                             <span className="flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4" />
-                                Quick Stats
+                                {t('admin.orders.kpi.quick_stats')}
                             </span>
                             {isKPIsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
@@ -207,7 +207,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <Package className="h-4 w-4 text-blue-600" />
-                                    <h3 className="text-xs font-medium">Today</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.orders.kpi.today')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{kpis.today.orders}</p>
@@ -218,7 +218,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <TrendingUp className="h-4 w-4 text-green-600" />
-                                    <h3 className="text-xs font-medium">Month</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.orders.kpi.month')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{kpis.month.orders}</p>
@@ -229,7 +229,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <DollarSign className="h-4 w-4 text-yellow-600" />
-                                    <h3 className="text-xs font-medium">Year</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.orders.kpi.year')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{kpis.year.orders}</p>
@@ -240,11 +240,11 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <Users className="h-4 w-4 text-purple-600" />
-                                    <h3 className="text-xs font-medium">Total</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.orders.kpi.total')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{ordersMeta.total}</p>
-                                    <p className="text-xs text-muted-foreground">All time</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.orders.kpi.all_time')}</p>
                                 </div>
                             </Card>
                         </div>
@@ -258,7 +258,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                         <div className="relative">
                             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                             <Input
-                                placeholder="Search orders, customers..."
+                                placeholder={t('admin.orders.search_placeholder')}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="pl-10"
@@ -268,35 +268,35 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                         {/* Filter Dropdowns */}
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-muted-foreground">Order Status</label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.orders.filter_status')}</label>
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
                                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 >
-                                    <option value="">All Statuses</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="processing">Processing</option>
-                                    <option value="shipped">Shipped</option>
-                                    <option value="delivered">Delivered</option>
-                                    <option value="cancelled">Cancelled</option>
+                                    <option value="">{t('admin.orders.status_all')}</option>
+                                    <option value="pending">{t('admin.orders.status.pending')}</option>
+                                    <option value="processing">{t('admin.orders.status.processing')}</option>
+                                    <option value="shipped">{t('admin.orders.status.shipped')}</option>
+                                    <option value="delivered">{t('admin.orders.status.delivered')}</option>
+                                    <option value="cancelled">{t('admin.orders.status.cancelled')}</option>
                                 </select>
                             </div>
 
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-muted-foreground">Payment Status</label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.orders.filter_payment_status')}</label>
                                 <select
                                     value={paymentStatusFilter}
                                     onChange={(e) => setPaymentStatusFilter(e.target.value)}
                                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 >
-                                    <option value="">All Payment Status</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="processing">Processing</option>
-                                    <option value="succeeded">Succeeded</option>
-                                    <option value="failed">Failed</option>
-                                    <option value="partially_refunded">Partially refunded</option>
-                                    <option value="refunded">Refunded</option>
+                                    <option value="">{t('admin.orders.payment_status_all')}</option>
+                                    <option value="pending">{t('admin.orders.payment_status.pending')}</option>
+                                    <option value="processing">{t('admin.orders.payment_status.processing')}</option>
+                                    <option value="succeeded">{t('admin.orders.payment_status.succeeded')}</option>
+                                    <option value="failed">{t('admin.orders.payment_status.failed')}</option>
+                                    <option value="partially_refunded">{t('admin.orders.payment_status.partially_refunded')}</option>
+                                    <option value="refunded">{t('admin.orders.payment_status.refunded')}</option>
                                 </select>
                             </div>
 
@@ -307,7 +307,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                 </label>
                                 {(search || statusFilter || paymentStatusFilter || refundDueFilter) && (
                                     <Button onClick={clearFilters} variant="outline" size="sm" className="w-full">
-                                        Clear Filters
+                                        {t('admin.orders.clear_filters')}
                                     </Button>
                                 )}
                             </div>
@@ -322,13 +322,13 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b">
-                                    <th className="p-4 text-left font-medium">Order</th>
-                                    <th className="p-4 text-left font-medium">Customer</th>
-                                    <th className="p-4 text-left font-medium">Status</th>
-                                    <th className="p-4 text-left font-medium">Payment</th>
-                                    <th className="p-4 text-left font-medium">Total</th>
-                                    <th className="p-4 text-left font-medium">Date</th>
-                                    <th className="p-4 text-right font-medium">Actions</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.orders.col_order')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.orders.col_customer')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.orders.col_status')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.orders.col_payment')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.orders.col_total')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.orders.col_date')}</th>
+                                    <th className="p-4 text-right font-medium">{t('admin.orders.col_actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -342,7 +342,9 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                         <Link href={`/admin/orders/${order.id}`} className="font-medium text-primary hover:underline">
                                                             {order.order_number}
                                                         </Link>
-                                                        <p className="text-sm text-muted-foreground">{order.orderItems?.length || 0} items</p>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {t('admin.orders.items_count', { count: order.orderItems?.length || 0 })}
+                                                        </p>
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
@@ -353,7 +355,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                 </td>
                                                 <td className="p-4">
                                                     <Badge className={statusColors[order.status as keyof typeof statusColors]} variant="secondary">
-                                                        {order.status}
+                                                        {t(`admin.orders.status.${order.status}`)}
                                                     </Badge>
                                                 </td>
                                                 <td className="p-4">
@@ -361,7 +363,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                         className={paymentStatusColors[order.payment_status as keyof typeof paymentStatusColors]}
                                                         variant="secondary"
                                                     >
-                                                        {order.payment_status}
+                                                        {t(`admin.orders.payment_status.${order.payment_status}`)}
                                                     </Badge>
                                                 </td>
                                                 <td className="p-4">
@@ -390,17 +392,19 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                                 <DropdownMenuItem asChild>
                                                                     <Link href={`/admin/orders/${order.id}`}>
                                                                         <Eye className="mr-2 h-4 w-4" />
-                                                                        View Details
+                                                                        {t('admin.orders.view_details')}
                                                                     </Link>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem asChild>
                                                                     <Link href={`/admin/orders/${order.id}/edit`}>
                                                                         <Edit className="mr-2 h-4 w-4" />
-                                                                        Edit Order
+                                                                        {t('admin.orders.edit_order')}
                                                                     </Link>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator />
-                                                                <DropdownMenuItem className="text-red-600">Cancel Order</DropdownMenuItem>
+                                                                <DropdownMenuItem className="text-red-600">
+                                                                    {t('admin.orders.cancel_order')}
+                                                                </DropdownMenuItem>
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </div>
@@ -411,7 +415,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                 ) : (
                                     <tr>
                                         <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                                            No orders found
+                                            {t('admin.orders.no_orders_found')}
                                         </td>
                                     </tr>
                                 )}
@@ -431,11 +435,13 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                 <Link href={`/admin/orders/${order.id}`} className="font-medium text-primary hover:underline">
                                                     {order.order_number}
                                                 </Link>
-                                                <p className="text-sm text-muted-foreground">{order.orderItems?.length || 0} items</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {t('admin.orders.items_count', { count: order.orderItems?.length || 0 })}
+                                                </p>
                                             </div>
                                             <div className="flex gap-2">
                                                 <Badge className={statusColors[order.status as keyof typeof statusColors]} variant="secondary">
-                                                    {order.status}
+                                                    {t(`admin.orders.status.${order.status}`)}
                                                 </Badge>
                                                 {order.can_ship && (
                                                     <Button asChild size="sm" variant="outline">
@@ -455,17 +461,19 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                         <DropdownMenuItem asChild>
                                                             <Link href={`/admin/orders/${order.id}`}>
                                                                 <Eye className="mr-2 h-4 w-4" />
-                                                                View Details
+                                                                {t('admin.orders.view_details')}
                                                             </Link>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem asChild>
                                                             <Link href={`/admin/orders/${order.id}/edit`}>
                                                                 <Edit className="mr-2 h-4 w-4" />
-                                                                Edit Order
+                                                                {t('admin.orders.edit_order')}
                                                             </Link>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem className="text-red-600">Cancel Order</DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-red-600">
+                                                            {t('admin.orders.cancel_order')}
+                                                        </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </div>
@@ -473,7 +481,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
 
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm text-muted-foreground">Customer:</span>
+                                                <span className="text-sm text-muted-foreground">{t('admin.orders.label_customer')}</span>
                                                 <div className="text-right">
                                                     <p className="text-sm font-medium">{customer.name}</p>
                                                     <p className="text-xs text-muted-foreground">{customer.email}</p>
@@ -481,22 +489,22 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                             </div>
 
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm text-muted-foreground">Payment:</span>
+                                                <span className="text-sm text-muted-foreground">{t('admin.orders.label_payment')}</span>
                                                 <Badge
                                                     className={paymentStatusColors[order.payment_status as keyof typeof paymentStatusColors]}
                                                     variant="secondary"
                                                 >
-                                                    {order.payment_status}
+                                                    {t(`admin.orders.payment_status.${order.payment_status}`)}
                                                 </Badge>
                                             </div>
 
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm text-muted-foreground">Total:</span>
+                                                <span className="text-sm text-muted-foreground">{t('admin.orders.label_total')}</span>
                                                 <span className="font-bold">{formatCurrency(order.total_amount)}</span>
                                             </div>
 
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm text-muted-foreground">Date:</span>
+                                                <span className="text-sm text-muted-foreground">{t('admin.orders.label_date')}</span>
                                                 <span className="text-sm">{formatDate(order.created_at)}</span>
                                             </div>
                                         </div>
@@ -504,7 +512,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                 );
                             })
                         ) : (
-                            <div className="py-8 text-center text-muted-foreground">No orders found</div>
+                            <div className="py-8 text-center text-muted-foreground">{t('admin.orders.no_orders_found')}</div>
                         )}
                     </div>
 
@@ -513,7 +521,11 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                         <div className="border-t px-4 py-4">
                             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                 <p className="text-center text-sm text-muted-foreground md:text-left">
-                                    Showing {ordersMeta.from} to {ordersMeta.to} of {ordersMeta.total} results
+                                    {t('admin.orders.pagination_showing', {
+                                        from: ordersMeta.from,
+                                        to: ordersMeta.to,
+                                        total: ordersMeta.total,
+                                    })}
                                 </p>
                                 <div className="flex items-center justify-center space-x-1 md:space-x-2">
                                     {ordersLinks.map((link, index) => (
@@ -539,7 +551,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                         <div className="flex justify-center gap-2 p-3">
                             <Button variant="outline" size="sm" onClick={() => setIsKPIsOpen(!isKPIsOpen)} className="h-12 flex-1 text-xs">
                                 <TrendingUp className="mr-1 h-4 w-4" />
-                                Stats
+                                {t('admin.orders.mobile_stats')}
                             </Button>
                             <Button
                                 variant="outline"
@@ -548,12 +560,12 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                 className="h-12 flex-1 text-xs"
                             >
                                 <Filter className="mr-1 h-4 w-4" />
-                                Filters
+                                {t('admin.orders.mobile_filters')}
                             </Button>
                             <Button variant="outline" size="sm" asChild className="h-12 flex-1 text-xs">
                                 <Link href="/admin/dashboard">
                                     <Package className="mr-1 h-4 w-4" />
-                                    Dashboard
+                                    {t('admin.orders.mobile_dashboard')}
                                 </Link>
                             </Button>
                         </div>

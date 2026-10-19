@@ -13,12 +13,12 @@ interface ReviewsIndexProps {
 }
 
 export default function ReviewsIndex({ reviews }: ReviewsIndexProps) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
 
     const formatCurrency = useMoney();
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
+        return new Date(dateString).toLocaleDateString(locale, {
             year: 'numeric',
             month: 'long',
             day: 'numeric',

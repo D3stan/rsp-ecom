@@ -8,15 +8,15 @@ import { type BreadcrumbItem } from '@/types';
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Appearance settings',
-        href: '/settings/appearance',
-    },
-];
-
 export default function Appearance() {
     const { t } = useTranslation();
+
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: t('account.appearance.page_title'),
+            href: '/settings/appearance',
+        },
+    ];
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={t('account.appearance.page_title')} />

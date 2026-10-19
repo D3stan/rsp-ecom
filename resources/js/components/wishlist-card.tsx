@@ -34,13 +34,13 @@ export const WishlistCard: React.FC<WishlistCardProps> = ({
         productId: item.product.id,
         initialInWishlist: true,
     });
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const lowStockThreshold = useSetting('inventory.low_stock_threshold', 10);
 
     const formatCurrency = useMoney();
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
+        return new Date(dateString).toLocaleDateString(locale, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',

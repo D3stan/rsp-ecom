@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Mail, UserCheck, UserX } from 'lucide-react';
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export default function CustomerShow({ customer, orders }: Props) {
+    const { t, locale } = useTranslation();
     const [confirming, setConfirming] = useState(false);
     const [busy, setBusy] = useState(false);
     const form = useForm({
@@ -46,8 +48,8 @@ export default function CustomerShow({ customer, orders }: Props) {
     return (
         <AdminLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
-                { title: 'Customers', href: route('admin.customers.index') },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.customers.title'), href: route('admin.customers.index') },
                 { title: customer.name, href: route('admin.customers.show', customer.id) },
             ]}
         >
@@ -57,27 +59,27 @@ export default function CustomerShow({ customer, orders }: Props) {
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{customer.name}</h1>
                         <p className="text-muted-foreground">
-                            {customer.orders_count} orders · {money(customer.total_spent)} paid
+                            {t('admin.customers.orders_and_paid', { count: customer.orders_count, paid: money(customer.total_spent, locale) })}
                         </p>
                         <div className="mt-2 space-x-1">
-                            <Badge variant={customer.is_active ? 'default' : 'outline'}>{customer.is_active ? 'Active' : 'Deactivated'}</Badge>
-                            {!customer.verified && <Badge variant="secondary">Unverified</Badge>}
+                            <Badge variant={customer.is_active ? 'default' : 'outline'}>{customer.is_active ? t('admin.customers.status_active') : t('admin.customers.status_deactivated')}</Badge>
+                            {!customer.verified && <Badge variant="secondary">{t('admin.customers.status_unverified')}</Badge>}
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <Button variant="outline" onClick={() => router.post(route('admin.customers.reset-link', customer.id), {}, { preserveScroll: true })}>
-                            <Mail className="mr-2 h-4 w-4" /> Send password reset link
+                            <Mail className="mr-2 h-4 w-4" /> {t('admin.customers.send_reset_link')}
                         </Button>
                         <Button variant={customer.is_active ? 'destructive' : 'default'} onClick={() => setConfirming(true)}>
                             {customer.is_active ? <UserX className="mr-2 h-4 w-4" /> : <UserCheck className="mr-2 h-4 w-4" />}
-                            {customer.is_active ? 'Deactivate' : 'Reactivate'}
+                            {customer.is_active ? t('admin.customers.deactivate') : t('admin.customers.reactivate')}
                         </Button>
                     </div>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Details</CardTitle>
+                        <CardTitle>{t('admin.customers.details')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form
@@ -90,7 +92,7 @@ export default function CustomerShow({ customer, orders }: Props) {
                             {(['name', 'email', 'phone'] as const).map((field) => (
                                 <div key={field} className="space-y-1">
                                     <Label htmlFor={field} className="capitalize">
-                                        {field}
+                                        {field === 'name' ? t('admin.customers.field_name') : field === 'email' ? t('admin.customers.field_email') : t('admin.customers.field_phone')}
                                     </Label>
                                     <Input id={field} value={form.data[field]} onChange={(e) => form.setData(field, e.target.value)} />
                                     {form.errors[field] && <p className="text-sm text-destructive">{form.errors[field]}</p>}
@@ -103,11 +105,11 @@ export default function CustomerShow({ customer, orders }: Props) {
                                     checked={form.data.email_verified}
                                     onChange={(e) => form.setData('email_verified', e.target.checked)}
                                 />
-                                <Label htmlFor="email_verified">Email verified</Label>
+                                <Label htmlFor="email_verified">{t('admin.customers.email_verified')}</Label>
                             </div>
                             <div className="md:col-span-2">
                                 <Button type="submit" disabled={form.processing}>
-                                    Save changes
+                                    {t('admin.customers.save_changes')}
                                 </Button>
                             </div>
                         </form>
@@ -117,10 +119,10 @@ export default function CustomerShow({ customer, orders }: Props) {
                 <div className="grid gap-6 lg:grid-cols-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Orders</CardTitle>
+                            <CardTitle>{t('admin.customers.orders')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                            {orders.length === 0 && <p className="text-muted-foreground">No orders yet.</p>}
+                            {orders.length === 0 && <p className="text-muted-foreground">{t('admin.customers.no_orders')}</p>}
                             {orders.map((o) => (
                                 <Link
                                     key={o.id}
@@ -131,7 +133,7 @@ export default function CustomerShow({ customer, orders }: Props) {
                                     <span className="text-sm text-muted-foreground">
                                         {o.status} · {o.payment_status}
                                     </span>
-                                    <span className="tabular-nums">{money(o.total_amount)}</span>
+                                    <span className="tabular-nums">{money(o.total_amount, locale)}</span>
                                 </Link>
                             ))}
                         </CardContent>
@@ -139,10 +141,10 @@ export default function CustomerShow({ customer, orders }: Props) {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Addresses</CardTitle>
+                            <CardTitle>{t('admin.customers.addresses')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            {customer.addresses.length === 0 && <p className="text-muted-foreground">No saved addresses.</p>}
+                            {customer.addresses.length === 0 && <p className="text-muted-foreground">{t('admin.customers.no_addresses')}</p>}
                             {customer.addresses.map((a) => (
                                 <div key={a.id} className="rounded border p-3 text-sm">
                                     <p className="font-medium">
@@ -160,13 +162,13 @@ export default function CustomerShow({ customer, orders }: Props) {
 
             <ConfirmDialog
                 open={confirming}
-                title={customer.is_active ? 'Deactivate customer?' : 'Reactivate customer?'}
+                title={customer.is_active ? t('admin.customers.deactivate_title') : t('admin.customers.reactivate_title')}
                 description={
                     customer.is_active
-                        ? `${customer.name} will be signed out and unable to log in. Orders and data are kept.`
-                        : `${customer.name} will be able to log in again.`
+                        ? t('admin.customers.deactivate_description', { name: customer.name })
+                        : t('admin.customers.reactivate_description', { name: customer.name })
                 }
-                confirmLabel={customer.is_active ? 'Deactivate' : 'Reactivate'}
+                confirmLabel={customer.is_active ? t('admin.customers.deactivate') : t('admin.customers.reactivate')}
                 destructive={customer.is_active}
                 busy={busy}
                 onConfirm={toggleActive}

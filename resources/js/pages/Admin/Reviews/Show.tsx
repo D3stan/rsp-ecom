@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/contexts/ToastContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Calendar, Check, ChevronLeft, ChevronRight, Package, Star, Trash2, User, X } from 'lucide-react';
@@ -47,12 +48,13 @@ const statusColors = {
 };
 
 export default function ReviewShow({ review, navigation }: Props) {
+    const { t, locale } = useTranslation();
     const [isUpdating, setIsUpdating] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const { addToast } = useToast();
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('it-IT', {
+        return new Date(dateString).toLocaleDateString(locale, {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
@@ -91,7 +93,7 @@ export default function ReviewShow({ review, navigation }: Props) {
         } catch {
             addToast({
                 type: 'error',
-                title: 'Failed to update review status',
+                title: t('admin.reviews.toast_update_failed'),
             });
             setIsUpdating(false);
         }
@@ -104,7 +106,7 @@ export default function ReviewShow({ review, navigation }: Props) {
         } catch {
             addToast({
                 type: 'error',
-                title: 'Failed to delete review',
+                title: t('admin.reviews.toast_delete_failed'),
             });
         }
         setDeleteDialogOpen(false);
@@ -113,12 +115,12 @@ export default function ReviewShow({ review, navigation }: Props) {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
-                { title: 'Reviews', href: '/admin/reviews' },
-                { title: 'Review Details', href: `/admin/reviews/${review.id}` },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.reviews.title'), href: '/admin/reviews' },
+                { title: t('admin.reviews.review_details'), href: `/admin/reviews/${review.id}` },
             ]}
         >
-            <Head title={`Review by ${review.user?.name || 'Guest'} - Admin`} />
+            <Head title={t('admin.reviews.meta_show_title', { name: review.user?.name || t('admin.reviews.guest') })} />
 
             <div className="space-y-6 p-4 md:p-6">
                 {/* Mobile-First Page Header */}
@@ -127,17 +129,17 @@ export default function ReviewShow({ review, navigation }: Props) {
                         <Button variant="outline" size="sm" asChild>
                             <Link href="/admin/reviews">
                                 <ArrowLeft className="mr-1 h-4 w-4" />
-                                Back to Reviews
+                                {t('admin.reviews.back_to_reviews')}
                             </Link>
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Review Details</h1>
-                            <p className="text-sm text-muted-foreground md:text-base">Review by {review.user?.name || 'Guest User'}</p>
+                            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('admin.reviews.review_details')}</h1>
+                            <p className="text-sm text-muted-foreground md:text-base">{t('admin.reviews.review_by_user', { name: review.user?.name || t('admin.reviews.guest_user') })}</p>
                         </div>
                     </div>
                     <div className="flex gap-2">
                         <Badge className={statusColors[review.is_approved ? 'approved' : 'pending']} variant="secondary">
-                            {review.is_approved ? 'Approved' : 'Pending'}
+                            {review.is_approved ? t('admin.reviews.status_approved') : t('admin.reviews.status_pending')}
                         </Badge>
                     </div>
                 </div>
@@ -149,15 +151,15 @@ export default function ReviewShow({ review, navigation }: Props) {
                         <div className="space-y-6">
                             {/* Rating */}
                             <div>
-                                <h2 className="mb-3 text-lg font-semibold">Rating</h2>
+                                <h2 className="mb-3 text-lg font-semibold">{t('admin.reviews.section_rating')}</h2>
                                 {renderStars(review.rating)}
                             </div>
 
                             {/* Review Comment */}
                             <div>
-                                <h2 className="mb-3 text-lg font-semibold">Review</h2>
+                                <h2 className="mb-3 text-lg font-semibold">{t('admin.reviews.section_review')}</h2>
                                 <div className="rounded-lg bg-muted/50 p-4">
-                                    <p className="text-sm leading-relaxed md:text-base">{review.comment || 'No comment provided'}</p>
+                                    <p className="text-sm leading-relaxed md:text-base">{review.comment || t('admin.reviews.no_comment')}</p>
                                 </div>
                             </div>
 
@@ -165,43 +167,43 @@ export default function ReviewShow({ review, navigation }: Props) {
 
                             {/* Product Information */}
                             <div>
-                                <h2 className="mb-3 text-lg font-semibold">Product</h2>
+                                <h2 className="mb-3 text-lg font-semibold">{t('admin.reviews.section_product')}</h2>
                                 <div className="flex items-center gap-3 rounded-lg bg-muted/30 p-3">
                                     <Package className="h-8 w-8 text-muted-foreground" />
                                     <div>
                                         <Link href={`/admin/products/${review.product.id}`} className="font-medium text-primary hover:underline">
                                             {review.product.name}
                                         </Link>
-                                        <p className="text-sm text-muted-foreground">Product ID: {review.product.id}</p>
+                                        <p className="text-sm text-muted-foreground">{t('admin.reviews.product_id', { id: review.product.id })}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Customer Information */}
                             <div>
-                                <h2 className="mb-3 text-lg font-semibold">Customer</h2>
+                                <h2 className="mb-3 text-lg font-semibold">{t('admin.reviews.section_customer')}</h2>
                                 <div className="flex items-center gap-3 rounded-lg bg-muted/30 p-3">
                                     <User className="h-8 w-8 text-muted-foreground" />
                                     <div>
-                                        <p className="font-medium">{review.user?.name || 'Guest User'}</p>
-                                        <p className="text-sm text-muted-foreground">{review.user?.email || 'No email provided'}</p>
+                                        <p className="font-medium">{review.user?.name || t('admin.reviews.guest_user')}</p>
+                                        <p className="text-sm text-muted-foreground">{review.user?.email || t('admin.reviews.no_email')}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Dates */}
                             <div>
-                                <h2 className="mb-3 text-lg font-semibold">Timeline</h2>
+                                <h2 className="mb-3 text-lg font-semibold">{t('admin.reviews.section_timeline')}</h2>
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-3 text-sm">
                                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-muted-foreground">Created:</span>
+                                        <span className="text-muted-foreground">{t('admin.reviews.created_at')}</span>
                                         <span className="font-medium">{formatDate(review.created_at)}</span>
                                     </div>
                                     {review.updated_at !== review.created_at && (
                                         <div className="flex items-center gap-3 text-sm">
                                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                                            <span className="text-muted-foreground">Last Updated:</span>
+                                            <span className="text-muted-foreground">{t('admin.reviews.last_updated')}</span>
                                             <span className="font-medium">{formatDate(review.updated_at)}</span>
                                         </div>
                                     )}
@@ -212,7 +214,7 @@ export default function ReviewShow({ review, navigation }: Props) {
 
                     {/* Actions Sidebar */}
                     <Card className="h-fit p-6">
-                        <h2 className="mb-4 text-lg font-semibold">Actions</h2>
+                        <h2 className="mb-4 text-lg font-semibold">{t('admin.reviews.section_actions')}</h2>
                         <div className="space-y-3">
                             {!review.is_approved ? (
                                 <>
@@ -224,7 +226,7 @@ export default function ReviewShow({ review, navigation }: Props) {
                                         className="w-full bg-green-600 hover:bg-green-700"
                                     >
                                         <Check className="mr-2 h-4 w-4" />
-                                        Approve Review
+                                        {t('admin.reviews.approve_review')}
                                     </Button>
                                     <Button
                                         variant="destructive"
@@ -234,7 +236,7 @@ export default function ReviewShow({ review, navigation }: Props) {
                                         className="w-full"
                                     >
                                         <X className="mr-2 h-4 w-4" />
-                                        Reject Review
+                                        {t('admin.reviews.reject_review')}
                                     </Button>
                                 </>
                             ) : (
@@ -246,7 +248,7 @@ export default function ReviewShow({ review, navigation }: Props) {
                                     className="w-full"
                                 >
                                     <X className="mr-2 h-4 w-4" />
-                                    Unapprove Review
+                                    {t('admin.reviews.unapprove_review')}
                                 </Button>
                             )}
 
@@ -258,28 +260,28 @@ export default function ReviewShow({ review, navigation }: Props) {
                                     className="w-full text-red-600 hover:bg-red-50 hover:text-red-700"
                                 >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Review
+                                    {t('admin.reviews.action_delete_review')}
                                 </Button>
                             </div>
                         </div>
 
                         {/* Quick Stats */}
                         <div className="mt-6 border-t pt-6">
-                            <h3 className="mb-3 text-sm font-medium text-muted-foreground">Quick Info</h3>
+                            <h3 className="mb-3 text-sm font-medium text-muted-foreground">{t('admin.reviews.quick_info')}</h3>
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Review ID:</span>
+                                    <span className="text-muted-foreground">{t('admin.reviews.review_id_label')}</span>
                                     <span className="font-medium">#{review.id}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Status:</span>
+                                    <span className="text-muted-foreground">{t('admin.reviews.status_label')}</span>
                                     <span className={`font-medium ${review.is_approved ? 'text-green-600' : 'text-yellow-600'}`}>
-                                        {review.is_approved ? 'Approved' : 'Pending'}
+                                        {review.is_approved ? t('admin.reviews.status_approved') : t('admin.reviews.status_pending')}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Rating:</span>
-                                    <span className="font-medium">{review.rating}/5 stars</span>
+                                    <span className="text-muted-foreground">{t('admin.reviews.rating_label')}</span>
+                                    <span className="font-medium">{t('admin.reviews.stars_rating', { rating: review.rating })}</span>
                                 </div>
                             </div>
                         </div>
@@ -295,12 +297,12 @@ export default function ReviewShow({ review, navigation }: Props) {
                                 {navigation.previous ? (
                                     <Link href={`/admin/reviews/${navigation.previous.id}`}>
                                         <ChevronLeft className="mr-1 h-4 w-4" />
-                                        Prev
+                                        {t('admin.reviews.prev')}
                                     </Link>
                                 ) : (
                                     <span>
                                         <ChevronLeft className="mr-1 h-4 w-4" />
-                                        Prev
+                                        {t('admin.reviews.prev')}
                                     </span>
                                 )}
                             </Button>
@@ -308,12 +310,12 @@ export default function ReviewShow({ review, navigation }: Props) {
                             <Button variant="outline" size="sm" asChild disabled={!navigation.next} className="flex-1">
                                 {navigation.next ? (
                                     <Link href={`/admin/reviews/${navigation.next.id}`}>
-                                        Next
+                                        {t('admin.reviews.next')}
                                         <ChevronRight className="ml-1 h-4 w-4" />
                                     </Link>
                                 ) : (
                                     <span>
-                                        Next
+                                        {t('admin.reviews.next')}
                                         <ChevronRight className="ml-1 h-4 w-4" />
                                     </span>
                                 )}
@@ -331,7 +333,7 @@ export default function ReviewShow({ review, navigation }: Props) {
                                         className="flex-1 bg-green-600 hover:bg-green-700"
                                     >
                                         <Check className="mr-1 h-4 w-4" />
-                                        Approve
+                                        {t('admin.reviews.action_approve')}
                                     </Button>
                                     <Button
                                         variant="destructive"
@@ -341,7 +343,7 @@ export default function ReviewShow({ review, navigation }: Props) {
                                         className="flex-1"
                                     >
                                         <X className="mr-1 h-4 w-4" />
-                                        Reject
+                                        {t('admin.reviews.action_reject')}
                                     </Button>
                                 </>
                             ) : (
@@ -353,7 +355,7 @@ export default function ReviewShow({ review, navigation }: Props) {
                                     className="flex-1"
                                 >
                                     <X className="mr-1 h-4 w-4" />
-                                    Unapprove
+                                    {t('admin.reviews.unapprove')}
                                 </Button>
                             )}
                         </div>
@@ -368,15 +370,15 @@ export default function ReviewShow({ review, navigation }: Props) {
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Delete Review</DialogTitle>
-                        <DialogDescription>Are you sure you want to delete this review? This action cannot be undone.</DialogDescription>
+                        <DialogTitle>{t('admin.reviews.dialog_delete_title')}</DialogTitle>
+                        <DialogDescription>{t('admin.reviews.dialog_delete_description')}</DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-                            Cancel
+                            {t('admin.reviews.dialog_cancel')}
                         </Button>
                         <Button variant="destructive" onClick={handleDelete}>
-                            Delete
+                            {t('admin.reviews.dialog_delete')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

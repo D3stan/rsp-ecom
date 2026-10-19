@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, useForm } from '@inertiajs/react';
 import { ChevronDown, Package, Settings, Star } from 'lucide-react';
@@ -60,6 +61,7 @@ interface Props {
 }
 
 export default function CreateProduct({ categories, sizes, uploadLimits }: Props) {
+    const { t, locale } = useTranslation();
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm<FormData>({
@@ -74,7 +76,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
         safety_information: '',
         variants: [
             {
-                name: 'Standard',
+                name: t('admin.products.default_variant_name'),
                 sku_suffix: '',
                 price: '',
                 stock_quantity: '',
@@ -161,15 +163,21 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
     };
 
     return (
-        <AdminLayout>
-            <Head title="Create Product" />
+        <AdminLayout
+            breadcrumbs={[
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.products.title'), href: '/admin/products' },
+                { title: t('admin.products.create_product'), href: '/admin/products/create' },
+            ]}
+        >
+            <Head title={t('admin.products.create_product')} />
 
             <div className="space-y-6 p-4 sm:p-6">
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-white">Create Product</h1>
-                        <p className="text-gray-500">Add a new product to your inventory</p>
+                        <h1 className="text-2xl font-bold text-white">{t('admin.products.create_product')}</h1>
+                        <p className="text-gray-500">{t('admin.products.create_description')}</p>
                     </div>
                 </div>
 
@@ -186,29 +194,29 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                         <CardHeader className="pb-4">
                             <div className="flex items-center gap-2">
                                 <Package className="h-5 w-5 text-blue-600" />
-                                <CardTitle className="text-lg">Basic Information</CardTitle>
+                                <CardTitle className="text-lg">{t('admin.products.basic_information')}</CardTitle>
                             </div>
-                            <CardDescription>Essential product details and inventory management</CardDescription>
+                            <CardDescription>{t('admin.products.basic_information_description')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                 <div className="md:col-span-2">
-                                    <Label htmlFor="name">Product Name *</Label>
+                                    <Label htmlFor="name">{t('admin.products.product_name_required')}</Label>
                                     <Input
                                         id="name"
                                         value={data.name}
                                         onChange={(e) => setData('name', e.target.value)}
-                                        placeholder="Enter product name"
+                                        placeholder={t('admin.products.placeholder_name')}
                                         className={errors.name ? 'border-red-500' : ''}
                                     />
                                     {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="category_id">Category *</Label>
+                                    <Label htmlFor="category_id">{t('admin.products.category_required')}</Label>
                                     <Select value={data.category_id} onValueChange={(value) => setData('category_id', value)}>
                                         <SelectTrigger className={errors.category_id ? 'border-red-500' : ''}>
-                                            <SelectValue placeholder="Select category" />
+                                            <SelectValue placeholder={t('admin.products.select_category')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {categories.map((category) => (
@@ -222,10 +230,10 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="size_id">Size *</Label>
+                                    <Label htmlFor="size_id">{t('admin.products.size_required')}</Label>
                                     <Select value={data.size_id} onValueChange={(value) => setData('size_id', value)}>
                                         <SelectTrigger className={errors.size_id ? 'border-red-500' : ''}>
-                                            <SelectValue placeholder="Select size" />
+                                            <SelectValue placeholder={t('admin.products.select_size')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {sizes.map((size) => (
@@ -239,20 +247,20 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <Label htmlFor="base_sku">Base SKU</Label>
+                                    <Label htmlFor="base_sku">{t('admin.products.base_sku')}</Label>
                                     <Input
                                         id="base_sku"
                                         value={data.base_sku}
                                         onChange={(e) => setData('base_sku', e.target.value)}
-                                        placeholder="Enter base SKU (e.g., PROD-001)"
+                                        placeholder={t('admin.products.placeholder_base_sku')}
                                         className={errors.base_sku ? 'border-red-500' : ''}
                                     />
                                     {errors.base_sku && <p className="mt-1 text-sm text-red-500">{errors.base_sku}</p>}
-                                    <p className="mt-1 text-xs text-gray-500">SKU prefix for all variants (e.g., PROD-001-RED)</p>
+                                    <p className="mt-1 text-xs text-gray-500">{t('admin.products.base_sku_help')}</p>
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="status">Status</Label>
+                                    <Label htmlFor="status">{t('admin.products.status')}</Label>
                                     <Select value={data.status} onValueChange={(value) => setData('status', value)}>
                                         <SelectTrigger>
                                             <SelectValue />
@@ -261,19 +269,19 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                             <SelectItem value="active">
                                                 <div className="flex items-center gap-2">
                                                     <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                                                    Active
+                                                    {t('admin.products.status_active')}
                                                 </div>
                                             </SelectItem>
                                             <SelectItem value="inactive">
                                                 <div className="flex items-center gap-2">
                                                     <div className="h-2 w-2 rounded-full bg-gray-500"></div>
-                                                    Inactive
+                                                    {t('admin.products.status_inactive')}
                                                 </div>
                                             </SelectItem>
                                             <SelectItem value="draft">
                                                 <div className="flex items-center gap-2">
                                                     <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
-                                                    Draft
+                                                    {t('admin.products.status_draft')}
                                                 </div>
                                             </SelectItem>
                                         </SelectContent>
@@ -288,7 +296,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                     />
                                     <Label htmlFor="featured" className="flex cursor-pointer items-center gap-2">
                                         <Star className="h-4 w-4 text-yellow-500" />
-                                        Featured Product
+                                        {t('admin.products.featured_product')}
                                     </Label>
                                 </div>
 
@@ -322,35 +330,35 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Settings className="h-5 w-5 text-green-600" />
-                                            <CardTitle className="text-lg">Advanced Options</CardTitle>
+                                            <CardTitle className="text-lg">{t('admin.products.advanced_options')}</CardTitle>
                                         </div>
                                         <ChevronDown className={`h-4 w-4 transition-transform ${isAdvancedOpen ? 'rotate-180' : ''}`} />
                                     </div>
-                                    <CardDescription>Optional settings for pricing and inventory management</CardDescription>
+                                    <CardDescription>{t('admin.products.advanced_options_description_create')}</CardDescription>
                                 </CardHeader>
                             </CollapsibleTrigger>
                             <CollapsibleContent>
                                 <CardContent className="pt-0">
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div className="md:col-span-2">
-                                            <Label htmlFor="seo_title">SEO Title</Label>
+                                            <Label htmlFor="seo_title">{t('admin.products.seo_title')}</Label>
                                             <Input
                                                 id="seo_title"
                                                 value={data.seo_title}
                                                 onChange={(e) => setData('seo_title', e.target.value)}
-                                                placeholder="SEO optimized title"
+                                                placeholder={t('admin.products.placeholder_seo_title')}
                                                 className={errors.seo_title ? 'border-red-500' : ''}
                                             />
                                             {errors.seo_title && <p className="mt-1 text-sm text-red-500">{errors.seo_title}</p>}
                                         </div>
 
                                         <div className="md:col-span-2">
-                                            <Label htmlFor="seo_description">SEO Description</Label>
+                                            <Label htmlFor="seo_description">{t('admin.products.seo_description')}</Label>
                                             <Textarea
                                                 id="seo_description"
                                                 value={data.seo_description}
                                                 onChange={(e) => setData('seo_description', e.target.value)}
-                                                placeholder="SEO optimized description"
+                                                placeholder={t('admin.products.placeholder_seo_description')}
                                                 rows={3}
                                                 className={errors.seo_description ? 'border-red-500' : ''}
                                             />
@@ -365,7 +373,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                     {/* Submit Button */}
                     <div className="flex flex-col gap-3 pt-4 sm:flex-row">
                         <Button type="submit" disabled={processing} className="order-2 w-full sm:order-1 sm:w-auto">
-                            {processing ? 'Creating...' : 'Create Product'}
+                            {processing ? t('admin.products.creating') : t('admin.products.create_product')}
                         </Button>
                         <Button
                             type="button"
@@ -373,7 +381,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                             onClick={() => window.history.back()}
                             className="order-1 w-full sm:order-2 sm:w-auto"
                         >
-                            Cancel
+                            {t('admin.products.cancel')}
                         </Button>
                     </div>
                 </form>

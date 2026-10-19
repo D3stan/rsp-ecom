@@ -86,7 +86,7 @@ type ShipForm = {
  * explicit confirmation; the customer is then emailed now only when "notify now" is ticked.
  */
 export default function OrderShip({ order, carriers = [], shipped_email_enabled = true, labels_enabled = false, parcels = [] }: Props) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const [confirming, setConfirming] = useState(false);
     // with labels on the default flow is "create label"; the admin can switch to typing a tracking number
     const [labelMode, setLabelMode] = useState(labels_enabled);
@@ -149,8 +149,8 @@ export default function OrderShip({ order, carriers = [], shipped_email_enabled 
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
-                { title: 'Orders', href: '/admin/orders' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.orders.title'), href: '/admin/orders' },
                 { title: order.order_number, href: `/admin/orders/${order.id}` },
                 { title: t('admin.orders.ship.button'), href: '#' },
             ]}

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Plus, Trash2, GripVertical, Star, X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -32,6 +33,7 @@ interface VariantManagerProps {
 }
 
 export function VariantManager({ variants, baseSku, onVariantsChange, validationErrors = {}, uploadLimits }: VariantManagerProps) {
+    const { t, locale } = useTranslation();
     const [previews, setPreviews] = useState<Record<number, string[]>>({});
 
     const addVariant = () => {
@@ -64,7 +66,7 @@ export function VariantManager({ variants, baseSku, onVariantsChange, validation
 
     const removeVariant = (index: number) => {
         if (variants.length <= 1) {
-            alert('At least one variant is required');
+            alert(t('admin.products.variants.at_least_one_required'));
             return;
         }
 
@@ -86,7 +88,7 @@ export function VariantManager({ variants, baseSku, onVariantsChange, validation
         const totalImages = currentImages.length + newFiles.length;
 
         if (totalImages > uploadLimits.maxFilesPerVariant) {
-            alert(`Maximum ${uploadLimits.maxFilesPerVariant} images per variant`);
+            alert(t('admin.products.variants.max_images_per_variant', { max: uploadLimits.maxFilesPerVariant }));
             return;
         }
 
@@ -121,10 +123,10 @@ export function VariantManager({ variants, baseSku, onVariantsChange, validation
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Product Variants</CardTitle>
+                <CardTitle>{t('admin.products.variants.title')}</CardTitle>
                 <Button type="button" onClick={addVariant} size="sm">
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Variant
+                    {t('admin.products.variants.add_variant')}
                 </Button>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -137,27 +139,27 @@ export function VariantManager({ variants, baseSku, onVariantsChange, validation
                                 <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-2">
                                     {/* Name */}
                                     <div>
-                                        <Label>Variant Name *</Label>
+                                        <Label>{t('admin.products.variants.name_required')}</Label>
                                         <Input
                                             value={variant.name}
                                             onChange={(e) => updateVariant(index, { name: e.target.value })}
-                                            placeholder="e.g. Standard, Premium"
+                                            placeholder={t('admin.products.variants.name_placeholder')}
                                             className={validationErrors[`variant_${index}_name`] ? 'border-red-500' : ''}
                                         />
                                         {validationErrors[`variant_${index}_name`] && (
-                                            <p className="mt-1 text-sm text-red-500">Variant name is required</p>
+                                            <p className="mt-1 text-sm text-red-500">{t('admin.products.variants.name_error')}</p>
                                         )}
                                     </div>
 
                                     {/* SKU */}
                                     <div>
-                                        <Label>SKU</Label>
+                                        <Label>{t('admin.products.variants.sku')}</Label>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm text-gray-500">{baseSku || 'BASE'}</span>
+                                            <span className="text-sm text-gray-500">{baseSku || t('admin.products.variants.base_sku_fallback')}</span>
                                             <Input
                                                 value={variant.sku_suffix}
                                                 onChange={(e) => updateVariant(index, { sku_suffix: e.target.value })}
-                                                placeholder="-RUG"
+                                                placeholder={t('admin.products.variants.sku_placeholder')}
                                                 className="flex-1"
                                             />
                                         </div>
@@ -165,49 +167,49 @@ export function VariantManager({ variants, baseSku, onVariantsChange, validation
 
                                     {/* Price */}
                                     <div>
-                                        <Label>Price *</Label>
+                                        <Label>{t('admin.products.variants.price_required')}</Label>
                                         <Input
                                             type="number"
                                             step="0.01"
                                             value={variant.price}
                                             onChange={(e) => updateVariant(index, { price: e.target.value })}
-                                            placeholder="0.00"
+                                            placeholder={t('admin.products.variants.price_placeholder')}
                                             className={validationErrors[`variant_${index}_price`] ? 'border-red-500' : ''}
                                         />
                                         {validationErrors[`variant_${index}_price`] && (
-                                            <p className="mt-1 text-sm text-red-500">Price is required</p>
+                                            <p className="mt-1 text-sm text-red-500">{t('admin.products.variants.price_error')}</p>
                                         )}
                                     </div>
 
                                     {/* Stock */}
                                     <div>
-                                        <Label>Stock Quantity *</Label>
+                                        <Label>{t('admin.products.variants.stock_required')}</Label>
                                         <Input
                                             type="number"
                                             value={variant.stock_quantity}
                                             onChange={(e) => updateVariant(index, { stock_quantity: e.target.value })}
-                                            placeholder="0"
+                                            placeholder={t('admin.products.variants.stock_placeholder')}
                                             className={validationErrors[`variant_${index}_stock`] ? 'border-red-500' : ''}
                                         />
                                         {validationErrors[`variant_${index}_stock`] && (
-                                            <p className="mt-1 text-sm text-red-500">Stock quantity is required</p>
+                                            <p className="mt-1 text-sm text-red-500">{t('admin.products.variants.stock_error')}</p>
                                         )}
                                     </div>
 
                                     {/* Description */}
                                     <div className="md:col-span-2">
-                                        <Label>Description</Label>
+                                        <Label>{t('admin.products.variants.description')}</Label>
                                         <Textarea
                                             value={variant.description}
                                             onChange={(e) => updateVariant(index, { description: e.target.value })}
-                                            placeholder="Specific description for this variant"
+                                            placeholder={t('admin.products.variants.description_placeholder')}
                                             rows={3}
                                         />
                                     </div>
 
                                     {/* Images */}
                                     <div className="md:col-span-2">
-                                        <Label>Images (max {uploadLimits.maxFilesPerVariant})</Label>
+                                        <Label>{t('admin.products.variants.images_label', { max: uploadLimits.maxFilesPerVariant })}</Label>
                                         <Input
                                             type="file"
                                             multiple
@@ -255,7 +257,7 @@ export function VariantManager({ variants, baseSku, onVariantsChange, validation
                                         onClick={() => updateVariant(index, { is_default: true })}
                                     >
                                         <Star className={`mr-2 h-4 w-4 ${variant.is_default ? 'fill-current' : ''}`} />
-                                        {variant.is_default ? 'Default' : 'Set Default'}
+                                        {variant.is_default ? t('admin.products.variants.default') : t('admin.products.variants.set_default')}
                                     </Button>
 
                                     <Button
@@ -266,7 +268,7 @@ export function VariantManager({ variants, baseSku, onVariantsChange, validation
                                         disabled={variants.length <= 1}
                                     >
                                         <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete
+                                        {t('admin.products.variants.delete')}
                                     </Button>
                                 </div>
                             </div>

@@ -5,6 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useSetting } from '@/hooks/use-setting';
+import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, Link, router } from '@inertiajs/react';
 import {
@@ -107,6 +108,7 @@ const statusColors = {
 };
 
 export default function ProductsIndex({ products, categories, filters, stats }: Props) {
+    const { t, locale } = useTranslation();
     const lowStockThreshold = useSetting('inventory.low_stock_threshold', 10);
     const [search, setSearch] = useState(filters.search || '');
     const [categoryFilter, setCategoryFilter] = useState(filters.category || '');
@@ -157,14 +159,14 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
     };
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('it-IT', {
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
             currency: 'EUR',
         }).format(amount);
     };
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('it-IT', {
+        return new Date(dateString).toLocaleDateString(locale, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -172,9 +174,14 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
     };
 
     const getStatusBadge = (status: string) => {
+        const labels: Record<string, string> = {
+            active: t('admin.products.status_active'),
+            inactive: t('admin.products.status_inactive'),
+            draft: t('admin.products.status_draft'),
+        };
         return (
             <Badge className={statusColors[status as keyof typeof statusColors]} variant="secondary">
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {labels[status] || status.charAt(0).toUpperCase() + status.slice(1)}
             </Badge>
         );
     };
@@ -183,20 +190,20 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
         if (stock === 0) {
             return (
                 <Badge className="bg-red-100 text-red-800" variant="secondary">
-                    Out of Stock
+                    {t('admin.products.stock_out_of_stock')}
                 </Badge>
             );
         }
         if (stock <= lowStockThreshold) {
             return (
                 <Badge className="bg-orange-100 text-orange-800" variant="secondary">
-                    Low Stock
+                    {t('admin.products.stock_low_stock')}
                 </Badge>
             );
         }
         return (
             <Badge className="bg-green-100 text-green-800" variant="secondary">
-                In Stock
+                {t('admin.products.stock_in_stock')}
             </Badge>
         );
     };
@@ -215,7 +222,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
     };
 
     const handleDeleteProduct = (productId: number, productName: string) => {
-        if (window.confirm(`Are you sure you want to delete "${productName}"? This action cannot be undone.`)) {
+        if (window.confirm(t('admin.products.delete_confirm', { name: productName }))) {
             router.delete(`/admin/products/${productId}`, {
                 preserveState: true,
                 onSuccess: () => {
@@ -231,23 +238,23 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
     return (
         <AdminLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
-                { title: 'Products', href: '/admin/products' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.products.title'), href: '/admin/products' },
             ]}
         >
-            <Head title="Products - Admin" />
+            <Head title={t('admin.products.head_title')} />
 
             <div className="space-y-4 p-4 md:p-6">
                 {/* Mobile-First Page Header */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Products</h1>
-                        <p className="text-sm text-muted-foreground md:text-base">Manage your product catalog</p>
+                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('admin.products.title')}</h1>
+                        <p className="text-sm text-muted-foreground md:text-base">{t('admin.products.manage_description')}</p>
                     </div>
                     <Button asChild>
                         <Link href="/admin/products/create">
                             <Plus className="mr-2 h-4 w-4" />
-                            Add Product
+                            {t('admin.products.add_product')}
                         </Link>
                     </Button>
                 </div>
@@ -258,7 +265,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                         <Button variant="outline" className="w-full justify-between" size="sm">
                             <span className="flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4" />
-                                Quick Stats
+                                {t('admin.products.quick_stats')}
                             </span>
                             {isStatsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
@@ -268,44 +275,44 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <Package className="h-4 w-4 text-blue-600" />
-                                    <h3 className="text-xs font-medium">Total</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.products.stats_total')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{stats.total_products}</p>
-                                    <p className="text-xs text-muted-foreground">{stats.active_products} active</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.products.stats_active_count', { count: stats.active_products })}</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <DollarSign className="h-4 w-4 text-green-600" />
-                                    <h3 className="text-xs font-medium">Value</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.products.stats_value')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{formatCurrency(stats.total_value)}</p>
-                                    <p className="text-xs text-muted-foreground">Inventory</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.products.stats_inventory')}</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <AlertTriangle className="h-4 w-4 text-orange-600" />
-                                    <h3 className="text-xs font-medium">Low Stock</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.products.stats_low_stock')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold text-orange-600">{stats.low_stock_count}</p>
-                                    <p className="text-xs text-muted-foreground">Need attention</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.products.stats_need_attention')}</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <Tag className="h-4 w-4 text-purple-600" />
-                                    <h3 className="text-xs font-medium">Categories</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.products.stats_categories')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{categories.length}</p>
-                                    <p className="text-xs text-muted-foreground">Active</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.products.stats_active')}</p>
                                 </div>
                             </Card>
                         </div>
@@ -318,19 +325,19 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                         {/* Search Bar */}
                         <div className="relative">
                             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                            <Input placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+                            <Input placeholder={t('admin.products.search_placeholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
                         </div>
 
                         {/* Filter Dropdowns */}
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-muted-foreground">Category</label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.products.category')}</label>
                                 <select
                                     value={categoryFilter}
                                     onChange={(e) => setCategoryFilter(e.target.value)}
                                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 >
-                                    <option value="">All Categories</option>
+                                    <option value="">{t('admin.products.all_categories')}</option>
                                     {categories.map((category) => (
                                         <option key={category.id} value={category.slug}>
                                             {category.name}
@@ -340,37 +347,37 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                             </div>
 
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-muted-foreground">Status</label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.products.status')}</label>
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
                                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 >
-                                    <option value="">All Status</option>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                    <option value="draft">Draft</option>
+                                    <option value="">{t('admin.products.all_status')}</option>
+                                    <option value="active">{t('admin.products.status_active')}</option>
+                                    <option value="inactive">{t('admin.products.status_inactive')}</option>
+                                    <option value="draft">{t('admin.products.status_draft')}</option>
                                 </select>
                             </div>
 
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-muted-foreground">Stock</label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.products.stock')}</label>
                                 <select
                                     value={stockFilter}
                                     onChange={(e) => setStockFilter(e.target.value)}
                                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 >
-                                    <option value="">All Stock</option>
-                                    <option value="in-stock">In Stock</option>
-                                    <option value="low-stock">Low Stock</option>
-                                    <option value="out-of-stock">Out of Stock</option>
+                                    <option value="">{t('admin.products.all_stock')}</option>
+                                    <option value="in-stock">{t('admin.products.stock_in_stock')}</option>
+                                    <option value="low-stock">{t('admin.products.stock_low_stock')}</option>
+                                    <option value="out-of-stock">{t('admin.products.stock_out_of_stock')}</option>
                                 </select>
                             </div>
 
                             <div className="flex items-end">
                                 {(search || categoryFilter || statusFilter || stockFilter) && (
                                     <Button onClick={clearFilters} variant="outline" size="sm" className="w-full">
-                                        Clear Filters
+                                        {t('admin.products.clear_filters')}
                                     </Button>
                                 )}
                             </div>
@@ -385,13 +392,13 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b">
-                                    <th className="p-4 text-left font-medium">Product</th>
-                                    <th className="p-4 text-left font-medium">Category</th>
-                                    <th className="p-4 text-left font-medium">Price</th>
-                                    <th className="p-4 text-left font-medium">Stock</th>
-                                    <th className="p-4 text-left font-medium">Status</th>
-                                    <th className="p-4 text-left font-medium">Date</th>
-                                    <th className="p-4 text-right font-medium">Actions</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.products.table_product')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.products.table_category')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.products.table_price')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.products.table_stock')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.products.table_status')}</th>
+                                    <th className="p-4 text-left font-medium">{t('admin.products.table_date')}</th>
+                                    <th className="p-4 text-right font-medium">{t('admin.products.table_actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -417,12 +424,12 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                         >
                                                             {product.name}
                                                         </Link>
-                                                        <p className="text-sm text-muted-foreground">{product.sku || 'No SKU'}</p>
+                                                        <p className="text-sm text-muted-foreground">{product.sku || t('admin.products.no_sku')}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="p-4">
-                                                <span className="text-sm">{product.category?.name || 'No category'}</span>
+                                                <span className="text-sm">{product.category?.name || t('admin.products.no_category')}</span>
                                             </td>
                                             <td className="p-4">
                                                 <div>
@@ -446,7 +453,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                     {product.featured && (
                                                         <div>
                                                             <Badge className="bg-yellow-100 text-yellow-800" variant="secondary">
-                                                                Featured
+                                                                {t('admin.products.featured')}
                                                             </Badge>
                                                         </div>
                                                     )}
@@ -483,19 +490,19 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                             <DropdownMenuItem asChild>
                                                                 <Link href={`/admin/products/${product.id}`}>
                                                                     <Eye className="mr-2 h-4 w-4" />
-                                                                    View Details
+                                                                    {t('admin.products.view_details')}
                                                                 </Link>
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem asChild>
                                                                 <Link href={`/admin/products/${product.id}/edit`}>
                                                                     <Edit className="mr-2 h-4 w-4" />
-                                                                    Edit Product
+                                                                    {t('admin.products.edit_product')}
                                                                 </Link>
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem>
                                                                 <Zap className="mr-2 h-4 w-4" />
-                                                                Flash Discount
+                                                                {t('admin.products.flash_discount')}
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem 
@@ -503,7 +510,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                                 onClick={() => handleDeleteProduct(product.id, product.name)}
                                                             >
                                                                 <Trash2 className="mr-2 h-4 w-4" />
-                                                                Delete Product
+                                                                {t('admin.products.delete_product')}
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
@@ -514,7 +521,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                 ) : (
                                     <tr>
                                         <td colSpan={7} className="py-8 text-center text-muted-foreground">
-                                            No products found
+                                            {t('admin.products.no_products_found')}
                                         </td>
                                     </tr>
                                 )}
@@ -543,7 +550,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                 <Link href={`/admin/products/${product.id}`} className="font-medium text-primary hover:underline">
                                                     {product.name}
                                                 </Link>
-                                                <p className="text-sm text-muted-foreground">{product.sku || 'No SKU'}</p>
+                                                <p className="text-sm text-muted-foreground">{product.sku || t('admin.products.no_sku')}</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
@@ -558,19 +565,19 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                     <DropdownMenuItem asChild>
                                                         <Link href={`/admin/products/${product.id}`}>
                                                             <Eye className="mr-2 h-4 w-4" />
-                                                            View Details
+                                                            {t('admin.products.view_details')}
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem asChild>
                                                         <Link href={`/admin/products/${product.id}/edit`}>
                                                             <Edit className="mr-2 h-4 w-4" />
-                                                            Edit Product
+                                                            {t('admin.products.edit_product')}
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem>
                                                         <Zap className="mr-2 h-4 w-4" />
-                                                        Flash Discount
+                                                        {t('admin.products.flash_discount')}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem 
@@ -578,7 +585,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                         onClick={() => handleDeleteProduct(product.id, product.name)}
                                                     >
                                                         <Trash2 className="mr-2 h-4 w-4" />
-                                                        Delete Product
+                                                        {t('admin.products.delete_product')}
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -587,12 +594,12 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
 
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-muted-foreground">Category:</span>
-                                            <span className="text-sm">{product.category?.name || 'No category'}</span>
+                                            <span className="text-sm text-muted-foreground">{t('admin.products.label_category')}</span>
+                                            <span className="text-sm">{product.category?.name || t('admin.products.no_category')}</span>
                                         </div>
 
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-muted-foreground">Price:</span>
+                                            <span className="text-sm text-muted-foreground">{t('admin.products.label_price')}</span>
                                             <div className="text-right">
                                                 <span className="font-bold">{formatCurrency(product.price)}</span>
                                                 {product.compare_price && product.compare_price > product.price && (
@@ -604,7 +611,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                         </div>
 
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-muted-foreground">Stock:</span>
+                                            <span className="text-sm text-muted-foreground">{t('admin.products.label_stock')}</span>
                                             <div className="flex items-center space-x-2">
                                                 <Button
                                                     size="sm"
@@ -627,15 +634,15 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                         </div>
 
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-muted-foreground">Stock Status:</span>
+                                            <span className="text-sm text-muted-foreground">{t('admin.products.label_stock_status')}</span>
                                             {getStockBadge(product.stock_quantity)}
                                         </div>
 
                                         {product.featured && (
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm text-muted-foreground">Featured:</span>
+                                                <span className="text-sm text-muted-foreground">{t('admin.products.label_featured')}</span>
                                                 <Badge className="bg-yellow-100 text-yellow-800" variant="secondary">
-                                                    Featured
+                                                    {t('admin.products.featured')}
                                                 </Badge>
                                             </div>
                                         )}
@@ -643,7 +650,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                 </Card>
                             ))
                         ) : (
-                            <div className="py-8 text-center text-muted-foreground">No products found</div>
+                            <div className="py-8 text-center text-muted-foreground">{t('admin.products.no_products_found')}</div>
                         )}
                     </div>
 
@@ -652,7 +659,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                         <div className="border-t px-4 py-4">
                             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                 <p className="text-center text-sm text-muted-foreground md:text-left">
-                                    Showing {productsMeta.from} to {productsMeta.to} of {productsMeta.total} results
+                                    {t('admin.products.pagination_showing', { from: productsMeta.from, to: productsMeta.to, total: productsMeta.total })}
                                 </p>
                                 <div className="flex items-center justify-center space-x-1 md:space-x-2">
                                     {productsLinks.map((link, index) => (
@@ -677,16 +684,16 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                     <div className="flex justify-center gap-4">
                         <Button variant="outline" size="sm" onClick={() => setIsStatsOpen(!isStatsOpen)} className="flex-1">
                             <TrendingUp className="mr-2 h-4 w-4" />
-                            Stats
+                            {t('admin.products.mobile_nav_stats')}
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex-1">
                             <Filter className="mr-2 h-4 w-4" />
-                            Filters
+                            {t('admin.products.mobile_nav_filters')}
                         </Button>
                         <Button variant="outline" size="sm" asChild className="flex-1">
                             <Link href="/admin/products/create">
                                 <Plus className="mr-2 h-4 w-4" />
-                                Add
+                                {t('admin.products.mobile_nav_add')}
                             </Link>
                         </Button>
                     </div>

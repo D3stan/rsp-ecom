@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import useTranslation from '@/hooks/useTranslation';
 import { router } from '@inertiajs/react';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -59,6 +60,7 @@ interface EditOrderDialogProps {
 }
 
 export default function EditOrderDialog({ order, open, onOpenChange }: EditOrderDialogProps) {
+    const { t, locale } = useTranslation();
     const [formData, setFormData] = useState({
         status: order.status,
         payment_status: order.payment_status,
@@ -158,7 +160,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
     };
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('it-IT', {
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
             currency: order.currency || 'EUR',
         }).format(amount);
@@ -168,14 +170,14 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Edit Order {order.order_number}</DialogTitle>
+                    <DialogTitle>{t('admin.orders.dialog_edit_title', { order_number: order.order_number })}</DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-6">
                     {/* Status Updates */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="status">Order Status</Label>
+                            <Label htmlFor="status">{t('admin.orders.filter_status')}</Label>
                             <Select value={formData.status} onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}>
                                 <SelectTrigger>
                                     <SelectValue />
@@ -183,14 +185,14 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                 <SelectContent>
                                     {statusOptions.map((option) => (
                                         <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
+                                            {t(`admin.orders.status.${option.value}`)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                         <div>
-                            <Label htmlFor="payment_status">Payment Status</Label>
+                            <Label htmlFor="payment_status">{t('admin.orders.filter_payment_status')}</Label>
                             <Select
                                 value={formData.payment_status}
                                 onValueChange={(value) => setFormData((prev) => ({ ...prev, payment_status: value }))}
@@ -201,7 +203,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                 <SelectContent>
                                     {paymentStatusOptions.map((option) => (
                                         <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
+                                            {t(`admin.orders.payment_status.${option.value}`)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -213,13 +215,13 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
 
                     {/* Order Items */}
                     <div>
-                        <Label className="text-base font-semibold">Order Items</Label>
+                        <Label className="text-base font-semibold">{t('admin.orders.section_order_items')}</Label>
                         <div className="mt-2 space-y-3">
                             {formData.orderItems.map((item) => (
                                 <div key={item.id} className="flex items-center space-x-4 rounded-lg border p-3">
                                     <div className="flex-1">
                                         <p className="font-medium">{item.product.name}</p>
-                                        <p className="text-sm text-muted-foreground">{formatCurrency(item.price)} each</p>
+                                        <p className="text-sm text-muted-foreground">{t('admin.orders.price_each', { price: formatCurrency(item.price) })}</p>
                                     </div>
                                     <div className="flex items-center space-x-2">
                                         <Button
@@ -264,7 +266,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                     {/* Pricing */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="shipping_amount">Shipping Amount</Label>
+                            <Label htmlFor="shipping_amount">{t('admin.orders.shipping_amount')}</Label>
                             <Input
                                 id="shipping_amount"
                                 type="number"
@@ -274,7 +276,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                             />
                         </div>
                         <div>
-                            <Label htmlFor="tax_amount">Tax Amount</Label>
+                            <Label htmlFor="tax_amount">{t('admin.orders.tax_amount')}</Label>
                             <Input
                                 id="tax_amount"
                                 type="number"
@@ -289,20 +291,20 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                     <div className="rounded-lg bg-muted p-4">
                         <div className="space-y-2">
                             <div className="flex justify-between">
-                                <span>Subtotal</span>
+                                <span>{t('admin.orders.subtotal')}</span>
                                 <span>{formatCurrency(calculateSubtotal())}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span>Shipping</span>
+                                <span>{t('admin.orders.shipping')}</span>
                                 <span>{formatCurrency(formData.shipping_amount)}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span>{order.tax_rate != null ? `Included VAT (${order.tax_rate}%)` : 'Tax'}</span>
+                                <span>{order.tax_rate != null ? t('admin.orders.included_vat_rate_plain', { rate: order.tax_rate }) : t('admin.orders.tax')}</span>
                                 <span>{formatCurrency(formData.tax_amount)}</span>
                             </div>
                             <Separator />
                             <div className="flex justify-between font-semibold">
-                                <span>Total</span>
+                                <span>{t('admin.orders.total')}</span>
                                 <span>{formatCurrency(calculateTotal())}</span>
                             </div>
                         </div>
@@ -315,11 +317,11 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                         {/* Billing Address */}
                         {formData.billingAddress && (
                             <div>
-                                <Label className="text-base font-semibold">Billing Address</Label>
+                                <Label className="text-base font-semibold">{t('admin.orders.billing_address')}</Label>
                                 <div className="mt-2 space-y-3">
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
-                                            <Label htmlFor="billing_first_name">First Name</Label>
+                                            <Label htmlFor="billing_first_name">{t('admin.orders.first_name')}</Label>
                                             <Input
                                                 id="billing_first_name"
                                                 value={formData.billingAddress.first_name}
@@ -327,7 +329,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                             />
                                         </div>
                                         <div>
-                                            <Label htmlFor="billing_last_name">Last Name</Label>
+                                            <Label htmlFor="billing_last_name">{t('admin.orders.last_name')}</Label>
                                             <Input
                                                 id="billing_last_name"
                                                 value={formData.billingAddress.last_name}
@@ -336,7 +338,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                         </div>
                                     </div>
                                     <div>
-                                        <Label htmlFor="billing_address_1">Address Line 1</Label>
+                                        <Label htmlFor="billing_address_1">{t('admin.orders.address_line_1')}</Label>
                                         <Input
                                             id="billing_address_1"
                                             value={formData.billingAddress.address_line_1}
@@ -344,7 +346,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="billing_address_2">Address Line 2</Label>
+                                        <Label htmlFor="billing_address_2">{t('admin.orders.address_line_2')}</Label>
                                         <Input
                                             id="billing_address_2"
                                             value={formData.billingAddress.address_line_2 || ''}
@@ -353,7 +355,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
-                                            <Label htmlFor="billing_city">City</Label>
+                                            <Label htmlFor="billing_city">{t('admin.orders.city')}</Label>
                                             <Input
                                                 id="billing_city"
                                                 value={formData.billingAddress.city}
@@ -361,7 +363,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                             />
                                         </div>
                                         <div>
-                                            <Label htmlFor="billing_postal_code">Postal Code</Label>
+                                            <Label htmlFor="billing_postal_code">{t('admin.orders.postal_code')}</Label>
                                             <Input
                                                 id="billing_postal_code"
                                                 value={formData.billingAddress.postal_code}
@@ -376,11 +378,11 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                         {/* Shipping Address */}
                         {formData.shippingAddress && (
                             <div>
-                                <Label className="text-base font-semibold">Shipping Address</Label>
+                                <Label className="text-base font-semibold">{t('admin.orders.shipping_address')}</Label>
                                 <div className="mt-2 space-y-3">
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
-                                            <Label htmlFor="shipping_first_name">First Name</Label>
+                                            <Label htmlFor="shipping_first_name">{t('admin.orders.first_name')}</Label>
                                             <Input
                                                 id="shipping_first_name"
                                                 value={formData.shippingAddress.first_name}
@@ -388,7 +390,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                             />
                                         </div>
                                         <div>
-                                            <Label htmlFor="shipping_last_name">Last Name</Label>
+                                            <Label htmlFor="shipping_last_name">{t('admin.orders.last_name')}</Label>
                                             <Input
                                                 id="shipping_last_name"
                                                 value={formData.shippingAddress.last_name}
@@ -397,7 +399,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                         </div>
                                     </div>
                                     <div>
-                                        <Label htmlFor="shipping_address_1">Address Line 1</Label>
+                                        <Label htmlFor="shipping_address_1">{t('admin.orders.address_line_1')}</Label>
                                         <Input
                                             id="shipping_address_1"
                                             value={formData.shippingAddress.address_line_1}
@@ -405,7 +407,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="shipping_address_2">Address Line 2</Label>
+                                        <Label htmlFor="shipping_address_2">{t('admin.orders.address_line_2')}</Label>
                                         <Input
                                             id="shipping_address_2"
                                             value={formData.shippingAddress.address_line_2 || ''}
@@ -414,7 +416,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
-                                            <Label htmlFor="shipping_city">City</Label>
+                                            <Label htmlFor="shipping_city">{t('admin.orders.city')}</Label>
                                             <Input
                                                 id="shipping_city"
                                                 value={formData.shippingAddress.city}
@@ -422,7 +424,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                             />
                                         </div>
                                         <div>
-                                            <Label htmlFor="shipping_postal_code">Postal Code</Label>
+                                            <Label htmlFor="shipping_postal_code">{t('admin.orders.postal_code')}</Label>
                                             <Input
                                                 id="shipping_postal_code"
                                                 value={formData.shippingAddress.postal_code}
@@ -439,7 +441,7 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
 
                     {/* Notes */}
                     <div>
-                        <Label htmlFor="notes">Notes</Label>
+                        <Label htmlFor="notes">{t('admin.orders.notes')}</Label>
                         <Textarea
                             id="notes"
                             value={formData.notes}
@@ -451,10 +453,10 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                     {/* Actions */}
                     <div className="flex justify-end space-x-2">
                         <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-                            Cancel
+                            {t('admin.orders.cancel')}
                         </Button>
                         <Button onClick={handleSubmit} disabled={isSubmitting}>
-                            {isSubmitting ? 'Saving...' : 'Save Changes'}
+                            {isSubmitting ? t('admin.orders.saving') : t('admin.orders.save_changes')}
                         </Button>
                     </div>
                 </div>

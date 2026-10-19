@@ -63,7 +63,7 @@ class DashboardController extends Controller
                 return [
                     'id' => $order->id,
                     'order_number' => $order->order_number,
-                    'customer_name' => $order->user ? $order->user->name : 'Guest Customer',
+                    'customer_name' => $order->user ? $order->user->name : __('admin.dashboard.guest_customer'),
                     'total_amount' => $order->total_amount,
                     'status' => $order->status,
                     'created_at' => $order->created_at->format('Y-m-d H:i:s'),
@@ -87,7 +87,7 @@ class DashboardController extends Controller
             $revenue = Revenue::net(Order::whereDate('created_at', $date));
             
             $revenueChartData[] = [
-                'date' => $date->format('M d'),
+                'date' => $date->locale(app()->getLocale())->translatedFormat('M d'),
                 'revenue' => (float) $revenue,
                 'orders' => Order::whereDate('created_at', $date)->count(),
             ];

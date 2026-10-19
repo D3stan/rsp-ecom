@@ -1,17 +1,18 @@
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, router, useForm } from '@inertiajs/react';
-import { BarChart3, Box, ChevronDown, ChevronUp, Edit, GripVertical, Package, Ruler, Save, Tag, Trash2, TrendingUp, X, AlertTriangle } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { AlertTriangle, BarChart3, Box, ChevronDown, ChevronUp, Edit, GripVertical, Package, Ruler, Save, Tag, Trash2, TrendingUp, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -60,6 +61,7 @@ interface Props {
 }
 
 export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, categoryStats, sizeStats }: Props) {
+    const { t, locale } = useTranslation();
     const [editingCategory, setEditingCategory] = useState<number | null>(null);
     const [editingSize, setEditingSize] = useState<number | null>(null);
     const [isStatsOpen, setIsStatsOpen] = useState(false);
@@ -109,7 +111,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
     });
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('it-IT', {
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
             currency: 'EUR',
         }).format(amount);
@@ -120,7 +122,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
     };
 
     const getBoxTypeName = (boxType: string | undefined) => {
-        if (!boxType) return 'Not specified';
+        if (!boxType) return t('admin.categories_sizes.not_specified');
         return boxTypes[boxType] || boxType;
     };
 
@@ -246,18 +248,18 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
     return (
         <AdminLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
-                { title: 'Categories & Sizes', href: '/admin/categories-sizes' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.categories_sizes.title'), href: '/admin/categories-sizes' },
             ]}
         >
-            <Head title="Categories & Sizes - Admin" />
+            <Head title={t('admin.categories_sizes.meta_title')} />
 
             <div className="space-y-4 p-4 md:p-6">
                 {/* Mobile-First Page Header */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Categories & Sizes</h1>
-                        <p className="text-sm text-muted-foreground md:text-base">Manage product taxonomy and logistics dimensions</p>
+                        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('admin.categories_sizes.title')}</h1>
+                        <p className="text-sm text-muted-foreground md:text-base">{t('admin.categories_sizes.description')}</p>
                     </div>
                 </div>
 
@@ -271,7 +273,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                             }`}
                         >
                             <Tag className="mr-2 inline h-4 w-4" />
-                            Categories
+                            {t('admin.categories_sizes.categories')}
                         </button>
                         <button
                             onClick={() => setActiveTab('sizes')}
@@ -280,7 +282,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                             }`}
                         >
                             <Ruler className="mr-2 inline h-4 w-4" />
-                            Sizes
+                            {t('admin.categories_sizes.sizes')}
                         </button>
                     </div>
                 </div>
@@ -291,7 +293,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                         <Button variant="outline" className="w-full justify-between" size="sm">
                             <span className="flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4" />
-                                Quick Stats
+                                {t('admin.categories_sizes.quick_stats')}
                             </span>
                             {isStatsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </Button>
@@ -301,44 +303,44 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <Tag className="h-4 w-4 text-blue-600" />
-                                    <h3 className="text-xs font-medium">Categories</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.categories_sizes.categories')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{categoryStats.total_categories}</p>
-                                    <p className="text-xs text-muted-foreground">{categoryStats.active_categories} active</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.categories_sizes.active_count', { count: categoryStats.active_categories })}</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <Package className="h-4 w-4 text-green-600" />
-                                    <h3 className="text-xs font-medium">Categorized</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.categories_sizes.categorized')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{categoryStats.products_with_categories}</p>
-                                    <p className="text-xs text-muted-foreground">Products</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.categories_sizes.products')}</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <Ruler className="h-4 w-4 text-purple-600" />
-                                    <h3 className="text-xs font-medium">Sizes</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.categories_sizes.sizes')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{sizeStats.total_sizes}</p>
-                                    <p className="text-xs text-muted-foreground">{sizeStats.sizes_with_products} with products</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.categories_sizes.with_products_count', { count: sizeStats.sizes_with_products })}</p>
                                 </div>
                             </Card>
 
                             <Card className="p-4">
                                 <div className="mb-2 flex items-center space-x-2">
                                     <Box className="h-4 w-4 text-orange-600" />
-                                    <h3 className="text-xs font-medium">Avg. Shipping</h3>
+                                    <h3 className="text-xs font-medium">{t('admin.categories_sizes.avg_shipping')}</h3>
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{formatCurrency(sizeStats.avg_shipping_cost)}</p>
-                                    <p className="text-xs text-muted-foreground">Per package</p>
+                                    <p className="text-xs text-muted-foreground">{t('admin.categories_sizes.per_package')}</p>
                                 </div>
                             </Card>
                         </div>
@@ -352,7 +354,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                         <div className="flex items-center justify-between">
                             <h2 className="flex items-center gap-2 text-xl font-semibold">
                                 <Tag className="h-5 w-5" />
-                                Categories
+                                {t('admin.categories_sizes.categories')}
                             </h2>
                         </div>
 
@@ -369,11 +371,11 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                         <span className="font-medium">{category.name}</span>
                                                         {!category.is_active && (
                                                             <Badge variant="secondary" className="bg-gray-100 text-gray-800">
-                                                                Inactive
+                                                                {t('admin.categories_sizes.inactive')}
                                                             </Badge>
                                                         )}
                                                     </div>
-                                                    <p className="text-sm text-muted-foreground">{category.products_count} products</p>
+                                                    <p className="text-sm text-muted-foreground">{t('admin.categories_sizes.products_count', { count: category.products_count })}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-2">
@@ -397,10 +399,10 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                         {/* Category Form */}
                         <Card className="p-4" ref={categoryFormRef}>
-                            <h3 className="mb-4 text-lg font-medium">{editingCategory ? 'Edit Category' : 'Add Category'}</h3>
+                            <h3 className="mb-4 text-lg font-medium">{editingCategory ? t('admin.categories_sizes.edit_category') : t('admin.categories_sizes.add_category')}</h3>
                             <form onSubmit={handleCategorySubmit} className="space-y-4">
                                 <div>
-                                    <Label htmlFor="category-name">Name</Label>
+                                    <Label htmlFor="category-name">{t('admin.categories_sizes.name')}</Label>
                                     <Input
                                         id="category-name"
                                         value={categoryForm.data.name}
@@ -411,7 +413,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="category-description">Description</Label>
+                                    <Label htmlFor="category-description">{t('admin.categories_sizes.description_label')}</Label>
                                     <Textarea
                                         id="category-description"
                                         value={categoryForm.data.description}
@@ -426,18 +428,18 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                         checked={categoryForm.data.is_active}
                                         onCheckedChange={(checked) => categoryForm.setData('is_active', Boolean(checked))}
                                     />
-                                    <Label htmlFor="category-active">Active</Label>
+                                    <Label htmlFor="category-active">{t('admin.categories_sizes.active')}</Label>
                                 </div>
 
                                 <div className="flex gap-2">
                                     <Button type="submit" disabled={categoryForm.processing}>
                                         <Save className="mr-2 h-4 w-4" />
-                                        {editingCategory ? 'Update' : 'Create'}
+                                        {editingCategory ? t('admin.categories_sizes.update') : t('admin.categories_sizes.create')}
                                     </Button>
                                     {editingCategory && (
                                         <Button type="button" variant="outline" onClick={cancelEdit}>
                                             <X className="mr-2 h-4 w-4" />
-                                            Cancel
+                                            {t('admin.categories_sizes.cancel')}
                                         </Button>
                                     )}
                                 </div>
@@ -450,7 +452,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                         <div className="flex items-center justify-between">
                             <h2 className="flex items-center gap-2 text-xl font-semibold">
                                 <Ruler className="h-5 w-5" />
-                                Sizes
+                                {t('admin.categories_sizes.sizes')}
                             </h2>
                         </div>
 
@@ -467,8 +469,8 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                 </Badge>
                                             </div>
                                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                                <span>{size.products_count} products</span>
-                                                <span>{formatCurrency(size.shipping_cost)} shipping</span>
+                                                <span>{t('admin.categories_sizes.products_count', { count: size.products_count })}</span>
+                                                <span>{t('admin.categories_sizes.shipping_amount', { amount: formatCurrency(size.shipping_cost) })}</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-2">
@@ -491,10 +493,10 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                         {/* Size Form */}
                         <Card className="p-4" ref={sizeFormRef}>
-                            <h3 className="mb-4 text-lg font-medium">{editingSize ? 'Edit Size' : 'Add Size'}</h3>
+                            <h3 className="mb-4 text-lg font-medium">{editingSize ? t('admin.categories_sizes.edit_size') : t('admin.categories_sizes.add_size')}</h3>
                             <form onSubmit={handleSizeSubmit} className="space-y-4">
                                 <div>
-                                    <Label htmlFor="size-name">Name</Label>
+                                    <Label htmlFor="size-name">{t('admin.categories_sizes.name')}</Label>
                                     <Input
                                         id="size-name"
                                         value={sizeForm.data.name}
@@ -506,7 +508,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                                 <div className="grid grid-cols-3 gap-2">
                                     <div>
-                                        <Label htmlFor="size-length">Length (cm)</Label>
+                                        <Label htmlFor="size-length">{t('admin.categories_sizes.length_cm')}</Label>
                                         <Input
                                             id="size-length"
                                             type="number"
@@ -518,7 +520,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="size-width">Width (cm)</Label>
+                                        <Label htmlFor="size-width">{t('admin.categories_sizes.width_cm')}</Label>
                                         <Input
                                             id="size-width"
                                             type="number"
@@ -530,7 +532,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="size-height">Height (cm)</Label>
+                                        <Label htmlFor="size-height">{t('admin.categories_sizes.height_cm')}</Label>
                                         <Input
                                             id="size-height"
                                             type="number"
@@ -544,13 +546,13 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="size-box-type">Box Type</Label>
+                                    <Label htmlFor="size-box-type">{t('admin.categories_sizes.box_type')}</Label>
                                     <Select
                                         value={sizeForm.data.box_type}
                                         onValueChange={(value) => sizeForm.setData('box_type', value)}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select box type" />
+                                            <SelectValue placeholder={t('admin.categories_sizes.select_box_type')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {Object.entries(boxTypes).map(([key, label]) => (
@@ -563,7 +565,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                 </div>
 
                                 <div>
-                                    <Label htmlFor="size-shipping-cost">Shipping Cost</Label>
+                                    <Label htmlFor="size-shipping-cost">{t('admin.categories_sizes.shipping_cost')}</Label>
                                     <Input
                                         id="size-shipping-cost"
                                         type="number"
@@ -577,12 +579,12 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                 <div className="flex gap-2">
                                     <Button type="submit" disabled={sizeForm.processing}>
                                         <Save className="mr-2 h-4 w-4" />
-                                        {editingSize ? 'Update' : 'Create'}
+                                        {editingSize ? t('admin.categories_sizes.update') : t('admin.categories_sizes.create')}
                                     </Button>
                                     {editingSize && (
                                         <Button type="button" variant="outline" onClick={cancelEdit}>
                                             <X className="mr-2 h-4 w-4" />
-                                            Cancel
+                                            {t('admin.categories_sizes.cancel')}
                                         </Button>
                                     )}
                                 </div>
@@ -597,7 +599,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                         <div className="space-y-4">
                             <h2 className="flex items-center gap-2 text-xl font-semibold">
                                 <Tag className="h-5 w-5" />
-                                Categories
+                                {t('admin.categories_sizes.categories')}
                             </h2>
 
                             {/* Mobile Categories List */}
@@ -610,11 +612,11 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                     <span className="font-medium">{category.name}</span>
                                                     {!category.is_active && (
                                                         <Badge variant="secondary" className="bg-gray-100 text-gray-800">
-                                                            Inactive
+                                                            {t('admin.categories_sizes.inactive')}
                                                         </Badge>
                                                     )}
                                                 </div>
-                                                <p className="text-sm text-muted-foreground">{category.products_count} products</p>
+                                                <p className="text-sm text-muted-foreground">{t('admin.categories_sizes.products_count', { count: category.products_count })}</p>
                                                 {category.description && <p className="mt-1 text-sm text-muted-foreground">{category.description}</p>}
                                             </div>
                                             <div className="flex gap-2">
@@ -637,10 +639,10 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                             {/* Mobile Category Form */}
                             <Card className="p-4" ref={mobileCategoryFormRef}>
-                                <h3 className="mb-4 text-lg font-medium">{editingCategory ? 'Edit Category' : 'Add Category'}</h3>
+                                <h3 className="mb-4 text-lg font-medium">{editingCategory ? t('admin.categories_sizes.edit_category') : t('admin.categories_sizes.add_category')}</h3>
                                 <form onSubmit={handleCategorySubmit} className="space-y-4">
                                     <div>
-                                        <Label htmlFor="mobile-category-name">Name</Label>
+                                        <Label htmlFor="mobile-category-name">{t('admin.categories_sizes.name')}</Label>
                                         <Input
                                             id="mobile-category-name"
                                             value={categoryForm.data.name}
@@ -651,7 +653,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="mobile-category-description">Description</Label>
+                                        <Label htmlFor="mobile-category-description">{t('admin.categories_sizes.description_label')}</Label>
                                         <Textarea
                                             id="mobile-category-description"
                                             value={categoryForm.data.description}
@@ -666,17 +668,18 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                             checked={categoryForm.data.is_active}
                                             onCheckedChange={(checked) => categoryForm.setData('is_active', Boolean(checked))}
                                         />
-                                        <Label htmlFor="mobile-category-active">Active</Label>
+                                        <Label htmlFor="mobile-category-active">{t('admin.categories_sizes.active')}</Label>
                                     </div>
 
                                     <div className="flex gap-2">
                                         <Button type="submit" disabled={categoryForm.processing} className="flex-1">
                                             <Save className="mr-2 h-4 w-4" />
-                                            {editingCategory ? 'Update' : 'Create'}
+                                            {editingCategory ? t('admin.categories_sizes.update') : t('admin.categories_sizes.create')}
                                         </Button>
                                         {editingCategory && (
                                             <Button type="button" variant="outline" onClick={cancelEdit}>
-                                                <X className="h-4 w-4" />
+                                                <X className="mr-2 h-4 w-4" />
+                                                {t('admin.categories_sizes.cancel')}
                                             </Button>
                                         )}
                                     </div>
@@ -689,7 +692,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                         <div className="space-y-4">
                             <h2 className="flex items-center gap-2 text-xl font-semibold">
                                 <Ruler className="h-5 w-5" />
-                                Sizes
+                                {t('admin.categories_sizes.sizes')}
                             </h2>
 
                             {/* Mobile Sizes List */}
@@ -702,10 +705,10 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                     <span className="font-medium">{size.name}</span>
                                                 </div>
                                                 <div className="space-y-1 text-sm text-muted-foreground">
-                                                    <p>Dimensions: {formatDimensions(size.length, size.width, size.height)} cm</p>
-                                                    <p>Products: {size.products_count}</p>
-                                                    <p>Shipping: {formatCurrency(size.shipping_cost)}</p>
-                                                    <p>Type: {getBoxTypeName(size.box_type)}</p>
+                                                    <p>{t('admin.categories_sizes.dimensions_cm', { dimensions: formatDimensions(size.length, size.width, size.height) })}</p>
+                                                    <p>{t('admin.categories_sizes.products_label_count', { count: size.products_count })}</p>
+                                                    <p>{t('admin.categories_sizes.shipping_label_amount', { amount: formatCurrency(size.shipping_cost) })}</p>
+                                                    <p>{t('admin.categories_sizes.type_label', { type: getBoxTypeName(size.box_type) })}</p>
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
@@ -728,10 +731,10 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                             {/* Mobile Size Form */}
                             <Card className="p-4" ref={mobileSizeFormRef}>
-                                <h3 className="mb-4 text-lg font-medium">{editingSize ? 'Edit Size' : 'Add Size'}</h3>
+                                <h3 className="mb-4 text-lg font-medium">{editingSize ? t('admin.categories_sizes.edit_size') : t('admin.categories_sizes.add_size')}</h3>
                                 <form onSubmit={handleSizeSubmit} className="space-y-4">
                                     <div>
-                                        <Label htmlFor="mobile-size-name">Name</Label>
+                                        <Label htmlFor="mobile-size-name">{t('admin.categories_sizes.name')}</Label>
                                         <Input
                                             id="mobile-size-name"
                                             value={sizeForm.data.name}
@@ -743,7 +746,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                                     <div className="grid grid-cols-3 gap-2">
                                         <div>
-                                            <Label htmlFor="mobile-size-length">Length (cm)</Label>
+                                            <Label htmlFor="mobile-size-length">{t('admin.categories_sizes.length_cm')}</Label>
                                             <Input
                                                 id="mobile-size-length"
                                                 type="number"
@@ -755,7 +758,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                             />
                                         </div>
                                         <div>
-                                            <Label htmlFor="mobile-size-width">Width (cm)</Label>
+                                            <Label htmlFor="mobile-size-width">{t('admin.categories_sizes.width_cm')}</Label>
                                             <Input
                                                 id="mobile-size-width"
                                                 type="number"
@@ -767,7 +770,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                             />
                                         </div>
                                         <div>
-                                            <Label htmlFor="mobile-size-height">Height (cm)</Label>
+                                            <Label htmlFor="mobile-size-height">{t('admin.categories_sizes.height_cm')}</Label>
                                             <Input
                                                 id="mobile-size-height"
                                                 type="number"
@@ -781,13 +784,13 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="mobile-size-box-type">Box Type</Label>
+                                        <Label htmlFor="mobile-size-box-type">{t('admin.categories_sizes.box_type')}</Label>
                                         <Select
                                             value={sizeForm.data.box_type}
                                             onValueChange={(value) => sizeForm.setData('box_type', value)}
                                         >
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select box type" />
+                                                <SelectValue placeholder={t('admin.categories_sizes.select_box_type')} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {Object.entries(boxTypes).map(([key, label]) => (
@@ -800,7 +803,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                     </div>
 
                                     <div>
-                                        <Label htmlFor="mobile-size-shipping-cost">Shipping Cost</Label>
+                                        <Label htmlFor="mobile-size-shipping-cost">{t('admin.categories_sizes.shipping_cost')}</Label>
                                         <Input
                                             id="mobile-size-shipping-cost"
                                             type="number"
@@ -814,11 +817,12 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                     <div className="flex gap-2">
                                         <Button type="submit" disabled={sizeForm.processing} className="flex-1">
                                             <Save className="mr-2 h-4 w-4" />
-                                            {editingSize ? 'Update' : 'Create'}
+                                            {editingSize ? t('admin.categories_sizes.update') : t('admin.categories_sizes.create')}
                                         </Button>
                                         {editingSize && (
                                             <Button type="button" variant="outline" onClick={cancelEdit}>
-                                                <X className="h-4 w-4" />
+                                                <X className="mr-2 h-4 w-4" />
+                                                {t('admin.categories_sizes.cancel')}
                                             </Button>
                                         )}
                                     </div>
@@ -836,7 +840,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                     <div className="flex justify-center gap-4">
                         <Button variant="outline" size="sm" onClick={() => setIsStatsOpen(!isStatsOpen)} className="flex-1">
                             <BarChart3 className="mr-2 h-4 w-4" />
-                            Stats
+                            {t('admin.categories_sizes.stats')}
                         </Button>
                         <Button
                             variant="outline"
@@ -847,12 +851,12 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                             {activeTab === 'categories' ? (
                                 <>
                                     <Ruler className="mr-2 h-4 w-4" />
-                                    Sizes
+                                    {t('admin.categories_sizes.sizes')}
                                 </>
                             ) : (
                                 <>
                                     <Tag className="mr-2 h-4 w-4" />
-                                    Categories
+                                    {t('admin.categories_sizes.categories')}
                                 </>
                             )}
                         </Button>
@@ -866,13 +870,13 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <AlertTriangle className="h-5 w-5 text-amber-500" />
-                                Delete {deleteDialog.type === 'category' ? 'Category' : 'Size'}
+                                {deleteDialog.type === 'category' ? t('admin.categories_sizes.delete_category') : t('admin.categories_sizes.delete_size')}
                             </DialogTitle>
                             <DialogDescription>
                                 {deleteDialog.canDelete ? (
-                                    `Are you sure you want to delete "${deleteDialog.item?.name}"? This action cannot be undone.`
+                                    t('admin.categories_sizes.delete_confirm', { name: deleteDialog.item?.name || '' })
                                 ) : (
-                                    `Cannot delete "${deleteDialog.item?.name}" because it has ${deleteDialog.item?.products_count} associated products.`
+                                    t('admin.categories_sizes.cannot_delete_has_products', { name: deleteDialog.item?.name || '', count: deleteDialog.item?.products_count || 0 })
                                 )}
                             </DialogDescription>
                         </DialogHeader>
@@ -881,19 +885,19 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                             <Alert>
                                 <AlertTriangle className="h-4 w-4" />
                                 <AlertDescription>
-                                    To delete this {deleteDialog.type}, please first remove or reassign all associated products to another {deleteDialog.type}.
+                                    {deleteDialog.type === 'category' ? t('admin.categories_sizes.reassign_products_category') : t('admin.categories_sizes.reassign_products_size')}
                                 </AlertDescription>
                             </Alert>
                         )}
 
                         <DialogFooter>
                             <Button variant="outline" onClick={closeDeleteDialog}>
-                                Cancel
+                                {t('admin.categories_sizes.cancel')}
                             </Button>
                             {deleteDialog.canDelete && (
                                 <Button variant="destructive" onClick={confirmDelete}>
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
+                                    {t('admin.categories_sizes.delete')}
                                 </Button>
                             )}
                         </DialogFooter>

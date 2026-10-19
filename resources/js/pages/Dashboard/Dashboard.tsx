@@ -34,10 +34,10 @@ export default function Dashboard({
 }: DashboardProps) {
     const { auth } = usePage<SharedData>().props;
     const user = auth.user!;
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
+        return new Date(dateString).toLocaleDateString(locale, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',

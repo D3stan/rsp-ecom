@@ -39,7 +39,7 @@ export default function Index({ campaigns }: IndexProps) {
     return (
         <AdminLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
                 { title: t('newsletter.admin.title'), href: route('admin.newsletter.subscribers') },
                 { title: t('newsletter.admin.tabs.campaigns'), href: route('admin.newsletter.campaigns.index') },
             ]}

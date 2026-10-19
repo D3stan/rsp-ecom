@@ -49,7 +49,7 @@ export default function Show({ campaign, stats }: ShowProps) {
     return (
         <AdminLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
                 { title: t('newsletter.admin.title'), href: route('admin.newsletter.subscribers') },
                 { title: t('newsletter.admin.tabs.campaigns'), href: route('admin.newsletter.campaigns.index') },
                 { title: campaign.subject, href: route('admin.newsletter.campaigns.show', campaign.id) },

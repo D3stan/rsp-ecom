@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useTranslation } from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import {
@@ -101,6 +102,8 @@ export default function AdminDashboard({
     topProducts,
     lowStockProducts,
 }: Props) {
+    const { t, locale } = useTranslation();
+
     // Add safety checks and defaults
     const safeStats = stats || {
         today: { orders: 0, revenue: 0, customers: 0 },
@@ -122,7 +125,7 @@ export default function AdminDashboard({
     const safeLowStockProducts = lowStockProducts || [];
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('it-IT', {
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
             currency: 'EUR',
         }).format(amount);
@@ -130,7 +133,7 @@ export default function AdminDashboard({
 
     // Prepare pie chart data
     const pieChartData = Object.entries(safeOrderStatusDistribution).map(([key, value]) => ({
-        name: key.charAt(0).toUpperCase() + key.slice(1),
+        name: t(`admin.orders.status.${key}`),
         value,
         color: COLORS[Object.keys(safeOrderStatusDistribution).indexOf(key)],
     }));
@@ -138,24 +141,24 @@ export default function AdminDashboard({
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Admin', href: '/admin/dashboard' },
-                { title: 'Dashboard', href: '/admin/dashboard' },
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.nav.dashboard'), href: '/admin/dashboard' },
             ]}
         >
-            <Head title="Admin Dashboard" />
+            <Head title={t('admin.dashboard.title')} />
 
             <div className="space-y-6 p-6">
                 {/* Page Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-                        <p className="text-muted-foreground">Welcome to your admin dashboard</p>
+                        <h1 className="text-3xl font-bold tracking-tight">{t('admin.dashboard.title')}</h1>
+                        <p className="text-muted-foreground">{t('admin.dashboard.welcome')}</p>
                     </div>
                     <div className="flex items-center space-x-2">
                         <Button size="sm" asChild>
                             <Link href="/admin/orders">
                                 <Eye className="mr-2 h-4 w-4" />
-                                View Orders
+                                {t('admin.dashboard.view_orders')}
                             </Link>
                         </Button>
                     </div>
@@ -166,13 +169,13 @@ export default function AdminDashboard({
                     <Card className="p-6">
                         <div className="flex items-center space-x-2">
                             <ShoppingCart className="h-5 w-5 text-blue-600" />
-                            <h3 className="text-sm font-medium">Today's Orders</h3>
+                            <h3 className="text-sm font-medium">{t('admin.dashboard.todays_orders')}</h3>
                         </div>
                         <div className="mt-2">
                             <p className="text-2xl font-bold">{safeStats.today.orders}</p>
                             <div className={`flex items-center text-xs ${safeGrowth.orders >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {safeGrowth.orders >= 0 ? <ArrowUpRight className="mr-1 h-3 w-3" /> : <ArrowDownRight className="mr-1 h-3 w-3" />}
-                                {Math.abs(safeGrowth.orders)}% from yesterday
+                                {t('admin.dashboard.from_yesterday', { percent: Math.abs(safeGrowth.orders) })}
                             </div>
                         </div>
                     </Card>
@@ -180,13 +183,13 @@ export default function AdminDashboard({
                     <Card className="p-6">
                         <div className="flex items-center space-x-2">
                             <DollarSign className="h-5 w-5 text-green-600" />
-                            <h3 className="text-sm font-medium">Today's Revenue</h3>
+                            <h3 className="text-sm font-medium">{t('admin.dashboard.todays_revenue')}</h3>
                         </div>
                         <div className="mt-2">
                             <p className="text-2xl font-bold">{formatCurrency(safeStats.today.revenue)}</p>
                             <div className={`flex items-center text-xs ${safeGrowth.revenue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {safeGrowth.revenue >= 0 ? <ArrowUpRight className="mr-1 h-3 w-3" /> : <ArrowDownRight className="mr-1 h-3 w-3" />}
-                                {Math.abs(safeGrowth.revenue)}% from yesterday
+                                {t('admin.dashboard.from_yesterday', { percent: Math.abs(safeGrowth.revenue) })}
                             </div>
                         </div>
                     </Card>
@@ -194,13 +197,13 @@ export default function AdminDashboard({
                     <Card className="p-6">
                         <div className="flex items-center space-x-2">
                             <Package className="h-5 w-5 text-purple-600" />
-                            <h3 className="text-sm font-medium">Monthly Orders</h3>
+                            <h3 className="text-sm font-medium">{t('admin.dashboard.monthly_orders')}</h3>
                         </div>
                         <div className="mt-2">
                             <p className="text-2xl font-bold">{safeStats.month.orders}</p>
                             <div className="flex items-center text-xs text-blue-600">
                                 <BarChart3 className="mr-1 h-3 w-3" />
-                                {formatCurrency(safeStats.month.revenue)} revenue
+                                {t('admin.dashboard.monthly_revenue', { amount: formatCurrency(safeStats.month.revenue) })}
                             </div>
                         </div>
                     </Card>
@@ -208,13 +211,13 @@ export default function AdminDashboard({
                     <Card className="p-6">
                         <div className="flex items-center space-x-2">
                             <Users className="h-5 w-5 text-orange-600" />
-                            <h3 className="text-sm font-medium">New Customers</h3>
+                            <h3 className="text-sm font-medium">{t('admin.dashboard.new_customers')}</h3>
                         </div>
                         <div className="mt-2">
                             <p className="text-2xl font-bold">{safeStats.today.customers}</p>
                             <div className="flex items-center text-xs text-green-600">
                                 <TrendingUp className="mr-1 h-3 w-3" />
-                                {safeStats.month.customers} this month
+                                {t('admin.dashboard.this_month_count', { count: safeStats.month.customers })}
                             </div>
                         </div>
                     </Card>
@@ -225,11 +228,11 @@ export default function AdminDashboard({
                     {/* Revenue Chart */}
                     <Card className="p-6">
                         <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-lg font-semibold">Revenue Trend (7 Days)</h2>
+                            <h2 className="text-lg font-semibold">{t('admin.dashboard.revenue_trend')}</h2>
                             <Button variant="outline" size="sm" asChild>
                                 <Link href="/admin/reports">
                                     <BarChart3 className="mr-2 h-4 w-4" />
-                                    View Reports
+                                    {t('admin.dashboard.view_reports')}
                                 </Link>
                             </Button>
                         </div>
@@ -242,7 +245,7 @@ export default function AdminDashboard({
                                     <Tooltip
                                         formatter={(value: number, name: string) => [
                                             name === 'revenue' ? formatCurrency(value) : value,
-                                            name === 'revenue' ? 'Revenue' : 'Orders',
+                                            name === 'revenue' ? t('admin.dashboard.chart_revenue') : t('admin.dashboard.chart_orders'),
                                         ]}
                                     />
                                     <Line type="monotone" dataKey="revenue" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6' }} />
@@ -254,11 +257,11 @@ export default function AdminDashboard({
                     {/* Order Status Distribution */}
                     <Card className="p-6">
                         <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-lg font-semibold">Order Status Distribution</h2>
+                            <h2 className="text-lg font-semibold">{t('admin.dashboard.order_status_distribution')}</h2>
                             <Button variant="outline" size="sm" asChild>
                                 <Link href="/admin/orders">
                                     <Eye className="mr-2 h-4 w-4" />
-                                    Manage Orders
+                                    {t('admin.dashboard.manage_orders')}
                                 </Link>
                             </Button>
                         </div>
@@ -290,9 +293,9 @@ export default function AdminDashboard({
                     {/* Recent Orders */}
                     <Card className="p-6">
                         <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-lg font-semibold">Recent Orders</h2>
+                            <h2 className="text-lg font-semibold">{t('admin.dashboard.recent_orders')}</h2>
                             <Button variant="outline" size="sm" asChild>
-                                <Link href="/admin/orders">View All</Link>
+                                <Link href="/admin/orders">{t('admin.dashboard.view_all')}</Link>
                             </Button>
                         </div>
                         <div className="space-y-3">
@@ -305,7 +308,7 @@ export default function AdminDashboard({
                                                 className={`text-xs ${statusColors[order.status as keyof typeof statusColors]}`}
                                                 variant="secondary"
                                             >
-                                                {order.status}
+                                                {t(`admin.orders.status.${order.status}`)}
                                             </Badge>
                                         </div>
                                         <p className="text-xs text-muted-foreground">{order.customer_name}</p>
@@ -327,9 +330,9 @@ export default function AdminDashboard({
                     {/* Top Products */}
                     <Card className="p-6">
                         <div className="mb-4 flex items-center justify-between">
-                            <h2 className="text-lg font-semibold">Top Products</h2>
+                            <h2 className="text-lg font-semibold">{t('admin.dashboard.top_products')}</h2>
                             <Button variant="outline" size="sm" asChild>
-                                <Link href="/admin/products">View All</Link>
+                                <Link href="/admin/products">{t('admin.dashboard.view_all')}</Link>
                             </Button>
                         </div>
                         <div className="space-y-3">
@@ -338,7 +341,9 @@ export default function AdminDashboard({
                                     <div key={product.id} className="flex items-center justify-between rounded-lg border p-3">
                                         <div className="flex-1">
                                             <p className="text-sm font-medium">{product.name}</p>
-                                            <p className="text-xs text-muted-foreground">{product.sales_count} sales</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {t('admin.dashboard.sales_count', { count: product.sales_count ?? 0 })}
+                                            </p>
                                         </div>
                                         <div className="text-right">
                                             <p className="text-sm font-medium">{formatCurrency(product.price)}</p>
@@ -346,7 +351,7 @@ export default function AdminDashboard({
                                     </div>
                                 ))
                             ) : (
-                                <p className="py-4 text-center text-sm text-muted-foreground">No sales data available</p>
+                                <p className="py-4 text-center text-sm text-muted-foreground">{t('admin.dashboard.no_sales_data')}</p>
                             )}
                         </div>
                     </Card>
@@ -356,12 +361,12 @@ export default function AdminDashboard({
                         <div className="mb-4 flex items-center justify-between">
                             <h2 className="flex items-center text-lg font-semibold">
                                 <AlertTriangle className="mr-2 h-5 w-5 text-orange-500" />
-                                Low Stock Alerts
+                                {t('admin.dashboard.low_stock_alerts')}
                             </h2>
                             <Button variant="outline" size="sm" asChild>
                                 <Link href="/admin/products">
                                     <Plus className="mr-2 h-4 w-4" />
-                                    Restock
+                                    {t('admin.dashboard.restock')}
                                 </Link>
                             </Button>
                         </div>
@@ -371,7 +376,9 @@ export default function AdminDashboard({
                                     <div key={product.id} className="flex items-center justify-between rounded-lg border bg-orange-50 p-3">
                                         <div className="flex-1">
                                             <p className="text-sm font-medium">{product.name}</p>
-                                            <p className="text-xs text-orange-600">Only {product.stock_quantity} left in stock</p>
+                                            <p className="text-xs text-orange-600">
+                                                {t('admin.dashboard.only_left_in_stock', { count: product.stock_quantity ?? 0 })}
+                                            </p>
                                         </div>
                                         <div className="text-right">
                                             <Badge variant="outline" className="border-orange-600 text-orange-600">
@@ -381,7 +388,7 @@ export default function AdminDashboard({
                                     </div>
                                 ))
                             ) : (
-                                <p className="py-4 text-center text-sm text-muted-foreground">All products are well stocked</p>
+                                <p className="py-4 text-center text-sm text-muted-foreground">{t('admin.dashboard.all_well_stocked')}</p>
                             )}
                         </div>
                     </Card>
