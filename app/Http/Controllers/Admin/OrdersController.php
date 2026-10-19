@@ -513,6 +513,8 @@ class OrdersController extends Controller
             'default_label_driver' => $labelsEnabled ? (string) settings('shipping.label_driver', '') : '',
             'tracking_drivers' => $trackingManager->selectableDriverNames(),
             'default_tracking_driver' => $trackingManager->getDefaultDriver(),
+            'rate_drivers' => app(\App\Shipping\Rates\RateManager::class)->selectableDriverNames(),
+            'shipping_cost' => (float) ($order->shipping_cost ?? $order->shipping_amount ?? 0.0),
         ]);
     }
 
@@ -543,6 +545,7 @@ class OrdersController extends Controller
             'parcels.*.height' => 'nullable|numeric|min:0|max:1000',
             'insurance_amount' => 'sometimes|nullable|numeric|min:0|max:1000000',
             'cod_amount' => 'sometimes|nullable|numeric|min:0|max:1000000',
+            'quote_token' => 'sometimes|nullable|string|max:191',
         ];
 
         $data = $request->validate($rules);
@@ -564,6 +567,7 @@ class OrdersController extends Controller
                 codAmount: $wantsLabel && isset($data['cod_amount']) ? (float) $data['cod_amount'] : null,
                 labelDriver: $wantsLabel ? ($data['label_driver'] ?? null) : null,
                 trackingDriver: $trackingDriver,
+                quoteToken: $wantsLabel && isset($data['quote_token']) ? (string) $data['quote_token'] : null,
             ), $request->user());
         } catch (InvalidOrderTransition $e) {
             return $this->refusedTransition($e);

@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ReviewsController;
 use App\Http\Controllers\Admin\NewsletterSubscribersController;
 use App\Http\Controllers\Admin\NewsletterCampaignsController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\ShippingQuotesController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -24,6 +25,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::resource('orders', OrdersController::class)->only(['index', 'show', 'edit', 'update']);
     Route::get('orders/{order}/ship', [OrdersController::class, 'showShip'])->name('orders.show-ship');
     Route::post('orders/{order}/ship', [OrdersController::class, 'processShip'])->name('orders.process-ship');
+    Route::post('orders/{order}/quotes', [ShippingQuotesController::class, 'quoteOrder'])->name('orders.quotes');
     // Optional label layer: stream a shipment's label PDF, cancel a shipment at the carrier
     Route::get('orders/{order}/shipments/{shipment}/label', [OrdersController::class, 'downloadLabel'])->scopeBindings()->name('orders.shipments.label');
     Route::delete('orders/{order}/shipments/{shipment}', [OrdersController::class, 'cancelShipment'])->scopeBindings()->name('orders.shipments.cancel');
@@ -31,6 +33,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('orders/{order}/cancel', [OrdersController::class, 'cancel'])->name('orders.cancel');
     Route::post('orders/{order}/refund', [OrdersController::class, 'refund'])->name('orders.refund');
     Route::post('orders/{order}/refunds/{refund}/retry', [OrdersController::class, 'retryRefund'])->scopeBindings()->name('orders.refunds.retry');
+
+    // Shipping Quotes
+    Route::get('shipping/quotes', [ShippingQuotesController::class, 'index'])->name('shipping.quotes');
+    Route::post('shipping/quotes/calculate', [ShippingQuotesController::class, 'quote'])->name('shipping.quotes.calculate');
 
     // Products Management
     Route::resource('products', ProductController::class);
