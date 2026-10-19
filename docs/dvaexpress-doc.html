@@ -1,0 +1,4400 @@
+<!doctype html>
+<html lang="it">
+
+<head>
+	<title>EasyParcel | Documentazione API</title>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+	<!-- VENDOR CSS -->
+	<link rel="stylesheet" href="assets/vendor/bootstrap/css/bootstrap.min.css">
+	<link rel="stylesheet" href="assets/vendor/font-awesome/css/font-awesome.min.css">
+	<!-- <link rel="stylesheet" href="assets/vendor/linearicons/style.css"> -->
+	<link rel="stylesheet" href="https://cdn.linearicons.com/free/1.0.0/icon-font.min.css">
+	<!-- MAIN CSS -->
+	<link rel="stylesheet" href="assets/css/main.css">
+	<!-- FOR DEMO PURPOSES ONLY. You should remove this in your project -->
+	<link rel="stylesheet" href="assets/css/demo.css">
+	<link rel="stylesheet" href="assets/css/custom.css?rand=540622480">
+	<!-- GOOGLE FONTS -->
+	<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700" rel="stylesheet">
+	<!-- ICONS -->
+	<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+	<link rel="apple-touch-icon" sizes="57x57" href="apple-touch-icon-57x57.png" />
+	<link rel="apple-touch-icon" sizes="72x72" href="apple-touch-icon-72x72.png" />
+	<link rel="apple-touch-icon" sizes="76x76" href="apple-touch-icon-76x76.png" />
+	<link rel="apple-touch-icon" sizes="114x114" href="apple-touch-icon-114x114.png" />
+	<link rel="apple-touch-icon" sizes="120x120" href="apple-touch-icon-120x120.png" />
+	<link rel="apple-touch-icon" sizes="144x144" href="apple-touch-icon-144x144.png" />
+	<link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-152x152.png" />
+	<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180x180.png" />
+
+	<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css">
+	<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+	<style>
+		.unselected {
+			text-decoration: none;
+			font-weight: none;
+		}
+		.selected {
+			text-decoration: underline;
+			font-weight: bold;
+		}
+		.sidebar .nav > li > a {
+			padding: 10px 30px;
+		}
+	</style>	
+</head>
+
+<body>
+	<!-- WRAPPER -->
+	<div id="wrapper">
+		<!-- NAVBAR -->
+		<nav class="navbar navbar-default navbar-fixed-top">
+			<div class="brand">
+				<a href="#top"><img src="assets/img/logo-dark.png" alt="EasyParcel Logo" class="img-responsive logo"></a>
+			</div>
+			<div class="container-fluid">
+				<div class="navbar-btn">
+					<button type="button" class="btn-toggle-fullwidth"><i class="lnr lnr-arrow-left-circle"></i></button>
+				</div>
+				<div style="float:right; margin-top:10px; text-align:right">
+					<small><a href="?lang=it" class="selected">IT</a> | <a href="?lang=en" class="unselected">EN</a></small><br>
+					<small>Ultima versione: 1.1.20</small><br>
+					<small class="page-title">Il tuo IP: 192.38.81.6</small>
+				</div>
+			</div>
+		</nav>
+		<!-- END NAVBAR -->
+		<!-- LEFT SIDEBAR -->
+		<a name="top"></a>
+		<div id="sidebar-nav" class="sidebar">
+			<div class="sidebar-scroll">
+				<nav>
+					<ul class="nav">
+													<li><a href="#Dashboard" class=""><i class="lnr lnr-home"></i> <span>Dashboard</span></a></li>
+														<li><a href="#Versioni" class=""><i class="lnr lnr-history"></i> <span>Versioni</span></a></li>
+														<li><a href="#ApiKeyInfo" class=""><i class="lnr lnr-alarm"></i> <span>ApiKeyInfo</span></a></li>
+														<li><a href="#Quotation" class=""><i class="lnr lnr-star"></i> <span>Quotation</span></a></li>
+														<li><a href="#Order" class=""><i class="lnr lnr-cart"></i> <span>Order</span></a></li>
+														<li><a href="#OrderFast" class=""><i class="lnr lnr-rocket"></i> <span>OrderFast</span></a></li>
+														<li><a href="#GetWaybill" class=""><i class="lnr lnr-download"></i> <span>GetWaybill</span></a></li>
+														<li><a href="#TARIC" class=""><i class="lnr lnr-list"></i> <span>TARIC</span>&nbsp;&nbsp;<span class='badge badge-danger'>NEW</span></a></li>
+														<li><a href="#GetOrder" class=""><i class="lnr lnr-eye"></i> <span>GetOrder</span></a></li>
+														<li><a href="#ListOrder" class=""><i class="lnr lnr-list"></i> <span>ListOrder</span></a></li>
+														<li><a href="#Tracking" class=""><i class="lnr lnr-map-marker"></i> <span>Tracking</span></a></li>
+														<li><a href="#NewCustomer" class=""><i class="lnr lnr-user"></i> <span>NewCustomer</span></a></li>
+														<li><a href="#AddFund" class=""><i class="lnr lnr-gift"></i> <span>AddFund</span></a></li>
+														<li><a href="#Balance" class=""><i class="lnr lnr-license"></i> <span>Balance</span></a></li>
+														<li><a href="#PUDO" class=""><i class="lnr lnr-map"></i> <span>PUDO</span></a></li>
+														<li><a href="#CheckCoupon" class=""><i class="lnr lnr-checkmark-circle"></i> <span>CheckCoupon</span></a></li>
+														<li><a href="#Richiesta Storno" class=""><i class="lnr lnr-undo"></i> <span>Richiesta Storno</span>&nbsp;&nbsp;<span class='badge badge-danger'>NEW</span></a></li>
+														<li><a href="#Errori" class=""><i class="lnr lnr-warning"></i> <span>Errori</span></a></li>
+												</ul>
+				</nav>
+			</div>
+		</div>
+		<!-- END LEFT SIDEBAR -->
+		<!-- MAIN -->
+		<div class="main">
+			<!-- MAIN CONTENT -->
+			<div class="main-content">
+									<a name="Dashboard"></a>
+					<div class="container-fluid">
+						<h1><img src="assets/img/logo-dark.png" alt="EasyParcel Logo" class="img-responsive logo"></h1>
+<h3 class="page-title">Dashboard</h3>
+<h4 class="page-title">Il sistema <strong>Easy Parcel API</strong> consente di accedere attraverso apposite chiamate al motore di calcolo preventivi di spedizione e successivamente all'eventuale finalizzazione dell'ordine.<br><br>Tutti gli esempi di codice sono scritti in linguaggio <strong>PHP</strong>, ma potete sviluppare le chiamate in qualsiasi linguaggio e ambiente (per Windows potete consultare la seguente pagina: <a href="https://stackoverflow.com/questions/4015324/how-to-make-http-post-web-request" target="_blank">https://stackoverflow.com/questions/4015324/how-to-make-http-post-web-request</a>).<br><br><code>Ultima versione: 1.1.20</code></h4>					</div>
+										<a name="Versioni"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">Versioni</h3>
+<h4 class="page-title">Questa sezione contiene l'elenco delle versioni delle chiamate API al sistema <img src="assets/img/logo-dark.png" alt="EasyParcel Logo" class="logo logo-bordered"></h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Tabella versioni</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="width:10%">Versione</th>
+							<th style="width:10%">Data</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+															<tr>											<td style='text-align:center'><label class='label label-success label-lg'><big><big>1.1.20</big></big></label></td>											<td>2024-06-14</td>											<td>Applicate migliorie alla chiamata API <code>quotation</code> per la restituzione della modalità di disponibilità del servizio contrassegno nel campo <code>servizi</code>. La lettera <code>C</code> significa CONTANTI mentre la lettera <code>A</code> significa ASSEGNO BANCARIO AL MITTENTE.<br>Applicate le medesime migliorie anche alla chiamata API <code>order</code> che consente di specificare la modalità del servizio contrassegno richiesta nell'apposito campo <code>contrassegno_modalita</code> indicando <code>C</code> per CONTANTI oppure <code>A</code> per ASSEGNO BANCARIO AL MITTENTE. È previsto un controllo sul valore indicato, se compatibile con il risultato della quotation.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.19</big></big></label></td>											<td>2024-06-12</td>											<td>Aggiornata la chiamata API <code>order-fast</code> che ora restituisce il PDF globale multipagina in base64 e anche per ogni singolo collo il numero della lettera di vettura e il relativo singolo PDF codificato in base64.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.18</big></big></label></td>											<td>2024-06-07</td>											<td>Aggiornata la chiamata API <code>getwaybill</code> con l'aggiunta del campo <code>single_waybills</code> nella chiamata. Se impostato a <code>Y</code> restituisce per ogni collo il numero della lettera di vettura e il relativo singolo PDF codificato in base64.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.17</big></big></label></td>											<td>2024-05-17</td>											<td>Aggiornata la chiamata API <code>tracking</code> con l'aggiunta nella risposta del campo <code>firma</code> che contiene il nominativo della persona che ha fisicamente ricevuto e confermato la spedizione.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.16</big></big></label></td>											<td>2024-04-12</td>											<td>Aggiornata la chiamata API <code>order</code> con l'aggiunta del campo <code>destinatario->codicefiscale</code> richiesto per le spedizioni estere.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.15</big></big></label></td>											<td>2024-01-25</td>											<td>Aggiunta la nuova chiamata API <code>order-fast</code> che, con una unica chiamata, effettua una "quotation", a seguire una "order" e successivamente una "getwaybill", restituendo direttamente la lettera di vettura prodotta, anche in formato Base64.<br>
+Aggiunta anche la nuova chiamata API <code>getwaybill</code> che restituisce la lettera di vettura, anche in Base64, di uno specifico ordine.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.14b</big></big></label></td>											<td>2023-10-20</td>											<td>Aggiornata la chiamata API <code>quotation</code> che ora restituisce anche la modalità di disponibilità del servizio contrassegno nel nuovo campo <code>servizi</code>. La lettera <code>C</code> significa CONTANTI mentre la lettera <code>A</code> significa ASSEGNO BANCARIO AL MITTENTE.<br>Aggiornata anche la chiamata API <code>order</code> che ora consente di specificare la modalità del servizio contrassegno richiesta nell'apposito nuovo campo <code>contrassegno_modalita</code> indicando <code>C</code> per CONTANTI oppure <code>A</code> per ASSEGNO BANCARIO AL MITTENTE. E' previsto un controllo sul valore indicato, se compatibile con il risoltato della quotation.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.14</big></big></label></td>											<td>2023-10-17</td>											<td>Aggiornata la risposta alla chiamata <code>getorder</code> con l'aggiunta del campo <code>contrassegno_modalita</code> che riporta "C" per contanti e "A" per assegno.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.13</big></big></label></td>											<td>2023-02-08</td>											<td>Aggiornata la risposta alla chiamata <code>getorder</code> con l'aggiunta del campo <code>url_bordero</code> che riporta l'URL dove scaricare il borderò da consegnare all'autista che ritira la spedizione.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.12</big></big></label></td>											<td>2022-08-31</td>											<td>Aggiornata la risposta alla chiamata <code>order</code> con l'aggiunta del campo <code>id_ordine</code> che riporta l'ID numerico del nuovo ordine creato.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.11</big></big></label></td>											<td>2022-07-14</td>											<td>Aggiornata la chiamata <code>listorder</code> con l'aggiunta della paginazione. E' possibile ora passare 2 nuovi dati: <code>paginazione</code> che definisce la dimesione della lista restituita (default 10, max. 100) e <code>pagina</code> che identifica la pagina da visualizzare (default 1). E' stato anche invertito l'ordine di visualizzazione, dall'ordine più recente al più vecchio.<br>Nella risposta vengono restituiti rispettivamente il numero globale di ordini, il valore della paginazione e la pagina restituita.
+</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.10</big></big></label></td>											<td>2022-06-29</td>											<td>Aggiornata la chiamata <code>listorder</code> con l'aggiunta del nuovo campo di filtro <code>idcustomer</code> che consente di ottenere la lista degli ordini del singolo utente. Nella risposta sono stati aggiunti anche i dettagli dei colli, con misure e pesi.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.9</big></big></label></td>											<td>2022-05-13</td>											<td>Aggiunto errore <code>132</code> nella chiamata <code>order</code> per vettori non acquistabili via API.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.8</big></big></label></td>											<td>2022-04-14</td>											<td>Aggiornata la spiegazione della chiamata <code>newcustom</code> con una più corretta descrizione dei campi obbligatori e/o opzionali.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.7</big></big></label></td>											<td>2021-09-16</td>											<td>Aggiornata la chiamata <code>quotation</code> con l'aggiunta del tipo_spedizione = I (import) e del cosa_spedire = P (pallets).<br>
+													Aggiornata la chiamata <code>order</code> che ora accetta il parametro coupon per applicare sconti previsti in apposite campagne.<br>Aggiornata la chiamata <code>tracking</code> che ora accetta come parametro anche il numero di lettera di vettura (ldv).<br>Aggiunta la nuova chiamata <code>checkcoupon</code> che consente di verificare la correttezza e la validità del coupon.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.6</big></big></label></td>											<td>2021-02-18</td>											<td>Aggiornata la chiamata <code>quotation</code> con l'aggiunta del limite massimo per contrassegno e assicurazione.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.5</big></big></label></td>											<td>2021-02-17</td>											<td>Aggiornata la chiamata <code>order</code> con l'aggiunta dei campi di richiesta ritiro spedizione.<br>Aggiornata la risposta della chiamata <code>getorder</code> con l'aggiunta del campo di <code>codice_ritiro</code> spedizione se richiesto.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.4</big></big></label></td>											<td>2021-01-25</td>											<td>Aggiunte le seguenti nuove chiamate: <code>newcustomer</code>, <code>addfund</code> e <code>balance</code>.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.3</big></big></label></td>											<td>2020-05-25</td>											<td>Aggiornata la risposta della chiamata <code>getorder</code> con l'aggiunta dei campi <code>nome_vettore</code> e <code>logo_vettore</code> che contengono rispettivamente il nome del vettore e il suo logo.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.2</big></big></label></td>											<td>2020-05-21</td>											<td>Aggiornata la risposta della chiamata <code>tracking</code> con l'aggiunta del campo <code>codice_prenotazione</code> che sarà compilato solo in caso di richiesta ritiro e solo quando verrà effettivamente lanciato dai sistema automatici.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1.1</big></big></label></td>											<td>2020-04-23</td>											<td>Aggiornata la risposta della chiamata <code>quotation</code> per uniformarla alle altre. E' stato aggiunto il campo opzionale <code>version</code> per forzare una risposta in una determinata versione. In caso di assenza, verrà fornita la risposta in base alla versione della APIKEY attivata. Per richiedere un aggiornamento della versione dell'APIKEY, contattateci.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.1</big></big></label></td>											<td>2020-03-31</td>											<td>Aggiunte le nuove chiamate <code>GetOrder</code>, <code>ListOrder</code> e <code>Tracking</code>.</td>										</tr>										<tr>											<td style='text-align:center'><label class='label label-default label-lg'><big><big>1.0</big></big></label></td>											<td>2019-12-01</td>											<td>Prima uscita sistema API.</td>										</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>					</div>
+										<a name="ApiKeyInfo"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">ApiKeyInfo</h3>
+<h4 class="page-title">La chiamata <code>apikeyinfo</code> consente di ottenere alcune informazioni relative alla propria <strong>ApiKey</strong> e quindi al proprio contratto con <strong>Easy Parcel API</strong>.</h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di chiamata <code>apikeyinfo</code> in <strong>PHP</strong>:</h3>
+			</div>
+			<div class="panel-body">
+<pre>
+$ch = curl_init("https://api.easyparcel.it/apikeyinfo/{APIKEY}");                                                                      
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");                        
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);                        
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);                        
+curl_setopt($ch, CURLOPT_HTTPHEADER, array
+	(
+		'Content-Type: application/json',
+		'Content-Length: ' . strlen($jsonRequest)
+	)
+);                        
+$jsonResult = curl_exec($ch);
+</pre>
+			</div>
+		</div>
+	</div>
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+<pre>{
+	"call":"apikeyinfo"
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="width:content">Livello 1</th>
+							<th>Tipo</th>
+							<th>Valore</th>
+							<th>Obbligatorio</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>call</td>
+							<td>string</td>
+							<td><code>apikeyinfo</code></td>
+							<td>S</td>
+							<td>Inserire "apikeyinfo"</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Risposta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<div style="max-height:800px; overflow-y:auto;">
+					<pre>{
+	"response":{
+		"azienda":"easyparcel.it",
+		"logo":"http://www.easyparcel.it/logo.jpg",
+		"system":"API",
+		"call":"apikeyinfo",
+		"dettagli":{
+			"apikey":"{APIKEY}",
+			"cliente":"EasyParcel Demo",
+			"attivazione":"2026-01-01",
+			"scadenza":"2026-12-31",
+			"ip_access":"Unlimited",
+			"limite_giornaliero":"Unlimited",
+			"fast_quote":"false",
+			"credito_prepagato":125.00,
+			"live":"true",
+			"email_ordine_mittente":"true",
+			"ldv_api":""
+		},
+		"timestamp":"2026-10-19 12:19:18",
+		"version":"1.1.20"
+	}
+}</pre>
+				</div>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Note sulla risposta JSON:</h3>
+			</div>
+			<div class="panel-body">
+				La risposta JSON contiene la data di attivazione del servizio e la data della prossima scadenza della licenza d'uso del sistema <strong>Easy Parcel API</strong>. Contiene anche due parametri di configurazione del pacchetto acquistato che prevedono il blocco del sistema su specifici indirizzi IP dei server dove è installato il sistema del cliente e l'eventuale limite giornaliero di chiamate di tipo "quotation". Contiene anche il credito residuo prepagato che consente di poter procedere con la chiamata API "order" per finalizzare l'acquisto della spedizione, con addebito sul prepagato.<hr><strong>N.B.</strong><br>Il valore del campo <code>live</code> identifica la modalità operativa; in caso sia "false" le chiamate di tipo "order" non perfezionano alcun vero ordine e quindi non decurtano il credito.<br>Il campo <code>ldv_api</code> può contenere opzionalmente l'indirizzo di un web service del cliente al quale inviare i dati relativi al link del tracking e al link della LDV (lettera di vettura). Sarà a cura del cliente l'operazione di memorizzazione di queste informazioni sul proprio gestionale. La risposta sarà di tipo JSON e conterrà i seguenti campi:
+					<pre>{
+	"result": "OK",
+	"errorcode": "0",
+	"errormessage": "WEBHOOK OK",
+	"codice_offerta": "6513ffbc66222",
+	"custom": "4102000000001348000003333002",
+	"lettera_vettura": "288364I031083",
+	"url_ldv": "https://api.easyparcel.it/ldv/LDV_demo.pdf",
+	"url_tracking": "https://www.poste.it/cerca/index.html#/risultati-spedizioni/288364I031083"
+}
+					</pre>La chiamata verrà effettuata al momento della generazione della LDV (nel giro di un paio di minuti dall'ordine).
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>
+					</div>
+										<a name="Quotation"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">Quotation</h3>
+<h4 class="page-title">La chiamata <code>quotation</code> consente di ottenere il preventivo di costo relativo ad una spedizione, secondo precisi parametri che vengono specificati. In pratica, necessitano alcuni dati relativi al luogo di partenza, al luogo di destinatazione e al tipo di spedizione (nazionale/internazionale, specifiche dei colli, ecc).<br>Il sistema <strong>Easy Parcel API</strong> calcolerà, se possibile, il costo di spedizione in base ai vettori standard del sistema oppure in base a quelli specificamente abilitati al cliente (ed agganciati alla sua ApiKey). Le risposte dettagliano il vettore utilizzato e gli eventuali servizi opzionali abilitabili (con i relativi costi).</h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di chiamata <code>quotation</code> in <strong>PHP</strong>:</h3>
+			</div>
+			<div class="panel-body">
+				<pre>$ch = curl_init("https://api.easyparcel.it/quotation/{APIKEY}");
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+	'Content-Type: application/json',
+	'Content-Length: ' . strlen($jsonRequest))
+);
+$jsonResult = curl_exec($ch);</pre>
+			</div>
+		</div>
+	</div>
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+			<pre>{
+	"call":"quotation",
+	"dettagli":{
+		"tipo_spedizione":"N",
+		"cosa_spedire":"M",
+		"contenuto":"BISCOTTI",
+		"accessori":{
+			"contrassegno_importo":500
+		}
+	},
+	"colli":[
+		{
+			"peso":3.000,
+			"larghezza":30,
+			"profondita":20,
+			"altezza":15,
+			"nr_colli":1
+		}
+	],
+	"mittente":{
+		"cap":"00175",
+		"localita":"ROMA",
+		"provincia":"RM",
+		"nazione":"IT"
+	},
+	"destinatario":{
+		"cap":"20121",
+		"localita":"MILANO",
+		"provincia":"MI",
+		"nazione":"IT"
+	}
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="min-width:80px">Livello 1</th>
+							<th style="min-width:80px">Livello 2</th>
+							<th style="min-width:80px">Livello 3</th>
+							<th>Tipo</th>
+							<th>Esempio</th>
+							<th>Obbligatorio</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>call</td>
+							<td>&nbsp;</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>quotation</code></td>
+							<td>S</td>
+							<td>Inserire <code>quotation</code></td>
+						</tr>
+						<tr>
+							<td>dettagli</td>
+							<td>idcustomer</td>
+							<td>&nbsp;</td>
+							<td>numeric</td>
+							<td><code>12345</code></td>
+							<td>optional</td>
+							<td>In questo campo può essere indicato l'id del cliente del proprio network sul cui listino calcolare il preventivo.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>tipo_spedizione</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>N</code></td>
+							<td>S</td>
+							<td><code>N</code> = nazionale<br><code>E</code> = estero<br><code>I</code> = import</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>cosa_spedire</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>M</code></td>
+							<td>S</td>
+							<td><code>D</code> = documenti<br><code>M</code> = merce/pacchi<br><code>P</code> = pallets</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>contenuto</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>BISCOTTI</code></td>
+							<td>S</td>
+							<td>Inserire la descrizione del contenuto</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>accessori</td>
+							<td>contrassegno_importo</td>
+							<td>decimal</td>
+							<td><code>250.00</code></td>
+							<td>optional</td>
+							<td>Indicare l'importo del contrassegno<br>Il servizio potrebbe non essere previsto per alcuni vettori</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>assicurazione_importo</td>
+							<td>decimal</td>
+							<td><code>350.00</code></td>
+							<td>optional</td>
+							<td>Indicare l'importo dell'assicurazione<br>Il servizio potrebbe non essere previsto per alcuni vettori</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>consegnaalpiano</td>
+							<td>string</td>
+							<td><code>S</code></td>
+							<td>optional</td>
+							<td><code>S</code> = acquistare<br><code>N</code> = non acquistare<br>Il servizio potrebbe non essere previsto per alcuni vettori</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>consegnasuappuntamento</td>
+							<td>string</td>
+							<td><code>S</code></td>
+							<td>optional</td>
+							<td><code>S</code> = acquistare<br><code>N</code> = non acquistare<br>Il servizio potrebbe non essere previsto per alcuni vettori</td>
+						</tr>
+																	<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>priornotice</td>
+							<td>string</td>
+							<td><code>S</code></td>
+							<td>optional</td>
+							<td><code>S</code> = acquistare<br><code>N</code> = non acquistare<br>Il servizio "Prior Notice" è acquistabile solo per spedizioni estere dirette negli USA</td>
+						</tr>
+						<tr>
+							<td>colli</td>
+							<td>peso</td>
+							<td>&nbsp;</td>
+							<td>decimal</td>
+							<td><code>3.000</code></td>
+							<td>S</td>
+							<td>Peso complessivo di questa serie di colli, in kg</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>larghezza</td>
+							<td>&nbsp;</td>
+							<td>integer</td>
+							<td><code>30</code></td>
+							<td>S</td>
+							<td>Larghezza del singolo collo di questa serie di colli (in cm)</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>profondita</td>
+							<td>&nbsp;</td>
+							<td>integer</td>
+							<td><code>20</code></td>
+							<td>S</td>
+							<td>Profondità del singolo collo di questa serie di colli (in cm)</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>altezza</td>
+							<td>&nbsp;</td>
+							<td>integer</td>
+							<td><code>15</code></td>
+							<td>S</td>
+							<td>Altezza del singolo collo di questa serie di colli (in cm)</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>nr_colli</td>
+							<td>&nbsp;</td>
+							<td>integer</td>
+							<td><code>1</code></td>
+							<td>S</td>
+							<td>Numero di colli con stesse dimensioni di questa serie di colli</td>
+						</tr>
+						<tr>
+							<td>mittente</td>
+							<td>cap</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>00175</code></td>
+							<td>S</td>
+							<td>CAP del mittente</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>localita</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>ROMA</code></td>
+							<td>S</td>
+							<td>Località del mittente</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>provincia</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>RM</code></td>
+							<td>S</td>
+							<td>Provincia del mittente</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>nazione</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>IT</code></td>
+							<td>S</td>
+							<td>Inserire <code>IT</code></td>
+						</tr>
+						<tr>
+							<td>destinatario</td>
+							<td>cap</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>20121</code></td>
+							<td>S</td>
+							<td>CAP del destinatario</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>localita</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>MILANO</code></td>
+							<td>S</td>
+							<td>Località del destinatario</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>provincia</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>MI</code></td>
+							<td>S</td>
+							<td>Provincia del destinatario, se spedizione internazionale inserire <code>--</code></td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>country</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>IT</code></td>
+							<td>Obbligatorio solo su internazionale verso USA e Canada</td>
+							<td>Country del destinatario, da valorizzare solo per USA (<a href="https://it.wikipedia.org/wiki/Stati_federati_degli_Stati_Uniti_d%27America" target="_blank">link</a>) e Canada (<a href="https://it.wikipedia.org/wiki/Province_e_territori_del_Canada" target="_blank">link</a>)</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>nazione</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>IT</code></td>
+							<td>S</td>
+							<td>Nazione del destinatario, usare il codice ISO 3166-1 Alpha-2 (<a href="https://it.wikipedia.org/wiki/ISO_3166-1_alpha-2" target="_blank">link</a>)</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Risposta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<div style="max-height:800px; overflow-y:auto;">
+					<pre>{
+	"result":"OK",
+	"errorcode":0,
+	"errormessage":"QUOTATION OK",
+	"quotation":[
+		{
+			"codice_offerta":"5dcc4a53b00fc",
+			"vettore":"SDAM",
+			"famiglia":"SDA",
+			"nome_vettore":"SDA",
+			"logo_vettore":"https://www.easyparcel.it/api/loghi/logo_sda.png",
+			"consegna":"E",
+			"tempiconsegna":"24/48 ore",
+			"messaggio_tariffa":null,
+			"importo_tariffa":"10.62",
+			"totale_dovuto":"6.90",
+			"peso_volumetrico":3,
+			"flag_scontonazionale":null,
+			"flag_localitadisagiata":false,
+			"flag_localitaperiferica":false,
+			"flag_timecritical":false,
+			"percentualeiva":"22.00",
+			"serviziopzionali":{
+				"contrassegno":{
+					"attivabile":"S",
+					"importo":"5.00",
+					"limite_massimo":"1999.99",
+					"servizi":"C-A"
+				},
+				"assicurazione":{
+					"attivabile":"S",
+					"importo":"7.70",
+					"limite_massimo":"3000.00",
+					"valore_simulato":500
+				},
+				"consegnaalpiano":{
+					"attivabile":"S",
+					"importo":"4.00"
+				},
+				"consegnasuappuntamento":{
+					"attivabile":"S",
+					"importo":"6.00"
+				},
+				"trackingavanzato":{
+					"attivabile":"S",
+					"importo":"0.15"
+				},
+				"ritiro":{
+					"attivabile":"S",
+					"importo":"0.00"
+				}
+			}
+		},
+		{
+			"codice_offerta":"5dcc4a53ae412",
+			"vettore":"CROM",
+			"famiglia":"SDA",
+			"nome_vettore":"CRONO",
+			"logo_vettore":"https://www.easyparcel.it/api/loghi/logo_cro.png",
+			"consegna":"E",
+			"tempiconsegna":"48 ore",
+			"messaggio_tariffa":null,
+			"importo_tariffa":"11.32",
+			"totale_dovuto":"7.36",
+			"peso_volumetrico":3,
+			"flag_scontonazionale":null,
+			"flag_localitadisagiata":false,
+			"flag_localitaperiferica":false,
+			"flag_timecritical":false,
+			"percentualeiva":"22.00",
+			"serviziopzionali":{
+				"contrassegno":{
+					"attivabile":"N"
+				},
+				"assicurazione":{
+					"attivabile":"N"
+				},
+				"consegnaalpiano":{
+					"attivabile":"S",
+					"importo":"4.00"
+				},
+				"consegnasuappuntamento":{
+					"attivabile":"S",
+					"importo":"6.00"
+				},
+				"trackingavanzato":{
+					"attivabile":"S",
+					"importo":"0.15"
+				},
+				"ritiro":{
+					"attivabile":"S",
+					"importo":"0.00"
+				}
+			}
+		},
+		{
+			"codice_offerta":"5dcc4a53af494",
+			"vettore":"PCE",
+			"famiglia":"SDA",
+			"nome_vettore":"PACCO CELERE",
+			"logo_vettore":"https://www.easyparcel.it/api/loghi/logo_pce.png",
+			"consegna":"E",
+			"tempiconsegna":"48 ore",
+			"messaggio_tariffa":null,
+			"importo_tariffa":"14.14",
+			"totale_dovuto":"9.33",
+			"peso_volumetrico":3,
+			"flag_scontonazionale":null,
+			"flag_localitadisagiata":false,
+			"flag_localitaperiferica":false,
+			"flag_timecritical":false,
+			"percentualeiva":"22.00",
+			"serviziopzionali":{
+				"contrassegno":{
+					"attivabile":"N"
+				},
+				"assicurazione":{
+					"attivabile":"S",
+					"importo":"6.00",
+					"limite_massimo":"3000.00",
+					"valore_simulato":500
+				},
+				"consegnaalpiano":{
+					"attivabile":"N"
+				},
+				"consegnasuappuntamento":{
+					"attivabile":"N"
+				},
+				"trackingavanzato":{
+					"attivabile":"S",
+					"importo":"0.15"
+				},
+				"ritiro":{
+					"attivabile":"S",
+					"importo":"0.00"
+				}
+			}
+		}
+	],
+	"timestamp":"2026-10-19 12:19:18",
+	"version":"1.1.20"
+}</pre>
+				</div>
+			</div>
+		
+			<div class="panel-heading">
+				<h3 class="panel-title">Note sulla risposta JSON:</h3>
+			</div>
+			<div class="panel-body">
+				<div class="boxed">La risposta JSON contiene un array di quotazioni offerte dai vari Vettori collegati al sistema <strong>Easy Parcel API</strong>. Ogni offerta viene identificata da un <code>codice_offerta</code> che dev'essere successivamente utilizzata nella chiamata di tipo "order" per identificare il preventivo da acquistare la spedizione. Per ogni offerta viene restituito il vettore di riferimento, il suo logo, l'importo dovuto e anche una serie di informazioni aggiuntive relative ad eventuali servizi opzionali che possono essere richiesti.
+				</div>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>
+					</div>
+										<a name="Order"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">Order</h3>
+<h4 class="page-title">La chiamata <code>order</code> concretizza l'ordine di una spedizione, secondo le specifiche di un precedente preventivo (quotation) che dev'essere indicato come <code>codice_offerta</code> di riferimento.<br>Per poter perfezionare l'ordine è necessario specificare ulteriori dati obbligatori relativi ai nominativi di mittente e destinatario e alla specifica degli eventuali servizi opzionali richiesti, le cui offerte sono contenute nella richiamata "quotation".<br>Il sistema <strong>Easy Parcel API</strong> rielaborerà il tutto, verificando preventivamente la capienza economica del credito prepagato. Il caso di esito positivo, i costi verranno addebitati sul credito prepagato e viene generato l'ordine che verrà trasmesso al centro di elaborazione per le successive fasi di gestione (invio email di conferma, generazione lettera di vettura, ecc).</h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di chiamata <code>order</code> in <strong>PHP</strong>:</h3>
+			</div>
+			<div class="panel-body">
+				<pre>$ch = curl_init("https://api.easyparcel.it/order/{APIKEY}");
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+	'Content-Type: application/json',
+	'Content-Length: ' . strlen($jsonRequest))
+);
+$jsonResult = curl_exec($ch);</pre>
+			</div>
+		</div>
+	</div>
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+			<pre>{
+	"call":"order",
+	"dettagli":{
+		"codice_offerta":"5dcc4a53b00fc",
+		"note_cliente":"ACQUISTO DI TEST",
+		"custom":"XYZ123456",
+		"accessori":{
+			"trackingavanzato":"S"
+		}
+	},
+	"mittente":{
+		"nominativo":"Rossi Mario",
+		"indirizzo":"Via del Colosseo, 1",
+		"email":"mario@rossi.it",
+		"telefono":"",
+		"cellulare":"3471111111",
+		"contatto":"Rossi Mario",
+		"codicefiscale":"RSSMRA80A01H501U"
+	},
+	"destinatario":{
+		"nominativo":"Verdi Giuseppe",
+		"indirizzo":"Piazza Duomo, 1",
+		"email":"giuseppe@verdi.it",
+		"telefono":"",
+		"cellulare":"3472222222",
+		"contatto":"Verdi Giuseppe"
+	},
+	"ritiro":{
+		"prenotazione":"S",
+		"dettagli":{
+			"ritirodove":"M",
+			"disponibile_dal":"2026-10-19",
+			"disponibile_ora":"08:00",
+			"ritiro_mattina_dalle":"08:00",
+			"ritiro_mattina_alle":"12:00",
+			"ritiro_pomeriggio_dalle":"14:00",
+			"ritiro_pomeriggio_alle":"18:00"
+		}
+	}
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="width:auto">Livello 1</th>
+							<th style="width:auto">Livello 2</th>
+							<th style="width:auto">Livello 3</th>
+							<th>Tipo</th>
+							<th>Esempio</th>
+							<th>Obbligatorio</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>call</td>
+							<td>&nbsp;</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>order</code></td>
+							<td>S</td>
+							<td>Inserire <code>order</code></td>
+						</tr>
+						<tr>
+							<td>dettagli</td>
+							<td>codice_offerta</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>5dcc4a53b00fc</code></td>
+							<td>S</td>
+							<td>Inserire un <strong>codice_offerta</strong> fra quelli ricevuti in risposta alla precedente chiamata "quotation"</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>note_cliente</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>ACQUISTO DI TEST</code></td>
+							<td>optional</td>
+							<td>Inserire un testo di descrizione dell'acquisto</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>custom</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>XYZ123456</code></td>
+							<td>optional</td>
+							<td>Campo custom a testo libero per eventuale ricerca ordine</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>coupon</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>ILOVEUSA21</code></td>
+							<td>optional</td>
+							<td>Inserire il codice di un eventuale coupon di sconto.<br><code>N.B.</code> Il coupon dovrebbe prima essere verificato con la chiamata <code>CheckCoupon</code>.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>accessori</td>
+							<td>contrassegno</td>
+							<td>string</td>
+							<td><code>S</code></td>
+							<td>optional</td>
+							<td><code>S</code> = acquistare<br><code>N</code> = non acquistare<br>Il servizio potrebbe non essere previsto per alcuni vettori</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>contrassegno_modalita</td>
+							<td>string</td>
+							<td><code>C</code></td>
+							<td>optional</td>
+							<td><code>C</code> = contanti<br><code>A</code> = assegno bancario al mittente<br>La modalità accettata è specificata nella quotation e potrebbe non essere prevista per alcuni vettori.<br>Se questo campo non viene passato, viene assunto con C = contanti.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>assicurazione</td>
+							<td>string</td>
+							<td><code>S</code></td>
+							<td>optional</td>
+							<td><code>S</code> = acquistare<br><code>N</code> = non acquistare<br>Il servizio potrebbe non essere previsto per alcuni vettori</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>consegnaalpiano</td>
+							<td>string</td>
+							<td><code>S</code></td>
+							<td>optional</td>
+							<td><code>S</code> = acquistare<br><code>N</code> = non acquistare<br>Il servizio potrebbe non essere previsto per alcuni vettori</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>consegnasuappuntamento</td>
+							<td>string</td>
+							<td><code>S</code></td>
+							<td>optional</td>
+							<td><code>S</code> = acquistare<br><code>N</code> = non acquistare<br>Il servizio potrebbe non essere previsto per alcuni vettori</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>trackingavanzato</td>
+							<td>string</td>
+							<td><code>S</code></td>
+							<td>optional</td>
+							<td><code>S</code> = acquistare<br><code>N</code> = non acquistare</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>priornotice</td>
+							<td>string</td>
+							<td><code>S</code></td>
+							<td>optional</td>
+							<td><code>S</code> = acquistare<br><code>N</code> = non acquistare<br>Il servizio "Prior Notice" è acquistabile solo per spedizioni estere dirette negli USA</td>
+						</tr>
+						<tr>
+							<td>mittente</td>
+							<td>nominativo</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>Rossi Mario</code></td>
+							<td>S</td>
+							<td>Nominativo del mittente</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>indirizzo</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>Via del Colosseo, 1</code></td>
+							<td>S</td>
+							<td>Indirizzo del mittente</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>email</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>mario@rossi.it</code></td>
+							<td>S</td>
+							<td>Indirizzo email del mittente</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>telefono</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>0611111111</code></td>
+							<td>optional</td>
+							<td>Telefono fisso del mittente</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>cellulare</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>3471111111</code></td>
+							<td>S</td>
+							<td>Cellulare del mittente</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>contatto</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>Rossi Mario</code></td>
+							<td>S</td>
+							<td>Contatto del mittente</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>codicefiscale</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>RSSMRA80A01H501U</code></td>
+							<td>S</td>
+							<td>Codice fiscale del mittente</td>
+						</tr>
+						<tr>
+							<td>destinatario</td>
+							<td>nominativo</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>Verdi Giuseppe</code></td>
+							<td>S</td>
+							<td>Nominativo del destinatario</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>indirizzo</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>Piazza Duomo, 1</code></td>
+							<td>S</td>
+							<td>Indirizzo del destinatario</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>email</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>giuseppe@verdi.it</code></td>
+							<td>S</td>
+							<td>Indirizzo email del destinatario</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>telefono</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>0222222222</code></td>
+							<td>optional</td>
+							<td>Telefono fisso del destinatario</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>cellulare</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>34722222222</code></td>
+							<td>S</td>
+							<td>Cellulare del destinatario</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>contatto</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>Verdi Giuseppe</code></td>
+							<td>S</td>
+							<td>Contatto del destinatario</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>codicefiscale</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>VRDGPP80A01H501U</code></td>
+							<td>optional</td>
+							<td>Codice fiscale del mittente</td>
+						</tr>
+						<tr>
+							<td>ritiro</td>
+							<td>prenotazione</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>S</code></td>
+							<td>optional</td>
+							<td><code>S</code> = richiesto<br><code>N</code> = non richiesto<br>Il servizio consiste nel ritiro della spedizione presso il mittente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>dettagli</td>
+							<td>ritirodove</td>
+							<td>string</td>
+							<td><code>M</code></td>
+							<td>S</td>
+							<td><code>M</code> = presso l'indirizzo del Mittente<br><code>P</code> = presso l'indirizzo del Point, indicato nel campo <code>idcustomer</code> della chiamata <code>quotation</code>.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>disponibile_dal</td>
+							<td>date</td>
+							<td><code>2026-10-19</code></td>
+							<td>S</td>
+							<td>Data (nel formato AAAA-MM-DD) che identifica da quando la spedizione è disponibile per essere ritirata.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>disponibile_ora</td>
+							<td>time</td>
+							<td><code>08:00</code></td>
+							<td>S</td>
+							<td>Orario (nel formato HH:MM) che identifica da quando la spedizione è disponibile per essere ritirata.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>ritiro_mattina_dalle</td>
+							<td>time</td>
+							<td><code>08:00</code></td>
+							<td>S</td>
+							<td>Orario (nel formato HH:MM) che identifica da quando la spedizione è disponibile per essere ritirata.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>ritiro_mattina_alle</td>
+							<td>time</td>
+							<td><code>12:00</code></td>
+							<td>S</td>
+							<td>Orario (nel formato HH:MM) che identifica da quando la spedizione è disponibile per essere ritirata.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>ritiro_pomeriggio_dalle</td>
+							<td>time</td>
+							<td><code>14:00</code></td>
+							<td>S</td>
+							<td>Orario (nel formato HH:MM) che identifica da quando la spedizione è disponibile per essere ritirata.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>ritiro_pomeriggio_alle</td>
+							<td>time</td>
+							<td><code>18:00</code></td>
+							<td>S</td>
+							<td>Orario (nel formato HH:MM) che identifica da quando la spedizione è disponibile per essere ritirata.</td>
+						</tr>
+					<tr class="active"><td colspan="7"><strong>dettagli &gt; documenti</strong> (documenti doganali PDF)</td></tr>
+                        <tr>
+                            <td>dettagli</td>
+                            <td>documenti[]</td>
+                            <td>tipo_documento</td>
+                            <td>string</td>
+                            <td><code>export_declaration</code></td>
+                            <td>Condizionale</td>
+                            <td>Tipo documento: <code>export_declaration</code> (dichiarazione di libera esportazione), <code>proforma</code> (fattura proforma), <code>invoice</code> (fattura commerciale), <code>extra</code> (documenti accessori, multipli). Gli allegati confluiscono nei "Documenti Extra" dell'ordine e, per i vettori UPS/DHL, vengono allegati automaticamente alla spedizione (paperless).</td>
+                        </tr>
+                        <tr><td></td><td></td><td>nome_file</td><td>string</td><td><code>packing_list.pdf</code></td><td>Opzionale</td><td>Nome del file (usato per i documenti di tipo <code>extra</code>).</td></tr>
+                        <tr><td></td><td></td><td>contenuto_base64</td><td>string</td><td><code>JVBERi0xLjQ...</code></td><td>Condizionale</td><td>Contenuto del file <strong>PDF</strong> codificato in base64 (max 15 MB).</td></tr>
+                        <tr class="active"><td colspan="7"><strong>destinatario &gt; country</strong> (sigla stato per spedizioni US/CA)</td></tr>
+                        <tr><td>destinatario</td><td>country</td><td>&nbsp;</td><td>string</td><td><code>NY</code></td><td>Condizionale</td><td>Sigla dello stato/provincia per spedizioni verso <strong>US</strong> e <strong>Canada</strong>. Obbligatoria per tali destinazioni: in mancanza l'ordine viene rifiutato (errorcode 178).</td></tr>
+                    </tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Risposta JSON</h3>
+			</div>
+			<div class="panel-body">
+			<pre>{
+	"result":"OK",
+	"errorcode":"0",
+	"errormessage":"ACQUISTO OK",
+	"codice_offerta":"5dcc4a53b00fc",
+	"custom":"XYZ123456",
+	"ordine":"EAS-5dcc4a53b00fc",
+	"id_ordine":"1234567",
+	"importo":"6.90",
+	"timestamp":"2026-10-19 12:19:18",
+	"version":"1.1.20"}</pre>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>
+					</div>
+										<a name="OrderFast"></a>
+					<div class="container-fluid">
+						<div class="container-fluid">
+	<h3 class="page-title">OrderFast</h3>
+	<h4 class="page-title">Esegue quotazione + ordine + generazione lettera di vettura in un'unica chiamata.<br>
+		Endpoint: <code>POST https://api.easyparcel.it/order-fast/{APIKEY}</code>.</h4>
+	<div class="row">
+		<div class="col-md-12">
+			<!-- TABLE HOVER -->
+			<div class="panel">
+				<div class="panel-heading">
+					<h3 class="panel-title">Esempio di chiamata <code>order-fast</code> in <strong>PHP</strong>:</h3>
+				</div>
+				<div class="panel-body">
+<pre>$url = "https://api.easyparcel.it/order-fast/{APIKEY}";
+
+$json = array(
+	"call" =&gt; "order-fast",
+	"dettagli" =&gt; array(
+		"note_cliente" =&gt; "TEST-SPEDIZIONE",
+		"note_contenuto" =&gt; "TEST-CONTENUTO",
+		"file_ldv" =&gt; TRUE,
+		"idcustomer" =&gt; 15,
+		"vettore" =&gt; "SDAM",
+		"cosa_spedire" =&gt; "M",
+		"custom" =&gt; "CUSTOMTEST",
+		"tipo_spedizione" =&gt; "N",
+		"accessori" =&gt; array(
+			"contrassegno_importo" =&gt; 1000,
+			"contrassegno" =&gt; "S",
+			"assicurazione_importo" =&gt; 500,
+			"assicurazione" =&gt; "S",
+			"consegnaalpiano" =&gt; "N",
+			"consegnasuappuntamento" =&gt; "N",
+			"priornotice" =&gt; "N",
+			"portoassegnato" =&gt; "N",
+			"pudo_destinatario" =&gt; "",
+			"pudo_mittente" =&gt; "",
+			"reverse" =&gt; "N"
+		)
+	),
+	"colli" =&gt; array(
+		array(
+			"peso" =&gt; 1.000,
+			"larghezza" =&gt; 20,
+			"profondita" =&gt; 22,
+			"altezza" =&gt; 24,
+			"nr_colli" =&gt; 1
+		)
+	),
+	"mittente" =&gt; array(
+		"nominativo" =&gt; "ROSSI MARIO",
+		"indirizzo" =&gt; "VIA COLOSSEO, 1",
+		"cap" =&gt; "00175",
+		"localita" =&gt; "ROMA",
+		"provincia" =&gt; "RM",
+		"nazione" =&gt; "IT",
+		"email" =&gt; "mario@rossi.it",
+		"telefono" =&gt; "",
+		"cellulare" =&gt; "3471111111",
+		"contatto" =&gt; "ROSSI MARIO",
+		"codicefiscale" =&gt; "RSSMRA80A01H501U"
+	),
+	"destinatario" =&gt; array(
+		"nominativo" =&gt; "VERDI GIUSEPPE",
+		"indirizzo" =&gt; "PIAZZA DUOMO, 1",
+		"cap" =&gt; "20121",
+		"localita" =&gt; "MILANO",
+		"provincia" =&gt; "MI",
+		"nazione" =&gt; "IT",
+		"email" =&gt; "giuseppe@verdi.it",
+		"telefono" =&gt; "",
+		"cellulare" =&gt; "3472222222",
+		"contatto" =&gt; "VERDI GIUSEPPE",
+		"codicefiscale" =&gt; ""
+	),
+	"ritiro" =&gt; array(
+		"prenotazione" =&gt; "S",
+		"dettagli" =&gt; array(
+			"ritirodove" =&gt; "M",
+			"disponibile_dal" =&gt; "2025-01-15",
+			"disponibile_ora" =&gt; "08:00",
+			"ritiro_mattina_dalle" =&gt; "08:00",
+			"ritiro_mattina_alle" =&gt; "12:00",
+			"ritiro_pomeriggio_dalle" =&gt; "14:00",
+			"ritiro_pomeriggio_alle" =&gt; "18:00"
+		)
+	)
+);
+
+$jsonRequest = json_encode($json);
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+	'Content-Type: application/json',
+	'Content-Length: ' . strlen($jsonRequest)
+));
+$result = curl_exec($ch);
+$response = json_decode($result, TRUE);
+print_r($response);
+</pre>
+				</div>
+			</div>
+		</div>
+				
+		<div class="col-md-12">
+			<!-- TABLE HOVER -->
+			<div class="panel">
+				<div class="panel-heading">
+					<h3 class="panel-title">Richiesta JSON</h3>
+				</div>
+				<div class="panel-body">
+<pre>{
+	"call": "order-fast",
+	"dettagli": {
+		"note_cliente": "TEST-SPEDIZIONE",
+		"note_contenuto": "Merce varia",
+		"file_ldv": true,
+		"idcustomer": 15,
+		"vettore": "SDAM",
+		"cosa_spedire": "M",
+		"custom": "CUSTOMTEST",
+		"tipo_spedizione": "N",
+		"accessori": {
+			"contrassegno_importo": 1000,
+			"contrassegno": "S",
+			"assicurazione_importo": 500,
+			"assicurazione": "S",
+			"consegnaalpiano": "N",
+			"consegnasuappuntamento": "N",
+			"priornotice": "N",
+			"portoassegnato": "N",
+			"pudo_destinatario": "",
+			"pudo_mittente": "",
+			"reverse": "N"
+		},
+		"hscodes": [
+			{
+				"hscode": "3004.90.10",
+				"descrizione": "MEDICINALE GENERICO",
+				"quantita": 2,
+				"importo": 15.00,
+				"peso": 0.100,
+				"motivo_esportazione": "SALE"
+			}
+		]
+	},
+	"colli": [
+		{
+			"peso": 1.000,
+			"larghezza": 20,
+			"profondita": 22,
+			"altezza": 24,
+			"nr_colli": 1
+		}
+	],
+	"mittente": {
+		"nominativo": "ROSSI MARIO",
+		"indirizzo": "VIA COLOSSEO, 1",
+		"cap": "00175",
+		"localita": "ROMA",
+		"provincia": "RM",
+		"nazione": "IT",
+		"email": "mario@rossi.it",
+		"telefono": "",
+		"cellulare": "3471111111",
+		"contatto": "ROSSI MARIO",
+		"codicefiscale": "RSSMRA80A01H501U"
+	},
+	"destinatario": {
+		"nominativo": "VERDI GIUSEPPE",
+		"indirizzo": "PIAZZA DUOMO, 1",
+		"cap": "20121",
+		"localita": "MILANO",
+		"provincia": "MI",
+		"nazione": "IT",
+		"email": "giuseppe@verdi.it",
+		"telefono": "",
+		"cellulare": "3472222222",
+		"contatto": "VERDI GIUSEPPE",
+		"codicefiscale": ""
+	},
+	"ritiro": {
+		"prenotazione": "S",
+		"dettagli": {
+			"ritirodove": "M",
+			"disponibile_dal": "2025-01-15",
+			"disponibile_ora": "08:00",
+			"ritiro_mattina_dalle": "08:00",
+			"ritiro_mattina_alle": "12:00",
+			"ritiro_pomeriggio_dalle": "14:00",
+			"ritiro_pomeriggio_alle": "18:00"
+		}
+	}
+}
+</pre>
+				</div>
+				<div class="panel-heading">
+					<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+				</div>
+				<div class="panel-body">
+					<table class="table table-boxed table-hover">
+								<thead>
+									<tr>
+										<th>Livello1</th>
+										<th>Livello2</th>
+										<th>Livello3</th>
+										<th>Tipo</th>
+										<th>Esempio</th>
+										<th>Obbligatorio</th>
+										<th>Descrizione</th>
+									</tr>
+								</thead>
+								<tbody>
+					<tr>
+						<td>call</td>
+						<td></td>
+						<td></td>
+						<td>string</td>
+						<td><code>order-fast</code></td>
+						<td>Si</td>
+						<td>Tipo di chiamata. Deve essere <code>order-fast</code></td>
+					</tr>
+					<tr class="active"><td colspan="7"><strong>dettagli</strong></td></tr>
+					<tr>
+						<td>dettagli</td>
+						<td>note_cliente</td>
+						<td></td>
+						<td>string</td>
+						<td><code>TEST-SPEDIZIONE</code></td>
+						<td>Opzionale</td>
+						<td>Note visibili al cliente sulla spedizione</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>note_contenuto</td>
+						<td></td>
+						<td>string</td>
+						<td><code>Merce varia</code></td>
+						<td>Opzionale</td>
+						<td>Descrizione del contenuto della spedizione</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>file_ldv</td>
+						<td></td>
+						<td>boolean</td>
+						<td><code>true</code></td>
+						<td>Opzionale</td>
+						<td>Se <code>true</code>, restituisce il PDF della lettera di vettura in base64 nel campo <code>ldv_base64</code></td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>idcustomer</td>
+						<td></td>
+						<td>integer</td>
+						<td><code>15</code></td>
+						<td>Opzionale</td>
+						<td>ID cliente per calcolo su tariffario specifico (non pubblico)</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>vettore</td>
+						<td></td>
+						<td>string</td>
+						<td><code>SDAM</code></td>
+						<td>Si</td>
+						<td>Codice vettore per la spedizione (es. SDAM, PDB, INPOST, BRT, GLS, ecc.)</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>cosa_spedire</td>
+						<td></td>
+						<td>string</td>
+						<td><code>M</code></td>
+						<td>Si</td>
+						<td>Tipo di merce: <code>M</code> = Merce, <code>D</code> = Documenti, <code>P</code> = Pallet</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>custom</td>
+						<td></td>
+						<td>string</td>
+						<td><code>CUSTOMTEST</code></td>
+						<td>Opzionale</td>
+						<td>Riferimento personalizzato del cliente. Viene restituito nella risposta.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>tipo_spedizione</td>
+						<td></td>
+						<td>string</td>
+						<td><code>N</code></td>
+						<td>Si</td>
+						<td>Tipo spedizione: <code>N</code> = Nazionale, <code>E</code> = Estero (export, verso qualsiasi paese estero), <code>I</code> = Import (dall'estero verso l'Italia)</td>
+					</tr>
+					<tr class="active"><td colspan="7"><strong>dettagli &gt; accessori</strong></td></tr>
+					<tr>
+						<td>dettagli</td>
+						<td>accessori</td>
+						<td>contrassegno</td>
+						<td>string</td>
+						<td><code>S</code></td>
+						<td>Opzionale</td>
+						<td>Attiva contrassegno. <code>S</code> = Si, <code>N</code> = No. Se il servizio non e' disponibile per il vettore, l'ordine viene bloccato (errore 175).</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>contrassegno_importo</td>
+						<td>decimal</td>
+						<td><code>1000</code></td>
+						<td>Condizionale</td>
+						<td>Importo del contrassegno. Obbligatorio se <code>contrassegno=S</code>. Se supera il limite massimo del vettore, l'ordine viene bloccato.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>assicurazione</td>
+						<td>string</td>
+						<td><code>S</code></td>
+						<td>Opzionale</td>
+						<td>Attiva assicurazione. <code>S</code> = Si, <code>N</code> = No. Se il servizio non e' disponibile per il vettore, l'ordine viene bloccato (errore 175).</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>assicurazione_importo</td>
+						<td>decimal</td>
+						<td><code>500</code></td>
+						<td>Condizionale</td>
+						<td>Importo dell'assicurazione. Obbligatorio se <code>assicurazione=S</code>. Se supera il limite massimo del vettore, l'ordine viene bloccato.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>consegnaalpiano</td>
+						<td>string</td>
+						<td><code>S</code></td>
+						<td>Opzionale</td>
+						<td>Consegna al piano. <code>S</code> = Si, <code>N</code> = No. Servizio soggetto a disponibilita' del vettore.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>consegnasuappuntamento</td>
+						<td>string</td>
+						<td><code>S</code></td>
+						<td>Opzionale</td>
+						<td>Consegna su appuntamento. <code>S</code> = Si, <code>N</code> = No. Servizio soggetto a disponibilita' del vettore.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>priornotice</td>
+						<td>string</td>
+						<td><code>S</code></td>
+						<td>Opzionale</td>
+						<td>Preavviso telefonico. <code>S</code> = Si, <code>N</code> = No. Servizio soggetto a disponibilita' del vettore.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>portoassegnato</td>
+						<td>string</td>
+						<td><code>S</code></td>
+						<td>Opzionale</td>
+						<td>Porto assegnato (spese a carico del destinatario). <code>S</code> = Si, <code>N</code> = No. Servizio soggetto a disponibilita' del vettore.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>pudo_destinatario</td>
+						<td>string</td>
+						<td><code>Z6426</code></td>
+						<td>Condizionale</td>
+						<td>Codice PUDO destinatario. Per <strong>PDB</strong>: codice ottenuto dalla chiamata <code>pudo</code> (validato su tabella <code>pdb_pudo</code>). Per <strong>INPOST</strong>: codice locker (validato su tabella <code>inpost_punti</code>), obbligatorio insieme a <code>pudo_mittente</code>.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>pudo_mittente</td>
+						<td>string</td>
+						<td><code>Z1234</code></td>
+						<td>Condizionale</td>
+						<td>Codice PUDO mittente. Per <strong>PDB</strong>: utilizzabile solo con spedizioni reverse. Per <strong>INPOST</strong>: obbligatorio insieme a <code>pudo_destinatario</code>, i due codici devono essere diversi tra loro.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>reverse</td>
+						<td>string</td>
+						<td><code>S</code></td>
+						<td>Opzionale</td>
+						<td>Spedizione reverse (reso). <code>S</code> = attiva, <code>N</code> = non attiva (default). Disponibile per PDB.</td>
+					</tr>
+					<tr class="active"><td colspan="7"><strong>dettagli &gt; hscodes</strong> (obbligatorio per paesi extra-UE con dogana)</td></tr>
+					<tr>
+						<td>dettagli</td>
+						<td>hscodes[]</td>
+						<td>hscode</td>
+						<td>string</td>
+						<td><code>3004.90.10</code></td>
+						<td>Si</td>
+						<td>Codice HS (Harmonized System). Formato: 6-10 cifre, con o senza punti. I primi 6 cifre sono validati contro il database internazionale WCO.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>descrizione</td>
+						<td>string</td>
+						<td><code>Medicinale</code></td>
+						<td>Si</td>
+						<td>Descrizione della merce in linguaggio naturale.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>quantita</td>
+						<td>integer</td>
+						<td><code>2</code></td>
+						<td>Si</td>
+						<td>Quantita' di articoli. Deve essere maggiore di 0.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>importo</td>
+						<td>decimal</td>
+						<td><code>15.00</code></td>
+						<td>Si</td>
+						<td>Valore della merce in EUR.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>peso</td>
+						<td>decimal</td>
+						<td><code>0.100</code></td>
+						<td>Si</td>
+						<td>Peso della merce in kg.</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>motivo_esportazione</td>
+						<td>string</td>
+						<td><code>SALE</code></td>
+						<td>Si</td>
+						<td>Motivo dell'esportazione. Valori comuni: <code>SALE</code>, <code>GIFT</code>, <code>SAMPLE</code>, <code>RETURN</code>, <code>REPAIR</code>, <code>PERSONAL_EFFECTS</code>.</td>
+					</tr>
+					<tr class="active"><td colspan="7"><strong>dettagli &gt; documenti</strong> (documenti doganali PDF)</td></tr>
+                    <tr>
+                        <td>dettagli</td>
+                        <td>documenti[]</td>
+                        <td>tipo_documento</td>
+                        <td>string</td>
+                        <td><code>export_declaration</code></td>
+                        <td>Condizionale</td>
+                        <td>Tipo documento: <code>export_declaration</code> (dichiarazione di libera esportazione), <code>proforma</code> (fattura proforma), <code>invoice</code> (fattura commerciale), <code>extra</code> (documenti accessori, multipli). Gli allegati confluiscono nei "Documenti Extra" dell'ordine e, per i vettori UPS/DHL, vengono allegati automaticamente alla spedizione (paperless).</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td>nome_file</td>
+                        <td>string</td>
+                        <td><code>packing_list.pdf</code></td>
+                        <td>Opzionale</td>
+                        <td>Nome del file (usato per i documenti di tipo <code>extra</code>).</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td>contenuto_base64</td>
+                        <td>string</td>
+                        <td><code>JVBERi0xLjQ...</code></td>
+                        <td>Condizionale</td>
+                        <td>Contenuto del file <strong>PDF</strong> codificato in base64 (solo PDF, max 15 MB).</td>
+                    </tr>
+                    <tr class="active"><td colspan="7"><strong>colli</strong></td></tr>
+					<tr>
+						<td>colli[]</td>
+						<td>peso</td>
+						<td></td>
+						<td>decimal</td>
+						<td><code>1.000</code></td>
+						<td>Si</td>
+						<td>Peso del collo in kg</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>larghezza</td>
+						<td></td>
+						<td>integer</td>
+						<td><code>20</code></td>
+						<td>Si</td>
+						<td>Larghezza del collo in cm</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>profondita</td>
+						<td></td>
+						<td>integer</td>
+						<td><code>22</code></td>
+						<td>Si</td>
+						<td>Profondita' del collo in cm</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>altezza</td>
+						<td></td>
+						<td>integer</td>
+						<td><code>24</code></td>
+						<td>Si</td>
+						<td>Altezza del collo in cm</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>nr_colli</td>
+						<td></td>
+						<td>integer</td>
+						<td><code>1</code></td>
+						<td>Si</td>
+						<td>Numero di colli con queste dimensioni</td>
+					</tr>
+					<tr class="active"><td colspan="7"><strong>mittente</strong></td></tr>
+					<tr>
+						<td>mittente</td>
+						<td>nominativo</td>
+						<td></td>
+						<td>string</td>
+						<td><code>ROSSI MARIO</code></td>
+						<td>Si</td>
+						<td>Nome/ragione sociale del mittente</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>indirizzo</td>
+						<td></td>
+						<td>string</td>
+						<td><code>VIA COLOSSEO, 1</code></td>
+						<td>Si</td>
+						<td>Indirizzo del mittente</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>cap</td>
+						<td></td>
+						<td>string</td>
+						<td><code>00175</code></td>
+						<td>Si</td>
+						<td>CAP del mittente</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>localita</td>
+						<td></td>
+						<td>string</td>
+						<td><code>ROMA</code></td>
+						<td>Si</td>
+						<td>Citta'/localita' del mittente</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>provincia</td>
+						<td></td>
+						<td>string</td>
+						<td><code>RM</code></td>
+						<td>Si</td>
+						<td>Sigla provincia del mittente</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>nazione</td>
+						<td></td>
+						<td>string</td>
+						<td><code>IT</code></td>
+						<td>Si</td>
+						<td>Codice nazione ISO 3166-1 alpha-2 del mittente</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>email</td>
+						<td></td>
+						<td>string</td>
+						<td><code>mario@rossi.it</code></td>
+						<td>Opzionale</td>
+						<td>Email del mittente</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>telefono</td>
+						<td></td>
+						<td>string</td>
+						<td><code>0612345678</code></td>
+						<td>Opzionale</td>
+						<td>Telefono fisso del mittente</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>cellulare</td>
+						<td></td>
+						<td>string</td>
+						<td><code>3471111111</code></td>
+						<td>Opzionale</td>
+						<td>Cellulare del mittente</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>contatto</td>
+						<td></td>
+						<td>string</td>
+						<td><code>ROSSI MARIO</code></td>
+						<td>Opzionale</td>
+						<td>Persona di contatto del mittente</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>codicefiscale</td>
+						<td></td>
+						<td>string</td>
+						<td><code>RSSMRA80A01H501U</code></td>
+						<td>Opzionale</td>
+						<td>Codice fiscale o P.IVA del mittente</td>
+					</tr>
+					<tr class="active"><td colspan="7"><strong>destinatario</strong></td></tr>
+					<tr>
+						<td>destinatario</td>
+						<td>nominativo</td>
+						<td></td>
+						<td>string</td>
+						<td><code>VERDI GIUSEPPE</code></td>
+						<td>Si</td>
+						<td>Nome/ragione sociale del destinatario</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>indirizzo</td>
+						<td></td>
+						<td>string</td>
+						<td><code>PIAZZA DUOMO, 1</code></td>
+						<td>Si</td>
+						<td>Indirizzo del destinatario</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>cap</td>
+						<td></td>
+						<td>string</td>
+						<td><code>20121</code></td>
+						<td>Si</td>
+						<td>CAP del destinatario</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>localita</td>
+						<td></td>
+						<td>string</td>
+						<td><code>MILANO</code></td>
+						<td>Si</td>
+						<td>Citta'/localita' del destinatario</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>provincia</td>
+						<td></td>
+						<td>string</td>
+						<td><code>MI</code></td>
+						<td>Si</td>
+						<td>Sigla provincia del destinatario</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>nazione</td>
+						<td></td>
+						<td>string</td>
+						<td><code>IT</code></td>
+						<td>Si</td>
+						<td>Codice nazione ISO 3166-1 alpha-2 del destinatario</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>email</td>
+						<td></td>
+						<td>string</td>
+						<td><code>giuseppe@verdi.it</code></td>
+						<td>Opzionale</td>
+						<td>Email del destinatario</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>telefono</td>
+						<td></td>
+						<td>string</td>
+						<td><code>0287654321</code></td>
+						<td>Opzionale</td>
+						<td>Telefono fisso del destinatario</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>cellulare</td>
+						<td></td>
+						<td>string</td>
+						<td><code>3472222222</code></td>
+						<td>Opzionale</td>
+						<td>Cellulare del destinatario</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>contatto</td>
+						<td></td>
+						<td>string</td>
+						<td><code>VERDI GIUSEPPE</code></td>
+						<td>Opzionale</td>
+						<td>Persona di contatto del destinatario</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>codicefiscale</td>
+						<td></td>
+						<td>string</td>
+						<td><code></code></td>
+						<td>Opzionale</td>
+						<td>Codice fiscale o P.IVA del destinatario</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>country</td>
+						<td></td>
+						<td>string</td>
+						<td><code>CA</code></td>
+						<td>Condizionale</td>
+						<td>Codice stato/provincia per spedizioni verso US/CA (es. stato USA o provincia Canada)</td>
+					</tr>
+					<tr class="active"><td colspan="7"><strong>ritiro</strong></td></tr>
+					<tr>
+						<td>ritiro</td>
+						<td>prenotazione</td>
+						<td></td>
+						<td>string</td>
+						<td><code>S</code></td>
+						<td>Opzionale</td>
+						<td>Prenotazione ritiro. <code>S</code> = Si, <code>N</code> = No</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td>dettagli</td>
+						<td>ritirodove</td>
+						<td>string</td>
+						<td><code>M</code></td>
+						<td>Condizionale</td>
+						<td>Dove effettuare il ritiro (obbligatorio se prenotazione=S)</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>disponibile_dal</td>
+						<td>string</td>
+						<td><code>2025-01-15</code></td>
+						<td>Condizionale</td>
+						<td>Data disponibilita' ritiro (formato YYYY-MM-DD)</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>disponibile_ora</td>
+						<td>string</td>
+						<td><code>08:00</code></td>
+						<td>Condizionale</td>
+						<td>Ora disponibilita' ritiro (formato HH:MM)</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>ritiro_mattina_dalle</td>
+						<td>string</td>
+						<td><code>08:00</code></td>
+						<td>Condizionale</td>
+						<td>Orario inizio ritiro mattina</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>ritiro_mattina_alle</td>
+						<td>string</td>
+						<td><code>12:00</code></td>
+						<td>Condizionale</td>
+						<td>Orario fine ritiro mattina</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>ritiro_pomeriggio_dalle</td>
+						<td>string</td>
+						<td><code>14:00</code></td>
+						<td>Condizionale</td>
+						<td>Orario inizio ritiro pomeriggio</td>
+					</tr>
+					<tr>
+						<td></td>
+						<td></td>
+						<td>ritiro_pomeriggio_alle</td>
+						<td>string</td>
+						<td><code>18:00</code></td>
+						<td>Condizionale</td>
+						<td>Orario fine ritiro pomeriggio</td>
+					</tr>
+					</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-12">
+			<!-- TABLE HOVER -->
+			<div class="panel">
+				<div class="panel-heading">
+					<h3 class="panel-title">Risposta JSON</h3>
+				</div>
+				<div class="panel-body">
+<pre>{
+	"result": "OK",
+	"errorcode": "",
+	"errormessage": "",
+	"codice_offerta": "QUO-123456",
+	"custom": "CUSTOMTEST",
+	"ordine": "ORD-123456",
+	"id_ordine": 789012,
+	"importo": "8.50",
+	"lettera_vettura": "1Z999AA10123456784",
+	"url_ldv": "https://api.easyparcel.it/getwaybill/...",
+	"codice_ritiro": "RIT-123456",
+	"url_bordero": "https://api.easyparcel.it/getbordero/...",
+	"ldv_base64": "JVBERi0xLjQKMS...",
+	"single_waybills": [
+		{
+			"lettera_vettura": "1Z999AA10123456784",
+			"ldv_base64": "JVBERi0xLjQKMS..."
+		}
+	],
+	"timestamp": "2025-01-15 10:30:00",
+	"version": "1.1.20"
+}
+</pre>
+				</div>
+			</div>
+			<!-- END TABLE HOVER -->
+		</div>
+		
+		<!-- NOTE -->
+		<div class="panel-heading">
+			<h3 class="panel-title">Note</h3>
+		</div>
+		<div class="panel-body">
+			<div class="boxed">
+				<ul>
+					<li>Se viene richiesto un servizio accessorio non disponibile per il vettore scelto (es. contrassegno, assicurazione, consegna al piano, ritiro), l'ordine viene <strong>bloccato</strong> con errore specifico (<strong>errorcode 175</strong>).</li>
+					<li>Se l'importo del contrassegno o dell'assicurazione supera il limite massimo previsto per il vettore, l'ordine viene <strong>bloccato</strong>.</li>
+					<li>Per le spedizioni <strong>INPOST</strong>, i campi <code>pudo_mittente</code> e <code>pudo_destinatario</code> sono entrambi <strong>obbligatori</strong> e devono contenere codici locker validi e diversi tra loro.</li>
+					<li>Per spedizioni verso <strong>paesi con dogana</strong> (extra-UE con <code>dogana=1</code>), il campo <code>hscodes</code> e' obbligatorio. Ogni articolo deve avere un codice HS valido (verificato contro il database internazionale a 6 cifre), descrizione, quantita', valore, peso e motivo di esportazione. Codici HS non validi bloccano l'ordine.</li>
+                    <li>Il campo <code>single_waybills</code> contiene le singole pagine della LDV per spedizioni multicollo, ciascuna con il proprio numero di lettera di vettura e il PDF in base64.</li>
+				</ul>
+			</div>
+		</div>
+		
+	</div>
+</div>					</div>
+										<a name="GetWaybill"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">GetWaybill</h3>
+<h4 class="page-title">La chiamata <code>GetWaybill</code> consente di ottenere informazioni relative alla <strong>WAYBILL</strong> (AWB o lettera di vettura) di uno specifico ordine.</h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di chiamata <code>getwaybill</code> in <strong>PHP</strong>:</h3>
+			</div>
+			<div class="panel-body">
+<pre>
+$ch = curl_init("https://api.easyparcel.it/getwaybill/{APIKEY}");                                                                      
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");                        
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);                        
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);                        
+curl_setopt($ch, CURLOPT_HTTPHEADER, array
+	(
+		'Content-Type: application/json',
+		'Content-Length: ' . strlen($jsonRequest)
+	)
+);                        
+$jsonResult = curl_exec($ch);
+</pre>
+			</div>
+		</div>
+	</div>
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+<pre>{
+	"call":"getwaybill",
+	"details": {
+		"order_id":1234567,
+		"waybill_base64":"Y"
+		"single_waybills":"Y"
+	}
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="min-width:80px">Livello 1</th>
+							<th style="min-width:80px">Livello 2</th>
+							<th>Tipo</th>
+							<th>Valore</th>
+							<th>Obbligatorio</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>call</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>getwaybill</code></td>
+							<td>S</td>
+							<td>Inserire "getwaybill"</td>
+						</tr>
+						<tr>
+							<td>details</td>
+							<td>order_id</td>
+							<td>numeric</td>
+							<td><code>1234567</code></td>
+							<td>S</td>
+							<td>In questo campo dev'essere indicato l'ID dell'ordine per il quale richiedere la lettera di vettura (waybill).</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>waybill_base64</td>
+							<td>string</td>
+							<td><code>N</code></td>
+							<td>optional</td>
+							<td><code>Y</code> = restituisce il contenuto del file della waybill codificato in base64<br>
+								<code>N</code> = non restituisce il contenuto del file della waybill<br>
+								<code>N.B.</code>Di default se non passato, questo valore viene assunto come N.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>single_waybills</td>
+							<td>string</td>
+							<td><code>N</code></td>
+							<td>optional</td>
+							<td><code>Y</code> = restituisce dentro "single_waybills" il contenuto delle singole waybills codificato in base64<br>
+								<code>N</code> = non restituisce le singole waybills<br>
+								<code>N.B.</code>Di default se non passato, questo valore viene assunto come N.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Risposta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<div style="max-height:800px; overflow-y:auto;">
+					<pre>{
+	"result":"OK",
+	"error_code":0,
+	"error_message":"GETWAYBILL OK",
+	"order_id":"1234567",
+	"custom":"ORD.123",
+	"waybill_number":"288988I018728",
+	"waybill_url":"https://api.easyparcel.it/ldv/5188175_66620f9322512.pdf",
+	"pickup_code":"CP95599292",
+	"bordero_url":"https://api.easyparcel.it/tmp/202_bordero_20240607000033.pdf",
+	"waybill_base64":"JVBERi0xLjQKJeLjz9MKNCAwIG9iago8PC9Db2xvclNwYWNv3r4rLCxCTVPiwIHj/wdBQUGjhw3...NDEzNTY2CiUlRU9GCg==",
+	"single_waybills":[
+		{
+			"waybill_number":"288988I018728",
+			"waybill_base64":"JVBERi0xLjQKJeLjz9MKMyAwIG9iago8PC9UeXBlIC9QYWdlCi9QYXJlbnQgMSAwIFIKL01lZGl...ZgoyMDUwNDMKJSVFT0Y="
+		},
+		{
+			"waybill_number":"988IMFVYK288988I018728",
+			"waybill_base64":"JVBERi0xLjQKJeLjz9MKMyAwIG9iago8PC9UeXBlIC9QYWdlCi9QYXJlbnQgMSAwIFIKL01lZGl...ZgoyMTAxNDAKJSVFT0Y="
+		}
+	],
+	"timestamp":"2026-10-19 12:19:18",
+	"version":"1.1.20"
+}</pre>
+				</div>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Note sulla risposta JSON:</h3>
+			</div>
+			<div class="panel-body">
+				La risposta JSON contiene tutti i dati, se presenti, relativi alla Waybill (lettera di vettura), comprensivi del suo numero e della URL dove poter scaricarla. Se nella chiamata è stato inserito il parametro <code>waybill_base64</code> con il valore <strong>Y</strong>, allora nella risposta sarà presente anche il campo <code>waybill_base64</code> che conterrà il contenuto del file della waybill codificato nello standard "base64" che potrà essere salvato e reso disponibile ai clienti. Inoltre, se il parametro <code>single_waybills</code> è impostato su <strong>Y</strong>, la risposta includerà anche il campo <code>single_waybills</code> contenente le singole waybills codificate in base64. Quando l'ordine ha documenti allegati (dichiarazione di libera esportazione, fattura, allegati extra), la risposta include inoltre il campo <code>documenti</code>: un array di oggetti con <code>tipo</code>, <code>filename</code> e <code>url</code> (link temporaneo "presigned" valido 1 ora per scaricare il PDF).
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>
+					</div>
+										<a name="TARIC"></a>
+					<div class="container-fluid">
+						<div class="container-fluid">
+    <h3 class="page-title">Ricerca TARIC</h3>
+    <h4 class="page-title">Ricerca assistita dei codici TARIC/HS da una descrizione del prodotto in linguaggio naturale.<br>
+        Endpoint: <code>POST https://api.easyparcel.it/taric-search/{APIKEY}</code>.<br>
+        Il codice ottenuto va passato in <code>order-fast</code> dentro <code>dettagli.hscodes[].hscode</code> per le spedizioni internazionali (obbligatorio per i paesi con dogana e per tutte le destinazioni estere con PDBPLUS).</h4>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Esempio di chiamata <code>taric-search</code> in <strong>PHP</strong>:</h3>
+                </div>
+                <div class="panel-body">
+<pre>$url = "https://api.easyparcel.it/taric-search/{APIKEY}";
+
+$json = array(
+    "call" =&gt; "taric-search",
+    "q" =&gt; "biscotti al cioccolato",
+    "lang" =&gt; "it",
+    "limit" =&gt; 5
+);
+
+$jsonRequest = json_encode($json);
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    'Content-Type: application/json'
+));
+$result = curl_exec($ch);
+$response = json_decode($result, TRUE);
+print_r($response);
+</pre>
+                    <p>In alternativa al body JSON si possono passare i parametri in querystring:<br>
+                    <code>GET https://api.easyparcel.it/taric-search/{APIKEY}?q=biscotti+al+cioccolato&amp;lang=it&amp;limit=5</code></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-12">
+            <div class="panel">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Richiesta JSON</h3>
+                </div>
+                <div class="panel-body">
+<pre>{
+    "call": "taric-search",
+    "q": "biscotti al cioccolato",
+    "lang": "it",
+    "limit": 5
+}
+</pre>
+                </div>
+                <div class="panel-heading">
+                    <h3 class="panel-title">Requisiti della richiesta JSON</h3>
+                </div>
+                <div class="panel-body">
+                    <table class="table table-boxed table-hover">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Tipo</th>
+                                <th>Esempio</th>
+                                <th>Obbligatorio</th>
+                                <th>Descrizione</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>call</td>
+                                <td>string</td>
+                                <td><code>taric-search</code></td>
+                                <td>Si</td>
+                                <td>Tipo di chiamata. Deve essere <code>taric-search</code> (necessario solo se si usa il body JSON).</td>
+                            </tr>
+                            <tr>
+                                <td>q</td>
+                                <td>string</td>
+                                <td><code>biscotti al cioccolato</code></td>
+                                <td>Si</td>
+                                <td>Descrizione del prodotto in linguaggio naturale (italiano o inglese).</td>
+                            </tr>
+                            <tr>
+                                <td>lang</td>
+                                <td>string</td>
+                                <td><code>it</code></td>
+                                <td>Opzionale</td>
+                                <td>Lingua della ricerca: <code>it</code> (default) oppure <code>en</code>.</td>
+                            </tr>
+                            <tr>
+                                <td>limit</td>
+                                <td>integer</td>
+                                <td><code>5</code></td>
+                                <td>Opzionale</td>
+                                <td>Numero massimo di risultati (da 1 a 10, default 5).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-12">
+            <div class="panel">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Risposta JSON</h3>
+                </div>
+                <div class="panel-body">
+<pre>{
+    "result": "OK",
+    "call": "taric-search",
+    "query": "biscotti al cioccolato",
+    "results": [
+        {
+            "taric_code": "1905310000",
+            "description_it": "Biscotti dolci",
+            "description_en": "Sweet biscuits",
+            "confidence": 0.92
+        }
+    ],
+    "timestamp": "2026-06-15 10:30:00"
+}
+</pre>
+                </div>
+                <div class="panel-heading">
+                    <h3 class="panel-title">Campi della risposta (<code>results[]</code>)</h3>
+                </div>
+                <div class="panel-body">
+                    <table class="table table-boxed table-hover">
+                        <thead>
+                            <tr>
+                                <th>Campo</th>
+                                <th>Tipo</th>
+                                <th>Esempio</th>
+                                <th>Descrizione</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>taric_code</td>
+                                <td>string</td>
+                                <td><code>1905310000</code></td>
+                                <td>Codice TARIC a 10 cifre. Da usare in <code>order-fast</code> come <code>dettagli.hscodes[].hscode</code> (vengono validate le prime 6 cifre).</td>
+                            </tr>
+                            <tr>
+                                <td>description_it</td>
+                                <td>string</td>
+                                <td><code>Biscotti dolci</code></td>
+                                <td>Descrizione ufficiale in italiano.</td>
+                            </tr>
+                            <tr>
+                                <td>description_en</td>
+                                <td>string</td>
+                                <td><code>Sweet biscuits</code></td>
+                                <td>Descrizione ufficiale in inglese.</td>
+                            </tr>
+                            <tr>
+                                <td>confidence</td>
+                                <td>decimal</td>
+                                <td><code>0.92</code></td>
+                                <td>Grado di corrispondenza stimato (0.0 - 1.0). I risultati sono ordinati per confidence decrescente.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-heading">
+            <h3 class="panel-title">Note</h3>
+        </div>
+        <div class="panel-body">
+            <div class="boxed">
+                <ul>
+                    <li>Autenticazione tramite API key, nel path (<code>/taric-search/{APIKEY}</code>) oppure nell'header <code>X-API-KEY</code>.</li>
+                    <li>Il servizio restituisce solo codici presenti nel catalogo doganale: i suggerimenti non validi vengono filtrati automaticamente.</li>
+                    <li>I campi <code>quantita</code>, <code>importo</code>, <code>peso</code> e <code>motivo_esportazione</code> richiesti da <code>order-fast</code> NON sono forniti da questa ricerca: vanno compilati dal cliente in base alla merce.</li>
+                    <li>Se la ricerca non restituisce risultati, provare con una descrizione piu' specifica o in inglese.</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>					</div>
+										<a name="GetOrder"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">GetOrder</h3>
+<h4 class="page-title">La chiamata <code>getorder</code> consente di visualizzare tutte le informazioni relative ad un ordine di una spedizione e può essere ricercato per <code>codice_offerta</code> oppure per <code>custom</code>.</h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di chiamata <code>getorder</code> in <strong>PHP</strong>:</h3>
+			</div>
+			<div class="panel-body">
+				<pre>$ch = curl_init("https://api.easyparcel.it/getorder/{APIKEY}");
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+	'Content-Type: application/json',
+	'Content-Length: ' . strlen($jsonRequest))
+);
+$jsonResult = curl_exec($ch);</pre>
+			</div>
+		</div>
+	</div>
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"call":"getorder",
+	"dettagli":{
+		"codice_offerta":"5dcc4a53b00fc",
+		"custom":"XYZ123456"
+	}
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="min-width:80px">Livello 1</th>
+							<th style="min-width:80px">Livello 2</th>
+							<th>Tipo</th>
+							<th>Esempio</th>
+							<th>Obbligatorio</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>call</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>getorder</code></td>
+							<td>S</td>
+							<td>Inserire <code>getorder</code></td>
+						</tr>
+						<tr>
+							<td>dettagli</td>
+							<td>codice_offerta</td>
+							<td>string</td>
+							<td><code>5dcc4a53b00fc</code></td>
+							<td>optional</td>
+							<td>Inserire un <strong>codice_offerta</strong> fra quelli ricevuti in risposta ad una precedente chiamata "order".<br><code>N.B.</code> Se non inserito, diventa obbligatorio il campo <strong>custom</strong>.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>custom</td>
+							<td>string</td>
+							<td><code>XYZ123456</code></td>
+							<td>optional</td>
+							<td>Inserire un <strong>custom</strong> fra quelli indicati in una precedente chiamata "order".<br><code>N.B.</code> Se non inserito, diventa obbligatorio il campo <strong>codice_offerta</strong>.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Risposta JSON</h3>
+			</div>
+			<div class="panel-body" style="max-height:800px; overflow-y:auto">
+				<pre>{
+	"result":"OK",
+	"errorcode":0,
+	"errormessage":"GETORDER OK",
+	"order":{
+		"codice_offerta":"5dcc4a53b00fc",
+		"data":"2026-01-03 10:41:08",
+		"utente":"0",
+		"ragionesociale":"ROSSI MARIO",
+		"indirizzo":"VIA DEL COLOSSEO, 1",
+		"cap":"00175",
+		"localita":"ROMA",
+		"provincia":"RM",
+		"codicefiscale":"RSSMRA80A01H501U",
+		"partitaiva":"",
+		"telefono":"",
+		"cellulare":"3471111111",
+		"email":"mario@rossi.it",
+		"cosa":"MERCE",
+		"peso_totale":"1.000",
+		"tipo_spedizione":"N",
+		"vettore":"SDAM",
+		"nome_vettore":"SDA",
+		"logo_vettore":"https://www.easyparcel.it/api/loghi/logo_sda.png",
+		"mittente_nominativo":"ROSSI MARIO",
+		"mittente_indirizzo":"VIA DEL COLOSSEO, 1",
+		"mittente_localita":"ROMA",
+		"mittente_provincia":"RM",
+		"mittente_cap":"00175",
+		"mittente_email":"mario@rossi.it",
+		"mittente_telefono":"",
+		"mittente_cellulare":"3471111111",
+		"mittente_contatto":"ROSSI MARIO",
+		"mittente_cf":"RSSMRA80A01H501U",
+		"destinatario_nominativo":"VERDI GIUSEPPE",
+		"destinatario_indirizzo":"PIAZZA DUOMO, 1",
+		"destinatario_localita":"MILANO",
+		"destinatario_cap":"20121",
+		"destinatario_provincia":"MI",
+		"destinatario_nazione":"IT",
+		"destinatario_esterocap":null,
+		"destinatario_country":null,
+		"destinatario_email":"giuseppe@verdi.it",
+		"destinatario_telefono":"",
+		"destinatario_cellulare":"3472222222",
+		"destinatario_contatto":"VERDI GIUSEPPE",
+		"consegna":"E",
+		"totale_dovuto":"6.90",
+		"percentualeiva":"22",
+		"importo_tariffa":"10.62",
+		"peso_volumetrico":"1.000",
+		"contrassegno":"N",
+		"contrassegno_importo":"0.00",
+		"contrassegno_modalita":"C",
+		"assicurazione":"N",
+		"assicurazione_importo":"0.00",
+		"consegnaalpiano":"N",
+		"appuntamento":"N",
+		"priornotice":"N",
+		"ritiro":"N",
+		"ritiro_dove":null,
+		"ritiro_disp_data":null,
+		"ritiro_disp_ora":null,
+		"ritiro_matt_da":null,
+		"ritiro_matt_a":null,
+		"ritiro_pom_da":null,
+		"ritiro_pom_a":null,
+		"note_cliente":"ACQUISTO DI TEST",
+		"note_contenuto":"BISCOTTI",
+		"custom":"XYZ123456",
+		"lettera_vettura":null,
+		"url_ldv":null,
+		"codice_ritiro":null,
+		"live":"0",
+		"idordine":1234567,
+		"url_bordero":"https://api.easyparcel.it/tmp/1234_bordero_20230208160810.pdf"
+	},
+	"dettagli":[
+		{
+			"peso":"3.000",
+			"larghezza":"30",
+			"profondita":"20",
+			"altezza":"15",
+			"nr_colli":"1"
+		}
+	],
+	"timestamp":"2026-10-19 12:19:18",
+	"version":"1.1.20"
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Note sulla risposta JSON:</h3>
+			</div>
+			<div class="panel-body">
+				<div class="boxed">La risposta JSON contiene tutti i dati relativi alla memorizzazione dell'ordine
+				</div>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>					</div>
+										<a name="ListOrder"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">ListOrder</h3>
+<h4 class="page-title">La chiamata <code>listorder</code> consente di ottenere una lista di spedizioni filtrate per il periodo scelto e/o id utente.</h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di chiamata <code>listorder</code> in <strong>PHP</strong>:</h3>
+			</div>
+			<div class="panel-body">
+				<pre>$ch = curl_init("https://api.easyparcel.it/listorder/{APIKEY}");
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+	'Content-Type: application/json',
+	'Content-Length: ' . strlen($jsonRequest))
+);
+$jsonResult = curl_exec($ch);</pre>
+			</div>
+		</div>
+	</div>
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"call":"listorder",
+	"dettagli":{
+		"data_inizio":"2024-01-01",
+		"data_fine":"2024-01-15",
+		"idcustomer":"12345",
+		"paginazione":25,
+		"pagina":3
+	}
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="min-width:80px">Livello 1</th>
+							<th style="min-width:80px">Livello 2</th>
+							<th>Tipo</th>
+							<th>Esempio</th>
+							<th>Obbligatorio</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>call</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>listorder</code></td>
+							<td>S</td>
+							<td>Inserire <code>listorder</code></td>
+						</tr>
+						<tr>
+							<td>dettagli</td>
+							<td>data_inizio</td>
+							<td>string</td>
+							<td><code>2024-01-01</code></td>
+							<td>optional</td>
+							<td>Inserire una data di inizio periodo nel formato <strong>AAAA-MM-GG</strong>.<br><code>N.B.</code> Se non inserita, viene considerata la data odierna.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>data_fine</td>
+							<td>string</td>
+							<td><code>2024-01-15</code></td>
+							<td>optional</td>
+							<td>Inserire una data di fine periodo nel formato <strong>AAAA-MM-GG</strong>.<br><code>N.B.</code> Se non inserita, viene considerata la data odierna.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>idcustomer</td>
+							<td>numeric</td>
+							<td><code>12345</code></td>
+							<td>optional</td>
+							<td>Inserire l'ID di un utente sotto la propria rete.<br><code>N.B.</code> Se non inserito, viene mostrata la lista di tutti gli ordini.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>paginazione</td>
+							<td>numeric</td>
+							<td><code>25</code></td>
+							<td>optional</td>
+							<td>Inserire la dimensione della paginazione ossia il numero di ordini che verranno restituiti dalla chiamata.<br><code>N.B.</code> Se non inserito, viene mostrata la lista dei primi 10 ordini; la massima paginazione è di 100 ordini.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>pagina</td>
+							<td>numeric</td>
+							<td><code>2</code></td>
+							<td>optional</td>
+							<td>Inserire il numero della pagina da visualizzare.<br><code>N.B.</code> Se non inserito, viene mostrata la prima pagina della lista degli ordini.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Risposta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"result":"OK",
+	"errorcode":0,
+	"errormessage":"LISTORDER OK",
+	"nrordini":38,
+	"paginazione":25,
+	"pagina":2,
+	"orders":[
+		{
+			"codice_offerta":"5dcc4a53b00fc",
+			"data":"2020-04-14 18:41:08",
+			"cosa":"MERCE",
+			"peso_totale":"1.000",
+			"tipo_spedizione":"N",
+			"vettore":"SDAM",
+			"nome_vettore":"SDA",
+			"logo_vettore":"https://www.easyparcel.it/api/loghi/logo_sdam.png",				
+			"mittente_nominativo":"Rossi Mario",
+			"mittente_localita":"ROMA",
+			"mittente_provincia":"RM",
+			"mittente_cap":"00175",
+			"destinatario_nominativo":"Verdi Giuseppe",
+			"destinatario_localita":"MILANO",
+			"destinatario_cap":"20121",
+			"destinatario_provincia":"MI",
+			"destinatario_nazione":"IT",
+			"destinatario_esterocap":null,
+			"destinatario_country":null,
+			"consegna":"E",
+			"totale_dovuto":"6.90",
+			"peso_volumetrico":"1.000",
+			"note_cliente":"ACQUISTO DI TEST",
+			"note_contenuto":"BISCOTTI",
+			"custom":"XYZ123456",
+			"lettera_vettura":null,
+			"idcustomer":"12345",
+			"live":"0",
+			"colli":[
+				{
+					"nr_colli":"1",
+					"lunghezza":"10",
+					"larghezza":"20",
+					"altezza":"30",
+					"peso":"3.500"
+				}
+			]
+		},
+		{
+			"codice_offerta":"5dcc4a53b00fg",
+			"data":"2020-04-14 18:55:32",
+			"cosa":"MERCE",
+			"peso_totale":"3.000",
+			"tipo_spedizione":"N",
+			"vettore":"SDAM",
+			"nome_vettore":"SDA",
+			"logo_vettore":"https://www.easyparcel.it/api/loghi/logo_sdam.png",				
+			"mittente_nominativo":"Rossi Maria",
+			"mittente_localita":"ROMA",
+			"mittente_provincia":"RM",
+			"mittente_cap":"00178",
+			"destinatario_nominativo":"Verdi Giuseppina",
+			"destinatario_localita":"MILANO",
+			"destinatario_cap":"20128",
+			"destinatario_provincia":"MI",
+			"destinatario_nazione":"IT",
+			"destinatario_esterocap":null,
+			"destinatario_country":null,
+			"consegna":"E",
+			"totale_dovuto":"8.20",
+			"peso_volumetrico":"3.000",
+			"note_cliente":"ACQUISTO DI TEST",
+			"note_contenuto":"VESTITI",
+			"custom":"XYZ123457",
+			"lettera_vettura":null,
+			"idcustomer":"12345",
+			"live":"0",
+			"colli":[
+				{
+					"nr_colli":"1",
+					"lunghezza":"18",
+					"larghezza":"28",
+					"altezza":"3",
+					"peso":"0.454"
+				}
+			]
+		}
+	],
+	"timestamp":"2024-01-19 09:31:59"
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Note sulla risposta JSON:</h3>
+			</div>
+			<div class="panel-body">
+				<div class="boxed">La risposta JSON contiene la lista paginata degli ordini del periodo scelto ed eventualmente per l'utente selezionato, con alcuni dati identificativi di ogni ordine. 
+				</div>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>					</div>
+										<a name="Tracking"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">Tracking</h3>
+<h4 class="page-title">La chiamata <code>tracking</code> permette di ottenere il link per consultare il tracking di una spedizione, che  può essere ricercata per <code>codice_offerta</code>, per <code>custom</code> oppure tramite <code>ldv</code>.</h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di chiamata <code>tracking</code> in <strong>PHP</strong>:</h3>
+			</div>
+			<div class="panel-body">
+				<pre>$ch = curl_init("https://api.easyparcel.it/tracking/{APIKEY}");
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+	'Content-Type: application/json',
+	'Content-Length: ' . strlen($jsonRequest))
+);
+$jsonResult = curl_exec($ch);</pre>
+			</div>
+		</div>
+	</div>
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"call":"tracking",
+	"dettagli":{
+		"codice_offerta":"5dcc4a53b00fc",
+		"custom":"XYZ123456"
+	}
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="min-width:80px">Livello 1</th>
+							<th style="min-width:80px">Livello 2</th>
+							<th>Tipo</th>
+							<th>Esempio</th>
+							<th>Obbligatorio</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>call</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>tracking</code></td>
+							<td>S</td>
+							<td>Inserire <code>tracking</code></td>
+						</tr>
+						<tr>
+							<td>dettagli</td>
+							<td>codice_offerta</td>
+							<td>string</td>
+							<td><code>5dcc4a53b00fc</code></td>
+							<td>optional</td>
+							<td>Inserire un <strong>codice_offerta</strong> fra quelli ricevuti in risposta ad una precedente chiamata "order".<br><code>N.B.</code> E' obbligatorio indicare un <strong>codice_offerta</strong>, un <strong>custom</strong> oppure una <strong>ldv</strong>.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>custom</td>
+							<td>string</td>
+							<td><code>XYZ123456</code></td>
+							<td>optional</td>
+							<td>Inserire un <strong>custom</strong> fra quelli indicati in una precedente chiamata "order".<br><code>N.B.</code> E' obbligatorio indicare un <strong>codice_offerta</strong>, un <strong>custom</strong> oppure una <strong>ldv</strong>.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>ldv</td>
+							<td>string</td>
+							<td><code>288016E049120</code></td>
+							<td>optional</td>
+							<td>Inserire una <strong>ldv</strong> da ricercare.<br><code>N.B.</code>  E' obbligatorio indicare un <strong>codice_offerta</strong>, un <strong>custom</strong> oppure una <strong>ldv</strong>.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Risposta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"result":"OK",
+	"errorcode":0,
+	"errormessage":"TRACKING OK",
+	"tracking":{
+		"codice_offerta":"5e95d42de07a6",
+		"custom":"XYZ123456",
+		"lettera_vettura":"288016E049120",
+		"url_tracking":"https://www.poste.it/cerca/index.html#/risultati-spedizioni/288364I031083",
+		"codice_prenotazione":"CP1234567890"
+	},
+	"dettagli":[
+		{
+			"id": 1,
+			"data":"2020-04-15",
+			"ora":"12:41:00",
+			"status":"RIT",
+			"descrizione":"RITIRATA",
+			"note":"LA SPEDIZIONE E' STATA RITIRATA PRESSO IL MITTENTE",
+			"filiale":"Catanzaro"
+		},
+		{
+			"id": 2,
+			"data":"2020-04-15",
+			"ora":"16:10:02",
+			"status":"PPP",
+			"descrizione":"PARTITA",
+			"note":"LA SPEDIZIONE E' PARTITA",
+			"filiale":"Catanzaro"
+		},
+		{
+			"id": 3,
+			"data":"2020-04-16",
+			"ora":"10:54:00",
+			"status":"PPP",
+			"descrizione":"PARTITA",
+			"note":"LA SPEDIZIONE E' PARTITA",
+			"filiale":"Roma Hub Espresso"
+		},
+		{
+			"id": 4,
+			"data":"2020-04-16",
+			"ora":"10:55:00",
+			"status":"THE",
+			"descrizione":"SMISTATO HUB ED INOLTRATO",
+			"note":"IN TRANSITO",
+			"filiale":"Roma Hub Espresso"
+		},
+		{
+			"id": 5,
+			"data":"2020-04-17",
+			"ora":"04:18:00",
+			"status":"PPP",
+			"descrizione":"PARTITA",
+			"note":"LA SPEDIZIONE E' PARTITA",
+			"filiale":"Hub Espresso Piacenza"
+		},
+		{
+			"id": 6,
+			"data":"2020-04-17",
+			"ora":"04:18:00",
+			"status":"THE",
+			"descrizione":"SMISTATO HUB ED INOLTRATO",
+			"note":"IN TRANSITO",
+			"filiale":"Hub Espresso Piacenza"
+		},
+		{
+			"id": 7,
+			"data":"2020-04-17",
+			"ora":"12:25:00",
+			"status":"000",
+			"descrizione":"LA SPEDIZIONE E' STATA CONSEGNATA",
+			"note":"LA SPEDIZIONE E' STATA CONSEGNATA",
+			"filiale":"Hub Espresso Piacenza",
+			"firma":"Rossi Mario"
+		}
+	],
+	"timestamp":"2024-01-19 09:31:59"
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Note sulla risposta JSON:</h3>
+			</div>
+			<div class="panel-body">
+				<div class="boxed">La risposta JSON contiene tutti i dati relativi al tracking della spedizione e per il vettore SDA è disponibile anche tutto il dettaglio nell'apposito campo.
+				</div>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>					</div>
+										<a name="NewCustomer"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">NewCustomer</h3>
+<h4 class="page-title">La chiamata <code>newcustomer</code> permette di creare un nuovo utente del proprio network.</h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di chiamata <code>newcustomer</code> in <strong>PHP</strong>:</h3>
+			</div>
+			<div class="panel-body">
+				<pre>$ch = curl_init("https://api.easyparcel.it/newcustomer/{APIKEY}");
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+	'Content-Type: application/json',
+	'Content-Length: ' . strlen($jsonRequest))
+);
+$jsonResult = curl_exec($ch);</pre>
+			</div>
+		</div>
+	</div>
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"call":"newcustomer",
+	"dettagli":{
+		"cognome":"ROSSI",
+		"nome":"MARIO",
+		"indirizzo":"PIAZZA DUOMO, 1",
+		"cap":"20121",
+		"localita":"MILANO",
+		"provincia":"MI",
+		"nazione":"IT",
+		"email":"mariorossi@gmail.com",
+		"telefono":"0212345678",
+		"cellulare":"3470123456",
+		"ragionesociale":"ROSSI MARIO SLRS",
+		"codicefiscale":"RSSMRA11A11A111A",
+		"partitaiva":"01234567890",
+		"fe_pec":"rossimario@pec.it",
+		"fe_sdi":"0000000",
+		"banca":null,
+		"iban":null,
+		"intestazioneconto":null,
+		"username":"mariorossi",
+		"password":"12345678"
+	}
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="min-width:80px">Livello 1</th>
+							<th style="min-width:80px">Livello 2</th>
+							<th>Tipo</th>
+							<th>Esempio</th>
+							<th>Obbligatorio</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>call</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>newcustomer</code></td>
+							<td>S</td>
+							<td>Inserire <code>newcustomer</code></td>
+						</tr>
+						<tr>
+							<td>dettagli</td>
+							<td>cognome</td>
+							<td>string</td>
+							<td><code>ROSSI</code></td>
+							<td>S</td>
+							<td>Inserire il cognome del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>nome</td>
+							<td>string</td>
+							<td><code>MARIO</code></td>
+							<td>S</td>
+							<td>Inserire il nome del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>indirizzo</td>
+							<td>string</td>
+							<td><code>PIAZZA DUOMO, 1</code></td>
+							<td>S</td>
+							<td>Inserire l'indirizzo del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>cap</td>
+							<td>string</td>
+							<td><code>20121</code></td>
+							<td>S</td>
+							<td>Inserire il cap del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>localita</td>
+							<td>string</td>
+							<td><code>MILANO</code></td>
+							<td>S</td>
+							<td>Inserire la località del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>provincia</td>
+							<td>string</td>
+							<td><code>MI</code></td>
+							<td>S</td>
+							<td>Inserire la sigla della provincia italiana del cliente.<br><code>N.B.</code> In caso di cliente estero, compilare questo campo come segue: <code>--</code></td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>nazione</td>
+							<td>string</td>
+							<td><code>IT</code></td>
+							<td>S</td>
+							<td>Inserire la sigla della nazione del cliente, usando il codice ISO 3166-1 Alpha-2 (link).</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>email</td>
+							<td>string</td>
+							<td><code>mariorossi@gmail.com</code></td>
+							<td>S</td>
+							<td>Inserire l'email del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>telefono</td>
+							<td>string</td>
+							<td><code>0212345678</code></td>
+							<td>optional</td>
+							<td>Inserire il numero di telefono del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>cellulare</td>
+							<td>string</td>
+							<td><code>3470123456</code></td>
+							<td>optional</td>
+							<td>Inserire il numero di cellulare del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>ragionesociale</td>
+							<td>string</td>
+							<td><code>ROSSI MARIO SLRS</code></td>
+							<td>optional</td>
+							<td>Inserire l'eventuale ragione sociale del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>codicefiscale</td>
+							<td>string</td>
+							<td><code>RSSMRA11A11A111A</code></td>
+							<td>S</td>
+							<td>Inserire il codice fiscale del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>partitaiva</td>
+							<td>string</td>
+							<td><code>01234567890</code></td>
+							<td>optional</td>
+							<td>Inserire l'eventuale partita Iva del cliente.<br><code>N.B.</code> Campo obbligatorio se compilato il campo <code>ragionesociale</code>.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>fe_pec</td>
+							<td>string</td>
+							<td><code>marirossi@pec.it</code></td>
+							<td>optional</td>
+							<td>Inserire l'eventuale PEC del cliente.<br><code>N.B.</code> Campo obbligatorio se compilato il campo <code>ragionesociale</code> (non obbligatorio per cliente estero).</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>fe_sdi</td>
+							<td>string</td>
+							<td><code>0000000</code></td>
+							<td>S</td>
+							<td>Inserire l'eventuale SDI del cliente (inserire 0000000 per privato).</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>banca</td>
+							<td>string</td>
+							<td><code>CREDITO EMILIANO SPA</code></td>
+							<td>optional</td>
+							<td>Inserire il nome della banca del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>iban</td>
+							<td>string</td>
+							<td><code>IT1A12341234123412341234123</code></td>
+							<td>optional</td>
+							<td>Inserire l'eventuale IBAN del cliente.<br><code>N.B.</code> Campo necessario per rimessa contrassegni.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>intestazioneconto</td>
+							<td>string</td>
+							<td><code>ROSSI MARIO</code></td>
+							<td>optional</td>
+							<td>Inserire il nome esatto dell'intestazione del conto bancario del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>username</td>
+							<td>string</td>
+							<td><code>mariorossi</code></td>
+							<td>S</td>
+							<td>Inserire la username di accesso del cliente.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>password</td>
+							<td>string</td>
+							<td><code>12345678</code></td>
+							<td>S</td>
+							<td>Inserire la password di accesso del cliente.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Risposta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"result":"OK",
+	"errorcode":0,
+	"errormessage":"NEWCUSTOMER OK",
+	"id_dva":3723,
+	"timestamp":"2024-01-19 09:31:59"
+	"version":"1.1.20"}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Note sulla risposta JSON:</h3>
+			</div>
+			<div class="panel-body">
+				<div class="boxed">La risposta JSON contiene il campo <code>id_dva</code> che è il nuovo ID del cliente creato, da utilizzare per successive chiamate.
+				</div>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>					</div>
+										<a name="AddFund"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">AddFund</h3>
+<h4 class="page-title">La chiamata <code>addfund</code> permette di trasferire del credito prepagato dal conto master del capofila a quello del cliente.</h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di chiamata <code>addfund</code> in <strong>PHP</strong>:</h3>
+			</div>
+			<div class="panel-body">
+				<pre>$ch = curl_init("https://api.easyparcel.it/addfund/{APIKEY}");
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+	'Content-Type: application/json',
+	'Content-Length: ' . strlen($jsonRequest))
+);
+$jsonResult = curl_exec($ch);</pre>
+			</div>
+		</div>
+	</div>
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"call":"addfund",
+	"dettagli":{
+		"idcustomer":3723,
+		"amount":100.00
+	}
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="min-width:80px">Livello 1</th>
+							<th style="min-width:80px">Livello 2</th>
+							<th>Tipo</th>
+							<th>Esempio</th>
+							<th>Obbligatorio</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>call</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>addfund</code></td>
+							<td>S</td>
+							<td>Inserire <code>addfund</code></td>
+						</tr>
+						<tr>
+							<td>dettagli</td>
+							<td>idcustomer</td>
+							<td>numeric</td>
+							<td><code>3723</code></td>
+							<td>S</td>
+							<td>Inserire l'ID del cliente al quale girare i fondi.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>amount</td>
+							<td>decimal</td>
+							<td><code>100.00</code></td>
+							<td>S</td>
+							<td>Inserire l'importo da girare al cliente. Il credito master del capofila deve essere maggiore o uguale all'importo da girare al cliente. <u>In caso di importo decimale, utilizzare il PUNTO e non la VIRGOLA come separatore decimale.</u></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Risposta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"result":"OK",
+	"errorcode":0,
+	"errormessage":"ADDFUND OK",
+	"timestamp":"2024-01-19 09:31:59",
+	"version":1.1.14}</pre>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>					</div>
+										<a name="Balance"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">Balance</h3>
+<h4 class="page-title">La chiamata <code>balance</code> permette di ottenere il valore del credito residuo del conto master ed eventualmente del cliente indicato nella chiamata.</h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di chiamata <code>balance</code> in <strong>PHP</strong>:</h3>
+			</div>
+			<div class="panel-body">
+				<pre>$ch = curl_init("https://api.easyparcel.it/balance/{APIKEY}");
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+	'Content-Type: application/json',
+	'Content-Length: ' . strlen($jsonRequest))
+);
+$jsonResult = curl_exec($ch);</pre>
+			</div>
+		</div>
+	</div>
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"call":"balance",
+	"dettagli":{
+		"idcustomer":3723
+	}
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="min-width:80px">Livello 1</th>
+							<th style="min-width:80px">Livello 2</th>
+							<th>Tipo</th>
+							<th>Esempio</th>
+							<th>Obbligatorio</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>call</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>balance</code></td>
+							<td>S</td>
+							<td>Inserire <code>balance</code></td>
+						</tr>
+						<tr>
+							<td>dettagli</td>
+							<td>idcustomer</td>
+							<td>numeric</td>
+							<td><code>3723</code></td>
+							<td>optional</td>
+							<td>Inserire eventualmente l'ID del cliente del quale si vuole conoscere il credito residuo.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Risposta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"result":"OK",
+	"errorcode":0,
+	"errormessage":"BALANCE OK",
+	"balance_master":245.90,
+	"balance_customer":23.75,
+	"timestamp":"2024-01-19 09:31:59",
+	"version":1.1.14}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Note sulla risposta JSON:</h3>
+			</div>
+			<div class="panel-body">
+				<div class="boxed">La risposta JSON contiene sempre il campo <code>balance_master</code> che è il credito residuo del capofila e contiene il campo <code>balance_customer</code> solo se nella richiesta è stato indicato il campo <code>dettagli->idcustomer</code>.
+				</div>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>					</div>
+										<a name="PUDO"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">PUDO</h3>
+<h4 class="page-title">La chiamata <code>pudo</code> permette di cercare i punti di ritiro e consegna disponibili per i vettori <strong>PDB</strong> (Poste Delivery Business) e <strong>INPOST</strong>.</h4>
+<div class="row">
+    <div class="col-md-12">
+        <!-- TABLE HOVER -->
+        <div class="panel">
+            <div class="panel-heading">
+                <h3 class="panel-title">Esempio di chiamata <code>pudo</code> in <strong>PHP</strong>:</h3>
+            </div>
+            <div class="panel-body">
+                <pre>$ch = curl_init("https://api.easyparcel.it/pudo/{APIKEY}");
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    'Content-Type: application/json',
+    'Content-Length: ' . strlen($jsonRequest))
+);
+$jsonResult = curl_exec($ch);</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12">
+        <!-- TABLE HOVER -->
+        <div class="panel">
+            <div class="panel-heading">
+                <h3 class="panel-title">Richiesta JSON - Esempio PDB (ricerca per provincia)</h3>
+            </div>
+            <div class="panel-body">
+                <pre>{
+    "vettore": "PDB",
+    "provincia": "MI",
+    "tipologia": "FMP",
+    "limit": 50
+}</pre>
+            </div>
+            <div class="panel-heading">
+                <h3 class="panel-title">Richiesta JSON - Esempio INPOST (ricerca per raggio da CAP)</h3>
+            </div>
+            <div class="panel-body">
+                <pre>{
+    "vettore": "INPOST",
+    "cap": "20121",
+    "radius": 15,
+    "limit": 20
+}</pre>
+            </div>
+            <div class="panel-heading">
+                <h3 class="panel-title">Richiesta JSON - Esempio con coordinate GPS</h3>
+            </div>
+            <div class="panel-body">
+                <pre>{
+    "vettore": "INPOST",
+    "lat": 45.4642,
+    "lon": 9.1900,
+    "radius": 5,
+    "limit": 10
+}</pre>
+            </div>
+            <div class="panel-heading">
+                <h3 class="panel-title">Parametri della richiesta JSON</h3>
+            </div>
+            <div class="panel-body">
+                <table class="table table-boxed table-hover">
+                    <thead>
+                        <tr>
+                            <th style="min-width:120px">Parametro</th>
+                            <th>Tipo</th>
+                            <th>PDB</th>
+                            <th>INPOST</th>
+                            <th>Obbligatorio</th>
+                            <th>Descrizione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>vettore</code></td>
+                            <td>string</td>
+                            <td>&check;</td>
+                            <td>&check;</td>
+                            <td><strong>S</strong></td>
+                            <td><code>PDB</code> o <code>INPOST</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>cap</code></td>
+                            <td>string</td>
+                            <td>&check;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td>CAP. Se specificato con <code>radius</code>, viene usato come centro per la ricerca geografica. Altrimenti filtra per CAP esatto.</td>
+                        </tr>
+                        <tr>
+                            <td><code>provincia</code></td>
+                            <td>string</td>
+                            <td>&check;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td>Sigla provincia (es. <code>MI</code>, <code>RM</code>)</td>
+                        </tr>
+                        <tr>
+                            <td><code>citta</code></td>
+                            <td>string</td>
+                            <td>&check;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td>Nome città (ricerca parziale)</td>
+                        </tr>
+                        <tr>
+                            <td><code>cerca</code></td>
+                            <td>string</td>
+                            <td>&check;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td>Ricerca libera su codice, nome, indirizzo</td>
+                        </tr>
+                        <tr>
+                            <td><code>radius</code></td>
+                            <td>number</td>
+                            <td>&check;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td>Raggio di ricerca in km (default: 10). Richiede <code>cap</code> oppure <code>lat</code>/<code>lon</code>.</td>
+                        </tr>
+                        <tr>
+                            <td><code>lat</code></td>
+                            <td>number</td>
+                            <td>&check;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td>Latitudine del punto di riferimento (alternativa al CAP per ricerca geografica)</td>
+                        </tr>
+                        <tr>
+                            <td><code>lon</code></td>
+                            <td>number</td>
+                            <td>&check;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td>Longitudine del punto di riferimento</td>
+                        </tr>
+                        <tr>
+                            <td><code>tipologia</code></td>
+                            <td>string</td>
+                            <td>&check;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td>PDB: <code>FMP</code> (Ufficio Postale), <code>APT</code> (Punto Poste), <code>RTZ</code> (Poste Locker)<br>INPOST: <code>parcel_locker</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>status</code></td>
+                            <td>string</td>
+                            <td>&nbsp;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td>Solo INPOST. Default: <code>Operating</code>. Filtra per stato del punto.</td>
+                        </tr>
+                        <tr>
+                            <td><code>location_type</code></td>
+                            <td>string</td>
+                            <td>&nbsp;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td>Solo INPOST. <code>Indoor</code> o <code>Outdoor</code>.</td>
+                        </tr>
+                        <tr>
+                            <td><code>locale</code></td>
+                            <td>string</td>
+                            <td>&check;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td><code>it</code> (default) o <code>en</code>. Traduce i nomi dei campi nella risposta.</td>
+                        </tr>
+                        <tr>
+                            <td><code>limit</code></td>
+                            <td>number</td>
+                            <td>&check;</td>
+                            <td>&check;</td>
+                            <td>N</td>
+                            <td>Numero massimo di risultati (default: 100, max: 1000)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-12">
+        <!-- TABLE HOVER -->
+        <div class="panel">
+            <div class="panel-heading">
+                <h3 class="panel-title">Risposta JSON - PDB</h3>
+            </div>
+            <div class="panel-body">
+                <pre>{
+    "result": "OK",
+    "vettore": "PDB",
+    "count": 2,
+    "punti": [
+        {
+            "codice": "005640",
+            "tipologia": "FMP",
+            "nome": "MILANO 35",
+            "indirizzo": "VIA OSCAR WILDE 2",
+            "localita": "MILANO",
+            "cap": "20154",
+            "provincia": "MI",
+            "latitudine": 45.4874,
+            "longitudine": 9.1726,
+            "orari_apertura": {
+                "lunedi": [{ "dalle": "08:20", "alle": "13:35" }, { "dalle": "14:30", "alle": "19:05" }],
+                "martedi": [{ "dalle": "08:20", "alle": "13:35" }, { "dalle": "14:30", "alle": "19:05" }],
+                "mercoledi": [{ "dalle": "08:20", "alle": "13:35" }, { "dalle": "14:30", "alle": "19:05" }],
+                "giovedi": [{ "dalle": "08:20", "alle": "13:35" }, { "dalle": "14:30", "alle": "19:05" }],
+                "venerdi": [{ "dalle": "08:20", "alle": "13:35" }, { "dalle": "14:30", "alle": "19:05" }],
+                "sabato": [{ "dalle": "08:20", "alle": "12:35" }],
+                "domenica": []
+            },
+            "distanza_km": 1.23
+        },
+        {
+            "codice": "008120",
+            "tipologia": "FMP",
+            "nome": "MILANO 62",
+            "indirizzo": "VIA GIAMBELLINO 54",
+            "localita": "MILANO",
+            "cap": "20146",
+            "provincia": "MI",
+            "latitudine": 45.4512,
+            "longitudine": 9.1456,
+            "orari_apertura": {
+                "lunedi": [{ "dalle": "08:20", "alle": "19:05" }],
+                "martedi": [{ "dalle": "08:20", "alle": "19:05" }],
+                "mercoledi": [{ "dalle": "08:20", "alle": "19:05" }],
+                "giovedi": [{ "dalle": "08:20", "alle": "19:05" }],
+                "venerdi": [{ "dalle": "08:20", "alle": "19:05" }],
+                "sabato": [{ "dalle": "08:20", "alle": "19:05" }],
+                "domenica": []
+            },
+            "distanza_km": 2.45
+        }
+    ]
+}</pre>
+            </div>
+            <div class="panel-heading">
+                <h3 class="panel-title">Risposta JSON - INPOST</h3>
+            </div>
+            <div class="panel-body">
+                <pre>{
+    "result": "OK",
+    "vettore": "INPOST",
+    "count": 2,
+    "punti": [
+        {
+            "codice": "ITLMI09170P",
+            "status": "Operating",
+            "cap": "20121",
+            "localita": "Milano",
+            "provincia": "MI",
+            "indirizzo": "Corso di Porta Nuova",
+            "civico": "34",
+            "descrizione": "presso Clickfix",
+            "latitudine": 45.47708,
+            "longitudine": 9.19227,
+            "tipologia": "pok,pop",
+            "location_type": "Indoor",
+            "h24": false,
+            "orari_apertura": {
+                "lunedi": [{ "dalle": "09:00", "alle": "13:00" }, { "dalle": "15:00", "alle": "19:00" }],
+                "martedi": [{ "dalle": "09:00", "alle": "13:00" }, { "dalle": "15:00", "alle": "19:00" }],
+                "mercoledi": [{ "dalle": "09:00", "alle": "13:00" }, { "dalle": "15:00", "alle": "19:00" }],
+                "giovedi": [{ "dalle": "09:00", "alle": "13:00" }, { "dalle": "15:00", "alle": "19:00" }],
+                "venerdi": [{ "dalle": "09:00", "alle": "13:00" }, { "dalle": "15:00", "alle": "19:00" }],
+                "sabato": [{ "dalle": "09:00", "alle": "13:00" }],
+                "domenica": []
+            },
+            "distanza_km": 0.56
+        },
+        {
+            "codice": "ITMIL112835D",
+            "status": "Operating",
+            "cap": "20124",
+            "localita": "Milano",
+            "provincia": "MI",
+            "indirizzo": "Via Sammartini",
+            "civico": "5",
+            "descrizione": "Supermercato Lidl",
+            "latitudine": 45.4857,
+            "longitudine": 9.2024,
+            "tipologia": "parcel_locker",
+            "location_type": "Outdoor",
+            "h24": true,
+            "orari_apertura": {
+                "lunedi": [{ "dalle": "00:00", "alle": "24:00" }],
+                "martedi": [{ "dalle": "00:00", "alle": "24:00" }],
+                "mercoledi": [{ "dalle": "00:00", "alle": "24:00" }],
+                "giovedi": [{ "dalle": "00:00", "alle": "24:00" }],
+                "venerdi": [{ "dalle": "00:00", "alle": "24:00" }],
+                "sabato": [{ "dalle": "00:00", "alle": "24:00" }],
+                "domenica": [{ "dalle": "00:00", "alle": "24:00" }]
+            },
+            "distanza_km": 1.82
+        }
+    ]
+}</pre>
+            </div>
+            <div class="panel-heading">
+                <h3 class="panel-title">Note sulla risposta JSON:</h3>
+            </div>
+            <div class="panel-body">
+                <div class="boxed">
+                    <ul>
+                        <li>Il campo <code>distanza_km</code> è presente solo se la ricerca è stata effettuata per raggio geografico (tramite <code>cap</code> con <code>radius</code>, oppure <code>lat</code>/<code>lon</code>). I risultati sono ordinati per distanza crescente.</li>
+                        <li>Per <strong>PDB</strong> le tipologie sono: <code>FMP</code> (Ufficio Postale), <code>APT</code> (Punto Poste), <code>RTZ</code> (Poste Locker).</li>
+                        <li>Per <strong>INPOST</strong> i punti con <code>status</code> diverso da <code>Operating</code> non sono attivi e non possono essere utilizzati per le spedizioni.</li>
+                        <li>Per <strong>INPOST</strong> il civico è restituito separatamente nel campo <code>civico</code> (può valere <code>snc</code>); il campo <code>indirizzo</code> contiene solo la via. Il campo <code>descrizione</code> indica dove si trova il punto (es. <em>Supermercato Lidl</em>).</li>
+                        <li>Il campo <code>orari_apertura</code> (per entrambi i vettori) riporta, per ogni giorno della settimana, l'elenco delle fasce di apertura (<code>dalle</code>/<code>alle</code>, formato <code>HH:MM</code>); più fasce nello stesso giorno indicano una chiusura intermedia (es. pausa pranzo), una lista vuota indica che il punto è chiuso quel giorno. Se gli orari del punto non sono disponibili il campo vale <code>null</code>.</li>
+                        <li>Per <strong>PDB</strong> gli orari sono quelli della settimana corrente comunicati da Poste Italiane e riflettono quindi eventuali variazioni temporanee (es. festività).</li>
+                        <li>Per <strong>INPOST</strong> i locker con <code>h24</code> a <code>true</code> sono accessibili 24 ore su 24 e hanno fascia <code>00:00</code>–<code>24:00</code> tutti i giorni.</li>
+                        <li>I codici restituiti nel campo <code>codice</code> sono quelli da utilizzare nei campi <code>pudo_mittente</code> e <code>pudo_destinatario</code> della chiamata <code>order-fast</code>.</li>
+                        <li>Per <strong>INPOST</strong> entrambi i campi <code>pudo_mittente</code> e <code>pudo_destinatario</code> sono obbligatori e devono essere diversi tra loro.</li>
+                        <li>Specificando <code>"locale": "en"</code> i nomi dei campi vengono tradotti in inglese (<code>code</code>, <code>type</code>, <code>name</code>, <code>address</code>, <code>city</code>, <code>postal_code</code>, <code>province</code>, <code>latitude</code>, <code>longitude</code>, <code>distance_km</code>, <code>points</code>, <code>opening_hours</code>; per INPOST anche <code>building_number</code>, <code>description</code>, <code>open_24h</code>; orari con i giorni <code>monday</code>…<code>sunday</code> e le fasce <code>from</code>/<code>to</code>).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- END TABLE HOVER -->
+    </div>
+</div>					</div>
+										<a name="CheckCoupon"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">CheckCoupon</h3>
+<h4 class="page-title">La chiamata <code>checkcoupon</code> consente di verificare la corretta applicabilità del coupon sconto ad una spedizione.</h4>
+<div class="row">
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di chiamata <code>checkcoupon</code> in <strong>PHP</strong>:</h3>
+			</div>
+			<div class="panel-body">
+				<pre>$ch = curl_init("https://api.easyparcel.it/checkcoupon/{APIKEY}");
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+	'Content-Type: application/json',
+	'Content-Length: ' . strlen($jsonRequest))
+);
+$jsonResult = curl_exec($ch);</pre>
+			</div>
+		</div>
+	</div>
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"call":"checkcoupon",
+	"dettagli":{
+		"idcustomer":3723,
+		"vettore":"UPS21S",
+		"peso_totale":8.00,
+		"tipo_spedizione":"E",
+		"cosa_spedire":"M",
+		"provincia":"RM",
+		"nazione":"US",
+		"coupon" => "ILOVEUSA21"
+	}
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th style="min-width:80px">Livello 1</th>
+							<th style="min-width:80px">Livello 2</th>
+							<th>Tipo</th>
+							<th>Esempio</th>
+							<th>Obbligatorio</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>call</td>
+							<td>&nbsp;</td>
+							<td>string</td>
+							<td><code>checkcoupon</code></td>
+							<td>S</td>
+							<td>Inserire <code>checkcoupon</code></td>
+						</tr>
+						<tr>
+							<td>dettagli</td>
+							<td>idcustomer</td>
+							<td>numeric</td>
+							<td><code>3723</code></td>
+							<td>S</td>
+							<td>Inserire l'ID del cliente proprietario del coupon.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>vettore</td>
+							<td>string</td>
+							<td><code>UPS21S</code></td>
+							<td>S</td>
+							<td>Inserire il codice del vettore.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>peso_totale</td>
+							<td>string</td>
+							<td><code>8.00</code></td>
+							<td>S</td>
+							<td>Inserire il peso complessivo della spedizione.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>tipo_spedizione</td>
+							<td>string</td>
+							<td><code>N</code></td>
+							<td>S</td>
+							<td><code>N</code> = nazionale<br><code>E</code> = estero<br><code>I</code> = import</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>cosa_spedire</td>
+							<td>string</td>
+							<td><code>M</code></td>
+							<td>S</td>
+							<td><code>D</code> = documenti<br><code>M</code> = merce/pacchi<br><code>P</code> = pallets</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>provincia</td>
+							<td>string</td>
+							<td><code>RM</code></td>
+							<td>S</td>
+							<td>Inserire la sigla della provincia italiana di partenza della spedizione.<br><code>N.B.</code> In caso di import indicare la provincia italiana di destinazione.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>nazione</td>
+							<td>string</td>
+							<td><code>US</code></td>
+							<td>S</td>
+							<td>Inserire la sigla della nazione di destinazione della spedizione.<br><code>N.B.</code> In caso di import indicare la nazione di partenza.</td>
+						</tr>
+						<tr>
+							<td><i class="fa fa-caret-right"></i></td>
+							<td>coupon</td>
+							<td>string</td>
+							<td><code>ILOVEUSA21</code></td>
+							<td>S</td>
+							<td>Inserire il codice del coupon da applicare alla spedizione.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Risposta JSON</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"result":"OK",
+	"errorcode":0,
+	"errormessage":"CHECKCOUPON OK",
+	"errordetails":"Previsto sconto del 5%",
+	"timestamp":"2024-01-19 09:31:59",
+	"version":"1.1.20"}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Note sulla risposta JSON:</h3>
+			</div>
+			<div class="panel-body">
+				<div class="boxed">La risposta JSON contiene sempre il campo <code>errorcode</code> che indica se il coupon è valido o meno, mentre il campo <code>errodetails</code> riporta il valore del coupon oppure il tipo di errore.
+				</div>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>					</div>
+										<a name="Richiesta Storno"></a>
+					<div class="container-fluid">
+						<div class="container-fluid">
+	<h3 class="page-title">Richiesta Storno</h3>
+	<h4 class="page-title">Richiede lo storno di uno o più ordini già acquistati la cui spedizione non è ancora partita.<br>
+		<code>POST https://api.easyparcel.it/richiesta-storno/{APIKEY}</code></h4>
+	<div class="row">
+
+		<!-- ============================ ESEMPIO ============================ -->
+		<div class="col-md-12">
+			<div class="panel">
+				<div class="panel-heading">
+					<h3 class="panel-title">Esempio di chiamata <code>richiesta-storno</code> in <strong>PHP</strong>:</h3>
+				</div>
+				<div class="panel-body">
+<pre>$url = "https://api.easyparcel.it/richiesta-storno/{APIKEY}";
+
+$json = array(
+	"ordini" =&gt; array(1234567, 1234568),
+	"solo_verifica" =&gt; false
+);
+
+$jsonRequest = json_encode($json);
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonRequest);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+	'Content-Type: application/json',
+	'Content-Length: ' . strlen($jsonRequest)
+));
+$result = curl_exec($ch);
+$response = json_decode($result, TRUE);
+print_r($response);</pre>
+					<p>La APIKEY si può passare nel percorso, come sopra, oppure nell'header <code>X-API-KEY</code> chiamando <code>https://api.easyparcel.it/richiesta-storno</code>.</p>
+				</div>
+			</div>
+		</div>
+
+		<!-- ============================ RICHIESTA ============================ -->
+		<div class="col-md-12">
+			<div class="panel">
+				<div class="panel-heading">
+					<h3 class="panel-title">Richiesta JSON</h3>
+				</div>
+				<div class="panel-body">
+<pre>{
+	"ordini": [1234567, 1234568],
+	"solo_verifica": false
+}</pre>
+				</div>
+				<div class="panel-heading">
+					<h3 class="panel-title">Requisiti della richiesta JSON</h3>
+				</div>
+				<div class="panel-body">
+					<table class="table table-boxed table-hover">
+						<thead>
+							<tr>
+								<th>Livello1</th>
+								<th>Tipo</th>
+								<th>Esempio</th>
+								<th>Obbligatorio</th>
+								<th>Descrizione</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>ordini</td>
+								<td>array di integer</td>
+								<td><code>[1234567, 1234568]</code></td>
+								<td>Si</td>
+								<td>ID degli ordini di cui richiedere lo storno (il campo <code>id_ordine</code> restituito dalla chiamata <code>order</code>). Massimo 500 ordini per chiamata; gli ID ripetuti sono considerati una volta sola.</td>
+							</tr>
+							<tr>
+								<td>solo_verifica</td>
+								<td>boolean</td>
+								<td><code>false</code></td>
+								<td>Opzionale</td>
+								<td>Con <code>true</code> la chiamata verifica soltanto se lo storno è richiedibile e restituisce l'esito di ogni ordine, <strong>senza modificare nulla</strong>. Con <code>false</code> (default) richiede lo storno degli ordini ammessi.</td>
+							</tr>
+							<tr>
+								<td>idcustomer</td>
+								<td>integer</td>
+								<td><code>15</code></td>
+								<td>Opzionale</td>
+								<td>Cliente su cui operare (chiavi canale/reseller): vengono considerati solo i suoi ordini. Ammesso solo se il cliente fa parte della rete della APIKEY, altrimenti la chiamata è rifiutata con <strong>errore 162</strong>.</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- ============================ RISPOSTA ============================ -->
+		<div class="col-md-12">
+			<div class="panel">
+				<div class="panel-heading">
+					<h3 class="panel-title">Risposta JSON</h3>
+				</div>
+				<div class="panel-body">
+<pre>{
+	"result": "OK",
+	"errorcode": "0",
+	"errormessage": "Ordini con storno richiesto: 1 su 2",
+	"solo_verifica": false,
+	"esiti": [
+		{
+			"id_ordine": 1234567,
+			"ammesso": true,
+			"richiesto": true,
+			"codice": "ammesso",
+			"messaggio": "Storno richiesto.",
+			"stato": 13,
+			"ldv": "1UW0S44134518",
+			"tracking": null
+		},
+		{
+			"id_ordine": 1234568,
+			"ammesso": false,
+			"richiesto": false,
+			"codice": "tracking_presente",
+			"messaggio": "La spedizione ha già dati di tracciamento.",
+			"stato": 5,
+			"ldv": "1UW0S44134519",
+			"tracking": "IN TRANSITO"
+		}
+	],
+	"ammessi": 1,
+	"rifiutati": 1,
+	"richiesti": 1,
+	"timestamp": "2026-10-19 12:19:18",
+	"version": "1.1.20"
+}</pre>
+				</div>
+				<div class="panel-heading">
+					<h3 class="panel-title">Campi della risposta</h3>
+				</div>
+				<div class="panel-body">
+					<table class="table table-boxed table-hover">
+						<thead>
+							<tr>
+								<th>Livello1</th>
+								<th>Livello2</th>
+								<th>Tipo</th>
+								<th>Descrizione</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr><td>solo_verifica</td><td></td><td>boolean</td><td>Riporta la modalità della chiamata.</td></tr>
+							<tr><td>esiti</td><td></td><td>array</td><td>Un elemento per ogni ordine richiesto, nello stesso ordine della richiesta.</td></tr>
+							<tr><td></td><td>id_ordine</td><td>integer</td><td>ID dell'ordine.</td></tr>
+							<tr><td></td><td>ammesso</td><td>boolean</td><td><code>true</code> se l'ordine rispetta le condizioni per lo storno (vedi Note).</td></tr>
+							<tr><td></td><td>richiesto</td><td>boolean</td><td><code>true</code> se in questa chiamata lo storno è stato effettivamente richiesto (sempre <code>false</code> con <code>solo_verifica</code>).</td></tr>
+							<tr><td></td><td>codice</td><td>string</td><td>Esito dell'ordine: <code>ammesso</code> oppure il motivo del rifiuto (vedi tabella Codici di esito).</td></tr>
+							<tr><td></td><td>messaggio</td><td>string</td><td>Descrizione leggibile dell'esito.</td></tr>
+							<tr><td></td><td>stato</td><td>integer</td><td>Stato dell'ordine: dopo una richiesta riuscita è <code>13</code> (storno richiesto). <code>null</code> se l'ordine non è stato trovato.</td></tr>
+							<tr><td></td><td>ldv</td><td>string</td><td>Lettera di vettura dell'ordine, se presente.</td></tr>
+							<tr><td></td><td>tracking</td><td>string</td><td>Ultimo evento di tracciamento, solo con codice <code>tracking_presente</code>.</td></tr>
+							<tr><td>ammessi</td><td></td><td>integer</td><td>Numero di ordini ammessi allo storno.</td></tr>
+							<tr><td>rifiutati</td><td></td><td>integer</td><td>Numero di ordini rifiutati.</td></tr>
+							<tr><td>richiesti</td><td></td><td>integer</td><td>Numero di ordini per cui lo storno è stato richiesto in questa chiamata.</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- ============================ CODICI DI ESITO ============================ -->
+		<div class="col-md-12">
+			<div class="panel">
+				<div class="panel-heading">
+					<h3 class="panel-title">Codici di esito (<code>esiti[].codice</code>)</h3>
+				</div>
+				<div class="panel-body">
+					<table class="table table-boxed table-hover">
+						<thead>
+							<tr>
+								<th>Codice</th>
+								<th>Descrizione</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr><td><code>ammesso</code></td><td>L'ordine rispetta tutte le condizioni: lo storno è stato richiesto (o è richiedibile, con <code>solo_verifica</code>).</td></tr>
+							<tr><td><code>non_trovato</code></td><td>L'ordine non esiste o non appartiene al cliente.</td></tr>
+							<tr><td><code>contratto_proprio</code></td><td>La spedizione è stata effettuata con il contratto col vettore del cliente stesso: non c'è uno storno da richiedere.</td></tr>
+							<tr><td><code>gia_richiesto</code></td><td>Lo storno dell'ordine è già stato richiesto.</td></tr>
+							<tr><td><code>cancellato</code></td><td>L'ordine è già cancellato.</td></tr>
+							<tr><td><code>stato_non_ammesso</code></td><td>Lo stato dell'ordine non permette lo storno.</td></tr>
+							<tr><td><code>non_pagato</code></td><td>L'ordine non risulta pagato.</td></tr>
+							<tr><td><code>oltre_un_mese</code></td><td>È passato più di un mese dalla data dell'ordine.</td></tr>
+							<tr><td><code>tracking_presente</code></td><td>La spedizione ha già dati di tracciamento (l'ultimo evento è nel campo <code>tracking</code>).</td></tr>
+							<tr><td><code>tracking_non_verificabile</code></td><td>Non è stato possibile verificare il tracciamento della spedizione: riprovare più tardi.</td></tr>
+							<tr><td><code>non_aggiornato</code></td><td>Lo stato dell'ordine è cambiato durante la richiesta: riprovare.</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- ============================ ERRORI ============================ -->
+		<div class="col-md-12">
+			<div class="panel">
+				<div class="panel-heading">
+					<h3 class="panel-title">Errori della chiamata</h3>
+				</div>
+				<div class="panel-body">
+					<p>Un ordine rifiutato <strong>non</strong> rende la chiamata in errore: la risposta resta <code>result: OK</code> e il motivo è nel <code>codice</code> dell'ordine. La chiamata risponde <code>result: KO</code> solo nei casi seguenti:</p>
+					<table class="table table-boxed table-hover">
+						<thead>
+							<tr>
+								<th>ErrorCode</th>
+								<th>HTTP</th>
+								<th>Descrizione</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr><td>101</td><td>400</td><td>APIKEY mancante o non valida.</td></tr>
+							<tr><td>102</td><td>400</td><td>APIKEY scaduta.</td></tr>
+							<tr><td>103</td><td>400</td><td>Chiamata da un indirizzo IP non autorizzato per la APIKEY.</td></tr>
+							<tr><td>104</td><td>405</td><td>Metodo non consentito: usare <code>POST</code>.</td></tr>
+							<tr><td>105</td><td>400</td><td>JSON mancante o non valido.</td></tr>
+							<tr><td>107</td><td>400</td><td>Utente titolare della APIKEY non attivo.</td></tr>
+							<tr><td>110</td><td>400</td><td>Errore sui campi: <code>ordini</code> mancante o senza ID validi, oppure più di 500 ordini.</td></tr>
+							<tr><td>131</td><td>500</td><td>Errore in fase di memorizzazione: ripetere la chiamata (gli ordini già richiesti risulteranno <code>gia_richiesto</code>).</td></tr>
+							<tr><td>162</td><td>403</td><td><code>idcustomer</code> non appartenente alla rete della APIKEY.</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- ============================ NOTE ============================ -->
+		<div class="panel-heading">
+			<h3 class="panel-title">Note</h3>
+		</div>
+		<div class="panel-body">
+			<div class="boxed">
+				<ul>
+					<li><strong>Condizioni</strong>: lo storno è richiedibile per gli ordini del cliente pagati, effettuati da non più di un mese, negli stati 2, 4, 5 o 6 (inserito con anomalie, pagato da evadere, evaso, archiviato) e la cui spedizione <strong>non ha ancora dati di tracciamento</strong> (nessun evento, oppure solo l'evento di spedizione non ancora affidata al vettore). Non è richiedibile per le spedizioni effettuate con il proprio contratto col vettore.</li>
+					<li><strong>Cosa succede</strong>: gli ordini ammessi passano allo stato <code>13</code> (storno richiesto). Gli operatori DVA verificano la richiesta e, se l'esito è positivo, effettuano il riaccredito; l'ordine passa allo stato <code>9</code> (cancellato). Per seguire la richiesta basta ripeterla con <code>solo_verifica: true</code>: l'ordine risulta <code>gia_richiesto</code> finché è in attesa e <code>cancellato</code> dopo lo storno.</li>
+					<li><strong>Verifica preventiva</strong>: con <code>solo_verifica: true</code> si ottiene l'esito di ogni ordine senza modificare nulla, ad esempio per mostrarlo all'utente prima di confermare.</li>
+					<li><strong>Chiamata ripetuta</strong>: ripetere la richiesta per un ordine già richiesto non ha effetti (codice <code>gia_richiesto</code>).</li>
+					<li><strong>Controllo di proprietà</strong>: sono considerati solo gli ordini del titolare della APIKEY o della sua rete di affiliati; con <code>idcustomer</code> solo quelli del cliente indicato. Gli ordini di altri clienti risultano <code>non_trovato</code>.</li>
+					<li>Se l'ordine è di un cliente di un canale/rivenditore, il rivenditore riceve una notifica della richiesta.</li>
+				</ul>
+			</div>
+		</div>
+
+	</div>
+</div>
+					</div>
+										<a name="Errori"></a>
+					<div class="container-fluid">
+						<h3 class="page-title">Errori</h3>
+<h4 class="page-title">Questa sezione contiene l'elenco e il significato di tutti gli eventuali errori che le chiamate API al sistema <img src="assets/img/logo-dark.png" alt="EasyParcel Logo" class="logo logo-bordered"> restituiscono.</h4>
+<div class="row">
+			
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+			<div class="panel-heading">
+				<h3 class="panel-title">Esempio di risposta JSON di errore</h3>
+			</div>
+			<div class="panel-body">
+				<pre>{
+	"result" => "KO",
+	"errorcode" => "110",
+	"errormessage" => "JSON - Errore sui campi",
+	"errordetails" => "Campo 'mittente->cap' mancante o non corretto",
+	"timestamp":"2024-01-19 09:31:59"
+}</pre>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Note sulla risposta JSON:</h3>
+			</div>
+			<div class="panel-body">
+				<div class="boxed">Il sistema <img src="assets/img/logo-dark.png" alt="EasyParcel Logo" class="logo logo-bordered"> risponde con un HTTP_RESPONSE_CODE attraverso la funzione PHP <code>http_response_code</code>. La risposta <code>200</code> identifica una risposta positiva, mentre una risposta <code>400</code> identifica l'individuazione di un errore.<br>In caso di errore, la funzione API restituisce un JSON che contiene i dettagli dell'errore, in modo che sia possibile identificarli e porvi rimedio.</div>
+			</div>
+			<div class="panel-heading">
+				<h3 class="panel-title">Tabella dei codici di errore </h3>
+			</div>
+			<div class="panel-body">
+				<table class="table table-boxed table-hover">
+					<thead>
+						<tr>
+							<th>ErrorCode</th>
+							<th>ErrorMessage</th>
+							<th>Descrizione</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td style="text-align:center"><label class="label label-success label-lg"><big>0</big></label></td>
+							<td>NESSUN ERRORE</td>
+							<td>L'operazione è stata eseguita correttamente.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-danger label-lg"><big>101</big></label></td>
+							<td>APIKEY - Non valida</td>
+							<td>Il codice APIKEY utilizzato nella chiamata non risulta una chiave valida.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-danger label-lg"><big>102</big></label></td>
+							<td>APIKEY - Chiave scaduta</td>
+							<td>Il codice APIKEY utilizzato nella chiamata è scaduto e necessita del rinnovo per poter continuare a funzionare.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-danger label-lg"><big>103</big></label></td>
+							<td>APIKEY - Servizio non disponibile per questo indirizzo IP</td>
+							<td>La chiamata proviene da un indirizzo IP non autorizzato per questo codice APIKEY.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-danger label-lg"><big>104</big></label></td>
+							<td>APIKEY - Limite giornaliero chiamate superato</td>
+							<td>La chiamata ha superato il limite giornaliero per questo codice APIKEY.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-danger label-lg"><big>105</big></label></td>
+							<td>JSON - Manca il file</td>
+							<td>Manca il file JSON che dev'essere passato alla funzione via POST.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-danger label-lg"><big>110</big></label></td>
+							<td>JSON - Errore sui campi</td>
+							<td>Il file JSON passato non rispetta i requisiti per la chiamata. Nel campo <code>errordetails</code> sono dettagliati i valori errati o mancanti.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-warning label-lg"><big>120</big></label></td>
+							<td>USER Credito esaurito</td>
+							<td>Il credito residuo non consente di perfezionare l'acquisto.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-warning label-lg"><big>130</big></label></td>
+							<td>ORDER Già memorizzato</td>
+							<td>Il codice offerta è già stato elaborato e quindi l'acquisto non è duplicabile. Acquisto non perfezionato.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-danger label-lg"><big>131</big></label></td>
+							<td>ORDER Errore in fase di memorizzazione</td>
+							<td>La memorizzazione dell'acquisto non è andata a buon fine. Acquisto non perfezionato. Contattare l'assistenza.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-danger label-lg"><big>132</big></label></td>
+							<td>ORDER Errore in fase di memorizzazione (2)</td>
+							<td>La memorizzazione dell'acquisto non è andata a buon fine perché è stato selezionato un vettore che al momento non consente un acquisto via API. Acquisto non perfezionato.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-warning label-lg"><big>140</big></label></td>
+							<td>NEWCUSTOMER Funzione non disponibile</td>
+							<td>Funzione non disponibile per questo account.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-danger label-lg"><big>141</big></label></td>
+							<td>NEWCUSTOMER Errore in fase di memorizzazione</td>
+							<td>La memorizzazione del nuovo cliente non è andata a buon fine. Contattare l'assistenza.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-warning label-lg"><big>150</big></label></td>
+							<td>ADDFUND Funzione non disponibile</td>
+							<td>Funzione non disponibile per questo account.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-warning label-lg"><big>151</big></label></td>
+							<td>ADDFUND Credito non sufficiente</td>
+							<td>L'account master non ha credito sufficiente per ricaricare il cliente.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-danger label-lg"><big>152</big></label></td>
+							<td>ADDFUND Cliente non corretto</td>
+							<td>Il cliente indicato non esiste o non fa parte del network.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-warning label-lg"><big>160</big></label></td>
+							<td>BALANCE Funzione non disponibile</td>
+							<td>Funzione non disponibile per questo account.</td>
+						</tr>
+						<tr>
+							<td style="text-align:center"><label class="label label-warning label-lg"><big>161</big></label></td>
+							<td>BALANCE Cliente non corretto</td>
+							<td>Il cliente indicato non esiste o non fa parte del network.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+	<div class="col-md-12">
+		<!-- TABLE HOVER -->
+		<div class="panel">
+		</div>
+		<!-- END TABLE HOVER -->
+	</div>
+</div>					</div>
+									<hr>
+			</div>
+			<!-- END MAIN CONTENT -->
+		</div>
+
+		<!-- END MAIN -->
+		<div class="clearfix"></div>
+		<footer>
+			<div class="container-fluid">
+				<p class="copyright">&copy; 2026 EasyParcel Srl - All Rights Reserved.</p>
+			</div>
+		</footer>
+	</div>
+	<!-- END WRAPPER -->
+		
+	<script src="assets/vendor/jquery/jquery.min.js"></script>
+	<script src="assets/vendor/bootstrap/js/bootstrap.min.js"></script>
+	<script src="assets/vendor/jquery-slimscroll/jquery.slimscroll.min.js"></script>
+	<script src="assets/scripts/easyparcel-common.js"></script>
+	<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+	
+	<!-- Javascript -->
+	<script>
+		$(function() {
+			//
+			$('pre code table').each(function(i, block) {
+				hljs.highlightBlock(block);
+			});
+			//
+			$('a[href^="#"]').click(function() {
+				if (location.pathname.replace(/^\//,'') == this.pathname.replace(/^\//,'') && location.hostname == this.hostname) {
+					var target = $(this.hash);
+					target = target.length ? target : $('[name=' + this.hash.slice(1) +']');
+					if (target.length) {
+						$('html,body').animate({
+							scrollTop: target.offset().top - 100
+						}, 1000);
+						return false;
+					}
+				}
+			});
+			
+			$( ".accordion" ).accordion();
+			
+		});
+	</script>
+</body>
+
+</html>
