@@ -1,19 +1,29 @@
-# Carrier tracking module
+# Shipping and Tracking Module
 
-A self-contained, swappable module (`app/Shipping/Tracking`) that gives orders automatic shipment tracking through a carrier
-API. With the default `SHIPPING_TRACKING_DRIVER=manual` the application behaves exactly as before (tracking links built from URL
-templates, status changes done by the admin). One adapter ships with the code, **`spediamo`** (polling, tracking only), and it
-stays dormant until the owner sets the env (see "Spediamo adapter"). Adding or replacing a carrier API means one adapter folder,
-one registration line and one env value; the core, the `Order` model, the UI and the database do not change.
+A modular, swappable shipping architecture under `app/Shipping/` comprising three integrated subsystems:
+1. **Carrier Tracking (`app/Shipping/Tracking`)**: Automated tracking synchronization (polling + webhooks) and customer-facing shipment timeline.
+2. **Label Creation (`app/Shipping/Labels`)**: Modular shipping label generation and PDF storage with carrier API dispatch.
+3. **Rate Quoting (`app/Shipping/Rates`)**: Live rate comparison, balance inspection, standalone simulator, and order margin delta calculation.
 
-## Core versus adapters
+External integrations live as self-contained plugins under `app/Shipping/Providers/<Name>/` (`Spediamo`, `Dvaexpress`), each exposing a manifest implementing `App\Shipping\Contracts\ShippingProviderManifest`.
 
-* **Core (provider neutral, never mentions a carrier):** `Contracts`, `DTO`, `Enums`, `Exceptions`, `Support\CarrierCodeMap`,
-  `Auth\*` authenticators, `ShipmentTrackingService`, `Jobs`, `Http`, `TrackingManager`, `Drivers\AbstractHttpProvider`,
-  `Drivers\Concerns\*`, and the consumers outside the module (`Order`, `SyncShipmentTracking`, admin orders UI).
-* **Adapters (one folder each):** `Drivers\<Name>\` holding the provider class, its response mapper and its status map. Their
-  settings live only under `shipping.tracking.drivers.<name>`; they are registered by one line in
-  `App\Providers\TrackingServiceProvider`.
+## Core versus Provider Plugins
+
+* **Shared Core Infrastructure (`App\Shipping\*`, provider neutral, never mentions a carrier):**
+  * `App\Shipping\Contracts\ShippingProviderManifest`: Capability detection (`hasTracking()`, `hasLabels()`, `hasRates()`) and driver factories (`createTrackingDriver()`, `createLabelDriver()`, `createRateDriver()`).
+  * `App\Shipping\Contracts\Authenticator` (+ optional `RefreshesCredentials`): Authenticator contracts used across HTTP clients.
+  * `App\Shipping\Auth\*`: `BearerTokenAuthenticator`, `ApiKeyHeaderAuthenticator`, `CachedClientCredentialsAuthenticator`.
+  * `App\Shipping\Support\*`: `CarrierCodeMap` (maps internal provider-neutral codes like `sda`, `brt` to provider-specific carrier codes), `PostalCodeSanitizer`.
+  * `App\Shipping\Exceptions\*`: `ShippingCredentialsException` and subsystem base exceptions.
+  * `TrackingManager`, `LabelManager`, `RateManager`: Subsystem managers extending `Illuminate\Support\Manager`.
+* **Self-Contained Provider Modules (`app/Shipping/Providers/<Name>/`):**
+  * One directory per provider (e.g. `app/Shipping/Providers/Spediamo/`, `app/Shipping/Providers/Dvaexpress/`).
+  * Holds provider-specific client, manifest, tracking adapter, label adapter, and rate adapter.
+  * **Unified Registration via `config('shipping.manifests')`**:
+    Registered by declaring the manifest class in `config('shipping.manifests')` (e.g. `SpediamoManifest::class`, `DvaexpressManifest::class`).
+    `TrackingServiceProvider`, `LabelServiceProvider`, and `RateServiceProvider` inspect the manifests and register driver creators on the respective managers.
+  * **Shared Credentials via `config('shipping.providers.<name>')`**:
+    Shared provider settings (e.g. `base_url`, `api_key`/`token`, `carrier_map`) live in `config('shipping.providers.<name>')` without duplicate env variables across subsystems. Each manager's `driverConfig(name)` automatically merges `shipping.providers.<name>` with subsystem driver overrides (`shipping.<subsystem>.drivers.<name>`).
 * The decision "mark the order delivered" lives in the core and depends only on `TrackingStatus::Delivered` plus
   `shipping.tracking.auto_deliver`; *when* an API's answer means Delivered is the adapter's business (the Spediamo adapter also
   accepts a non-empty `deliveryDate`).
@@ -433,6 +443,114 @@ body and documents no explicit "buy/pay" step; this adapter sends them as the JS
 final. The waybill endpoint's success shape in the export is an object (`filename`, `url`, `inputStream`, ...); this adapter expects the PDF
 bytes with `download=true`. Confirm the request encoding, whether a shipment must be *bought* before it has a tracking number and a waybill,
 and the waybill response format. All adapter tests use `Http::fake`; the real API is never called.
+
+## DVA Express (EasyParcel) Provider
+
+`app/Shipping/Providers/Dvaexpress/` provides an all-in-one integration with the DVA Express / EasyParcel Italian logistics API, exposing tracking, label creation, two-step quote booking, cancellation, and prepaid wallet balance inspection.
+
+* **Manifest**: `App\Shipping\Providers\Dvaexpress\DvaexpressManifest`
+* **Configuration**: `config('shipping.providers.dvaexpress')`
+  * `base_url`: `env('DVAEXPRESS_BASE_URL', 'https://api.easyparcel.it')`
+  * `api_key`: `env('DVAEXPRESS_API_KEY')`
+  * `default_vettore`: `env('DVAEXPRESS_DEFAULT_VETTORE', 'SDAM')`
+  * `default_cosa_spedire`: `env('DVAEXPRESS_DEFAULT_COSA_SPEDIRE', 'M')`
+  * `carrier_map`: Maps neutral codes (`sda`, `brt`, `gls`, `poste`, `inpost`, `dhl`, `ups`, `fedex`) to EasyParcel carrier strings (`SDAM`, `BRT`, `GLS`, `PDB`, `INPOST`, `DHL`, `UPS`, `FEDEX`).
+* **HTTP Client**: `DvaexpressClient`
+  * Unified JSON POST transport via `{base_url}/{operation}/{api_key}`.
+  * Formats error codes (e.g., auth codes 101, 102, 103, 107, 120; availability codes 104, 131) and flattens nested `errordetails` into clear error strings.
+  * Throttles auth critical alerts to `Cache` (15 min) to prevent log flooding.
+  * Translates HTTP/API failures into subsystem-specific exceptions (`TrackingException`, `LabelException`, `RateException`).
+
+### Capabilities
+
+1. **Tracking (`DvaexpressProvider`)**:
+   * Polls `POST /tracking/{APIKEY}` with payload `['call' => 'tracking', 'details' => ['tracking' => $code]]`.
+   * Maps Italian checkpoint descriptions and statuses (`Presa in carico`, `In transito`, `In consegna`, `Consegnata`, `Giacenza`, etc.) into canonical `TrackingStatus` enums.
+2. **Rate Quoting (`DvaexpressRateProvider`)**:
+   * Queries `POST /quotation/{APIKEY}` with sender, recipient, parcel weights/dimensions, COD, and insurance accessories.
+   * Returns list of `RateQuote` DTOs with `quoteToken` set to the API's `codice_offerta` (valid for locked purchase), net/total prices, volumetric weight, and surcharge breakdown (remote area, COD, insurance).
+3. **Wallet Balance (`DvaexpressRateProvider::balance()`)**:
+   * Inspects prepaid master credit via `POST /balance/{APIKEY}` (`['call' => 'balance']`).
+   * Parses `credito_master` / `balance_master` into `AccountBalance` (`EUR`).
+4. **Label Creation (`DvaexpressLabelProvider`)**:
+   * **Direct One-Step Creation**: `POST /order-fast/{APIKEY}` creates order and LDV waybill in one call. Parses `id_ordine`, `lettera_vettura` tracking number, and decodes inline base64 PDF label (`ldv_base64`).
+   * **Two-Step Quote Purchase**: When a `quoteToken` (`codice_offerta`) is supplied, calls `POST /order/{APIKEY}` to book the exact locked quotation. Immediately follows with `POST /getwaybill/{APIKEY}` (`waybill_base64 = 'Y'`) to extract the tracking number and inline PDF waybill.
+   * Caches the decoded PDF in-memory so subsequent `label()` call returns `LabelDocument` without an extra network download.
+5. **Cancellation (`DvaexpressLabelProvider::cancelShipment()`)**:
+   * Cancels uncollected orders via `POST /richiesta-storno/{APIKEY}` (`details.order_id = $id`).
+   * Validates cancellation eligibility; throws `LabelRejected` if tracking has already commenced or order state forbids reversal.
+
+---
+
+# Shipping Rates Subsystem (`app/Shipping/Rates`)
+
+A modular rate comparison and estimation engine that enables real-time quoting across multiple carriers, wallet balance inspection, standalone simulation for store staff, and margin delta calculation during order fulfillment.
+
+## Architecture & Core Classes
+
+```
+  Admin Request ──► RateManager (Manager)
+                         │
+        ┌────────────────┼────────────────┐
+        ▼                ▼                ▼
+  FakeRateProvider  SpediamoRateProvider  DvaexpressRateProvider
+   (local/testing)   (POST draft + DEL)   (POST /quotation)
+        │                │                │
+        └────────────────┼────────────────┘
+                         ▼
+        List of RateQuote DTOs sorted ascending by totalPrice
+        + Per-driver error isolation + Wallet balances
+```
+
+| Piece | Location | Purpose |
+|---|---|---|
+| Manager | `Rates\RateManager` | Singleton extending `Illuminate\Support\Manager`. Dispatches quote requests across drivers, handles driver configuration resolution, and provides order-to-quote conversion helpers. |
+| Contracts | `Rates\Contracts\RateProvider` | Required interface for rate drivers: `name()`, `supports(string $carrierCode)`, `quote(RateRequest $request): list<RateQuote>`. |
+| | `Rates\Contracts\InspectsBalance` | Optional interface for drivers supporting prepaid wallet balances: `balance(): AccountBalance`. |
+| DTOs | `Rates\DTO\RateRequest` | Provider-neutral shipment quote request with sender/recipient `RateAddress`, list of `RateParcel`, insurance, COD, coupon, and optional target carrier code. |
+| | `Rates\DTO\RateQuote` | Canonical rate response: `provider`, `carrierCode`, `carrierName`, `serviceName`, `netPrice`, `totalPrice`, `listPrice`, `currency`, `taxableWeightKg`, `dimensionalWeightApplied`, `estimatedDelivery`, `quoteToken`, `surcharges`, `warnings`, `raw`. |
+| | `Rates\DTO\AccountBalance` | Normalized prepaid wallet balance: `provider`, `balance`, `currency`, `raw`. |
+| | `Rates\DTO\RateAddress`, `RateParcel` | Value objects for locations and physical parcel metrics. |
+| Exceptions | `Rates\Exceptions\RateException` | Base exception. `RateProviderUnavailable` (connection timeouts, 5xx outages), `RateRejected` (validation, delivery area unserviceable). |
+
+## Multi-Driver Fault Isolation (`RateManager::quoteAll`)
+
+`RateManager::quoteAll(RateRequest $request, ?array $drivers = null): array` runs quoting concurrently across all selectable (or explicitly specified) drivers:
+1. **Fault Isolation**: Each driver's `quote()` call is wrapped in an independent `try/catch`. If one carrier API times out, fails authentication, or rejects a destination, the error is recorded under `$errors[$driverName]`, and healthy drivers continue uninterrupted.
+2. **Ascending Price Sorting**: All gathered `RateQuote` DTOs are sorted ascending by `totalPrice` (`usort($quotes, fn($a, $b) => $a->totalPrice <=> $b->totalPrice)`), ensuring the cheapest option is always presented first.
+3. **Wallet Balance Collection**: Any driver implementing `InspectsBalance` is queried for current funds (`balances[$driverName]`), gracefully ignoring balance errors if rate quoting succeeded.
+
+## Standalone Admin Shipping Quote Simulator
+
+Accessible at `GET /admin/shipping/quotes` (`ShippingQuotesController::index`):
+* Inertia view `Admin/Shipping/Quotes.tsx` renders a standalone quoting sandbox for store staff.
+* Prefills the store's default sender address from settings (`shipping.sender_*` or `store.*`).
+* Enables parcel weight/dimension customization, accessories (COD, insurance), coupon codes, and target carrier filtering.
+* Dispatches `POST /admin/shipping/quotes/calculate`: validates input and returns `{ quotes, errors, balances }`.
+
+## Order Ship Rate Comparison & Margin Delta
+
+Embedded directly into the order fulfillment process (`/admin/orders/{order}/ship`):
+* `POST /admin/orders/{order}/quotes` (`ShippingQuotesController::quoteOrder`):
+  * Builds a `RateRequest` using the customer's verified shipping address from the order and items/parcels.
+  * Gathers real-time quotes via `RateManager::quoteAll()`.
+  * Computes the **margin delta** for each quote against what the customer paid:
+    `margin_delta = round($order->shipping_amount - $quote->totalPrice, 2)`
+  * Returns `{ quotes, errors, balances, customer_shipping_cost }`.
+* **Visual Margin Indicators**:
+  * Positive margin delta (green): carrier quote is cheaper than customer shipping charge (profit).
+  * Negative margin delta (red): carrier quote exceeds customer shipping charge (loss).
+* **1-Click Quote Selection**:
+  * Clicking "Use quote" populates the ship form with the carrier code, selects the corresponding label driver, and attaches the `quote_token`.
+
+## End-to-End Quote-to-Label Purchase Flow
+
+When creating a label from a selected quote (`POST /admin/orders/{order}/ship` with `create_label: true` and `quote_token`):
+1. `ShippingService::shipWithLabel` passes `quoteToken` via `ShipmentBuilder` into `ShipmentRequest`.
+2. The active label driver (e.g. `DvaexpressLabelProvider`) detects `quoteToken` and skips ad-hoc quoting, calling `POST /order/{APIKEY}` with `codice_offerta = $quoteToken` to purchase the locked rate.
+3. The provider fetches the waybill via `POST /getwaybill/{APIKEY}`, decodes the PDF label, stores it on the private disk, records the `Shipment` record with the provider driver name, and transitions the order to `shipped`.
+
+---
 
 ## How to add a label carrier
 
