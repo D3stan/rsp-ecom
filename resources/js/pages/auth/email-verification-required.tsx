@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, ShieldCheck, Clock, ArrowRight } from 'lucide-react';
@@ -9,7 +9,7 @@ export default function EmailVerificationRequired() {
     const { t } = useTranslation();
     const handleResendVerification = () => {
         // This will be handled by the existing email verification notification system
-        window.location.href = route('verification.send');
+        router.post(route('verification.send'));
     };
 
     return (

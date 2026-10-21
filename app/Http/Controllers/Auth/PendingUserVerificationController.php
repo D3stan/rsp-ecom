@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\NewsletterSubscriber;
 use App\Models\PendingUserVerification;
+use App\Models\User;
 use App\Notifications\PendingUserEmailVerification;
 use App\Services\EmailService;
 use Illuminate\Auth\Events\Registered;
@@ -21,7 +22,7 @@ class PendingUserVerificationController extends Controller
     /**
      * Show the pending verification notice.
      */
-    public function show(Request $request): Response
+    public function show(Request $request): Response|RedirectResponse
     {
         $email = $request->session()->get('email');
         
@@ -29,8 +30,21 @@ class PendingUserVerificationController extends Controller
             return redirect()->route('register');
         }
 
+        $pendingUser = PendingUserVerification::where('email', $email)->first();
+
+        if (!$pendingUser) {
+            if (User::where('email', $email)->exists()) {
+                return redirect()->route('login')->with('status', 'Your email is already verified. Please log in.');
+            }
+            return redirect()->route('register');
+        }
+
+        // Keep email available in flash data for subsequent page refreshes
+        $request->session()->flash('email', $email);
+
         return Inertia::render('auth/verification-pending', [
             'email' => $email,
+            'status' => $request->session()->get('status'),
         ]);
     }
 
@@ -105,6 +119,8 @@ class PendingUserVerificationController extends Controller
         Notification::route('mail', $pendingUser->email)
             ->notify(new PendingUserEmailVerification($pendingUser));
 
-        return back()->with('status', 'verification-link-sent');
+        return back()
+            ->with('status', 'verification-link-sent')
+            ->with('email', $pendingUser->email);
     }
 }

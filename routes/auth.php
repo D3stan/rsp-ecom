@@ -41,7 +41,6 @@ Route::middleware('guest')->group(function () {
         ->name('verification.pending');
 
     Route::get('verification/verify/{token}/{email}', [PendingUserVerificationController::class, 'verify'])
-        ->middleware(['signed'])
         ->name('verification.verify.pending');
 
     Route::post('verification/resend', [PendingUserVerificationController::class, 'resend'])
