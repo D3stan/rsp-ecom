@@ -69,7 +69,7 @@ interface Props {
 }
 
 export default function EditProduct({ product, categories, sizes, uploadLimits }: Props) {
-    const { t, locale } = useTranslation();
+    const { t } = useTranslation();
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
     const [deletedVariantIds, setDeletedVariantIds] = useState<number[]>([]);
 

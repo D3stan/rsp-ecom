@@ -2,7 +2,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import useTranslation from '@/hooks/useTranslation';
 import { type TrackingEvent } from '@/types';
-import { ExternalLink, MapPin, Truck, XCircle } from 'lucide-react';
+import { Check, Copy, ExternalLink, MapPin, Truck, XCircle } from 'lucide-react';
+import { useState } from 'react';
 
 interface TrackedOrder {
     status: string;
@@ -22,11 +23,20 @@ interface TrackedOrder {
  */
 export default function OrderTracking({ order }: { order: TrackedOrder }) {
     const { t, locale } = useTranslation();
-    const status = order.status.toLowerCase();
+    const [copied, setCopied] = useState(false);
+    const status = (order.status ?? '').toLowerCase();
     const payment = (order.payment_status ?? '').toLowerCase();
 
     const statusLabel = (value?: string | null) => (value ? t(`tracking_admin.status.${value}`) : null);
-    const formatTime = (value?: string | null) => (value ? new Date(value).toLocaleString(locale) : '');
+    const formatTime = (value?: string | null) => {
+        if (!value) return '';
+        const date = new Date(value);
+        return isNaN(date.getTime()) ? '' : date.toLocaleString(locale);
+    };
+
+    if (status !== 'shipped' && status !== 'delivered' && status !== 'cancelled') {
+        return null;
+    }
 
     if (status === 'cancelled') {
         const refunded = payment === 'refunded' || payment === 'partially_refunded';
@@ -44,15 +54,44 @@ export default function OrderTracking({ order }: { order: TrackedOrder }) {
 
     const events = order.tracking_events ?? [];
 
+    const handleCopy = async () => {
+        if (!order.tracking_number) return;
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(order.tracking_number);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            }
+        } catch {
+            // Ignore clipboard failure
+        }
+    };
+
     return (
         <div className="space-y-3 rounded-lg border p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex flex-wrap items-center gap-2 text-sm">
                     <Truck className="h-4 w-4 text-muted-foreground" />
-                    {order.tracking_status ? (
+                    {order.tracking_number && (
+                        <div className="flex items-center gap-1.5 font-mono text-xs">
+                            <span>{order.tracking_number}</span>
+                            <button
+                                type="button"
+                                onClick={handleCopy}
+                                className="inline-flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                title={copied ? t('orders.copied') : t('orders.copy_tracking_number')}
+                                aria-label={copied ? t('orders.copied') : t('orders.copy_tracking_number')}
+                            >
+                                {copied ? (
+                                    <Check className="h-3.5 w-3.5 text-green-600" />
+                                ) : (
+                                    <Copy className="h-3.5 w-3.5" />
+                                )}
+                            </button>
+                        </div>
+                    )}
+                    {order.tracking_status && (
                         <Badge variant="secondary">{statusLabel(order.tracking_status)}</Badge>
-                    ) : (
-                        order.tracking_number && <span className="font-mono text-xs">{order.tracking_number}</span>
                     )}
                 </div>
                 {order.tracking_url && (

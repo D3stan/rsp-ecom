@@ -2,7 +2,7 @@ import { TranslationProvider, useTranslation } from '@/contexts/TranslationConte
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-function Consumer({ queryKey, replacements }: { queryKey: string; replacements?: Record<string, any> }) {
+function Consumer({ queryKey, replacements }: { queryKey: string; replacements?: Record<string, string | number> }) {
     const { t } = useTranslation();
     return <span>{t(queryKey, replacements)}</span>;
 }

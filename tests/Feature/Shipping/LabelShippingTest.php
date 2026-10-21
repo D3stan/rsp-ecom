@@ -117,7 +117,7 @@ it('streams the label PDF to the admin and 403s a customer', function () {
     $this->actingAs($customer)->get(route('admin.orders.shipments.label', [$this->order, $shipment]))->assertForbidden();
 });
 
-it('cancels a shipment through a driver that supports it, without changing the order status', function () {
+it('cancels a shipment through a driver that supports it and moves the order to processing', function () {
     $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody());
     $shipment = $this->order->fresh()->shipments()->first();
 
@@ -125,7 +125,8 @@ it('cancels a shipment through a driver that supports it, without changing the o
         ->assertSessionHas('success');
 
     expect($shipment->fresh()->status)->toBe(Shipment::STATUS_CANCELLED)
-        ->and($this->order->fresh()->status)->toBe('shipped'); // the admin then uses "undo ship"
+        ->and($this->order->fresh()->status)->toBe('processing')
+        ->and($this->order->fresh()->tracking_number)->toBeNull();
 });
 
 it('gives the ship page the labels flag, driver and prefilled parcels', function () {

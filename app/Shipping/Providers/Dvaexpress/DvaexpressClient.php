@@ -175,10 +175,12 @@ class DvaexpressClient
         $data = $response->json();
 
         if (! is_array($data)) {
+            $rawBody = trim($response->body());
+            $detail = $rawBody !== '' ? ': '.$this->redact(substr($rawBody, 0, 200)) : '';
             if ($response->successful()) {
                 throw $makeUnavailable('Dvaexpress returned invalid JSON response', $httpStatus, null);
             }
-            throw $makeRejected("Dvaexpress request failed (HTTP {$httpStatus})", $httpStatus, null);
+            throw $makeRejected("Dvaexpress request failed (HTTP {$httpStatus}){$detail}", $httpStatus, null);
         }
 
         $result = strtoupper(trim((string) ($data['result'] ?? '')));
@@ -221,8 +223,8 @@ class DvaexpressClient
      */
     public static function flattenErrorMessage(array $body, string $default = 'Dvaexpress request failed'): string
     {
-        $msg = trim((string) ($body['errormessage'] ?? $body['error_message'] ?? ''));
-        $details = $body['errordetails'] ?? $body['error_details'] ?? null;
+        $msg = trim((string) ($body['errormessage'] ?? $body['error_message'] ?? $body['message'] ?? $body['error'] ?? ''));
+        $details = $body['errordetails'] ?? $body['error_details'] ?? $body['errors'] ?? null;
 
         $detailStr = '';
         if (is_string($details)) {

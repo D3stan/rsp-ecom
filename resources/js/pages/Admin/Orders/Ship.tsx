@@ -92,15 +92,22 @@ export interface RateQuote {
     dimensional_weight_applied?: boolean;
     estimated_delivery?: string | null;
     quote_token?: string | null;
-    surcharges?: Record<string, any>;
+    surcharges?: Record<string, unknown>;
     warnings?: string[];
     margin_delta?: number;
-    [key: string]: any;
+    [key: string]: unknown;
+}
+
+export interface DriverBalance {
+    balance?: number;
+    amount?: number;
+    currency?: string;
+    [key: string]: unknown;
 }
 
 interface RatesResult {
     quotes: RateQuote[];
-    balances?: Record<string, any>;
+    balances?: Record<string, DriverBalance | number | null | undefined>;
     errors?: Record<string, string>;
 }
 
@@ -154,7 +161,6 @@ export default function OrderShip({
     default_label_driver = '',
     tracking_drivers = [],
     default_tracking_driver = '',
-    rate_drivers = [],
     shipping_cost,
 }: Props) {
     const { t } = useTranslation();
@@ -235,9 +241,10 @@ export default function OrderShip({
                 balances: result.balances ?? {},
                 errors: result.errors ?? {},
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : '';
             setRateComparisonError(
-                err.message || t('admin.orders.ship.compare_error', { defaultValue: 'Failed to compare live rates. Please try again.' }),
+                message || t('admin.orders.ship.compare_error', { defaultValue: 'Failed to compare live rates. Please try again.' }),
             );
         } finally {
             setComparingRates(false);

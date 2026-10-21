@@ -133,7 +133,14 @@ interface Props {
     refund?: RefundInfo;
     carriers?: Carrier[];
     // label shipments with a stored PDF (optional label layer)
-    shipments?: Array<{ id: number; carrier_code: string; driver?: string; tracking_number: string | null; can_cancel: boolean }>;
+    shipments?: Array<{
+        id: number;
+        carrier_code: string;
+        driver?: string;
+        tracking_number: string | null;
+        can_cancel: boolean;
+        status?: string;
+    }>;
     stock?: StockInfo;
 }
 
@@ -267,6 +274,21 @@ export default function OrderShow({
             {
                 onSuccess: () => {
                     setIsAddingTracking(false);
+                },
+                onFinish: () => setIsUpdating(false),
+            },
+        );
+    };
+
+    const clearTrackingNumber = () => {
+        setIsUpdating(true);
+        router.patch(
+            `/admin/orders/${order.id}`,
+            { tracking_number: null },
+            {
+                onSuccess: () => {
+                    setIsAddingTracking(false);
+                    setTrackingNumber('');
                 },
                 onFinish: () => setIsUpdating(false),
             },
@@ -457,9 +479,7 @@ export default function OrderShow({
                                         <div className="grid grid-cols-1 gap-4">
                                             <div>
                                                 <p className="text-sm font-medium text-muted-foreground">{t('admin.orders.tracking_number')}</p>
-                                                {order.tracking_number ? (
-                                                    <p className="font-mono text-sm">{order.tracking_number}</p>
-                                                ) : isAddingTracking ? (
+                                                {isAddingTracking ? (
                                                     <div className="mt-1 flex space-x-2">
                                                         <Input
                                                             value={trackingNumber}
@@ -485,10 +505,44 @@ export default function OrderShow({
                                                             {t('admin.orders.cancel')}
                                                         </Button>
                                                     </div>
+                                                ) : order.tracking_number ? (
+                                                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                        <span className="font-mono text-sm">{order.tracking_number}</span>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-7 px-2 text-xs"
+                                                            onClick={() => {
+                                                                setTrackingNumber(order.tracking_number || '');
+                                                                setIsAddingTracking(true);
+                                                            }}
+                                                            disabled={isUpdating}
+                                                        >
+                                                            <Edit className="mr-1 h-3 w-3" />
+                                                            {t('admin.orders.edit_tracking')}
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-7 px-2 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                            onClick={clearTrackingNumber}
+                                                            disabled={isUpdating}
+                                                        >
+                                                            <XCircle className="mr-1 h-3 w-3" />
+                                                            {t('admin.orders.clear_tracking')}
+                                                        </Button>
+                                                    </div>
                                                 ) : (
-                                                    <div className="flex items-center space-x-2">
+                                                    <div className="mt-1 flex items-center space-x-2">
                                                         <p className="text-sm text-muted-foreground">{t('admin.orders.not_assigned')}</p>
-                                                        <Button size="sm" variant="outline" onClick={() => setIsAddingTracking(true)}>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                setTrackingNumber('');
+                                                                setIsAddingTracking(true);
+                                                            }}
+                                                        >
                                                             <Plus className="mr-1 h-3 w-3" />
                                                             {t('admin.orders.add')}
                                                         </Button>
@@ -578,6 +632,15 @@ export default function OrderShow({
                                                         {shipment.driver && (
                                                             <Badge variant="secondary" className="text-xs">
                                                                 {shipment.driver}
+                                                            </Badge>
+                                                        )}
+                                                        {shipment.status === 'cancelled' ? (
+                                                            <Badge variant="outline" className="border-red-200 bg-red-50 text-xs text-red-700">
+                                                                {t('admin.orders.ship.status_cancelled')}
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge variant="outline" className="border-green-200 bg-green-50 text-xs text-green-700">
+                                                                {t('admin.orders.ship.status_active')}
                                                             </Badge>
                                                         )}
                                                         <div className="ml-auto flex gap-2">

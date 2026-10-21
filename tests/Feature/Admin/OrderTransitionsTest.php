@@ -3,7 +3,9 @@
 use App\Exceptions\InvalidOrderTransition;
 use App\Models\Category;
 use App\Models\Order;
+use App\Models\OrderEvent;
 use App\Models\Product;
+use App\Models\Shipment;
 use App\Models\Size;
 use App\Models\User;
 use Illuminate\Support\Facades\Queue;
@@ -203,4 +205,180 @@ it('passes the allowed next statuses to the admin order pages', function () {
 
     $this->actingAs($this->admin)->get(route('admin.orders.index'))
         ->assertInertia(fn (Assert $page) => $page->where('orders.data.0.allowed_transitions', ['delivered', 'processing']));
+});
+
+it('undoing shipment clears all tracking fields on the order', function () {
+    $order = transitionsOrder('shipped');
+    $order->update([
+        'tracking_number' => 'TRK123456',
+        'tracking_carrier' => 'dhl',
+        'tracking_driver' => 'manual',
+        'tracking_status' => 'in_transit',
+        'tracking_last_synced_at' => now(),
+        'tracking_next_sync_at' => now()->addHours(2),
+        'tracking_started_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.orders.update-status', $order), [
+            'status' => 'processing',
+            'reason' => 'Customer requested address change',
+        ])
+        ->assertSessionHas('success');
+
+    $fresh = $order->fresh();
+    expect($fresh->status)->toBe('processing')
+        ->and($fresh->tracking_number)->toBeNull()
+        ->and($fresh->tracking_carrier)->toBeNull()
+        ->and($fresh->tracking_driver)->toBeNull()
+        ->and($fresh->tracking_status)->toBeNull()
+        ->and($fresh->tracking_last_synced_at)->toBeNull()
+        ->and($fresh->tracking_next_sync_at)->toBeNull()
+        ->and($fresh->tracking_started_at)->toBeNull();
+});
+
+it('undoing shipment sets active shipments to cancelled and evicts relation cache', function () {
+    $order = transitionsOrder('shipped');
+    $shipment = $order->shipments()->create([
+        'carrier_code' => 'dhl',
+        'driver' => 'manual',
+        'tracking_number' => 'TRK123456',
+        'status' => Shipment::STATUS_CREATED,
+    ]);
+
+    expect($order->shipments)->toHaveCount(1)
+        ->and($order->shipments->first()->status)->toBe(Shipment::STATUS_CREATED);
+
+    $order->transitionTo('processing', $this->admin, 'Parcel returned');
+
+    expect($shipment->fresh()->status)->toBe(Shipment::STATUS_CANCELLED)
+        ->and($order->shipments->first()->status)->toBe(Shipment::STATUS_CANCELLED);
+});
+
+it('undoing shipment records revoked_tracking in the audit event payload', function () {
+    $order = transitionsOrder('shipped');
+    $order->update([
+        'tracking_number' => 'TRK123456',
+        'tracking_carrier' => 'dhl',
+        'tracking_driver' => 'manual',
+    ]);
+
+    $order->transitionTo('processing', $this->admin, 'Address correction');
+
+    $event = $order->events()
+        ->where('type', OrderEvent::TYPE_STATUS_CHANGED)
+        ->where('from_status', 'shipped')
+        ->where('to_status', 'processing')
+        ->latest('id')
+        ->first();
+
+    expect($event)->not->toBeNull()
+        ->and($event->payload['reason'])->toBe('Address correction')
+        ->and($event->payload['meta']['revoked_tracking'])->toBe([
+            'tracking_number' => 'TRK123456',
+            'tracking_carrier' => 'dhl',
+            'tracking_driver' => 'manual',
+        ]);
+});
+
+it('cancelling a shipment automatically transitions order to processing when no other active shipments exist', function () {
+    $order = transitionsOrder('shipped');
+    $shipment = $order->shipments()->create([
+        'carrier_code' => 'dhl',
+        'driver' => 'manual',
+        'tracking_number' => 'TRK123456',
+        'status' => Shipment::STATUS_CREATED,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->delete(route('admin.orders.shipments.cancel', [$order, $shipment]))
+        ->assertSessionHas('success', 'Shipment cancelled at the carrier and order moved back to processing.');
+
+    expect($shipment->fresh()->status)->toBe(Shipment::STATUS_CANCELLED)
+        ->and($order->fresh()->status)->toBe('processing')
+        ->and($order->fresh()->tracking_number)->toBeNull();
+});
+
+it('cancelling a shipment keeps order in shipped when another active shipment exists', function () {
+    $order = transitionsOrder('shipped');
+    $order->update(['tracking_number' => 'TRK1']);
+    $shipment1 = $order->shipments()->create([
+        'carrier_code' => 'dhl',
+        'driver' => 'manual',
+        'tracking_number' => 'TRK1',
+        'status' => Shipment::STATUS_CREATED,
+    ]);
+    $shipment2 = $order->shipments()->create([
+        'carrier_code' => 'dhl',
+        'driver' => 'manual',
+        'tracking_number' => 'TRK2',
+        'status' => Shipment::STATUS_CREATED,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->delete(route('admin.orders.shipments.cancel', [$order, $shipment1]))
+        ->assertSessionHas('success', 'Shipment cancelled at the carrier.');
+
+    expect($shipment1->fresh()->status)->toBe(Shipment::STATUS_CANCELLED)
+        ->and($shipment2->fresh()->status)->toBe(Shipment::STATUS_CREATED)
+        ->and($order->fresh()->status)->toBe('shipped');
+});
+
+it('cancelling an order from processing cancels any active shipments', function () {
+    $order = transitionsOrder('processing');
+    $shipment = $order->shipments()->create([
+        'carrier_code' => 'dhl',
+        'driver' => 'manual',
+        'tracking_number' => 'TRK123456',
+        'status' => Shipment::STATUS_CREATED,
+    ]);
+
+    $order->transitionTo('cancelled', $this->admin, 'Cancelled by admin');
+
+    expect($shipment->fresh()->status)->toBe(Shipment::STATUS_CANCELLED)
+        ->and($order->fresh()->status)->toBe('cancelled');
+});
+
+it('customerTrackingArray returns empty when order is not shipped or delivered', function () {
+    $order = transitionsOrder('processing');
+    $order->update(['tracking_number' => 'TRK123456', 'tracking_carrier' => 'dhl']);
+
+    $trackingData = $order->customerTrackingArray();
+
+    expect($trackingData)->toBe([
+        'tracking_url' => null,
+        'carrier_name' => null,
+        'tracking_events' => [],
+    ]);
+});
+
+it('customerTrackingArray filters events by normalized current tracking number', function () {
+    $order = transitionsOrder('shipped');
+    $order->update(['tracking_number' => 'TRK 123']);
+
+    $order->trackingEvents()->create([
+        'provider' => 'fake',
+        'event_hash' => 'hash1',
+        'tracking_number' => 'TRK123',
+        'status' => 'in_transit',
+        'description' => 'In transit',
+        'location' => 'Rome',
+        'occurred_at' => now(),
+    ]);
+
+    $order->trackingEvents()->create([
+        'provider' => 'fake',
+        'event_hash' => 'hash2',
+        'tracking_number' => 'OLD999',
+        'status' => 'delivered',
+        'description' => 'Delivered old',
+        'location' => 'Milan',
+        'occurred_at' => now()->subDay(),
+    ]);
+
+    $order->load('trackingEvents');
+    $trackingData = $order->customerTrackingArray();
+
+    expect($trackingData['tracking_events'])->toHaveCount(1)
+        ->and($trackingData['tracking_events'][0]['description'])->toBe('In transit');
 });

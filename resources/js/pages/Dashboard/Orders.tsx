@@ -1,16 +1,15 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import OrderStatusTimeline from '@/components/orders/OrderStatusTimeline';
 import OrderTracking from '@/components/orders/OrderTracking';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Timeline, TimelineBody, TimelineConnector, TimelineHeader, TimelineIcon, TimelineItem, TimelineTitle } from '@/components/ui/timeline';
 import AppLayout from '@/layouts/app-layout';
 import useTranslation from '@/hooks/useTranslation';
 import { type Order, type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { 
     CheckCircle, 
-    Circle, 
     Package, 
     ShoppingBag, 
     Clock, 
@@ -29,52 +28,6 @@ interface OrdersPageProps {
     orders: Order[];
     userReviews?: { product_id: number }[]; // Products the user has already reviewed
 }
-
-const OrderStatusTimeline: React.FC<{ status: string }> = ({ status }) => {
-    const { t } = useTranslation();
-    
-    const statuses = [
-        { key: 'pending', label: t('orders.timeline.order_placed') },
-        { key: 'processing', label: t('orders.timeline.processing') },
-        { key: 'shipped', label: t('orders.timeline.shipped') },
-        { key: 'delivered', label: t('orders.timeline.delivered') }
-    ];
-    
-    const currentStatusIndex = statuses.findIndex(s => s.key === status.toLowerCase());
-
-    const getStatusIcon = (stepIndex: number) => {
-        if (stepIndex < currentStatusIndex) {
-            return <CheckCircle className="h-4 w-4 text-green-500" />;
-        }
-        if (stepIndex === currentStatusIndex) {
-            return <Package className="h-4 w-4 text-blue-500" />;
-        }
-        return <Circle className="h-4 w-4 text-gray-400" />;
-    };
-
-    const getStatusColor = (stepIndex: number) => {
-        if (stepIndex < currentStatusIndex) return 'text-green-600';
-        if (stepIndex === currentStatusIndex) return 'text-blue-600 font-medium';
-        return 'text-gray-400';
-    };
-
-    return (
-        <Timeline>
-            {statuses.map((step, index) => (
-                <TimelineItem key={step.key}>
-                    {index < statuses.length - 1 && <TimelineConnector />}
-                    <TimelineHeader>
-                        <TimelineIcon>{getStatusIcon(index)}</TimelineIcon>
-                        <TimelineTitle className={`text-sm ${getStatusColor(index)}`}>
-                            {step.label}
-                        </TimelineTitle>
-                    </TimelineHeader>
-                    <TimelineBody />
-                </TimelineItem>
-            ))}
-        </Timeline>
-    );
-};
 
 const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => {
     const { t, locale } = useTranslation();

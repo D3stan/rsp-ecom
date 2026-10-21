@@ -69,7 +69,8 @@ class SpediamoRateProvider implements RateProvider
 
             if (! empty($data['errors']) && is_array($data['errors'])) {
                 $errorMsg = implode(', ', array_map(
-                    fn ($k, $v) => is_scalar($v) ? "$k: $v" : (is_array($v) ? "$k: ".implode(';', $v) : $k),
+                    fn ($k, $v) => (is_string($k) && ! is_numeric($k) ? "$k: " : '')
+                        .(is_scalar($v) ? (string) $v : (is_array($v) ? implode(';', $v) : json_encode($v))),
                     array_keys($data['errors']),
                     $data['errors'],
                 ));
@@ -100,15 +101,21 @@ class SpediamoRateProvider implements RateProvider
         $sender = $request->sender;
         $recipient = $request->recipient;
 
-        $senderCountry = strtoupper(trim((string) $sender->country));
-        $recipientCountry = strtoupper(trim((string) $recipient->country));
-        $type = ($senderCountry === 'IT' && $recipientCountry === 'IT') ? 'DOMESTIC' : 'INTERNATIONAL';
+        if (trim((string) $sender->postalCode) === '' || trim((string) $sender->city) === '') {
+            throw new RateRejected(
+                'Spediamo: Sender address requires at least postal code and city (configure shipping.sender_postal_code and shipping.sender_city in settings or .env).'
+            );
+        }
+
+        if (trim((string) $recipient->postalCode) === '' || trim((string) $recipient->city) === '') {
+            throw new RateRejected('Spediamo: Recipient address requires at least postal code and city.');
+        }
 
         $senderName = property_exists($sender, 'company') && ! empty($sender->company) ? $sender->company : $sender->name;
         $recipientName = property_exists($recipient, 'company') && ! empty($recipient->company) ? $recipient->company : $recipient->name;
 
         $payload = [
-            'type' => $type,
+            'type' => 'packages',
             'senderName' => $senderName,
             'senderContactName' => $sender->name,
             'senderCountry' => $sender->country,
@@ -302,7 +309,8 @@ class SpediamoRateProvider implements RateProvider
 
         if (! empty($body['errors']) && is_array($body['errors'])) {
             return implode(', ', array_map(
-                fn ($k, $v) => is_scalar($v) ? "$k: $v" : (is_array($v) ? "$k: ".implode(';', $v) : $k),
+                fn ($k, $v) => (is_string($k) && ! is_numeric($k) ? "$k: " : '')
+                    .(is_scalar($v) ? (string) $v : (is_array($v) ? implode(';', $v) : json_encode($v))),
                 array_keys($body['errors']),
                 $body['errors'],
             ));

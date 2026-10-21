@@ -289,7 +289,13 @@ class ShippingService
      */
     public function cancelShipment(Shipment $shipment): void
     {
-        if ($shipment->isManual() || ! $shipment->external_id) {
+        if ($shipment->isManual()) {
+            $shipment->update(['status' => Shipment::STATUS_CANCELLED]);
+
+            return;
+        }
+
+        if (! $shipment->external_id) {
             throw new \App\Shipping\Labels\Exceptions\LabelRejected('This shipment cannot be cancelled at the carrier.');
         }
 

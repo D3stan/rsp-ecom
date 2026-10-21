@@ -10,12 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { ChevronDown, Package, Settings, Star } from 'lucide-react';
 import { useState } from 'react';
 import { route } from 'ziggy-js';
 
-interface FormData {
+type ProductFormData = {
     name: string;
     category_id: string;
     size_id: string;
@@ -35,7 +35,8 @@ interface FormData {
         sort_order: number;
         images: File[];
     }>;
-}
+    error?: string;
+};
 
 interface Category {
     id: number;
@@ -61,10 +62,10 @@ interface Props {
 }
 
 export default function CreateProduct({ categories, sizes, uploadLimits }: Props) {
-    const { t, locale } = useTranslation();
+    const { t } = useTranslation();
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
-    const { data, setData, post, processing, errors } = useForm<FormData>({
+    const { data, setData, processing, errors } = useForm<ProductFormData>({
         name: '',
         category_id: '',
         size_id: '',
@@ -156,8 +157,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
             });
         });
 
-        post(route('admin.products.store'), {
-            data: formData,
+        router.post(route('admin.products.store'), formData, {
             forceFormData: true,
         });
     };

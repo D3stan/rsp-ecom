@@ -1,4 +1,5 @@
 import Header from '@/components/header';
+import OrderStatusTimeline from '@/components/orders/OrderStatusTimeline';
 import OrderTracking from '@/components/orders/OrderTracking';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -92,7 +93,19 @@ export default function GuestOrderShow({ order, supportEmail }: Props) {
                     </div>
 
                     <div className="space-y-6">
-                        {(order.tracking_number || order.status === 'cancelled') && (
+                        <Card className="bg-white">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-gray-800">
+                                    <Package className="h-5 w-5" />
+                                    {t('orders.order_status')}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <OrderStatusTimeline status={order.status} />
+                            </CardContent>
+                        </Card>
+
+                        {(order.status === 'shipped' || order.status === 'delivered' || order.status === 'cancelled') && (order.tracking_number || order.status === 'cancelled') && (
                             <Card className="bg-white">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-gray-800">

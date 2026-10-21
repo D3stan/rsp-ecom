@@ -114,15 +114,58 @@ class RateManager extends Manager
 
     public function senderFromSettings(): RateAddress
     {
+        $country = trim((string) settings('shipping.sender_country', ''));
+        if ($country === '') {
+            $country = trim((string) (settings('shipping.default_country') ?: config('shipping.labels.sender.country', 'IT')));
+        }
+        if ($country === '') {
+            $country = 'IT';
+        }
+
+        $postalCode = trim((string) settings('shipping.sender_postal_code', ''));
+        if ($postalCode === '') {
+            $postalCode = trim((string) config('shipping.labels.sender.postal_code', ''));
+        }
+
+        $city = trim((string) settings('shipping.sender_city', ''));
+        if ($city === '') {
+            $city = trim((string) config('shipping.labels.sender.city', ''));
+        }
+
+        $province = trim((string) settings('shipping.sender_province', ''));
+        if ($province === '') {
+            $province = trim((string) config('shipping.labels.sender.province', ''));
+        }
+
+        $name = trim((string) settings('shipping.sender_name', ''));
+        if ($name === '') {
+            $name = trim((string) (settings('store.name') ?: config('shipping.labels.sender.name', '')));
+        }
+
+        $street = trim((string) settings('shipping.sender_street', ''));
+        if ($street === '') {
+            $street = trim((string) (settings('store.address') ?: config('shipping.labels.sender.street', '')));
+        }
+
+        $phone = trim((string) settings('shipping.sender_phone', ''));
+        if ($phone === '') {
+            $phone = trim((string) (settings('contact.phone') ?: config('shipping.labels.sender.phone', '')));
+        }
+
+        $email = trim((string) settings('shipping.sender_email', ''));
+        if ($email === '') {
+            $email = trim((string) (settings('contact.support_email') ?: config('shipping.labels.sender.email', '')));
+        }
+
         return new RateAddress(
-            postalCode: (string) settings('shipping.sender_postal_code', ''),
-            city: (string) settings('shipping.sender_city', ''),
-            province: (string) settings('shipping.sender_province', ''),
-            country: (string) settings('shipping.sender_country', settings('shipping.default_country', 'IT')),
-            name: (string) settings('shipping.sender_name', settings('store.name', '')),
-            street: (string) settings('shipping.sender_street', settings('store.address', '')),
-            phone: (string) settings('shipping.sender_phone', settings('contact.phone', '')),
-            email: (string) settings('shipping.sender_email', settings('contact.support_email', '')),
+            postalCode: $postalCode,
+            city: $city,
+            province: $province,
+            country: $country,
+            name: $name,
+            street: $street,
+            phone: $phone,
+            email: $email,
         );
     }
 
@@ -204,6 +247,13 @@ class RateManager extends Manager
         unset($this->drivers[$driver]);
 
         return parent::extend($driver, $callback);
+    }
+
+    public function purgeDriver(string $driver): self
+    {
+        unset($this->drivers[$driver]);
+
+        return $this;
     }
 
     /**

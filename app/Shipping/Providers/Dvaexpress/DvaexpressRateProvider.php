@@ -49,6 +49,18 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
      */
     public function quote(RateRequest $request): array
     {
+        if (trim((string) $request->sender->postalCode) === '' || trim((string) $request->sender->city) === '') {
+            throw new \App\Shipping\Rates\Exceptions\RateRejected(
+                'Dvaexpress: Sender address requires at least postal code and city (configure shipping.sender_postal_code and shipping.sender_city in settings or .env).'
+            );
+        }
+
+        if (trim((string) $request->recipient->postalCode) === '' || trim((string) $request->recipient->city) === '') {
+            throw new \App\Shipping\Rates\Exceptions\RateRejected(
+                'Dvaexpress: Recipient address requires at least postal code and city.'
+            );
+        }
+
         $senderCountry = strtoupper(trim($request->sender->country));
         $recipientCountry = strtoupper(trim($request->recipient->country));
         $tipoSpedizione = $this->resolveShipmentType($senderCountry, $recipientCountry);

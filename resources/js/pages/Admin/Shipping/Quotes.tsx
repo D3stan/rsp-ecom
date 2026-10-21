@@ -11,23 +11,16 @@ import { cn } from '@/lib/utils';
 import { Head } from '@inertiajs/react';
 import {
     AlertCircle,
-    ArrowDownRight,
-    ArrowRight,
-    CheckCircle2,
     Clock,
-    HelpCircle,
     Info,
-    Layers,
     Loader2,
     MapPin,
     Package,
     Plus,
     Receipt,
-    RefreshCw,
     Scale,
     Shield,
     Sparkles,
-    Tag,
     Trash2,
     Truck,
     Wallet,
@@ -62,10 +55,10 @@ export interface RateQuote {
     dimensional_weight_applied?: boolean;
     estimated_delivery?: string | null;
     quote_token?: string | null;
-    surcharges?: Record<string, any>;
+    surcharges?: Record<string, unknown>;
     warnings?: string[];
     margin_delta?: number;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface QuoteParcel {
@@ -83,15 +76,21 @@ interface Props {
     default_parcel_weight_kg?: number;
 }
 
+export interface DriverBalance {
+    balance?: number;
+    amount?: number;
+    currency?: string;
+    [key: string]: unknown;
+}
+
 interface CalculateResponse {
     quotes: RateQuote[];
-    balances?: Record<string, any>;
+    balances?: Record<string, DriverBalance | number | null | undefined>;
     errors?: Record<string, string>;
 }
 
 export default function ShippingQuotes({
     sender,
-    carriers = [],
     rate_drivers = [],
     default_parcel_weight_kg = 1.0,
 }: Props) {
@@ -226,9 +225,10 @@ export default function ShippingQuotes({
                 balances: data.balances ?? {},
                 errors: data.errors ?? {},
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : '';
             setCalculationError(
-                err.message ||
+                message ||
                     t('admin.shipping.quotes.error_failed', {
                         defaultValue: 'Failed to calculate quotes. Please verify addresses and try again.',
                     }),

@@ -10,7 +10,7 @@ interface Props {
 
 /** GPSR safety information of a product (products.safety_information), shown on the product page. */
 export function SafetyInformationField({ value, onChange, error }: Props) {
-    const { t, locale } = useTranslation();
+    const { t } = useTranslation();
 
     return (
         <div className="md:col-span-2">

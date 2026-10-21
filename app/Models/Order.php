@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
 
 class Order extends Model
 {
@@ -109,7 +108,7 @@ class Order extends Model
         static::updating(function ($order) {
             if ($order->isDirty('status')
                 && $order->status === 'cancelled'
-                && !$order->isDirty('payment_status')
+                && ! $order->isDirty('payment_status')
                 && $order->isPaymentPending()) {
                 $order->payment_status = 'cancelled';
             }
@@ -376,6 +375,30 @@ class Order extends Model
                 throw InvalidOrderTransition::notPaid((string) $this->order_number, (string) $this->payment_status);
             }
 
+            if ($from === 'shipped' && $to === 'processing') {
+                $meta['revoked_tracking'] = [
+                    'tracking_number' => $this->tracking_number,
+                    'tracking_carrier' => $this->tracking_carrier,
+                    'tracking_driver' => $this->tracking_driver,
+                ];
+
+                $this->tracking_number = null;
+                $this->tracking_carrier = null;
+                $this->tracking_driver = null;
+                $this->tracking_status = null;
+                $this->tracking_last_synced_at = null;
+                $this->tracking_next_sync_at = null;
+                $this->tracking_started_at = null;
+
+                $this->shipments()->where('status', Shipment::STATUS_CREATED)->update(['status' => Shipment::STATUS_CANCELLED]);
+                $this->unsetRelation('shipments');
+            }
+
+            if ($from === 'processing' && $to === 'cancelled') {
+                $this->shipments()->where('status', Shipment::STATUS_CREATED)->update(['status' => Shipment::STATUS_CANCELLED]);
+                $this->unsetRelation('shipments');
+            }
+
             $this->status = $to;
 
             if ($to === 'delivered') {
@@ -435,7 +458,7 @@ class Order extends Model
     public static function generateOrderNumber(): string
     {
         do {
-            $orderNumber = 'ORD-' . date('Y') . '-' . str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
+            $orderNumber = 'ORD-'.date('Y').'-'.str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
         } while (static::where('order_number', $orderNumber)->exists());
 
         return $orderNumber;
@@ -444,12 +467,12 @@ class Order extends Model
     // Payment helper methods
     public function hasStripePaymentIntent(): bool
     {
-        return !empty($this->stripe_payment_intent_id);
+        return ! empty($this->stripe_payment_intent_id);
     }
 
     public function hasStripeCheckoutSession(): bool
     {
-        return !empty($this->stripe_checkout_session_id);
+        return ! empty($this->stripe_checkout_session_id);
     }
 
     public function isPaymentCompleted(): bool
@@ -500,6 +523,7 @@ class Order extends Model
         if ($paymentMethod) {
             $this->payment_method = $paymentMethod;
         }
+
         return $this->save();
     }
 
@@ -558,9 +582,9 @@ class Order extends Model
 
         // Guest orders and orders of a deleted account: the name on the billing address
         if ($this->billingAddress) {
-            return trim($this->billingAddress->first_name . ' ' . $this->billingAddress->last_name);
+            return trim($this->billingAddress->first_name.' '.$this->billingAddress->last_name);
         }
-        
+
         return null;
     }
 
@@ -755,8 +779,27 @@ class Order extends Model
      */
     public function customerTrackingArray(): array
     {
-        $events = $this->relationLoaded('trackingEvents')
-            ? $this->trackingEvents
+        if ($this->status !== 'shipped' && $this->status !== 'delivered') {
+            return [
+                'tracking_url' => null,
+                'carrier_name' => null,
+                'tracking_events' => [],
+            ];
+        }
+
+        $events = [];
+
+        if ($this->relationLoaded('trackingEvents')) {
+            $trackingCollection = $this->trackingEvents;
+
+            if ($this->tracking_number !== null && $this->tracking_number !== '') {
+                $currentNormalized = TrackingRequest::normalizeNumber($this->tracking_number);
+                $trackingCollection = $trackingCollection->filter(
+                    fn (ShipmentTrackingEvent $event) => TrackingRequest::normalizeNumber($event->tracking_number) === $currentNormalized
+                );
+            }
+
+            $events = $trackingCollection
                 ->sortByDesc('occurred_at')
                 ->values()
                 ->map(fn (ShipmentTrackingEvent $event) => [
@@ -766,8 +809,8 @@ class Order extends Model
                     'location' => $event->location,
                     'occurred_at' => $event->occurred_at?->toISOString(),
                 ])
-                ->all()
-            : [];
+                ->all();
+        }
 
         return [
             'tracking_url' => $this->trackingUrl(),
@@ -783,7 +826,7 @@ class Order extends Model
     public function toFrontendArray(): array
     {
         $data = $this->toArray();
-        
+
         // Convert decimal strings to floats for frontend
         $data['subtotal'] = (float) $this->subtotal;
         $data['tax_amount'] = (float) $this->tax_amount;
@@ -791,13 +834,13 @@ class Order extends Model
         $data['shipping_amount'] = (float) $this->shipping_amount;
         $data['discount_amount'] = (float) $this->discount_amount;
         $data['total_amount'] = (float) $this->total_amount;
-        
+
         // Include order items with proper formatting
         if ($this->relationLoaded('orderItems')) {
             $data['orderItems'] = $this->orderItems->map(function ($item) {
                 // Get product information, handling cases where product_id might be null
                 $product = $item->product_id ? $item->product : null;
-                
+
                 return [
                     'id' => $item->id,
                     'product' => [
@@ -816,21 +859,21 @@ class Order extends Model
         } else {
             $data['orderItems'] = [];
         }
-        
+
         // Include address relationships
         if ($this->relationLoaded('billingAddress')) {
             $data['billingAddress'] = $this->billingAddress ? $this->billingAddress->toArray() : null;
         }
-        
+
         if ($this->relationLoaded('shippingAddress')) {
             $data['shippingAddress'] = $this->shippingAddress ? $this->shippingAddress->toArray() : null;
         }
-        
+
         // Include user relationship
         if ($this->relationLoaded('user')) {
             $data['user'] = $this->user ? $this->user->toArray() : null;
         }
-        
+
         return $data;
     }
 }

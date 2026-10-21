@@ -20,8 +20,8 @@ use App\Shipping\Labels\Exceptions\LabelRejected;
 use App\Shipping\Labels\ShipmentBuilder;
 use App\Shipping\ShipInput;
 use App\Shipping\ShippingService;
-use App\Support\Revenue;
 use App\Shipping\Tracking\TrackingManager;
+use App\Support\Revenue;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -65,11 +65,11 @@ class OrdersController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($userQuery) use ($search) {
-                      $userQuery->where('name', 'like', "%{$search}%")
-                               ->orWhere('email', 'like', "%{$search}%");
-                  })
-                  ->orWhere('guest_email', 'like', "%{$search}%");
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    })
+                    ->orWhere('guest_email', 'like', "%{$search}%");
             });
         }
 
@@ -163,14 +163,15 @@ class OrdersController extends Controller
                     : (object) [],
             ],
             'carriers' => app(TrackingManager::class)->carriers(),
-            // Label shipments (created, newest first): "Download label" and "Cancel shipment" on the order page
-            'shipments' => $order->shipments()->where('status', Shipment::STATUS_CREATED)->whereNotNull('label_path')->reorder()->latest('id')->get()
+            // Label shipments (newest first): "Download label" and "Cancel shipment" on the order page
+            'shipments' => $order->shipments()->whereNotNull('label_path')->reorder()->latest('id')->get()
                 ->map(fn (Shipment $shipment) => [
                     'id' => $shipment->id,
+                    'status' => $shipment->status,
                     'carrier_code' => $shipment->carrier_code,
                     'driver' => $shipment->driver,
                     'tracking_number' => $shipment->tracking_number,
-                    'can_cancel' => $this->driverCancels($shipment),
+                    'can_cancel' => $shipment->status === Shipment::STATUS_CREATED && $this->driverCancels($shipment),
                 ])->values()->all(),
             // Internal stock bookkeeping (hidden from every customer-facing array): units sold beyond the stock
             'stock' => [
@@ -192,7 +193,7 @@ class OrdersController extends Controller
             'user',
             'orderItems.product', 'orderItems.product.defaultVariant',
             'billingAddress',
-            'shippingAddress'
+            'shippingAddress',
         ]);
 
         return Inertia::render('Admin/Orders/Edit', [
@@ -608,10 +609,10 @@ class OrdersController extends Controller
     }
 
     /**
-     * Cancel a shipment at the carrier (driver permitting). Does not change the order status: the admin then uses
-     * "undo ship" to move the order back to processing.
+     * Cancel a shipment at the carrier (driver permitting). When no other active shipments remain,
+     * it automatically transitions the order back to processing.
      */
-    public function cancelShipment(Order $order, Shipment $shipment, ShippingService $shipping)
+    public function cancelShipment(Request $request, Order $order, Shipment $shipment, ShippingService $shipping)
     {
         abort_unless($shipment->order_id === $order->id, 404);
 
@@ -623,7 +624,25 @@ class OrdersController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        return back()->with('success', 'Shipment cancelled at the carrier. Use "Undo shipment" to move the order back to processing.');
+        $movedToProcessing = false;
+
+        DB::transaction(function () use ($order, $shipment, $request, &$movedToProcessing) {
+            $hasOtherActive = $order->shipments()
+                ->where('id', '!=', $shipment->id)
+                ->where('status', Shipment::STATUS_CREATED)
+                ->exists();
+
+            if (! $hasOtherActive && $order->status === 'shipped') {
+                $order->transitionTo('processing', $request->user(), 'Shipment label cancelled at carrier');
+                $movedToProcessing = true;
+            }
+        });
+
+        $message = $movedToProcessing
+            ? 'Shipment cancelled at the carrier and order moved back to processing.'
+            : 'Shipment cancelled at the carrier.';
+
+        return back()->with('success', $message);
     }
 
     /**

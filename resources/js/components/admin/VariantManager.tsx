@@ -33,7 +33,7 @@ interface VariantManagerProps {
 }
 
 export function VariantManager({ variants, baseSku, onVariantsChange, validationErrors = {}, uploadLimits }: VariantManagerProps) {
-    const { t, locale } = useTranslation();
+    const { t } = useTranslation();
     const [previews, setPreviews] = useState<Record<number, string[]>>({});
 
     const addVariant = () => {
