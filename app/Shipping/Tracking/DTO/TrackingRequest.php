@@ -11,6 +11,7 @@ final readonly class TrackingRequest
         public string $trackingNumber,
         public ?string $carrierCode = null,
         public ?string $orderReference = null,
+        public ?string $providerCode = null,
     ) {}
 
     /**

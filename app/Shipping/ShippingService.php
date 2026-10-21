@@ -121,6 +121,17 @@ class ShippingService
         $result = $provider->createShipment($request);
         $document = $provider->label($result);
 
+        // When a label provider obtains the carrier's real waybill number during waybill generation,
+        // promote it onto the ShipmentResult so the customer and order receive the real waybill.
+        if ($document->trackingNumber !== null && trim($document->trackingNumber) !== '') {
+            $result = new ShipmentResult(
+                externalId: $result->externalId,
+                trackingNumber: trim($document->trackingNumber),
+                carrierCode: $result->carrierCode,
+                raw: array_merge($result->raw, ['trackingNumber' => trim($document->trackingNumber)]),
+            );
+        }
+
         // 2. Store the PDF on the private disk before any DB change, so the label is never lost
         $path = sprintf('labels/%d/%s.pdf', $order->id, Str::uuid());
         Storage::disk(self::LABEL_DISK)->put($path, $document->contents);

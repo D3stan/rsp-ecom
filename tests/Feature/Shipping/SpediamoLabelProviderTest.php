@@ -222,3 +222,28 @@ it('S4: SpediamoLabelProvider cancelShipment() throws LabelRejected when DELETE 
     expect(fn () => $provider->cancelShipment('shp_locked'))
         ->toThrow(LabelRejected::class, 'Only shipments with status DRAFT can be cancelled');
 });
+
+it('retrieves courier waybill number via GET /v1/shipments/{id} during label creation when externalId is a ShipmentResult', function () {
+    Http::fake([
+        'https://api.spediamo.test/v1/waybills/shp_123/pdf*' => Http::response('%PDF-1.4 fake waybill', 200, ['Content-Type' => 'application/pdf']),
+        'https://api.spediamo.test/v1/shipments/shp_123' => Http::response([
+            'id' => 'shp_123',
+            'code' => 'A422-098-162-296',
+            'trackingNumber' => '288364I031083',
+        ], 200),
+    ]);
+
+    $shipmentResult = new \App\Shipping\Labels\DTO\ShipmentResult(
+        externalId: 'shp_123',
+        trackingNumber: 'A422-098-162-296',
+        carrierCode: 'sda',
+    );
+
+    $document = (new SpediamoLabelProvider(spediamoLabelConfig()))->label($shipmentResult);
+
+    expect($document->contents)->toStartWith('%PDF')
+        ->and($document->trackingNumber)->toBe('288364I031083');
+
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/v1/shipments/shp_123'));
+});
+

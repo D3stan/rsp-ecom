@@ -73,6 +73,8 @@ class DvaexpressProvider implements TrackingProvider
 
     /**
      * TrackingProvider contract method.
+     * Dvaexpress always polls using the courier's real waybill number (ldv), which is stored in
+     * $request->trackingNumber. Any providerCode (such as id_ordine) is ignored for tracking lookup.
      */
     public function track(TrackingRequest $request): TrackingResult
     {

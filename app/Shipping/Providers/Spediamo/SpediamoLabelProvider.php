@@ -150,7 +150,23 @@ class SpediamoLabelProvider implements CancelsShipments, LabelProvider
             throw (new LabelProviderUnavailable('Spediamo returned an invalid PDF label.'))->withHttpStatus($response->status());
         }
 
-        return new LabelDocument($pdf, 'label-'.$id.'.pdf');
+        $courierTrackingNumber = null;
+        if ($externalId instanceof ShipmentResult) {
+            try {
+                $shipmentRes = $this->send(fn (PendingRequest $http) => $http->get("/v1/shipments/{$id}"), method: 'get');
+                if ($shipmentRes->successful() && is_array($sData = $shipmentRes->json())) {
+                    $trk = trim((string) ($sData['trackingNumber'] ?? $sData['tracking_code'] ?? ''));
+                    $code = trim((string) ($sData['code'] ?? ''));
+                    if ($trk !== '' && strcasecmp($trk, $code) !== 0 && strcasecmp($trk, $id) !== 0) {
+                        $courierTrackingNumber = $trk;
+                    }
+                }
+            } catch (Throwable) {
+                // Ignore lookup errors so label creation never fails
+            }
+        }
+
+        return new LabelDocument($pdf, 'label-'.$id.'.pdf', trackingNumber: $courierTrackingNumber);
     }
 
     public function cancelShipment(string $externalId): void

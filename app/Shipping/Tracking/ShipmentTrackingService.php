@@ -4,6 +4,7 @@ namespace App\Shipping\Tracking;
 
 use App\Exceptions\InvalidOrderTransition;
 use App\Models\Order;
+use App\Models\Shipment;
 use App\Models\ShipmentTrackingEvent;
 use App\Shipping\Tracking\DTO\TrackingEvent;
 use App\Shipping\Tracking\DTO\TrackingRequest;
@@ -59,6 +60,8 @@ class ShipmentTrackingService
             if ($number === '') {
                 return;
             }
+
+            $number = $this->promoteCarrierTrackingNumber($locked, $provider, $result, $number);
 
             $stored = $this->storeEvents($locked, $provider, $number, $result);
 
@@ -283,6 +286,51 @@ class ShipmentTrackingService
         }
 
         return $json;
+    }
+
+    /**
+     * When a carrier aggregator reports the real courier waybill number
+     * (distinct from its platform shipment code), promote it onto order.tracking_number and
+     * shipment.tracking_number, while preserving the platform code in shipment.external_id
+     * so future API polls continue to succeed.
+     *
+     * Updating via query builder avoids firing Order::updating, which would otherwise wipe out
+     * tracking_status, tracking_last_synced_at, and the polling schedule.
+     */
+    private function promoteCarrierTrackingNumber(Order $locked, string $provider, TrackingResult $result, string $currentNumber): string
+    {
+        $newNumber = $result->carrierTrackingNumber !== null ? trim($result->carrierTrackingNumber) : '';
+
+        if ($newNumber === '' || strcasecmp($newNumber, $currentNumber) === 0) {
+            return $currentNumber;
+        }
+
+        // 1. Update the latest active shipment: save current platform code to external_id if empty,
+        // and update shipment.tracking_number to match order.tracking_number so trackingUrl fallback matches.
+        $shipment = $locked->shipments()->where('status', Shipment::STATUS_CREATED)->reorder()->latest('id')->first();
+        if ($shipment) {
+            $shipmentUpdates = ['tracking_number' => $newNumber];
+            if (empty($shipment->external_id)) {
+                $shipmentUpdates['external_id'] = $currentNumber;
+            }
+            Shipment::query()->whereKey($shipment->id)->toBase()->update($shipmentUpdates);
+        }
+
+        // 2. Promote order.tracking_number using query builder to avoid firing Order::updating
+        Order::query()->whereKey($locked->id)->toBase()->update(['tracking_number' => $newNumber]);
+
+        // Keep in-memory model in sync without marking tracking_number dirty on subsequent advance() save.
+        $locked->tracking_number = $newNumber;
+        $locked->syncOriginalAttribute('tracking_number');
+
+        Log::info('Promoted carrier tracking number', [
+            'order_id' => $locked->id,
+            'provider' => $provider,
+            'old_number' => $currentNumber,
+            'new_number' => $newNumber,
+        ]);
+
+        return $newNumber;
     }
 
     /**

@@ -53,11 +53,16 @@ final class SpediamoResponseMapper
 
         usort($events, fn (TrackingEvent $a, TrackingEvent $b) => $a->occurredAt <=> $b->occurredAt);
 
+        $carrierNumber = trim((string) ($data['trackingNumber'] ?? ''));
+        $code = trim((string) ($data['code'] ?? ''));
+        $carrierTrackingNumber = ($carrierNumber !== '' && strcasecmp($carrierNumber, $code) !== 0) ? $carrierNumber : null;
+
         return new TrackingResult(
             $this->resultStatus($data, $events),
             $events,
             $this->date($data['expectedDeliveryDate'] ?? null),
             $data,
+            carrierTrackingNumber: $carrierTrackingNumber,
         );
     }
 

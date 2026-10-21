@@ -58,6 +58,14 @@ class AppServiceProvider extends ServiceProvider
         // Force HTTPS when APP_URL is HTTPS
         if (str_starts_with((string) config('app.url'), 'https://')) {
             URL::forceScheme('https');
+
+            // Behind a TLS-terminating tunnel/proxy (e.g. Cloudflare -> Traefik over http) the forwarded proto can
+            // arrive as "http"; treat the request as HTTPS so signed URLs validate against the https URL they were
+            // signed with.
+            if (! $this->app->runningInConsole()) {
+                $this->app['request']->headers->set('X-Forwarded-Proto', 'https');
+                $this->app['request']->headers->set('X-Forwarded-Port', '443');
+            }
         }
 
         // Initialize Stripe API key globally (only if settings table exists)

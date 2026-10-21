@@ -351,3 +351,44 @@ it('follows the admin setting tracking.auto_deliver without a restart', function
     $this->service->apply($third, 'fake', Fx::result(S::Delivered, Fx::event(S::Delivered, '-1 hour', 'e3')));
     expect($third->fresh()->status)->toBe('delivered');
 });
+
+it('promotes carrier tracking number without triggering Order::updating tracking reset', function () {
+    $startedAt = now()->subDays(2);
+    $lastSynced = now()->subHours(3);
+
+    $order = Fx::shippedOrder([
+        'tracking_number' => 'SPD-CODE-100',
+        'tracking_carrier' => 'sda',
+        'tracking_status' => 'in_transit',
+        'tracking_started_at' => $startedAt,
+        'tracking_last_synced_at' => $lastSynced,
+    ]);
+
+    $shipment = $order->shipments()->create([
+        'driver' => 'manual',
+        'carrier_code' => 'sda',
+        'tracking_carrier' => 'sda',
+        'tracking_number' => 'SPD-CODE-100',
+        'status' => \App\Models\Shipment::STATUS_CREATED,
+    ]);
+
+    $result = new TrackingResult(
+        status: S::InTransit,
+        events: [Fx::event(S::InTransit, '-1 hour', 'e1')],
+        carrierTrackingNumber: 'WAYBILL-REAL-999',
+    );
+
+    $this->service->apply($order, 'test-driver', $result);
+
+    $freshOrder = $order->fresh();
+    $freshShipment = $shipment->fresh();
+
+    expect($freshOrder->tracking_number)->toBe('WAYBILL-REAL-999')
+        ->and($freshShipment->tracking_number)->toBe('WAYBILL-REAL-999')
+        ->and($freshShipment->external_id)->toBe('SPD-CODE-100')
+        ->and($freshOrder->tracking_status)->toBe('in_transit')
+        ->and($freshOrder->tracking_started_at->toIso8601String())->toBe($startedAt->toIso8601String())
+        ->and($freshOrder->tracking_next_sync_at)->not->toBeNull()
+        ->and($freshOrder->tracking_next_sync_at->isFuture())->toBeTrue();
+});
+

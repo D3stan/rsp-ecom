@@ -75,7 +75,11 @@ class SpediamoProvider extends AbstractHttpProvider
 
     public function track(TrackingRequest $request): TrackingResult
     {
-        $code = TrackingRequest::normalizeNumber($request->trackingNumber);
+        // Spediamo queries tracking using its platform code or shipment ID (providerCode).
+        // If not explicitly provided, fall back to trackingNumber.
+        $code = $request->providerCode !== null && trim($request->providerCode) !== ''
+            ? TrackingRequest::normalizeNumber($request->providerCode)
+            : TrackingRequest::normalizeNumber($request->trackingNumber);
 
         if (trim((string) ($this->config['token'] ?? '')) === '') {
             $this->alertCredentials('the token is not configured');

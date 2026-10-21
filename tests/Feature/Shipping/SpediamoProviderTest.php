@@ -375,3 +375,70 @@ it('keeps polling an order whose shipment is not known yet (404)', function () {
         ->and($fresh->tracking_next_sync_at->isFuture())->toBeTrue()
         ->and($fresh->tracking_next_sync_at->lt(now()->addDay()))->toBeTrue(); // not parked for years
 });
+
+it('promotes Spediamo code to carrier waybill on manual shipment, preserves tracking state, and uses providerCode on subsequent polls', function () {
+    config(['shipping.tracking.driver' => 'spediamo']);
+
+    $startedAt = now()->subHours(2);
+
+    $order = Fx::shippedOrder([
+        'tracking_number' => 'A422-098-162-296',
+        'tracking_carrier' => 'sda',
+        'tracking_started_at' => $startedAt,
+    ]);
+    $shipment = $order->shipments()->create([
+        'driver' => 'manual',
+        'carrier_code' => 'sda',
+        'tracking_carrier' => 'sda',
+        'tracking_number' => 'A422-098-162-296',
+        'external_id' => null,
+        'status' => \App\Models\Shipment::STATUS_CREATED,
+    ]);
+
+    Http::fake([
+        'https://api.spediamo.test/v1/shipments/tracking?code=A422-098-162-296' => Http::sequence()
+            ->push(spdAnswer([
+                'code' => 'A422-098-162-296',
+                'trackingNumber' => '288364I031083',
+                'courier' => 'SDA',
+                'status' => 'CURRENT',
+            ]))
+            ->push(spdAnswer([
+                'code' => 'A422-098-162-296',
+                'trackingNumber' => '288364I031083',
+                'courier' => 'SDA',
+                'status' => 'DELIVERED',
+            ])),
+    ]);
+
+    // Poll 1: triggers promotion
+    $this->artisan('tracking:sync')->assertSuccessful();
+
+    $order1 = $order->fresh();
+    $shipment1 = $shipment->fresh();
+
+    expect($order1->tracking_number)->toBe('288364I031083')
+        ->and($shipment1->tracking_number)->toBe('288364I031083')
+        ->and($shipment1->external_id)->toBe('A422-098-162-296')
+        ->and($order1->tracking_status)->toBe('in_transit')
+        ->and($order1->tracking_started_at->toIso8601String())->toBe($startedAt->toIso8601String())
+        ->and($order1->tracking_next_sync_at->isFuture())->toBeTrue();
+
+    // Poll 2: uses providerCode (shipments.external_id), query must still go to ?code=A422-098-162-296, NOT the waybill!
+    $order1->forceFill(['tracking_next_sync_at' => now()->subMinute()])->saveQuietly();
+    $this->artisan('tracking:sync')->assertSuccessful();
+
+    $order2 = $order->fresh();
+    expect($order2->tracking_status)->toBe('delivered')
+        ->and($order2->status)->toBe('delivered')
+        ->and($order2->tracking_number)->toBe('288364I031083');
+
+    // Verify all requests used code=A422-098-162-296 and never queried the carrier waybill
+    Http::assertSent(function ($request) {
+        return str_contains($request->url(), 'code=A422-098-162-296');
+    });
+    Http::assertNotSent(function ($request) {
+        return str_contains($request->url(), 'code=288364I031083');
+    });
+});
+

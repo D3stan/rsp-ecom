@@ -238,3 +238,52 @@ it('redacts the API key from exception messages when a network or HTTP error occ
             ->and($e->getMessage())->toContain('[REDACTED]');
     }
 });
+
+it('polls ldv ignoring providerCode and preserves tracking number without promotion on manual shipment', function () {
+    $fixtureJson = (string) file_get_contents(base_path('tests/Fixtures/Shipping/dvaexpress/tracking.json'));
+    $fixtureData = json_decode($fixtureJson, true);
+
+    Http::fake([
+        'https://api.easyparcel.it/tracking/secret-dva-key-12345*' => Http::response($fixtureData, 200),
+    ]);
+
+    config([
+        'shipping.tracking.driver' => 'dvaexpress',
+        'shipping.tracking.drivers.dvaexpress' => dvaexpressTrackingConfig(),
+    ]);
+
+    $order = \Tests\Feature\Shipping\Support\TrackingFixtures::shippedOrder([
+        'tracking_number' => '288016E049120',
+        'tracking_carrier' => 'sda',
+        'tracking_driver' => 'dvaexpress',
+    ]);
+
+    $shipment = $order->shipments()->create([
+        'driver' => 'manual',
+        'carrier_code' => 'sda',
+        'tracking_carrier' => 'sda',
+        'tracking_number' => '288016E049120',
+        'external_id' => 'DVA-ORDER-MANUAL-999',
+        'status' => \App\Models\Shipment::STATUS_CREATED,
+    ]);
+
+    app()->call([new \App\Shipping\Tracking\Jobs\SyncOrderTracking($order->id), 'handle']);
+
+    // Verify EasyParcel received ldv = 288016E049120, NOT DVA-ORDER-MANUAL-999
+    Http::assertSent(function ($request) {
+        $body = $request->data();
+
+        return str_contains($request->url(), '/tracking/secret-dva-key-12345')
+            && ($body['dettagli']['ldv'] ?? null) === '288016E049120';
+    });
+
+    $freshOrder = $order->fresh();
+    $freshShipment = $shipment->fresh();
+
+    // No promotion occurred: tracking_number remains intact
+    expect($freshOrder->tracking_number)->toBe('288016E049120')
+        ->and($freshShipment->tracking_number)->toBe('288016E049120')
+        ->and($freshShipment->external_id)->toBe('DVA-ORDER-MANUAL-999')
+        ->and($freshOrder->tracking_status)->toBe('delivered');
+});
+

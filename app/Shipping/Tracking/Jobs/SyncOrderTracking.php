@@ -104,11 +104,15 @@ class SyncOrderTracking implements ShouldQueue
             return;
         }
 
+        $shipment = $order->shipments()->where('status', \App\Models\Shipment::STATUS_CREATED)->reorder()->latest('id')->first();
+        $providerCode = $shipment?->external_id ?: $order->tracking_number;
+
         try {
             $result = $provider->track(new TrackingRequest(
                 TrackingRequest::normalizeNumber($order->tracking_number),
                 $carrier,
                 $order->order_number,
+                $providerCode,
             ));
         } catch (TrackingRejected $e) {
             Log::warning('Carrier rejected the tracking request, polling disabled for the order', [

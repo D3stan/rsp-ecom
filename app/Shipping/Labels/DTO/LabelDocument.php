@@ -11,5 +11,6 @@ final readonly class LabelDocument
         public string $contents,
         public string $filename,
         public string $mimeType = 'application/pdf',
+        public ?string $trackingNumber = null,
     ) {}
 }
