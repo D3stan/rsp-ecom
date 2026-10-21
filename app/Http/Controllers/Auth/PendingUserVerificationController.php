@@ -57,6 +57,19 @@ class PendingUserVerificationController extends Controller
         $email = $request->route('email');
 
         if (!$request->hasValidSignature()) {
+            \Illuminate\Support\Facades\Log::warning('Pending verification link rejected: invalid signature', [
+                'request_url' => $request->fullUrl(),
+                'scheme' => $request->getScheme(),
+                'host' => $request->getHost(),
+                'port' => $request->getPort(),
+                'app_url' => config('app.url'),
+                'expires' => $request->query('expires'),
+                'now' => now()->timestamp,
+                'x_forwarded_proto' => $request->header('X-Forwarded-Proto'),
+                'x_forwarded_host' => $request->header('X-Forwarded-Host'),
+                'x_forwarded_port' => $request->header('X-Forwarded-Port'),
+            ]);
+
             return redirect()->route('register')->with('error', 'Invalid or expired verification link.');
         }
 
