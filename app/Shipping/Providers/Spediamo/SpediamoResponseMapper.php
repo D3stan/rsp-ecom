@@ -53,8 +53,8 @@ final class SpediamoResponseMapper
 
         usort($events, fn (TrackingEvent $a, TrackingEvent $b) => $a->occurredAt <=> $b->occurredAt);
 
-        $carrierNumber = trim((string) ($data['trackingNumber'] ?? ''));
-        $code = trim((string) ($data['code'] ?? ''));
+        $carrierNumber = is_scalar($data['trackingNumber'] ?? null) ? trim((string) $data['trackingNumber']) : '';
+        $code = is_scalar($data['code'] ?? null) ? trim((string) $data['code']) : '';
         $carrierTrackingNumber = ($carrierNumber !== '' && strcasecmp($carrierNumber, $code) !== 0) ? $carrierNumber : null;
 
         return new TrackingResult(
@@ -77,8 +77,8 @@ final class SpediamoResponseMapper
             return null;
         }
 
-        $description = trim((string) ($item['description'] ?? ''));
-        $long = trim((string) ($item['longDescription'] ?? ''));
+        $description = is_scalar($item['description'] ?? null) ? trim((string) $item['description']) : '';
+        $long = is_scalar($item['longDescription'] ?? null) ? trim((string) $item['longDescription']) : '';
 
         if ($description === '') {
             $description = $long;
@@ -86,11 +86,11 @@ final class SpediamoResponseMapper
             $description .= ' - '.$long;
         }
 
-        $site = trim((string) ($item['site'] ?? ''));
+        $site = is_scalar($item['site'] ?? null) ? trim((string) $item['site']) : '';
 
         return new TrackingEvent(
             status: $this->status($item['status'] ?? null),
-            description: $description !== '' ? $description : trim((string) ($item['status'] ?? '')),
+            description: $description !== '' ? $description : (is_scalar($item['status'] ?? null) ? trim((string) $item['status']) : ''),
             location: $site !== '' ? $site : null,
             occurredAt: $occurredAt,
             externalId: null,
@@ -103,9 +103,9 @@ final class SpediamoResponseMapper
      */
     private function occurredAt(array $item): ?CarbonImmutable
     {
-        $date = trim((string) ($item['date'] ?? ''));
+        $dateStr = $this->parseDateString($item['date'] ?? null);
 
-        if (preg_match('/^\d{4}-\d{2}-\d{2}/', $date) !== 1) {
+        if ($dateStr === null || preg_match('/^\d{4}-\d{2}-\d{2}/', $dateStr) !== 1) {
             return null;
         }
 
@@ -114,7 +114,7 @@ final class SpediamoResponseMapper
         try {
             return CarbonImmutable::parse(sprintf(
                 '%s %02d:%02d:%02d',
-                substr($date, 0, 10),
+                substr($dateStr, 0, 10),
                 min(23, max(0, (int) ($time['hour'] ?? 0))),
                 min(59, max(0, (int) ($time['minute'] ?? 0))),
                 min(59, max(0, (int) ($time['second'] ?? 0))),
@@ -125,6 +125,38 @@ final class SpediamoResponseMapper
     }
 
     /**
+     * Normalizes a date that may arrive as a string ("2026-10-21"),
+     * an indexed array ([2026, 10, 21]), or a Jackson/Java object (['year' => 2026, ...]).
+     */
+    private function parseDateString(mixed $date): ?string
+    {
+        if (is_string($date) || is_numeric($date)) {
+            $str = trim((string) $date);
+
+            return $str !== '' ? $str : null;
+        }
+
+        if (is_array($date)) {
+            $year = $date['year'] ?? ($date[0] ?? null);
+            $month = $date['monthValue'] ?? ($date['month'] ?? ($date[1] ?? null));
+            $day = $date['dayOfMonth'] ?? ($date['day'] ?? ($date[2] ?? null));
+
+            if ($year !== null && $month !== null && $day !== null) {
+                if (is_string($month) && ! is_numeric($month)) {
+                    $monthNum = date_parse($month)['month'] ?? null;
+                    if ($monthNum) {
+                        $month = $monthNum;
+                    }
+                }
+
+                return sprintf('%04d-%02d-%02d', (int) $year, (int) $month, (int) $day);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @param  list<TrackingEvent>  $events  oldest first
      */
@@ -132,8 +164,9 @@ final class SpediamoResponseMapper
     {
         $top = $this->status($data['status'] ?? null);
         $latest = $events === [] ? TrackingStatus::Unknown : $events[array_key_last($events)]->status;
+        $hasDeliveryDate = $this->parseDateString($data['deliveryDate'] ?? null) !== null;
 
-        if ($top === TrackingStatus::Delivered || $latest === TrackingStatus::Delivered || trim((string) ($data['deliveryDate'] ?? '')) !== '') {
+        if ($top === TrackingStatus::Delivered || $latest === TrackingStatus::Delivered || $hasDeliveryDate) {
             return TrackingStatus::Delivered;
         }
 
@@ -162,14 +195,14 @@ final class SpediamoResponseMapper
 
     private function date(mixed $value): ?CarbonImmutable
     {
-        $value = trim((string) $value);
+        $valueStr = $this->parseDateString($value);
 
-        if (preg_match('/^\d{4}-\d{2}-\d{2}/', $value) !== 1) {
+        if ($valueStr === null || preg_match('/^\d{4}-\d{2}-\d{2}/', $valueStr) !== 1) {
             return null;
         }
 
         try {
-            return CarbonImmutable::parse(substr($value, 0, 10), $this->timezone)->startOfDay()->utc();
+            return CarbonImmutable::parse(substr($valueStr, 0, 10), $this->timezone)->startOfDay()->utc();
         } catch (Throwable) {
             return null;
         }

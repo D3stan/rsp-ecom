@@ -65,20 +65,64 @@ class ShippingService
      */
     private function shipManually(Order $order, ShipInput $input, User $actor): ShipOutcome
     {
-        $shipment = DB::transaction(function () use ($order, $input, $actor) {
+        $trackingNumber = $input->trackingNumber !== null && trim($input->trackingNumber) !== ''
+            ? trim($input->trackingNumber)
+            : null;
+        $externalId = null;
+        $initialResult = null;
+
+        // Resolve candidate tracking driver to query for real waybill number
+        $driverName = $input->trackingDriver;
+        if ($driverName === null || trim($driverName) === '') {
+            $defaultDriver = $this->tracking->getDefaultDriver();
+            if ($this->tracking->canPoll($defaultDriver)) {
+                $driverName = $defaultDriver;
+            } elseif (count($pollable = $this->tracking->pollableDriverNames()) === 1) {
+                $driverName = $pollable[0];
+            }
+        }
+
+        if ($trackingNumber !== null && $driverName !== null && trim($driverName) !== '') {
+            try {
+                $provider = $this->tracking->driver($driverName);
+                if (! ($provider instanceof \App\Shipping\Tracking\Contracts\PassiveProvider)) {
+                    $trackingReq = new \App\Shipping\Tracking\DTO\TrackingRequest(
+                        trackingNumber: $trackingNumber,
+                        carrierCode: $input->carrierCode,
+                        orderReference: $order->order_number,
+                    );
+                    $initialResult = $provider->track($trackingReq);
+                    if ($initialResult->carrierTrackingNumber !== null && trim($initialResult->carrierTrackingNumber) !== '') {
+                        $carrierTrk = trim($initialResult->carrierTrackingNumber);
+                        if (strcasecmp($carrierTrk, $trackingNumber) !== 0) {
+                            $externalId = $trackingNumber;
+                            $trackingNumber = $carrierTrk;
+                        }
+                    }
+                }
+            } catch (Throwable $e) {
+                Log::info('Initial carrier tracking number lookup skipped during manual shipment', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $shipment = DB::transaction(function () use ($order, $input, $actor, $trackingNumber, $externalId) {
             $this->lockAndGuard($order);
 
             $shipment = $order->shipments()->create([
                 'carrier_code' => $input->carrierCode,
                 'driver' => Shipment::DRIVER_MANUAL,
-                'tracking_number' => $input->trackingNumber,
+                'external_id' => $externalId,
+                'tracking_number' => $trackingNumber,
                 'status' => Shipment::STATUS_CREATED,
                 'created_by' => $actor->getKey(),
             ]);
 
             $attributes = [
                 'tracking_carrier' => $input->carrierCode,
-                'tracking_number' => $input->trackingNumber,
+                'tracking_number' => $trackingNumber,
                 'tracking_driver' => $input->trackingDriver,
             ];
 
@@ -88,16 +132,29 @@ class ShippingService
             return $shipment;
         });
 
+        if ($initialResult !== null && $driverName !== null) {
+            try {
+                app(\App\Shipping\Tracking\ShipmentTrackingService::class)->apply($order, $driverName, $initialResult);
+            } catch (Throwable $e) {
+                Log::warning('Failed to apply initial tracking result during manual shipment', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         Log::info('Order shipped', [
             'order_id' => $order->id,
             'shipment_id' => $shipment->id,
             'driver' => $shipment->driver,
             'tracking_driver' => $order->tracking_driver,
+            'external_id' => $externalId,
+            'tracking_number' => $trackingNumber,
         ]);
 
         // One email: with the tracking when there is a number; without, only when the admin asked for it
-        $emailFailed = ($input->trackingNumber !== null || $input->notifyCustomer)
-            && ! $this->emails->sendOrderShipped($order, $input->trackingNumber);
+        $emailFailed = ($trackingNumber !== null || $input->notifyCustomer)
+            && ! $this->emails->sendOrderShipped($order, $trackingNumber);
 
         return new ShipOutcome($shipment, $emailFailed);
     }
@@ -261,10 +318,43 @@ class ShippingService
 
         $number = trim((string) $order->tracking_number) !== '' ? trim((string) $order->tracking_number) : null;
         $carrier = $order->getAttribute('tracking_carrier');
+        $driverName = $order->getAttribute('tracking_driver') ?? $this->tracking->getDefaultDriver();
+
+        if ($number !== null && $driverName !== null && trim($driverName) !== '') {
+            try {
+                $provider = $this->tracking->driver($driverName);
+                if (! ($provider instanceof \App\Shipping\Tracking\Contracts\PassiveProvider)) {
+                    $trackingReq = new \App\Shipping\Tracking\DTO\TrackingRequest(
+                        trackingNumber: $number,
+                        carrierCode: is_string($carrier) ? $carrier : null,
+                        orderReference: $order->order_number,
+                    );
+                    $result = $provider->track($trackingReq);
+                    if ($result->carrierTrackingNumber !== null && trim($result->carrierTrackingNumber) !== '') {
+                        $carrierTrk = trim($result->carrierTrackingNumber);
+                        if (strcasecmp($carrierTrk, $number) !== 0) {
+                            $shipment = $order->shipments()->where('status', Shipment::STATUS_CREATED)->reorder()->latest('id')->first();
+                            if ($shipment) {
+                                $shipment->update([
+                                    'external_id' => $number,
+                                    'tracking_number' => $carrierTrk,
+                                ] + (is_string($carrier) && $carrier !== '' ? ['carrier_code' => $carrier] : []));
+                            }
+                            Order::query()->whereKey($order->id)->toBase()->update(['tracking_number' => $carrierTrk]);
+                            $order->tracking_number = $carrierTrk;
+                            $order->syncOriginalAttribute('tracking_number');
+                            $number = $carrierTrk;
+                        }
+                    }
+                }
+            } catch (Throwable) {
+                // Ignore lookup errors
+            }
+        }
 
         $shipment = $order->shipments()->where('status', Shipment::STATUS_CREATED)->reorder()->latest('id')->first();
 
-        if ($shipment?->isManual()) {
+        if ($shipment?->isManual() && $shipment->tracking_number !== $number) {
             $shipment->update(['tracking_number' => $number]
                 + (is_string($carrier) && $carrier !== '' ? ['carrier_code' => $carrier] : []));
         }

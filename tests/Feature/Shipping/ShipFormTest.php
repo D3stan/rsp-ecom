@@ -202,3 +202,55 @@ it('a second submit of the ship form changes nothing', function () {
     expect(DB::table('shipments')->where('order_id', $this->order->id)->count())->toBe(1)
         ->and(shippedEmails())->toHaveCount(1);
 });
+
+it('resolves real courier waybill immediately on manual ship form when tracking driver returns carrierTrackingNumber', function () {
+    config([
+        'shipping.tracking.driver' => 'manual',
+        'shipping.tracking.drivers.spediamo' => [
+            'base_url' => 'https://api.spediamo.test',
+            'token' => 'test-token',
+            'timeout' => 5,
+            'retries' => 1,
+            'retry_sleep_ms' => 0,
+            'timezone' => 'Europe/Rome',
+            'carrier_map' => [],
+            'status_map' => [],
+        ],
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'https://api.spediamo.test/v1/shipments/tracking?code=A422-098-162-296' => \Illuminate\Support\Facades\Http::response([
+            'code' => 'A422-098-162-296',
+            'trackingNumber' => '288364I031083',
+            'courier' => 'SDA',
+            'type' => 'DOMESTIC',
+            'status' => 'CURRENT',
+            'tracking' => [
+                ['date' => '2026-10-21', 'time' => ['hour' => 10, 'minute' => 0, 'second' => 0, 'nano' => 0], 'description' => 'Picked up', 'site' => 'Milano', 'status' => 'OPEN'],
+            ],
+        ], 200),
+    ]);
+
+    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), [
+        'tracking_carrier' => 'acme',
+        'tracking_driver' => 'spediamo',
+        'tracking_number' => 'A422-098-162-296',
+    ])->assertRedirect(route('admin.orders.show', $this->order))->assertSessionHas('success');
+
+    $order = $this->order->fresh();
+    expect($order->status)->toBe('shipped')
+        ->and($order->tracking_number)->toBe('288364I031083')
+        ->and($order->tracking_driver)->toBe('spediamo')
+        ->and($order->tracking_status)->toBe('in_transit');
+
+    $shipment = DB::table('shipments')->where('order_id', $order->id)->first();
+    expect($shipment->tracking_number)->toBe('288364I031083')
+        ->and($shipment->external_id)->toBe('A422-098-162-296')
+        ->and($shipment->driver)->toBe('manual');
+
+    // Email was sent with the promoted carrier waybill number!
+    Queue::assertPushed(SendOrderEmail::class, function ($job) {
+        return $job->type === OrderEmail::TYPE_SHIPPED && $job->trackingNumber === '288364I031083';
+    });
+});
+

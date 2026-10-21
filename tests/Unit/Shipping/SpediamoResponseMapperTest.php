@@ -135,3 +135,56 @@ it('otherwise picks the most advanced mapped status, the top level winning ties'
         ->and(spdMap(['tracking' => []])->status)->toBe(S::Unknown)
         ->and(spdMap([])->events)->toBe([]);
 });
+
+it('handles array dates from Jackson/Spring serialized LocalDates without throwing array to string conversion', function () {
+    // 1. Indexed array [2026, 10, 21]
+    $res1 = spdMap([
+        'status' => 'CURRENT',
+        'tracking' => [
+            [
+                'date' => [2026, 10, 21],
+                'time' => ['hour' => 14, 'minute' => 30, 'second' => 0],
+                'description' => 'In transit',
+                'status' => 'CURRENT',
+            ],
+        ],
+    ]);
+
+    expect($res1->events)->toHaveCount(1)
+        ->and($res1->events[0]->occurredAt->format('Y-m-d H:i:s'))->toBe('2026-10-21 12:30:00');
+
+    // 2. Jackson object ['year' => 2026, 'month' => 10, 'day' => 21]
+    $res2 = spdMap([
+        'status' => 'DELIVERED',
+        'deliveryDate' => ['year' => 2026, 'month' => 10, 'day' => 21],
+        'tracking' => [
+            [
+                'date' => ['year' => 2026, 'month' => 10, 'day' => 21],
+                'time' => ['hour' => 16, 'minute' => 45, 'second' => 0],
+                'description' => 'Delivered',
+                'status' => 'DELIVERED',
+            ],
+        ],
+    ]);
+
+    expect($res2->status)->toBe(S::Delivered)
+        ->and($res2->events)->toHaveCount(1)
+        ->and($res2->events[0]->occurredAt->format('Y-m-d H:i:s'))->toBe('2026-10-21 14:45:00');
+
+    // 3. Jackson object with monthValue and dayOfMonth
+    $res3 = spdMap([
+        'status' => 'CURRENT',
+        'tracking' => [
+            [
+                'date' => ['year' => 2026, 'monthValue' => 10, 'dayOfMonth' => 21],
+                'time' => ['hour' => 10, 'minute' => 0, 'second' => 0],
+                'description' => 'Out for delivery',
+                'status' => 'CURRENT',
+            ],
+        ],
+    ]);
+
+    expect($res3->events)->toHaveCount(1)
+        ->and($res3->events[0]->occurredAt->format('Y-m-d H:i:s'))->toBe('2026-10-21 08:00:00');
+});
+
