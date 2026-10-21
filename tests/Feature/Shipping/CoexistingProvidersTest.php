@@ -49,6 +49,7 @@ beforeEach(function () {
         'shipping.tracking.drivers.spediamo' => [
             'base_url' => 'https://spediamo.test',
             'token' => 'spd-bearer-token',
+            'carrier_map' => [],
             'retries' => 0,
             'retry_sleep_ms' => 0,
         ],

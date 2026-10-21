@@ -25,23 +25,35 @@ class SpediamoLabelRequestMapper
         $sender = $request->sender;
         $recipient = $request->recipient;
 
+        $senderCountry = strtoupper(trim((string) $sender->country));
+        $senderPostal = trim((string) $sender->postalCode);
+        if (($senderCountry === 'IT' || $senderCountry === '') && is_numeric($senderPostal)) {
+            $senderPostal = str_pad($senderPostal, 5, '0', STR_PAD_LEFT);
+        }
+
+        $recipientCountry = strtoupper(trim((string) $recipient->country));
+        $recipientPostal = trim((string) $recipient->postalCode);
+        if (($recipientCountry === 'IT' || $recipientCountry === '') && is_numeric($recipientPostal)) {
+            $recipientPostal = str_pad($recipientPostal, 5, '0', STR_PAD_LEFT);
+        }
+
         $params = [
             'type' => 'packages',
             'senderName' => $sender->company !== '' ? $sender->company : $sender->name,
             'senderContactName' => $sender->name,
-            'senderCountry' => $sender->country,
+            'senderCountry' => $senderCountry !== '' ? $senderCountry : 'IT',
             'senderProvince' => $sender->province,
             'senderTown' => $sender->city,
-            'senderPostalCode' => $sender->postalCode,
+            'senderPostalCode' => $senderPostal,
             'senderAddress' => $sender->street,
             'senderPhone' => $sender->phone,
             'senderEmail' => $sender->email,
             'recipientName' => $recipient->company !== '' ? $recipient->company : $recipient->name,
             'recipientContactName' => $recipient->name,
-            'recipientCountry' => $recipient->country,
+            'recipientCountry' => $recipientCountry !== '' ? $recipientCountry : 'IT',
             'recipientProvince' => $recipient->province,
             'recipientTown' => $recipient->city,
-            'recipientPostalCode' => $recipient->postalCode,
+            'recipientPostalCode' => $recipientPostal,
             'recipientAddress' => $recipient->street,
             'recipientPhone' => $recipient->phone,
             'recipientEmail' => $recipient->email,

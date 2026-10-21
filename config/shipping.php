@@ -75,7 +75,18 @@ return [
         'spediamo' => [
             'base_url' => env('SHIPPING_TRACKING_SPEDIAMO_URL', 'https://api.spediamo.it'),
             'token' => env('SHIPPING_TRACKING_SPEDIAMO_TOKEN'),
-            'carrier_map' => [],
+            'carrier_map' => [
+                'sda' => 'SDA',
+                'poste' => 'SDA',
+                'poste_italiane' => 'SDA',
+                'brt' => 'BRT',
+                'bartolini' => 'BRT',
+                'gls' => 'GLS',
+                'ups' => 'UPS',
+                'dhl' => 'DHL',
+                'tnt' => 'TNT',
+                'fedex' => 'FEDEX',
+            ],
             'status_map' => [],
         ],
         'dvaexpress' => [
@@ -90,6 +101,7 @@ return [
                 'gls' => 'GLS',
                 'pdb' => 'PDB',
                 'poste' => 'PDB',
+                'poste_italiane' => 'PDB',
                 'inpost' => 'INPOST',
                 'dhl' => 'DHL',
                 'ups' => 'UPS',

@@ -458,6 +458,8 @@ it('completes end-to-end quote-to-label purchase handoff via POST /admin/orders/
             'name' => 'SDA Express',
             'tracking_url' => 'https://track.example.test/?n={number}',
         ],
+        'shipping.labels.sender.postal_code' => '00100',
+        'shipping.labels.sender.city' => 'Roma',
         'shipping.providers.dvaexpress.api_key' => 'dva-handoff-key',
         'shipping.providers.dvaexpress.base_url' => 'https://api.easyparcel.it',
         'shipping.providers.dvaexpress.carrier_map' => [
@@ -559,4 +561,180 @@ it('completes end-to-end quote-to-label purchase handoff via POST /admin/orders/
             && (string) ($data['details']['order_id'] ?? '') === '160854'
             && ($data['details']['waybill_base64'] ?? null) === 'Y';
     });
+});
+
+/*
+|--------------------------------------------------------------------------
+| 6. Provider Country-Aware Pre-Flight Checks & Carrier Aliasing
+|--------------------------------------------------------------------------
+*/
+
+it('dvaexpress rate provider pads IT cap, defaults international province to --, and rejects US/CA without state', function () {
+    $quotationFixture = json_decode(file_get_contents(base_path('tests/Fixtures/Shipping/dvaexpress/quotation.json')), true);
+
+    Http::fake([
+        'https://api.easyparcel.it/quotation/test-key*' => Http::response($quotationFixture, 200),
+    ]);
+
+    $config = [
+        'base_url' => 'https://api.easyparcel.it',
+        'api_key' => 'test-key',
+        'carrier_map' => [
+            'sda' => 'SDAM',
+            'poste' => 'PDB',
+            'poste_italiane' => 'PDB',
+        ],
+    ];
+    $provider = new DvaexpressRateProvider($config);
+
+    // 1. IT CAP padding (e.g. '100' -> '00100')
+    $req = new RateRequest(
+        sender: new RateAddress(postalCode: '100', city: 'Roma', province: 'RM', country: 'IT'),
+        recipient: new RateAddress(postalCode: '9121', city: 'Cagliari', province: 'CA', country: 'IT'),
+        parcels: [new RateParcel(weightKg: 1.0)],
+    );
+    $provider->quote($req);
+
+    Http::assertSent(function ($request) {
+        return ($request['mittente']['cap'] ?? null) === '00100'
+            && ($request['destinatario']['cap'] ?? null) === '09121';
+    });
+
+    // 2. International destination defaults province to '--'
+    $reqIntl = new RateRequest(
+        sender: new RateAddress(postalCode: '00100', city: 'Roma', province: 'RM', country: 'IT'),
+        recipient: new RateAddress(postalCode: '75001', city: 'Paris', province: '', country: 'FR'),
+        parcels: [new RateParcel(weightKg: 1.0)],
+    );
+    $provider->quote($reqIntl);
+
+    Http::assertSent(function ($request) {
+        return ($request['destinatario']['provincia'] ?? null) === '--'
+            && ($request['destinatario']['nazione'] ?? null) === 'FR';
+    });
+
+    // 3. US destination without province throws RateRejected
+    $reqUsNoState = new RateRequest(
+        sender: new RateAddress(postalCode: '00100', city: 'Roma', province: 'RM', country: 'IT'),
+        recipient: new RateAddress(postalCode: '90210', city: 'Beverly Hills', province: '', country: 'US'),
+        parcels: [new RateParcel(weightKg: 1.0)],
+    );
+    expect(fn () => $provider->quote($reqUsNoState))
+        ->toThrow(\App\Shipping\Rates\Exceptions\RateRejected::class, 'Recipient province (state code) is required for US');
+});
+
+it('dvaexpress and spediamo filter quotes using areSameCourier aliases', function () {
+    // 1. Dvaexpress: quote returned has vettore SDAM (mapped to sda). Requesting 'sda' matches it.
+    $quotationFixture = [
+        'result' => 'OK',
+        'quotation' => [
+            [
+                'vettore' => 'PDB',
+                'nome_vettore' => 'Poste Delivery Business',
+                'consegna' => 'S',
+                'totale_dovuto' => 7.50,
+            ],
+        ],
+    ];
+
+    Http::fake([
+        'https://api.easyparcel.it/quotation/test-key*' => Http::response($quotationFixture, 200),
+    ]);
+
+    $dvaProvider = new DvaexpressRateProvider([
+        'base_url' => 'https://api.easyparcel.it',
+        'api_key' => 'test-key',
+        'carrier_map' => [
+            'poste' => 'PDB',
+            'poste_italiane' => 'PDB',
+        ],
+    ]);
+
+    // Requesting alias 'poste_italiane' should match quote having PDB/poste via areSameCourier
+    $quotes = $dvaProvider->quote(new RateRequest(
+        sender: new RateAddress(postalCode: '00100', city: 'Roma', province: 'RM', country: 'IT'),
+        recipient: new RateAddress(postalCode: '20100', city: 'Milano', province: 'MI', country: 'IT'),
+        parcels: [new RateParcel(weightKg: 1.0)],
+        carrierCode: 'poste_italiane',
+    ));
+
+    expect($quotes)->toHaveCount(1)
+        ->and($quotes[0]->carrierCode)->toBe('poste_italiane');
+
+    // 2. Spediamo: shipment draft returns courier SDA. Requesting alias 'poste_italiane' matches it.
+    $draftFixture = json_decode(file_get_contents(base_path('tests/Fixtures/Shipping/spediamo/shipment_draft.json')), true);
+    Http::fake([
+        'https://api.spediamo.it/v1/shipments*' => Http::response($draftFixture, 200),
+    ]);
+
+    $spediamoProvider = new SpediamoRateProvider([
+        'base_url' => 'https://api.spediamo.it',
+        'token' => 'test-token',
+        'cleanup_quote_drafts' => false,
+        'carrier_map' => [
+            'sda' => 'SDA',
+            'poste_italiane' => 'SDA',
+        ],
+    ], new BearerTokenAuthenticator('test-token'));
+
+    $spedQuotes = $spediamoProvider->quote(new RateRequest(
+        sender: new RateAddress(postalCode: '100', city: 'Roma', province: 'RM', country: 'IT'),
+        recipient: new RateAddress(postalCode: '20100', city: 'Milano', province: 'MI', country: 'IT'),
+        parcels: [new RateParcel(weightKg: 1.0)],
+        carrierCode: 'poste_italiane',
+    ));
+
+    expect($spedQuotes)->toHaveCount(1)
+        ->and($spedQuotes[0]->carrierCode)->toBe('poste_italiane');
+});
+
+it('spediamo formats validation errors without numeric index prefix', function () {
+    Http::fake([
+        'https://api.spediamo.it/v1/shipments' => Http::response([
+            'errors' => [
+                '0' => '0: Il campo senderTown è obbligatorio.',
+                'senderPostalCode' => ['Il CAP non è valido.'],
+            ],
+        ], 422),
+    ]);
+
+    $provider = new SpediamoRateProvider([
+        'base_url' => 'https://api.spediamo.it',
+        'token' => 'test-token',
+    ], new BearerTokenAuthenticator('test-token'));
+
+    try {
+        $provider->quote(new RateRequest(
+            sender: new RateAddress(postalCode: '00100', city: 'Roma', province: 'RM', country: 'IT'),
+            recipient: new RateAddress(postalCode: '20100', city: 'Milano', province: 'MI', country: 'IT'),
+            parcels: [new RateParcel(weightKg: 1.0)],
+        ));
+        test()->fail('Expected RateRejected was not thrown');
+    } catch (\App\Shipping\Rates\Exceptions\RateRejected $e) {
+        expect($e->getMessage())->not->toContain('0:')
+            ->and($e->getMessage())->toContain('Il campo senderTown è obbligatorio')
+            ->and($e->getMessage())->toContain('senderPostalCode: Il CAP non è valido.');
+    }
+});
+
+it('rate manager standardizes sender cascading and pads Italian postal codes', function () {
+    $manager = app(RateManager::class);
+
+    // Baseline with store profile fallback
+    settings()->set('store.name', 'My Boutique');
+    settings()->set('store.address', 'Via Dante 10');
+    settings()->set('contact.phone', '+39 070 123456');
+    settings()->set('contact.support_email', 'info@boutique.test');
+    settings()->set('shipping.default_country', 'IT');
+    settings()->set('shipping.sender_postal_code', '9121');
+    settings()->set('shipping.sender_city', 'Cagliari');
+
+    $sender = $manager->senderFromSettings();
+    expect($sender->name)->toBe('My Boutique')
+        ->and($sender->street)->toBe('Via Dante 10')
+        ->and($sender->phone)->toBe('+39 070 123456')
+        ->and($sender->email)->toBe('info@boutique.test')
+        ->and($sender->country)->toBe('IT')
+        ->and($sender->postalCode)->toBe('09121')
+        ->and($sender->city)->toBe('Cagliari');
 });

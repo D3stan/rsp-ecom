@@ -110,3 +110,21 @@ it('reaches the SEOTools defaults because the package builds its singletons lazi
     expect(SEOMeta::getDescription())->toBe('A custom default description')
         ->and(SEOMeta::getKeywords())->toBe(['alpha', 'beta']);
 });
+
+it('does not overwrite non-empty baseline config with empty string for shipping sender settings', function () {
+    config([
+        'shipping.labels.sender.postal_code' => '09121',
+        'shipping.labels.sender.city' => 'Cagliari',
+    ]);
+
+    $settings = app(Settings::class);
+    $settings->setMany([
+        'shipping.sender_postal_code' => '',
+        'shipping.sender_city' => 'Sassari',
+    ]);
+
+    // postal_code has baseline '09121', DB has empty string -> should not overwrite baseline
+    expect(config('shipping.labels.sender.postal_code'))->toBe('09121')
+        // city was set to non-empty 'Sassari' -> should be updated
+        ->and(config('shipping.labels.sender.city'))->toBe('Sassari');
+});

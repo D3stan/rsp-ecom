@@ -332,3 +332,40 @@ it('cancels shipment via POST /richiesta-storno: succeeds on ammesso, throws Lab
     expect(fn () => $provider->cancelShipment('160855'))
         ->toThrow(LabelProviderUnavailable::class, 'Verifica tracking temporaneamente non disponibile');
 });
+
+it('fails pre-flight validation when sender or recipient address is missing postal code, city, or US/CA state', function () {
+    $provider = new DvaexpressLabelProvider(dvaexpressLabelConfig());
+
+    // Missing sender postal code
+    $badSender = new ShipmentRequest(
+        carrierCode: 'sda',
+        sender: new Address(name: 'Shop', street: 'Via Roma 1', city: 'Milano', postalCode: '', province: 'MI', country: 'IT', phone: '020', email: 's@shop.test'),
+        recipient: new Address(name: 'Client', street: 'Via Napoli 1', city: 'Roma', postalCode: '00100', province: 'RM', country: 'IT', phone: '060', email: 'c@client.test'),
+        parcels: [new Parcel(weightKg: 1.0)],
+        reference: 'ORD-1',
+    );
+    expect(fn () => $provider->createShipment($badSender))
+        ->toThrow(LabelRejected::class, 'Sender address requires at least postal code and city');
+
+    // Missing recipient city
+    $badRecipient = new ShipmentRequest(
+        carrierCode: 'sda',
+        sender: new Address(name: 'Shop', street: 'Via Roma 1', city: 'Milano', postalCode: '20100', province: 'MI', country: 'IT', phone: '020', email: 's@shop.test'),
+        recipient: new Address(name: 'Client', street: 'Via Napoli 1', city: '', postalCode: '00100', province: 'RM', country: 'IT', phone: '060', email: 'c@client.test'),
+        parcels: [new Parcel(weightKg: 1.0)],
+        reference: 'ORD-1',
+    );
+    expect(fn () => $provider->createShipment($badRecipient))
+        ->toThrow(LabelRejected::class, 'Recipient address requires at least postal code and city');
+
+    // US recipient without state/province
+    $badUs = new ShipmentRequest(
+        carrierCode: 'sda',
+        sender: new Address(name: 'Shop', street: 'Via Roma 1', city: 'Milano', postalCode: '20100', province: 'MI', country: 'IT', phone: '020', email: 's@shop.test'),
+        recipient: new Address(name: 'Client', street: 'Broadway 1', city: 'New York', postalCode: '10001', province: '', country: 'US', phone: '123', email: 'c@client.test'),
+        parcels: [new Parcel(weightKg: 1.0)],
+        reference: 'ORD-1',
+    );
+    expect(fn () => $provider->createShipment($badUs))
+        ->toThrow(LabelRejected::class, 'Recipient province (state code) is required for US');
+});

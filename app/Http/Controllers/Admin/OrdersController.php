@@ -505,6 +505,9 @@ class OrdersController extends Controller
             }
         }
 
+        $senderConfigured = ! empty(trim((string) (settings('shipping.sender_postal_code') ?: config('shipping.labels.sender.postal_code') ?: env('SHIPPING_SENDER_POSTAL_CODE', ''))))
+            && ! empty(trim((string) (settings('shipping.sender_city') ?: config('shipping.labels.sender.city') ?: env('SHIPPING_SENDER_CITY', ''))));
+
         return Inertia::render('Admin/Orders/Ship', [
             'order' => $order->toFrontendArray(),
             'carriers' => $trackingManager->carriers(),
@@ -520,6 +523,7 @@ class OrdersController extends Controller
             'default_tracking_driver' => $trackingManager->getDefaultDriver(),
             'rate_drivers' => app(\App\Shipping\Rates\RateManager::class)->selectableDriverNames(),
             'shipping_cost' => (float) ($order->shipping_cost ?? $order->shipping_amount ?? 0.0),
+            'sender_configured' => $senderConfigured,
         ]);
     }
 

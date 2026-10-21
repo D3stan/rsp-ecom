@@ -51,7 +51,19 @@ class ConfigBridge
             foreach ($bridged as $key => $definition) {
                 foreach ($definition->configBridge as $path) {
                     if (array_key_exists($key, $values)) {
-                        $this->overlay($path, $this->format($definition, $values[$key]));
+                        $val = $this->format($definition, $values[$key]);
+
+                        if (str_starts_with($path, 'shipping.labels.sender.') && ($val === '' || $val === null)) {
+                            $baselineVal = isset($this->overlaid[$path]) ? $this->baseline[$path] : $this->config->get($path);
+                            if ($baselineVal !== '' && $baselineVal !== null) {
+                                if (isset($this->overlaid[$path])) {
+                                    $this->restore($path);
+                                }
+                                continue;
+                            }
+                        }
+
+                        $this->overlay($path, $val);
                     } else {
                         $this->restore($path);
                     }

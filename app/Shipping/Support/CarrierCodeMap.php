@@ -19,6 +19,9 @@ class CarrierCodeMap
     /** @var array<string, string> lower-cased provider courier => our code */
     private array $reverse = [];
 
+    /** @var array<string, list<string>> lower-cased provider courier => list of our codes */
+    private array $reverseAll = [];
+
     /**
      * @param  array<array-key, mixed>  $map  our code => provider courier string
      */
@@ -32,8 +35,10 @@ class CarrierCodeMap
                 continue;
             }
 
+            $lowerTheirs = mb_strtolower($theirs);
             $this->forward[mb_strtolower($ours)] ??= $theirs;
-            $this->reverse[mb_strtolower($theirs)] ??= $ours;
+            $this->reverse[$lowerTheirs] ??= $ours;
+            $this->reverseAll[$lowerTheirs][] = $ours;
         }
     }
 
@@ -56,9 +61,66 @@ class CarrierCodeMap
         return $this->forward[mb_strtolower(trim((string) $ourCode))] ?? null;
     }
 
-    /** The provider's courier string => our code, or null when unmapped. */
-    public function fromProvider(?string $courier): ?string
+    /**
+     * The provider's courier string => our code, or null when unmapped.
+     *
+     * @param  list<string>|null  $preferredCodes
+     */
+    public function fromProvider(?string $courier, ?array $preferredCodes = null): ?string
     {
-        return $this->reverse[mb_strtolower(trim((string) $courier))] ?? null;
+        $key = mb_strtolower(trim((string) $courier));
+        if ($key === '') {
+            return null;
+        }
+
+        if (! empty($preferredCodes)) {
+            $aliases = $this->reverseAll[$key] ?? [];
+            $aliasMap = [];
+            foreach ($aliases as $alias) {
+                $aliasMap[mb_strtolower(trim($alias))] = $alias;
+            }
+
+            foreach ($preferredCodes as $preferred) {
+                if (! is_scalar($preferred)) {
+                    continue;
+                }
+                $preferredKey = mb_strtolower(trim((string) $preferred));
+                if (isset($aliasMap[$preferredKey])) {
+                    return $aliasMap[$preferredKey];
+                }
+            }
+        }
+
+        return $this->reverse[$key] ?? null;
+    }
+
+    /**
+     * Check whether two carrier codes map to the same courier.
+     */
+    public function areSameCourier(?string $codeA, ?string $codeB): bool
+    {
+        if ($codeA === null || $codeB === null) {
+            return false;
+        }
+
+        $trimmedA = trim($codeA);
+        $trimmedB = trim($codeB);
+
+        if ($trimmedA === '' || $trimmedB === '') {
+            return false;
+        }
+
+        if (mb_strtolower($trimmedA) === mb_strtolower($trimmedB)) {
+            return true;
+        }
+
+        $provA = $this->toProvider($trimmedA);
+        $provB = $this->toProvider($trimmedB);
+
+        if ($provA !== null && $provB !== null && mb_strtolower(trim($provA)) === mb_strtolower(trim($provB))) {
+            return true;
+        }
+
+        return false;
     }
 }

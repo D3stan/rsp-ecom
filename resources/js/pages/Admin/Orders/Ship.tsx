@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
     AlertCircle,
+    AlertTriangle,
     ArrowLeft,
     Check,
     Clock,
@@ -127,6 +128,7 @@ interface Props {
     default_tracking_driver?: string;
     rate_drivers?: string[];
     shipping_cost?: number;
+    sender_configured?: boolean;
 }
 
 const DEFAULT_DRIVER = '__default__';
@@ -162,6 +164,7 @@ export default function OrderShip({
     tracking_drivers = [],
     default_tracking_driver = '',
     shipping_cost,
+    sender_configured = true,
 }: Props) {
     const { t } = useTranslation();
     const [confirming, setConfirming] = useState(false);
@@ -171,6 +174,7 @@ export default function OrderShip({
     const [rateComparisonError, setRateComparisonError] = useState<string | null>(null);
     const [ratesResult, setRatesResult] = useState<RatesResult | null>(null);
     const [selectedQuoteKey, setSelectedQuoteKey] = useState<string | null>(null);
+    const [carrierWarning, setCarrierWarning] = useState<string | null>(null);
 
     const initialTrackingDriver =
         order.tracking_driver && tracking_drivers.includes(order.tracking_driver)
@@ -251,26 +255,143 @@ export default function OrderShip({
         }
     };
 
+    const getDisplayedCarriers = (driver: string) => {
+        return labelMode && label_driver_carriers[driver] !== undefined
+            ? carriers.filter((carrier) => label_driver_carriers[driver].includes(carrier.code))
+            : carriers;
+    };
+
+    const displayedCarriers = getDisplayedCarriers(data.label_driver);
+
+    const findCarrierMatch = (carrierList: Carrier[], quote: RateQuote): Carrier | undefined => {
+        const qCode = quote.carrier_code.trim().toLowerCase();
+        const qRaw = (quote.raw_carrier_code || '').trim().toLowerCase();
+        const qName = (quote.carrier_name || '').trim().toLowerCase();
+
+        // 1. Direct match by carrier_code
+        const direct = carrierList.find((c) => c.code.toLowerCase() === qCode);
+        if (direct) {
+            return direct;
+        }
+
+        // 2. Direct match by raw_carrier_code
+        if (qRaw) {
+            const rawMatch = carrierList.find((c) => c.code.toLowerCase() === qRaw);
+            if (rawMatch) {
+                return rawMatch;
+            }
+        }
+
+        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const normQ = normalize(qCode);
+        const normRaw = normalize(qRaw);
+        const normName = normalize(qName);
+
+        // 3. Prefix or substring match on codes
+        const prefixOrSub = carrierList.find((c) => {
+            const cCode = c.code.toLowerCase();
+            const normC = normalize(cCode);
+            return (
+                qCode.startsWith(cCode) ||
+                cCode.startsWith(qCode) ||
+                qCode.includes(cCode) ||
+                cCode.includes(qCode) ||
+                (normRaw && (normRaw.startsWith(normC) || normC.startsWith(normRaw) || normRaw.includes(normC) || normC.includes(normRaw)))
+            );
+        });
+        if (prefixOrSub) {
+            return prefixOrSub;
+        }
+
+        // 4. Shared courier groups (e.g. SDA / Poste Italiane, BRT / Bartolini, TNT / FedEx)
+        const courierAliasGroups: string[][] = [
+            ['poste', 'posteitaliane', 'sda', 'sdam', 'pdb'],
+            ['brt', 'bartolini', 'dpd'],
+            ['gls'],
+            ['dhl'],
+            ['ups'],
+            ['tnt', 'fedex'],
+        ];
+
+        for (const group of courierAliasGroups) {
+            const qMatchesGroup = group.some(
+                (alias) =>
+                    normQ.includes(alias) ||
+                    alias.includes(normQ) ||
+                    (normRaw && (normRaw.includes(alias) || alias.includes(normRaw))) ||
+                    (normName && (normName.includes(alias) || alias.includes(normName))),
+            );
+            if (qMatchesGroup) {
+                const matched = carrierList.find((c) => {
+                    const normC = normalize(c.code);
+                    const normCName = normalize(c.name);
+                    return group.some(
+                        (alias) =>
+                            normC.includes(alias) ||
+                            alias.includes(normC) ||
+                            normCName.includes(alias) ||
+                            alias.includes(normCName),
+                    );
+                });
+                if (matched) {
+                    return matched;
+                }
+            }
+        }
+
+        // 5. Courier name match (carrier.name matches quote.carrier_name or quote.carrier_code)
+        const nameMatch = carrierList.find((c) => {
+            const normCName = normalize(c.name);
+            return (
+                (normName && (normCName.includes(normName) || normName.includes(normCName))) ||
+                normCName.includes(normQ) ||
+                normQ.includes(normCName)
+            );
+        });
+        if (nameMatch) {
+            return nameMatch;
+        }
+
+        return undefined;
+    };
+
     const handleUseQuote = (quote: RateQuote) => {
         const quoteKey = `${quote.provider}:${quote.carrier_code}:${quote.service_name}`;
         setSelectedQuoteKey(quoteKey);
-        setData((prev) => ({
-            ...prev,
-            label_driver: label_drivers.includes(quote.provider) ? quote.provider : prev.label_driver,
-            tracking_carrier: carriers.some((c) => c.code === quote.carrier_code) ? quote.carrier_code : prev.tracking_carrier,
-            quote_token: quote.quote_token ?? '',
-        }));
+
+        const nextLabelDriver = label_drivers.includes(quote.provider) ? quote.provider : data.label_driver;
+        const targetCarriers = getDisplayedCarriers(nextLabelDriver);
+
+        const matchedCarrier = findCarrierMatch(targetCarriers, quote);
+
+        if (matchedCarrier) {
+            setCarrierWarning(null);
+            setData((prev) => ({
+                ...prev,
+                label_driver: nextLabelDriver,
+                tracking_carrier: matchedCarrier.code,
+                quote_token: quote.quote_token ?? '',
+            }));
+        } else {
+            const carrierLabel = quote.carrier_name || quote.carrier_code;
+            const warningMsg = t('admin.orders.ship.carrier_not_in_store_settings', {
+                defaultValue: `Carrier "${carrierLabel}" from this quote is not enabled in your store settings. Enable it in Settings to create labels with this carrier.`,
+                carrier: carrierLabel,
+            });
+            setCarrierWarning(warningMsg);
+            setData((prev) => ({
+                ...prev,
+                label_driver: nextLabelDriver,
+                quote_token: quote.quote_token ?? '',
+            }));
+        }
     };
 
     const handleClearQuoteToken = () => {
         setData('quote_token', '');
         setSelectedQuoteKey(null);
+        setCarrierWarning(null);
     };
-
-    const displayedCarriers =
-        labelMode && label_driver_carriers[data.label_driver] !== undefined
-            ? carriers.filter((carrier) => label_driver_carriers[data.label_driver].includes(carrier.code))
-            : carriers;
 
     const withoutNumber = data.tracking_number.trim() === '';
     const canSubmit = displayedCarriers.some((carrier) => carrier.code === data.tracking_carrier)
@@ -293,6 +414,7 @@ export default function OrderShip({
         );
 
     const handleLabelDriverChange = (driver: string) => {
+        setCarrierWarning(null);
         const supported = label_driver_carriers[driver];
         if (supported !== undefined && data.tracking_carrier !== '' && !supported.includes(data.tracking_carrier)) {
             setData((prev) => ({
@@ -307,6 +429,7 @@ export default function OrderShip({
 
     const switchLabelMode = (on: boolean) => {
         setLabelMode(on);
+        setCarrierWarning(null);
         if (on) {
             const supported = label_driver_carriers[data.label_driver];
             if (supported !== undefined && data.tracking_carrier !== '' && !supported.includes(data.tracking_carrier)) {
@@ -424,12 +547,53 @@ export default function OrderShip({
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-5">
+                            {labelMode && sender_configured === false && (
+                                <div className="flex flex-col gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between text-amber-800 dark:text-amber-300">
+                                    <div className="flex items-start gap-3">
+                                        <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                                        <div className="space-y-0.5 text-sm">
+                                            <p className="font-semibold">
+                                                {t('admin.orders.ship.sender_not_configured_title', {
+                                                    defaultValue: 'Sender shipping address not configured',
+                                                })}
+                                            </p>
+                                            <p className="text-xs text-amber-700/90 dark:text-amber-300/90">
+                                                {t('admin.orders.ship.sender_not_configured_warning', {
+                                                    defaultValue:
+                                                        'Sender shipping address is not configured yet. Configure the sender postal code and city in Settings to enable live rate comparisons and automatic carrier labels.',
+                                                })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-amber-500/40 bg-background hover:bg-muted text-xs"
+                                            asChild
+                                        >
+                                            <Link href="/admin/settings/shipping">
+                                                {t('admin.orders.ship.configure_sender_settings', {
+                                                    defaultValue: 'Configure Settings',
+                                                })}
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-2">
                                 <Label htmlFor="tracking_carrier">{t('tracking_admin.carrier')}</Label>
                                 {displayedCarriers.length === 0 ? (
                                     <p className="text-sm text-destructive">{t('admin.orders.ship.no_carriers')}</p>
                                 ) : (
-                                    <Select value={data.tracking_carrier} onValueChange={(value) => setData('tracking_carrier', value)}>
+                                    <Select
+                                        value={data.tracking_carrier}
+                                        onValueChange={(value) => {
+                                            setData('tracking_carrier', value);
+                                            setCarrierWarning(null);
+                                        }}
+                                    >
                                         <SelectTrigger id="tracking_carrier" aria-invalid={!!errors.tracking_carrier}>
                                             <SelectValue placeholder={t('tracking_admin.carrier_select')} />
                                         </SelectTrigger>
@@ -441,6 +605,24 @@ export default function OrderShip({
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                )}
+                                {carrierWarning && (
+                                    <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-400">
+                                        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                                        <div className="flex-1 space-y-1">
+                                            <p>{carrierWarning}</p>
+                                            <div>
+                                                <Link
+                                                    href="/admin/settings/shipping"
+                                                    className="font-medium underline hover:text-amber-900 dark:hover:text-amber-200"
+                                                >
+                                                    {t('admin.orders.ship.configure_carrier_settings', {
+                                                        defaultValue: 'Configure Carriers in Settings',
+                                                    })}
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                                 {errors.tracking_carrier && <p className="text-sm text-destructive">{errors.tracking_carrier}</p>}
                             </div>
@@ -618,6 +800,25 @@ export default function OrderShip({
                                             <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-xs text-destructive">
                                                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                                                 <span>{rateComparisonError}</span>
+                                            </div>
+                                        )}
+
+                                        {carrierWarning && (
+                                            <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-400">
+                                                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                                                <div className="flex-1 space-y-1">
+                                                    <p>{carrierWarning}</p>
+                                                    <div>
+                                                        <Link
+                                                            href="/admin/settings/shipping"
+                                                            className="font-medium underline hover:text-amber-900 dark:hover:text-amber-200"
+                                                        >
+                                                            {t('admin.orders.ship.configure_carrier_settings', {
+                                                                defaultValue: 'Configure Carriers in Settings',
+                                                            })}
+                                                        </Link>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
 

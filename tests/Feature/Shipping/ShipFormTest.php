@@ -254,3 +254,32 @@ it('resolves real courier waybill immediately on manual ship form when tracking 
     });
 });
 
+it('passes sender_configured true to ship form when sender postal code and city are set', function () {
+    settings()->set('shipping.sender_postal_code', '20121');
+    settings()->set('shipping.sender_city', 'Milano');
+
+    $this->actingAs($this->admin)->get(route('admin.orders.show-ship', $this->order))
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Admin/Orders/Ship')
+            ->where('sender_configured', true)
+        );
+});
+
+it('passes sender_configured false to ship form when sender postal code or city is missing', function () {
+    settings()->set('shipping.sender_postal_code', '');
+    settings()->set('shipping.sender_city', '');
+    config(['shipping.labels.sender.postal_code' => '']);
+    config(['shipping.labels.sender.city' => '']);
+    putenv('SHIPPING_SENDER_POSTAL_CODE=');
+    putenv('SHIPPING_SENDER_CITY=');
+
+    $this->actingAs($this->admin)->get(route('admin.orders.show-ship', $this->order))
+        ->assertOk()
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Admin/Orders/Ship')
+            ->where('sender_configured', false)
+        );
+});
+
+

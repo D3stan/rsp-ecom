@@ -46,6 +46,7 @@ foreach ([
     'App\Shipping\Rates\Exceptions',
     'App\Models\Order',
     'App\Console\Commands\SyncShipmentTracking',
+    'App\Console\Commands\TestShippingRates',
 ] as $coreTarget) {
     arch("core {$coreTarget} does not depend on concrete tracking drivers")
         ->expect($coreTarget)

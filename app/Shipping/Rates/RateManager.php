@@ -116,7 +116,13 @@ class RateManager extends Manager
     {
         $country = trim((string) settings('shipping.sender_country', ''));
         if ($country === '') {
-            $country = trim((string) (settings('shipping.default_country') ?: config('shipping.labels.sender.country', 'IT')));
+            $country = trim((string) settings('shipping.default_country', ''));
+        }
+        if ($country === '') {
+            $country = trim((string) config('shipping.labels.sender.country', ''));
+        }
+        if ($country === '') {
+            $country = trim((string) env('SHIPPING_SENDER_COUNTRY', ''));
         }
         if ($country === '') {
             $country = 'IT';
@@ -126,35 +132,71 @@ class RateManager extends Manager
         if ($postalCode === '') {
             $postalCode = trim((string) config('shipping.labels.sender.postal_code', ''));
         }
+        if ($postalCode === '') {
+            $postalCode = trim((string) env('SHIPPING_SENDER_POSTAL_CODE', ''));
+        }
+        if (strtoupper($country) === 'IT' && is_numeric($postalCode) && $postalCode !== '') {
+            $postalCode = str_pad($postalCode, 5, '0', STR_PAD_LEFT);
+        }
 
         $city = trim((string) settings('shipping.sender_city', ''));
         if ($city === '') {
             $city = trim((string) config('shipping.labels.sender.city', ''));
+        }
+        if ($city === '') {
+            $city = trim((string) env('SHIPPING_SENDER_CITY', ''));
         }
 
         $province = trim((string) settings('shipping.sender_province', ''));
         if ($province === '') {
             $province = trim((string) config('shipping.labels.sender.province', ''));
         }
+        if ($province === '') {
+            $province = trim((string) env('SHIPPING_SENDER_PROVINCE', ''));
+        }
 
         $name = trim((string) settings('shipping.sender_name', ''));
         if ($name === '') {
-            $name = trim((string) (settings('store.name') ?: config('shipping.labels.sender.name', '')));
+            $name = trim((string) config('shipping.labels.sender.name', ''));
+        }
+        if ($name === '') {
+            $name = trim((string) env('SHIPPING_SENDER_NAME', ''));
+        }
+        if ($name === '') {
+            $name = trim((string) settings('store.name', ''));
         }
 
         $street = trim((string) settings('shipping.sender_street', ''));
         if ($street === '') {
-            $street = trim((string) (settings('store.address') ?: config('shipping.labels.sender.street', '')));
+            $street = trim((string) config('shipping.labels.sender.street', ''));
+        }
+        if ($street === '') {
+            $street = trim((string) env('SHIPPING_SENDER_STREET', ''));
+        }
+        if ($street === '') {
+            $street = trim((string) settings('store.address', ''));
         }
 
         $phone = trim((string) settings('shipping.sender_phone', ''));
         if ($phone === '') {
-            $phone = trim((string) (settings('contact.phone') ?: config('shipping.labels.sender.phone', '')));
+            $phone = trim((string) config('shipping.labels.sender.phone', ''));
+        }
+        if ($phone === '') {
+            $phone = trim((string) env('SHIPPING_SENDER_PHONE', ''));
+        }
+        if ($phone === '') {
+            $phone = trim((string) settings('contact.phone', ''));
         }
 
         $email = trim((string) settings('shipping.sender_email', ''));
         if ($email === '') {
-            $email = trim((string) (settings('contact.support_email') ?: config('shipping.labels.sender.email', '')));
+            $email = trim((string) config('shipping.labels.sender.email', ''));
+        }
+        if ($email === '') {
+            $email = trim((string) env('SHIPPING_SENDER_EMAIL', ''));
+        }
+        if ($email === '') {
+            $email = trim((string) settings('contact.support_email', ''));
         }
 
         return new RateAddress(
@@ -182,11 +224,17 @@ class RateManager extends Manager
     ): RateRequest {
         $address = $order->shippingAddress;
 
+        $recipientCountry = (string) ($address?->country ?? 'IT');
+        $recipientPostal = trim((string) ($address?->postal_code ?? ''));
+        if (strtoupper($recipientCountry) === 'IT' && is_numeric($recipientPostal) && $recipientPostal !== '') {
+            $recipientPostal = str_pad($recipientPostal, 5, '0', STR_PAD_LEFT);
+        }
+
         $recipient = new RateAddress(
-            postalCode: (string) ($address?->postal_code ?? ''),
+            postalCode: $recipientPostal,
             city: (string) ($address?->city ?? ''),
             province: (string) ($address?->state ?? ''),
-            country: (string) ($address?->country ?? 'IT'),
+            country: $recipientCountry,
             name: trim((string) ($address?->first_name.' '.$address?->last_name)) ?: (string) $order->getCustomerName(),
             street: trim((string) ($address?->address_line_1.' '.$address?->address_line_2)),
             phone: (string) ($address?->phone ?? $order->guest_phone ?? ''),

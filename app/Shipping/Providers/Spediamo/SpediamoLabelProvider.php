@@ -75,6 +75,14 @@ class SpediamoLabelProvider implements CancelsShipments, LabelProvider
 
     public function createShipment(ShipmentRequest $request): ShipmentResult
     {
+        if (trim((string) $request->sender->postalCode) === '' || trim((string) $request->sender->city) === '') {
+            throw new LabelRejected('Spediamo: Sender address requires at least postal code and city (configure shipping.sender_postal_code and shipping.sender_city in settings or .env).');
+        }
+
+        if (trim((string) $request->recipient->postalCode) === '' || trim((string) $request->recipient->city) === '') {
+            throw new LabelRejected('Spediamo: Recipient address requires at least postal code and city.');
+        }
+
         $data = null;
         $quoteToken = isset($request->quoteToken) && $request->quoteToken !== null ? trim($request->quoteToken) : '';
 

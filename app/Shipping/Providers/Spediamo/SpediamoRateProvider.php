@@ -68,12 +68,7 @@ class SpediamoRateProvider implements RateProvider
             $shipmentId = trim((string) ($data['id'] ?? ''));
 
             if (! empty($data['errors']) && is_array($data['errors'])) {
-                $errorMsg = implode(', ', array_map(
-                    fn ($k, $v) => (is_string($k) && ! is_numeric($k) ? "$k: " : '')
-                        .(is_scalar($v) ? (string) $v : (is_array($v) ? implode(';', $v) : json_encode($v))),
-                    array_keys($data['errors']),
-                    $data['errors'],
-                ));
+                $errorMsg = $this->formatErrors($data['errors']);
                 $e = new RateRejected(self::NAME.': '.$errorMsg);
                 if (method_exists($e, 'withHttpStatus')) {
                     $e->withHttpStatus($response->status());
@@ -81,7 +76,17 @@ class SpediamoRateProvider implements RateProvider
                 throw $e;
             }
 
-            return [$this->mapQuote($data, $shipmentId)];
+            $quote = $this->mapQuote($data, $shipmentId, $request->carrierCode);
+            $quotes = [$quote];
+
+            if ($request->carrierCode !== null && trim($request->carrierCode) !== '') {
+                $quotes = array_values(array_filter(
+                    $quotes,
+                    fn (RateQuote $q) => $this->carriers->areSameCourier($q->carrierCode, $request->carrierCode),
+                ));
+            }
+
+            return $quotes;
         } finally {
             if ($cleanup && $shipmentId !== null && $shipmentId !== '') {
                 try {
@@ -111,6 +116,18 @@ class SpediamoRateProvider implements RateProvider
             throw new RateRejected('Spediamo: Recipient address requires at least postal code and city.');
         }
 
+        $senderCountry = strtoupper(trim((string) $sender->country));
+        $senderPostal = trim((string) $sender->postalCode);
+        if (($senderCountry === 'IT' || $senderCountry === '') && is_numeric($senderPostal)) {
+            $senderPostal = str_pad($senderPostal, 5, '0', STR_PAD_LEFT);
+        }
+
+        $recipientCountry = strtoupper(trim((string) $recipient->country));
+        $recipientPostal = trim((string) $recipient->postalCode);
+        if (($recipientCountry === 'IT' || $recipientCountry === '') && is_numeric($recipientPostal)) {
+            $recipientPostal = str_pad($recipientPostal, 5, '0', STR_PAD_LEFT);
+        }
+
         $senderName = property_exists($sender, 'company') && ! empty($sender->company) ? $sender->company : $sender->name;
         $recipientName = property_exists($recipient, 'company') && ! empty($recipient->company) ? $recipient->company : $recipient->name;
 
@@ -118,19 +135,19 @@ class SpediamoRateProvider implements RateProvider
             'type' => 'packages',
             'senderName' => $senderName,
             'senderContactName' => $sender->name,
-            'senderCountry' => $sender->country,
+            'senderCountry' => $senderCountry !== '' ? $senderCountry : 'IT',
             'senderProvince' => $sender->province,
             'senderTown' => $sender->city,
-            'senderPostalCode' => $sender->postalCode,
+            'senderPostalCode' => $senderPostal,
             'senderAddress' => $sender->street,
             'senderPhone' => $sender->phone,
             'senderEmail' => $sender->email,
             'recipientName' => $recipientName,
             'recipientContactName' => $recipient->name,
-            'recipientCountry' => $recipient->country,
+            'recipientCountry' => $recipientCountry !== '' ? $recipientCountry : 'IT',
             'recipientProvince' => $recipient->province,
             'recipientTown' => $recipient->city,
-            'recipientPostalCode' => $recipient->postalCode,
+            'recipientPostalCode' => $recipientPostal,
             'recipientAddress' => $recipient->street,
             'recipientPhone' => $recipient->phone,
             'recipientEmail' => $recipient->email,
@@ -193,14 +210,15 @@ class SpediamoRateProvider implements RateProvider
         return $formatted !== '' ? $formatted : '0';
     }
 
-    private function mapQuote(array $data, ?string $shipmentId): RateQuote
+    private function mapQuote(array $data, ?string $shipmentId, ?string $requestedCarrier = null): RateQuote
     {
         $rawCourier = strtoupper(trim((string) ($data['courier'] ?? 'SDA')));
         if ($rawCourier === '') {
             $rawCourier = 'SDA';
         }
 
-        $carrierCode = $this->carriers->fromProvider($rawCourier) ?? strtolower($rawCourier);
+        $preferred = ($requestedCarrier !== null && trim($requestedCarrier) !== '') ? [trim($requestedCarrier)] : null;
+        $carrierCode = $this->carriers->fromProvider($rawCourier, $preferred) ?? strtolower($rawCourier);
 
         $cleanup = (bool) ($this->config['cleanup_quote_drafts'] ?? true);
         $quoteToken = $cleanup ? null : ($shipmentId !== '' && $shipmentId !== null ? $shipmentId : null);
@@ -295,6 +313,36 @@ class SpediamoRateProvider implements RateProvider
         throw $ex;
     }
 
+    private function formatErrors(array $errors): string
+    {
+        $parts = [];
+        foreach ($errors as $k => $v) {
+            $prefix = is_string($k) && ! is_numeric($k) ? "{$k}: " : '';
+            if (is_scalar($v)) {
+                $valStr = trim((string) $v);
+                $valStr = (string) preg_replace('/^\d+:\s*/', '', $valStr);
+                $parts[] = $prefix . $valStr;
+            } elseif (is_array($v)) {
+                $subParts = [];
+                foreach ($v as $subK => $subV) {
+                    $subPrefix = is_string($subK) && ! is_numeric($subK) ? "{$subK}: " : '';
+                    if (is_scalar($subV)) {
+                        $subValStr = trim((string) $subV);
+                        $subValStr = (string) preg_replace('/^\d+:\s*/', '', $subValStr);
+                        $subParts[] = $subPrefix . $subValStr;
+                    } else {
+                        $subParts[] = json_encode($subV);
+                    }
+                }
+                $parts[] = $prefix . implode('; ', $subParts);
+            } else {
+                $parts[] = $prefix . json_encode($v);
+            }
+        }
+
+        return implode(', ', array_filter($parts, fn ($p) => $p !== ''));
+    }
+
     private function extractErrorMessage(Response $response): ?string
     {
         try {
@@ -308,12 +356,9 @@ class SpediamoRateProvider implements RateProvider
         }
 
         if (! empty($body['errors']) && is_array($body['errors'])) {
-            return implode(', ', array_map(
-                fn ($k, $v) => (is_string($k) && ! is_numeric($k) ? "$k: " : '')
-                    .(is_scalar($v) ? (string) $v : (is_array($v) ? implode(';', $v) : json_encode($v))),
-                array_keys($body['errors']),
-                $body['errors'],
-            ));
+            $formatted = $this->formatErrors($body['errors']);
+
+            return $formatted !== '' ? $formatted : null;
         }
 
         $message = $body['message'] ?? $body['error'] ?? $body['description'] ?? null;

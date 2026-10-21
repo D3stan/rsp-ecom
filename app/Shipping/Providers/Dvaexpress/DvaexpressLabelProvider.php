@@ -53,6 +53,19 @@ class DvaexpressLabelProvider implements CancelsShipments, LabelProvider
 
     public function createShipment(ShipmentRequest $request): ShipmentResult
     {
+        if (trim((string) $request->sender->postalCode) === '' || trim((string) $request->sender->city) === '') {
+            throw new LabelRejected('Dvaexpress: Sender address requires at least postal code and city (configure shipping.sender_postal_code and shipping.sender_city in settings or .env).');
+        }
+
+        if (trim((string) $request->recipient->postalCode) === '' || trim((string) $request->recipient->city) === '') {
+            throw new LabelRejected('Dvaexpress: Recipient address requires at least postal code and city.');
+        }
+
+        $recipientCountry = strtoupper(trim((string) $request->recipient->country));
+        if (in_array($recipientCountry, ['US', 'CA'], true) && trim((string) $request->recipient->province) === '') {
+            throw new LabelRejected("Dvaexpress: Recipient province (state code) is required for {$recipientCountry}.");
+        }
+
         $quoteToken = property_exists($request, 'quoteToken') && is_string($request->quoteToken)
             ? trim($request->quoteToken)
             : '';

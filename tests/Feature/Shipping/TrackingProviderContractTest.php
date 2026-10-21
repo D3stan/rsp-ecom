@@ -73,7 +73,18 @@ dataset('tracking providers', function () {
         'null' => [fn () => new NullProvider, null, 'acme'],
         'fake' => [fn () => new FakeProvider(['webhook_secret' => 'contract-secret']), $signed, 'acme'],
         'spediamo' => [function () {
-            config(['shipping.tracking.drivers.spediamo' => ['base_url' => 'https://spediamo.contract.test', 'token' => 'contract-token', 'retries' => 1, 'retry_sleep_ms' => 0]]);
+            config([
+                'shipping.providers.spediamo' => [
+                    'carrier_map' => [],
+                ],
+                'shipping.tracking.drivers.spediamo' => [
+                    'base_url' => 'https://spediamo.contract.test',
+                    'token' => 'contract-token',
+                    'carrier_map' => [],
+                    'retries' => 1,
+                    'retry_sleep_ms' => 0,
+                ],
+            ]);
             trkContractFake(
                 fn ($request) => (string) ($request->data()['code'] ?? ''),
                 function (string $number, string $kind, $at) {

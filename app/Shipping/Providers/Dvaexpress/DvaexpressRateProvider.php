@@ -63,6 +63,23 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
 
         $senderCountry = strtoupper(trim($request->sender->country));
         $recipientCountry = strtoupper(trim($request->recipient->country));
+
+        $senderPostal = trim((string) $request->sender->postalCode);
+        if (($senderCountry === 'IT' || $senderCountry === '') && is_numeric($senderPostal)) {
+            $senderPostal = str_pad($senderPostal, 5, '0', STR_PAD_LEFT);
+        }
+
+        $recipientPostal = trim((string) $request->recipient->postalCode);
+        if (($recipientCountry === 'IT' || $recipientCountry === '') && is_numeric($recipientPostal)) {
+            $recipientPostal = str_pad($recipientPostal, 5, '0', STR_PAD_LEFT);
+        }
+
+        if (in_array($recipientCountry, ['US', 'CA'], true) && trim((string) $request->recipient->province) === '') {
+            throw new \App\Shipping\Rates\Exceptions\RateRejected(
+                "Dvaexpress: Recipient province (state code) is required for {$recipientCountry}."
+            );
+        }
+
         $tipoSpedizione = $this->resolveShipmentType($senderCountry, $recipientCountry);
 
         $accessori = [];
@@ -132,21 +149,21 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
         }
 
         $mittente = [
-            'cap' => $request->sender->postalCode,
+            'cap' => $senderPostal,
             'localita' => $request->sender->city,
             'provincia' => $senderProv,
             'nazione' => $senderCountry !== '' ? $senderCountry : 'IT',
         ];
 
         $destinatario = [
-            'cap' => $request->recipient->postalCode,
+            'cap' => $recipientPostal,
             'localita' => $request->recipient->city,
             'provincia' => $recipProv,
             'nazione' => $recipientCountry !== '' ? $recipientCountry : 'IT',
         ];
 
         if (in_array($recipientCountry, ['US', 'CA'], true)) {
-            $destinatario['country'] = $request->recipient->province;
+            $destinatario['country'] = $recipProv;
         }
 
         $payload = [
@@ -173,10 +190,14 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
                 continue;
             }
 
+            $preferred = (property_exists($request, 'carrierCode') && $request->carrierCode !== null && trim($request->carrierCode) !== '')
+                ? [trim($request->carrierCode)]
+                : null;
+
             $vettore = (string) ($item['vettore'] ?? $item['famiglia'] ?? '');
             $famiglia = (string) ($item['famiglia'] ?? '');
-            $carrierCode = $this->carriers->fromProvider($vettore)
-                ?? ($this->carriers->fromProvider($famiglia)
+            $carrierCode = $this->carriers->fromProvider($vettore, $preferred)
+                ?? ($this->carriers->fromProvider($famiglia, $preferred)
                 ?? strtolower($famiglia !== '' ? $famiglia : $vettore));
 
             $carrierName = (string) ($item['nome_vettore'] ?? ($famiglia !== '' ? $famiglia : $vettore));
@@ -235,8 +256,7 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
         }
 
         if (property_exists($request, 'carrierCode') && $request->carrierCode !== null && trim($request->carrierCode) !== '') {
-            $target = strtolower(trim($request->carrierCode));
-            $quotes = array_values(array_filter($quotes, fn (RateQuote $q) => strtolower($q->carrierCode) === $target));
+            $quotes = array_values(array_filter($quotes, fn (RateQuote $q) => $this->carriers->areSameCourier($q->carrierCode, $request->carrierCode)));
         }
 
         return $quotes;

@@ -146,6 +146,11 @@ class DvaexpressLabelRequestMapper
             $province = '--';
         }
 
+        $postalCode = trim((string) $sender->postalCode);
+        if (($country === 'IT' || $country === '') && is_numeric($postalCode)) {
+            $postalCode = str_pad($postalCode, 5, '0', STR_PAD_LEFT);
+        }
+
         $taxCode = (string) ($this->config['sender_tax_code'] ?? '');
         if ($taxCode === '' && function_exists('settings')) {
             $taxCode = (string) settings('store.vat_number', '00000000000');
@@ -157,7 +162,7 @@ class DvaexpressLabelRequestMapper
         return [
             'nominativo' => $nominativo,
             'indirizzo' => $sender->street,
-            'cap' => $sender->postalCode,
+            'cap' => $postalCode,
             'localita' => $sender->city,
             'provincia' => $province,
             'nazione' => $country !== '' ? $country : 'IT',
@@ -187,10 +192,15 @@ class DvaexpressLabelRequestMapper
             $province = '--';
         }
 
+        $postalCode = trim((string) $recipient->postalCode);
+        if (($country === 'IT' || $country === '') && is_numeric($postalCode)) {
+            $postalCode = str_pad($postalCode, 5, '0', STR_PAD_LEFT);
+        }
+
         $data = [
             'nominativo' => $nominativo,
             'indirizzo' => $recipient->street,
-            'cap' => $recipient->postalCode,
+            'cap' => $postalCode,
             'localita' => $recipient->city,
             'provincia' => $province,
             'nazione' => $country !== '' ? $country : 'IT',
@@ -202,7 +212,7 @@ class DvaexpressLabelRequestMapper
         ];
 
         if (in_array($country, ['US', 'CA'], true)) {
-            $data['country'] = $recipient->province;
+            $data['country'] = $province;
         }
 
         return $data;
