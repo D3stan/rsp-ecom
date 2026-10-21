@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 /**
  * The money side of an admin order edit (Admin\OrdersController::update).
  *
- * - payment_status is never editable: it follows Stripe and refunds.
+ * - payment_status is editable directly by admins in the edit order form.
  * - Once the payment is captured or in flight (Order::financialsLocked) lines, quantities, prices, shipping, discount
  *   and totals are locked: sending them unchanged is fine, any difference is refused. Money goes back through a refund.
  * - On an unpaid order the lines (quantity int >= 1, price >= 0; a line left out is deleted) and the shipping cost may
@@ -33,10 +33,6 @@ final class OrderFinancialEdit
      */
     public static function plan(Order $order, array $input): ?array
     {
-        if (array_key_exists('payment_status', $input) && $input['payment_status'] !== $order->payment_status) {
-            throw OrderEditRefused::paymentStatus();
-        }
-
         if ($order->financialsLocked()) {
             self::assertUnchanged($order, $input);
 

@@ -462,6 +462,9 @@ class Order extends Model
         return in_array($this->payment_status, ['pending', 'processing']);
     }
 
+    /** All valid payment statuses allowed on an order. */
+    public const PAYMENT_STATUSES = ['pending', 'processing', 'succeeded', 'failed', 'cancelled', 'refunded', 'partially_refunded'];
+
     /** Payment states in which money was captured: the order's lines and totals are then locked (refunds only). */
     public const CAPTURED_PAYMENT_STATUSES = ['succeeded', 'partially_refunded', 'refunded'];
 

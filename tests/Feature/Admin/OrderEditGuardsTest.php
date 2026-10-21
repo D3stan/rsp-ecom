@@ -44,13 +44,22 @@ function editGuardsLines(Order $order, array $changes = [], array $drop = []): s
         ))->values()->all());
 }
 
-it('refuses to change the payment status of a paid order', function () {
-    $order = editGuardsOrder('succeeded');
+it('allows an admin to change the payment status of an order', function () {
+    $order = editGuardsOrder('pending', 'pending');
 
-    $response = $this->actingAs($this->admin)->patch(route('admin.orders.update', $order), ['payment_status' => 'pending']);
+    $response = $this->actingAs($this->admin)->patch(route('admin.orders.update', $order), ['payment_status' => 'succeeded']);
 
     expect($order->fresh()->payment_status)->toBe('succeeded');
-    $response->assertSessionHas('error');
+    $response->assertSessionHas('success');
+});
+
+it('allows an admin to update payment status while keeping amounts intact', function () {
+    $order = editGuardsOrder('succeeded');
+
+    $response = $this->actingAs($this->admin)->patch(route('admin.orders.update', $order), ['payment_status' => 'partially_refunded']);
+
+    expect($order->fresh()->payment_status)->toBe('partially_refunded');
+    $response->assertSessionHas('success');
 });
 
 it('refuses a negative line quantity', function () {

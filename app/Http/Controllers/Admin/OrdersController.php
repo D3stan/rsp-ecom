@@ -206,8 +206,8 @@ class OrdersController extends Controller
     }
 
     /**
-     * Update the specified order. Always editable: notes, tracking, addresses, and the status (through the order
-     * lifecycle). Money (lines, shipping, totals) only while the order is unpaid, and the payment status never:
+     * Update the specified order. Always editable: notes, tracking, addresses, payment status, and the status
+     * (through the order lifecycle). Money (lines, shipping, totals) only while the order is unpaid:
      * OrderFinancialEdit decides. Everything is written in one transaction, or nothing is.
      */
     public function update(Request $request, Order $order)
@@ -221,7 +221,7 @@ class OrdersController extends Controller
             $request->validate([
                 'status' => 'sometimes|string|in:pending,processing,shipped,delivered,cancelled',
                 'reason' => 'sometimes|nullable|string|max:500',
-                'payment_status' => 'sometimes|string',
+                'payment_status' => ['sometimes', 'string', Rule::in(Order::PAYMENT_STATUSES)],
                 'notes' => 'sometimes|nullable|string|max:1000',
                 'tracking_number' => 'sometimes|nullable|string|max:100',
                 'tracking_carrier' => ['sometimes', 'nullable', 'string', 'max:50', Rule::in(app(TrackingManager::class)->carrierCodes())],
@@ -241,7 +241,7 @@ class OrdersController extends Controller
                 return $this->shipFormOnly();
             }
 
-            // Refused (paid order, payment status, invalid lines) before anything is written
+            // Refused (paid order, invalid lines) before anything is written
             $financial = OrderFinancialEdit::plan($order, $request->only([
                 'payment_status', 'order_items', 'subtotal', 'shipping_amount', 'tax_amount', 'discount_amount', 'total_amount',
             ]));
@@ -259,6 +259,10 @@ class OrdersController extends Controller
                     'tracking_number' => $newTrackingNumber,
                     'tracking_carrier' => $request->input('tracking_carrier', $order->tracking_carrier),
                 ];
+
+                if ($request->has('payment_status')) {
+                    $attributes['payment_status'] = $request->input('payment_status');
+                }
 
                 if ($request->has('tracking_driver')) {
                     $driverInput = trim((string) $request->input('tracking_driver', ''));

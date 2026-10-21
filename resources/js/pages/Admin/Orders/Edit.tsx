@@ -79,6 +79,7 @@ interface Order {
 
 interface FormData {
     status: string;
+    payment_status: string;
     shipping_amount: number;
     notes: string;
     order_items: OrderItem[];
@@ -115,6 +116,16 @@ const statusOptions = [
     { value: 'cancelled', label: 'Cancelled' },
 ];
 
+const paymentStatusOptions = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'processing', label: 'Processing' },
+    { value: 'succeeded', label: 'Succeeded' },
+    { value: 'failed', label: 'Failed' },
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'partially_refunded', label: 'Partially refunded' },
+    { value: 'refunded', label: 'Refunded' },
+];
+
 export default function Edit({ order, allowed_transitions = [], financials_locked = false, carriers = [], tracking_drivers = [] }: Props) {
     const { addToast } = useToast();
     const { t, locale } = useTranslation();
@@ -122,6 +133,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [formData, setFormData] = useState<FormData>({
         status: order.status,
+        payment_status: order.payment_status,
         shipping_amount: Number(order.shipping_amount),
         notes: order.notes || '',
         order_items: order.order_items,
@@ -278,9 +290,10 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
     };
 
     const submitForm = () => {
-        // Never the payment status, and no totals: the server derives them. Lines and shipping only while unpaid.
+        // No totals: the server derives them. Lines and shipping only while unpaid.
         const updateData = {
             status: formData.status,
+            payment_status: formData.payment_status,
             notes: formData.notes,
             tracking_number: formData.tracking_number,
             // only sent when carriers are configured, so nothing changes for installations without any
@@ -425,13 +438,25 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                             )}
                                         </div>
                                         <div>
-                                            <Label>{t('admin.orders.filter_payment_status')}</Label>
-                                            {/* read-only: it follows Stripe and refunds */}
-                                            <div className="mt-2">
-                                                <Badge variant="secondary">
-                                                    {t(`admin.orders.payment_status.${order.payment_status}`)}
-                                                </Badge>
-                                            </div>
+                                            <Label htmlFor="payment_status">{t('admin.orders.filter_payment_status')}</Label>
+                                            <Select
+                                                value={formData.payment_status}
+                                                onValueChange={(value: string) => {
+                                                    setFormData((prev) => ({ ...prev, payment_status: value }));
+                                                    clearValidationErrors();
+                                                }}
+                                            >
+                                                <SelectTrigger id="payment_status">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {paymentStatusOptions.map((option) => (
+                                                        <SelectItem key={option.value} value={option.value}>
+                                                            {t(`admin.orders.payment_status.${option.value}`)}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </div>
                                     <div>

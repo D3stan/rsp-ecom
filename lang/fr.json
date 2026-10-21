@@ -1977,6 +1977,7 @@
     "admin.orders.payment_status.processing": "En cours de traitement",
     "admin.orders.payment_status.succeeded": "Réussi",
     "admin.orders.payment_status.failed": "Échoué",
+    "admin.orders.payment_status.cancelled": "Annulé",
     "admin.orders.payment_status.partially_refunded": "Partiellement remboursé",
     "admin.orders.payment_status.refunded": "Remboursé",
     "admin.orders.payment_status.paid": "Payé",
