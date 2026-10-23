@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM serversideup/php:8.3-fpm-nginx-v4.5.1 AS base
+FROM serversideup/php:8.5-fpm-nginx AS base
 USER root
 # gd: review photos are re-encoded to WebP (strips EXIF/GPS), see App\Services\Reviews\ReviewPhotoProcessor
 RUN install-php-extensions bcmath exif gd
