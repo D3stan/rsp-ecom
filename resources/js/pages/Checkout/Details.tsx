@@ -1,3 +1,4 @@
+import StateField from '@/components/address/StateField';
 import MarketingConsentCheckbox from '@/components/checkout/MarketingConsentCheckbox';
 import OrderSummary, { type SummaryLine } from '@/components/checkout/OrderSummary';
 import Header from '@/components/header';
@@ -5,6 +6,7 @@ import InputError from '@/components/input-error';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,11 +17,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useMoney } from '@/hooks/use-money';
 import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
+import { lookupItalianPostcode, provinceCode } from '@/lib/italian-address';
 import { SharedData } from '@/types';
 import { Page } from '@inertiajs/core';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ArrowLeft, ChevronDown, ChevronUp, CreditCard, FileText, Tag, Truck } from 'lucide-react';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 interface Cart {
     id: number;
@@ -37,6 +40,12 @@ interface ShippingAddress {
     postal_code: string;
     country: string;
     phone?: string;
+}
+
+interface SavedAddress {
+    id: number;
+    is_default: boolean;
+    [key: string]: string | number | boolean | null;
 }
 
 interface ContactInformation {
@@ -75,13 +84,24 @@ interface CheckoutDetailsProps extends SharedData {
     total: number;
     totalItems: number;
     freeShippingRemaining?: number | null;
+    // The address book of a signed-in customer, default first; the default prefills the form
+    savedAddresses?: SavedAddress[];
+    // Italian provinces (code => name) for the state dropdown
+    provinces: Record<string, string>;
 }
+
+/** Digits, spaces and phone punctuation, 6-15 digits (mirrors App\Support\AddressRules) */
+const isPhoneValid = (value: string): boolean => {
+    const digits = value.replace(/\D/g, '').length;
+
+    return /^\+?[\d\s().\/-]+$/.test(value) && digits >= 6 && digits <= 15;
+};
 
 
 
 export default function CheckoutDetails() {
     const pageProps = usePage<CheckoutDetailsProps>().props;
-    const { cartItems, subtotal, shippingCost, taxAmount, taxRate, discountAmount = 0, couponCode: initialCouponCode, discountDescription, total, totalItems, freeShippingRemaining, auth } = pageProps;
+    const { cartItems, subtotal, shippingCost, taxAmount, taxRate, discountAmount = 0, couponCode: initialCouponCode, discountDescription, total, totalItems, freeShippingRemaining, savedAddresses = [], provinces, auth } = pageProps;
     const { t, isLoading, locale } = useTranslation();
     const formatCurrency = useMoney();
 
@@ -113,18 +133,32 @@ export default function CheckoutDetails() {
         email: auth?.user?.email || '',
     });
 
-    const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
-        first_name: auth?.user?.name?.split(' ')[0] || '',
-        last_name: auth?.user?.name?.split(' ').slice(1).join(' ') || '',
-        company: '',
-        address_line_1: '',
-        address_line_2: '',
-        city: '',
-        state: '',
-        postal_code: '',
-        country: defaultCountry,
-        phone: '',
-    });
+    /** The form for a saved address (or an empty one, with the account name when signed in). */
+    const addressForm = (saved?: SavedAddress): ShippingAddress => {
+        const text = (key: string) => (typeof saved?.[key] === 'string' ? (saved[key] as string) : '');
+        // a saved country the shop no longer ships to must be picked again
+        const country = text('country') && destinations.includes(text('country')) ? text('country') : defaultCountry;
+
+        return {
+            first_name: text('first_name') || auth?.user?.name?.split(' ')[0] || '',
+            last_name: text('last_name') || auth?.user?.name?.split(' ').slice(1).join(' ') || '',
+            company: text('company'),
+            address_line_1: text('address_line_1'),
+            address_line_2: text('address_line_2'),
+            city: text('city'),
+            state: country === 'IT' ? provinceCode(provinces, text('state')) : text('state'),
+            postal_code: text('postal_code'),
+            country,
+            phone: text('phone'),
+        };
+    };
+
+    const defaultAddress = savedAddresses.find((address) => address.is_default) ?? savedAddresses[0];
+    const [selectedAddress, setSelectedAddress] = useState<string>(defaultAddress ? String(defaultAddress.id) : 'new');
+    const [saveAddress, setSaveAddress] = useState(true);
+    const [shippingAddress, setShippingAddress] = useState<ShippingAddress>(() => addressForm(defaultAddress));
+    // City / province filled in by the CAP lookup: a later lookup may replace them, what the customer typed is never touched
+    const autofilled = useRef({ city: false, state: false });
 
     const [couponCode, setCouponCode] = useState(initialCouponCode || '');
     const [orderNotes, setOrderNotes] = useState('');
@@ -187,6 +221,10 @@ export default function CheckoutDetails() {
             }
         }
 
+        if (shippingAddress.phone?.trim() && !isPhoneValid(shippingAddress.phone.trim())) {
+            found['shipping_address.phone'] = t('checkout.phone_invalid');
+        }
+
         return found;
     };
 
@@ -210,10 +248,48 @@ export default function CheckoutDetails() {
 
     const updateShippingAddress = (field: keyof ShippingAddress, value: string) => {
         clearError(`shipping_address.${String(field)}`);
+        if (field === 'city' || field === 'state') autofilled.current[field] = false;
         setShippingAddress((prev) => ({
             ...prev,
             [field]: value,
+            // the state of another country is not a province code
+            ...(field === 'country' && value === 'IT' ? { state: provinceCode(provinces, prev.state) } : {}),
         }));
+    };
+
+    const updatePostalCode = (value: string) => {
+        updateShippingAddress('postal_code', value);
+
+        if (shippingAddress.country !== 'IT') return;
+
+        void lookupItalianPostcode(value.trim()).then((hit) => {
+            if (!hit) return;
+
+            setShippingAddress((prev) => {
+                if (prev.postal_code.trim() !== value.trim()) return prev; // the CAP changed meanwhile
+
+                const next = { ...prev };
+                if (hit.city && (!prev.city || autofilled.current.city)) {
+                    next.city = hit.city;
+                    autofilled.current.city = true;
+                }
+                if (!prev.state || autofilled.current.state) {
+                    next.state = hit.state;
+                    autofilled.current.state = true;
+                }
+
+                return next;
+            });
+            clearError('shipping_address.city');
+            clearError('shipping_address.state');
+        });
+    };
+
+    const selectSavedAddress = (id: string) => {
+        setSelectedAddress(id);
+        autofilled.current = { city: false, state: false };
+        setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith('shipping_address.'))));
+        setShippingAddress(addressForm(savedAddresses.find((address) => String(address.id) === id)));
     };
 
     const updateContactInfo = (field: keyof ContactInformation, value: string) => {
@@ -320,6 +396,7 @@ export default function CheckoutDetails() {
             order_notes: orderNotes,
             coupon_code: couponCode,
             marketing_consent: marketingConsent,
+            save_address: saveAddress,
         };
 
         if (auth?.user) {
@@ -467,6 +544,26 @@ export default function CheckoutDetails() {
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
                                     <CardContent className="space-y-4">
+                                        {savedAddresses.length > 1 && (
+                                            <div>
+                                                <Label htmlFor="saved_address" className="font-medium text-black">
+                                                    {t('checkout.saved_addresses')}
+                                                </Label>
+                                                <Select value={selectedAddress} onValueChange={selectSavedAddress}>
+                                                    <SelectTrigger id="saved_address" className="border-gray-300 bg-white text-black">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-white text-black">
+                                                        {savedAddresses.map((address) => (
+                                                            <SelectItem key={address.id} value={String(address.id)}>
+                                                                {`${address.first_name} ${address.last_name} · ${address.address_line_1}, ${address.city}`}
+                                                            </SelectItem>
+                                                        ))}
+                                                        <SelectItem value="new">{t('checkout.use_new_address')}</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <div>
                                                 <Label htmlFor="first_name" className="font-medium text-black">
@@ -580,14 +677,13 @@ export default function CheckoutDetails() {
                                                 <Label htmlFor="state" className="font-medium text-black">
                                                     {t('checkout.state')} *
                                                 </Label>
-                                                <Input
+                                                <StateField
                                                     id="state"
-                                                    name="state"
-                                                    autoComplete="address-level1"
-                                                    {...invalidProps('shipping_address.state', 'state')}
+                                                    country={shippingAddress.country}
+                                                    provinces={provinces}
                                                     value={shippingAddress.state}
-                                                    onChange={(e) => updateShippingAddress('state', e.target.value)}
-                                                    required
+                                                    onChange={(value) => updateShippingAddress('state', value)}
+                                                    invalidProps={invalidProps('shipping_address.state', 'state')}
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
                                                 <InputError id="state-error" message={errors['shipping_address.state']} className="mt-1" />
@@ -604,7 +700,7 @@ export default function CheckoutDetails() {
                                                     autoCapitalize="characters"
                                                     {...invalidProps('shipping_address.postal_code', 'postal_code')}
                                                     value={shippingAddress.postal_code}
-                                                    onChange={(e) => updateShippingAddress('postal_code', e.target.value)}
+                                                    onChange={(e) => updatePostalCode(e.target.value)}
                                                     required
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
@@ -662,6 +758,15 @@ export default function CheckoutDetails() {
                                                 <InputError id="phone-error" message={errors['shipping_address.phone']} className="mt-1" />
                                             </div>
                                         </div>
+
+                                        {auth?.user && (
+                                            <div className="flex items-center gap-2">
+                                                <Checkbox id="save_address" checked={saveAddress} onCheckedChange={(checked) => setSaveAddress(checked === true)} />
+                                                <Label htmlFor="save_address" className="text-sm text-gray-700">
+                                                    {t('checkout.save_address')}
+                                                </Label>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </CollapsibleContent>
                             </Collapsible>

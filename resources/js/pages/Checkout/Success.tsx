@@ -1,3 +1,4 @@
+import CreateAccountOffer from '@/components/checkout/CreateAccountOffer';
 import PendingOrderNotice from '@/components/checkout/PendingOrderNotice';
 import Header from '@/components/header';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +54,7 @@ interface Session {
     id: string;
     payment_status: string;
     customer_email: string;
+    customer_name?: string;
     amount_total?: number;
     currency?: string;
     created?: number;
@@ -194,6 +196,11 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                                         <span className="text-sm text-black">{customerEmail}</span>
                                                     </div>
                                                 </div>
+                                            )}
+
+                                            {/* A guest buyer (proven by the cookie or the signed link): the email is known, so an account is one password away */}
+                                            {isGuest && !restricted && !user && session.customer_email && (
+                                                <CreateAccountOffer name={session.customer_name ?? ''} email={session.customer_email} />
                                             )}
 
                                             {/* Where to follow the order: the link in the confirmation email */}
