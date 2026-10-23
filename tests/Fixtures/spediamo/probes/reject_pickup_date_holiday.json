@@ -1,0 +1,39 @@
+{
+    "scenario": "reject_pickup_date_holiday",
+    "method": "POST",
+    "path": "/v1/shipments",
+    "request": {
+        "requestedPickupDate": "2026-11-01",
+        "packages": "1:1:8:35:25",
+        "type": "DOMESTIC",
+        "senderName": "Test Sender",
+        "senderContactName": "Test Sender",
+        "senderCountry": "IT",
+        "senderProvince": "FC",
+        "senderTown": "Cesena",
+        "senderPostalCode": "47522",
+        "senderAddress": "Via Pola 2",
+        "senderPhone": "3331234567",
+        "senderEmail": "sender@example.test",
+        "recipientName": "Test Customer",
+        "recipientContactName": "Test Customer",
+        "recipientCountry": "IT",
+        "recipientProvince": "RA",
+        "recipientTown": "Cervia",
+        "recipientPostalCode": "48015",
+        "recipientAddress": "Via Roma 1"
+    },
+    "status": 400,
+    "response": {
+        "errors": [
+            {
+                "field": "requestedPickupDate",
+                "code": "invalid",
+                "message": "Data non consentita o non più valida"
+            }
+        ],
+        "warnings": null
+    },
+    "draft_delete_status": null,
+    "recorded_at": "2026-10-23T17:02:17+00:00"
+}

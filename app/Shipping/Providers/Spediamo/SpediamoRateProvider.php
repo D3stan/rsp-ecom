@@ -245,7 +245,7 @@ class SpediamoRateProvider implements RateProvider
             currency: (string) ($data['currency'] ?? 'EUR'),
             taxableWeightKg: $taxableWeight,
             dimensionalWeightApplied: (bool) ($data['dimensionalWeightApplied'] ?? false),
-            estimatedDelivery: isset($data['expectedDeliveryDate']) && (string) $data['expectedDeliveryDate'] !== '' ? (string) $data['expectedDeliveryDate'] : null,
+            estimatedDelivery: $this->dateValue($data['expectedDeliveryDate'] ?? null),
             quoteToken: $quoteToken,
             surcharges: $surcharges,
             warnings: $warnings,
@@ -372,6 +372,14 @@ class SpediamoRateProvider implements RateProvider
         $message = $body['message'] ?? $body['error'] ?? $body['description'] ?? null;
 
         return is_string($message) && trim($message) !== '' ? trim($message) : null;
+    }
+
+    /** Spediamo sends dates as {"value": "2026-10-29", "localizedValue": "29/10/2026"}. */
+    private function dateValue(mixed $value): ?string
+    {
+        $date = is_array($value) ? ($value['value'] ?? null) : $value;
+
+        return is_string($date) && trim($date) !== '' ? trim($date) : null;
     }
 
     private function parseAmount(mixed $value, float $default = 0.0): float

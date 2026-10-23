@@ -60,17 +60,22 @@ it('reads each recorded live response', function (array $probe) {
 
     $quote = fn () => spediamoProvider()->quote(spediamoProbeRequest([new RateParcel(weightKg: 1, lengthCm: 35, widthCm: 25, heightCm: 8)]));
 
-    if (str_starts_with($probe['scenario'], 'quote_ok')) {
+    if (str_starts_with($probe['scenario'], 'quote_ok') || str_starts_with($probe['scenario'], 'accept_')) {
         $quotes = $quote();
         expect($quotes)->toHaveCount(1)
             ->and($quotes[0]->totalPrice)->toBe((float) $probe['response']['totalPrice']['value'])
             ->and($quotes[0]->carrierCode)->not->toBe('');
 
+        if (isset($probe['response']['expectedDeliveryDate'])) {
+            expect($quotes[0]->estimatedDelivery)->toBe($probe['response']['expectedDeliveryDate']['value']);
+        }
+
         return;
     }
 
-    // the pickup date is only "missing" until booking, the provider rightly ignores it
-    $fields = collect($probe['response']['errors'])->pluck('field')->reject(fn ($field) => str_starts_with($field, 'requestedPickup'))->all();
+    // a priced draft lists the pickup date as "missing" until booking, the provider rightly ignores that one
+    $fields = collect($probe['response']['errors'])->pluck('field')
+        ->reject(fn ($field) => $probe['status'] < 300 && str_starts_with($field, 'requestedPickup'))->all();
     try {
         $quote();
         $this->fail('expected a rejection');
