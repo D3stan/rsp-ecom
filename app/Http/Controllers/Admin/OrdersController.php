@@ -596,12 +596,7 @@ class OrdersController extends Controller
             'cod_amount' => 'sometimes|nullable|numeric|min:0|max:1000000',
             'quote_token' => 'sometimes|nullable|string|max:191',
             'pickup_date' => ['bail', Rule::requiredIf($wantsLabel), 'nullable', 'date_format:Y-m-d', function ($attribute, $value, $fail) {
-                if ($value === null) {
-                    return;
-                }
-
-                $day = \Carbon\CarbonImmutable::parse($value);
-                if ($day->lessThanOrEqualTo(now()->startOfDay()) || ! \App\Shipping\Support\NextWorkingDay::isWorkingDay($day)) {
+                if ($value !== null && ! \App\Shipping\Support\NextWorkingDay::isFutureWorkingDay($value)) {
                     $fail('The pickup date must be a future working day.');
                 }
             }],

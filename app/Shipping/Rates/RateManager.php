@@ -157,6 +157,7 @@ class RateManager extends Manager
         ?float $cod = null,
         ?string $coupon = null,
         ?string $carrierCode = null,
+        ?string $pickupDate = null,
     ): RateRequest {
         $address = $order->shippingAddress;
 
@@ -212,6 +213,7 @@ class RateManager extends Manager
             contentDescription: 'Merce varia',
             coupon: $coupon,
             carrierCode: $carrierCode,
+            pickupDate: $pickupDate,
         );
     }
 

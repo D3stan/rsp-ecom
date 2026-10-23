@@ -64,6 +64,7 @@ class SpediamoLabelRequestMapper
             'recipientPhone' => $recipient->phone,
             'recipientEmail' => $recipient->email,
             'referenceNumber' => $request->reference,
+            'requestedPickupDate' => $request->pickupDate,
             ...SpediamoPackages::fields($request->parcels, $this->defaultParcel),
         ];
 

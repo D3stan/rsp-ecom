@@ -101,7 +101,7 @@ class DvaexpressLabelRequestMapper
             'dettagli' => $dettagli,
             'mittente' => $this->mapMittente($request->sender),
             'destinatario' => $this->mapDestinatario($request->recipient),
-            'ritiro' => $this->mapRitiro(),
+            'ritiro' => $this->mapRitiro($request->pickupDate),
         ];
     }
 
@@ -263,7 +263,7 @@ class DvaexpressLabelRequestMapper
     /**
      * @return array<string, mixed>
      */
-    private function mapRitiro(): array
+    private function mapRitiro(?string $pickupDate): array
     {
         $pickup = (array) ($this->config['pickup'] ?? []);
 
@@ -271,7 +271,7 @@ class DvaexpressLabelRequestMapper
             'prenotazione' => (string) ($pickup['enabled'] ?? 'S'),
             'dettagli' => [
                 'ritirodove' => (string) ($pickup['location'] ?? 'M'),
-                'disponibile_dal' => (string) ($pickup['date'] ?? now()->addWeekday()->format('Y-m-d')),
+                'disponibile_dal' => (string) ($pickupDate ?? $pickup['date'] ?? now()->addWeekday()->format('Y-m-d')),
                 'disponibile_ora' => (string) ($pickup['time'] ?? '09:00'),
                 'ritiro_mattina_dalle' => (string) ($pickup['morning_from'] ?? '09:00'),
                 'ritiro_mattina_alle' => (string) ($pickup['morning_to'] ?? '13:00'),

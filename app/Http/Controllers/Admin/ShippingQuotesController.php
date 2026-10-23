@@ -11,6 +11,7 @@ use App\Shipping\Rates\DTO\RateQuote;
 use App\Shipping\Rates\DTO\RateRequest;
 use App\Shipping\Rates\RateManager;
 use App\Shipping\ShippingService;
+use App\Shipping\Support\NextWorkingDay;
 use App\Shipping\Support\RecipientAddressCheck;
 use App\Shipping\Support\ShippingIssue;
 use App\Shipping\Tracking\TrackingManager;
@@ -145,6 +146,11 @@ class ShippingQuotesController extends Controller
             'cod_amount' => 'nullable|numeric|min:0|max:1000000',
             'coupon' => 'nullable|string|max:100',
             'carrier_code' => 'nullable|string|max:50',
+            'pickup_date' => ['bail', 'nullable', 'date_format:Y-m-d', function ($attribute, $value, $fail) {
+                if ($value !== null && ! NextWorkingDay::isFutureWorkingDay($value)) {
+                    $fail('The pickup date must be a future working day.');
+                }
+            }],
             'drivers' => 'nullable|array',
             'drivers.*' => ['string', Rule::in($rates->driverNames())],
         ]);
@@ -158,6 +164,7 @@ class ShippingQuotesController extends Controller
             isset($data['cod_amount']) && $data['cod_amount'] !== null && $data['cod_amount'] !== '' ? (float) $data['cod_amount'] : null,
             $data['coupon'] ?? null,
             $data['carrier_code'] ?? null,
+            $data['pickup_date'] ?? null,
         );
 
         $result = $rates->quoteAll($rateRequest, $data['drivers'] ?? null);

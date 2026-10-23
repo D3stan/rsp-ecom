@@ -24,6 +24,14 @@ final class NextWorkingDay
         return $day;
     }
 
+    /** What a pickup request may ask for: a working day after today. */
+    public static function isFutureWorkingDay(string $date): bool
+    {
+        $day = CarbonImmutable::parse($date);
+
+        return $day->greaterThan(now()->startOfDay()) && self::isWorkingDay($day);
+    }
+
     public static function isWorkingDay(CarbonImmutable $day): bool
     {
         return ! $day->isWeekend()

@@ -162,6 +162,7 @@ class SpediamoRateProvider implements RateProvider
             'recipientAddress' => $recipient->street,
             'recipientPhone' => $recipient->phone,
             'recipientEmail' => $recipient->email,
+            'requestedPickupDate' => $request->pickupDate,
             ...SpediamoPackages::fields($request->parcels),
         ];
 
