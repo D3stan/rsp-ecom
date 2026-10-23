@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AddressController;
 use App\Http\Controllers\Settings\NewsletterPreferenceController;
 use App\Http\Controllers\Settings\NotificationPreferenceController;
 use App\Http\Controllers\Settings\PasswordController;
@@ -18,6 +19,11 @@ Route::middleware('auth')->group(function () {
     Route::put('settings/newsletter', [NewsletterPreferenceController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('newsletter.preference');
+
+    Route::get('settings/addresses', [AddressController::class, 'index'])->name('addresses.index');
+    Route::post('settings/addresses', [AddressController::class, 'store'])->name('addresses.store');
+    Route::put('settings/addresses/{address}', [AddressController::class, 'update'])->whereNumber('address')->name('addresses.update');
+    Route::delete('settings/addresses/{address}', [AddressController::class, 'destroy'])->whereNumber('address')->name('addresses.destroy');
 
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
 

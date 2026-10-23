@@ -17,6 +17,11 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
             icon: null,
         },
         {
+            title: t('account.settings.nav_addresses'),
+            href: '/settings/addresses',
+            icon: null,
+        },
+        {
             title: t('account.settings.nav_password'),
             href: '/settings/password',
             icon: null,
