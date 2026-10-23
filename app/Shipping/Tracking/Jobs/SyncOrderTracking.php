@@ -3,6 +3,7 @@
 namespace App\Shipping\Tracking\Jobs;
 
 use App\Models\Order;
+use App\Models\Shipment;
 use App\Shipping\Tracking\Contracts\PassiveProvider;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\Enums\TrackingStatus;
@@ -104,7 +105,7 @@ class SyncOrderTracking implements ShouldQueue
             return;
         }
 
-        $shipment = $order->shipments()->where('status', \App\Models\Shipment::STATUS_CREATED)->reorder()->latest('id')->first();
+        $shipment = $order->shipments()->whereIn('status', Shipment::ACTIVE_STATUSES)->reorder()->latest('id')->first();
         $providerCode = $shipment?->external_id ?: $order->tracking_number;
 
         try {

@@ -6,6 +6,7 @@ use App\Domain\Orders\OrderTransitions;
 use App\Exceptions\InvalidOrderTransition;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\TrackingManager;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -390,12 +391,12 @@ class Order extends Model
                 $this->tracking_next_sync_at = null;
                 $this->tracking_started_at = null;
 
-                $this->shipments()->where('status', Shipment::STATUS_CREATED)->update(['status' => Shipment::STATUS_CANCELLED]);
+                $this->shipments()->whereIn('status', Shipment::ACTIVE_STATUSES)->update(['status' => Shipment::STATUS_CANCELLED]);
                 $this->unsetRelation('shipments');
             }
 
             if ($from === 'processing' && $to === 'cancelled') {
-                $this->shipments()->where('status', Shipment::STATUS_CREATED)->update(['status' => Shipment::STATUS_CANCELLED]);
+                $this->shipments()->whereIn('status', Shipment::ACTIVE_STATUSES)->update(['status' => Shipment::STATUS_CANCELLED]);
                 $this->unsetRelation('shipments');
             }
 
@@ -692,7 +693,7 @@ class Order extends Model
      * Is this viewer proven to be the buyer? Either the logged-in owner, or the browser session
      * the guest checkout started from. Anyone else only gets the non-personal order summary.
      */
-    public function isOwnedBy(?\Illuminate\Contracts\Auth\Authenticatable $user, ?string $sessionId): bool
+    public function isOwnedBy(?Authenticatable $user, ?string $sessionId): bool
     {
         if ($user !== null && $this->user_id !== null && (int) $user->getAuthIdentifier() === (int) $this->user_id) {
             return true;

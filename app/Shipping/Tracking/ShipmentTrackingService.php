@@ -307,7 +307,7 @@ class ShipmentTrackingService
 
         // 1. Update the latest active shipment: save current platform code to external_id if empty,
         // and update shipment.tracking_number to match order.tracking_number so trackingUrl fallback matches.
-        $shipment = $locked->shipments()->where('status', Shipment::STATUS_CREATED)->reorder()->latest('id')->first();
+        $shipment = $locked->shipments()->whereIn('status', Shipment::ACTIVE_STATUSES)->reorder()->latest('id')->first();
         if ($shipment) {
             $shipmentUpdates = ['tracking_number' => $newNumber];
             if (empty($shipment->external_id)) {

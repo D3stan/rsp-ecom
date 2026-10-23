@@ -172,7 +172,7 @@ class OrdersController extends Controller
                     'carrier_code' => $shipment->carrier_code,
                     'driver' => $shipment->driver,
                     'tracking_number' => $shipment->tracking_number,
-                    'can_cancel' => $shipment->status === Shipment::STATUS_CREATED && $this->driverCancels($shipment),
+                    'can_cancel' => in_array($shipment->status, Shipment::ACTIVE_STATUSES, true) && $this->driverCancels($shipment),
                 ])->values()->all(),
             // Internal stock bookkeeping (hidden from every customer-facing array): units sold beyond the stock
             'stock' => [
@@ -673,7 +673,7 @@ class OrdersController extends Controller
         DB::transaction(function () use ($order, $shipment, $request, &$movedToProcessing) {
             $hasOtherActive = $order->shipments()
                 ->where('id', '!=', $shipment->id)
-                ->where('status', Shipment::STATUS_CREATED)
+                ->whereIn('status', Shipment::ACTIVE_STATUSES)
                 ->exists();
 
             if (! $hasOtherActive && $order->status === 'shipped') {

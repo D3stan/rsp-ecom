@@ -8,11 +8,16 @@ use App\Models\OrderEmail;
 use App\Models\Shipment;
 use App\Models\User;
 use App\Services\EmailService;
+use App\Shipping\Labels\Contracts\CancelsShipments;
 use App\Shipping\Labels\DTO\ShipmentResult;
 use App\Shipping\Labels\Exceptions\LabelException;
 use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
+use App\Shipping\Labels\Exceptions\LabelRejected;
 use App\Shipping\Labels\LabelManager;
 use App\Shipping\Labels\ShipmentBuilder;
+use App\Shipping\Tracking\Contracts\PassiveProvider;
+use App\Shipping\Tracking\DTO\TrackingRequest;
+use App\Shipping\Tracking\ShipmentTrackingService;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -97,8 +102,8 @@ class ShippingService
         if ($trackingNumber !== null && $driverName !== null && trim($driverName) !== '') {
             try {
                 $provider = $this->tracking->driver($driverName);
-                if (! ($provider instanceof \App\Shipping\Tracking\Contracts\PassiveProvider)) {
-                    $trackingReq = new \App\Shipping\Tracking\DTO\TrackingRequest(
+                if (! ($provider instanceof PassiveProvider)) {
+                    $trackingReq = new TrackingRequest(
                         trackingNumber: $trackingNumber,
                         carrierCode: $input->carrierCode,
                         orderReference: $order->order_number,
@@ -146,7 +151,7 @@ class ShippingService
 
         if ($initialResult !== null && $driverName !== null) {
             try {
-                app(\App\Shipping\Tracking\ShipmentTrackingService::class)->apply($order, $driverName, $initialResult);
+                app(ShipmentTrackingService::class)->apply($order, $driverName, $initialResult);
             } catch (Throwable $e) {
                 Log::warning('Failed to apply initial tracking result during manual shipment', [
                     'order_id' => $order->id,
@@ -181,7 +186,7 @@ class ShippingService
         $provider = $this->labels->driver($driverName);
 
         if (! $provider->supports($input->carrierCode)) {
-            throw new \App\Shipping\Labels\Exceptions\LabelRejected('The selected carrier is not available for label creation.');
+            throw new LabelRejected('The selected carrier is not available for label creation.');
         }
 
         $request = $this->builder->build($order, $input->carrierCode, $input->parcels, $input->insuranceAmount, $input->codAmount, $input->quoteToken);
@@ -308,13 +313,13 @@ class ShippingService
         }
 
         if (! $shipment->external_id) {
-            throw new \App\Shipping\Labels\Exceptions\LabelRejected('This shipment cannot be cancelled at the carrier.');
+            throw new LabelRejected('This shipment cannot be cancelled at the carrier.');
         }
 
         $provider = $this->labels->driver($shipment->driver);
 
-        if (! $provider instanceof \App\Shipping\Labels\Contracts\CancelsShipments) {
-            throw new \App\Shipping\Labels\Exceptions\LabelRejected('This carrier does not support cancelling a shipment.');
+        if (! $provider instanceof CancelsShipments) {
+            throw new LabelRejected('This carrier does not support cancelling a shipment.');
         }
 
         $provider->cancelShipment($shipment->external_id);
@@ -341,8 +346,8 @@ class ShippingService
         if ($number !== null && $driverName !== null && trim($driverName) !== '') {
             try {
                 $provider = $this->tracking->driver($driverName);
-                if (! ($provider instanceof \App\Shipping\Tracking\Contracts\PassiveProvider)) {
-                    $trackingReq = new \App\Shipping\Tracking\DTO\TrackingRequest(
+                if (! ($provider instanceof PassiveProvider)) {
+                    $trackingReq = new TrackingRequest(
                         trackingNumber: $number,
                         carrierCode: is_string($carrier) ? $carrier : null,
                         orderReference: $order->order_number,
@@ -351,7 +356,7 @@ class ShippingService
                     if ($result->carrierTrackingNumber !== null && trim($result->carrierTrackingNumber) !== '') {
                         $carrierTrk = trim($result->carrierTrackingNumber);
                         if (strcasecmp($carrierTrk, $number) !== 0) {
-                            $shipment = $order->shipments()->where('status', Shipment::STATUS_CREATED)->reorder()->latest('id')->first();
+                            $shipment = $order->shipments()->whereIn('status', Shipment::ACTIVE_STATUSES)->reorder()->latest('id')->first();
                             if ($shipment) {
                                 $shipment->update([
                                     'external_id' => $number,
@@ -370,7 +375,7 @@ class ShippingService
             }
         }
 
-        $shipment = $order->shipments()->where('status', Shipment::STATUS_CREATED)->reorder()->latest('id')->first();
+        $shipment = $order->shipments()->whereIn('status', Shipment::ACTIVE_STATUSES)->reorder()->latest('id')->first();
 
         if ($shipment?->isManual() && $shipment->tracking_number !== $number) {
             $shipment->update(['tracking_number' => $number]
