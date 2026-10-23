@@ -2,8 +2,11 @@
 
 use App\Models\Order;
 use App\Models\Shipment;
+use App\Models\Size;
 use App\Models\User;
 use App\Shipping\Labels\LabelManager;
+use App\Shipping\Support\NextWorkingDay;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -11,8 +14,8 @@ use Inertia\Testing\AssertableInertia as Assert;
 /*
  * G3: optional label creation through the modular carrier layer. Off by default: with labels off no label provider is
  * resolved at all and the admin ships by typing carrier + tracking (G2). On: the active LabelProvider creates the
- * shipment, the PDF is stored on the private disk, the tracking number comes from the carrier, the order ships and one
- * email with tracking goes out. The admin can download the PDF (customers cannot) and cancel the shipment.
+ * shipment, the PDF is stored on the private disk, the tracking number comes from the carrier, the order ships and the
+ * customer's email follows at the carrier's first scan. The admin can download the PDF (customers cannot) and cancel the shipment.
  */
 
 beforeEach(function () {
@@ -39,7 +42,7 @@ function labelShipBody(array $extra = []): array
     return array_merge([
         'tracking_carrier' => 'acme',
         'create_label' => true,
-        'pickup_date' => \App\Shipping\Support\NextWorkingDay::after(\Carbon\CarbonImmutable::now())->toDateString(),
+        'pickup_date' => NextWorkingDay::after(CarbonImmutable::now())->toDateString(),
         'parcels' => [['weight' => 1.5]],
     ], $extra);
 }
@@ -63,7 +66,7 @@ it('resolves no label provider at all when labels are off', function () {
         ->and($order->shipments()->first()->driver)->toBe(Shipment::DRIVER_MANUAL);
 });
 
-it('creates a label: shipment row, stored PDF, carrier tracking number, shipped and one email', function () {
+it('creates a label: shipment row, stored PDF, carrier tracking number, shipped, and the email held until pickup', function () {
     $response = $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody());
 
     // the order page gets the new shipment id so it can offer to print the label
@@ -84,7 +87,9 @@ it('creates a label: shipment row, stored PDF, carrier tracking number, shipped 
     Storage::disk('local')->assertExists($shipment->label_path);
     expect(Storage::disk('local')->get($shipment->label_path))->toStartWith('%PDF');
 
-    Queue::assertPushed(\App\Jobs\SendOrderEmail::class, 1);
+    // the shipped email waits for the carrier's first scan (DeferredShippedEmailTest)
+    expect($shipment->notify_on_pickup)->toBeTrue();
+    Queue::assertNothingPushed();
 });
 
 it('shows the carriers message on a carrier rejection and does not change the order', function () {
@@ -145,8 +150,8 @@ it('gives the ship page the labels flag, driver and prefilled parcels', function
 
 it('prefills label parcels with the packed weight of the box size, else the default weight', function () {
     settings()->set('shipping.default_parcel_weight_kg', 1.0);
-    $weighed = \App\Models\Size::factory()->create(['weight_kg' => 2.35]);
-    $unweighed = \App\Models\Size::factory()->create(['weight_kg' => null]);
+    $weighed = Size::factory()->create(['weight_kg' => 2.35]);
+    $unweighed = Size::factory()->create(['weight_kg' => null]);
     $this->order->orderItems()->delete();
     $this->order->orderItems()->create(['product_name' => 'A', 'quantity' => 1, 'price' => 10, 'total' => 10, 'size_id' => $weighed->id]);
     $this->order->orderItems()->create(['product_name' => 'B', 'quantity' => 1, 'price' => 10, 'total' => 10, 'size_id' => $unweighed->id]);

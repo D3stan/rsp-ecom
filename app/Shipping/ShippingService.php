@@ -30,7 +30,8 @@ use Throwable;
 /**
  * The only way an order becomes "shipped" (controllers call nothing else). It records the shipment, stores the current
  * carrier, tracking number, and tracking driver on the order (tracking module, emails), moves the order through the
- * lifecycle and sends the shipped email: one, with the tracking when there is a number. Nothing here is carrier specific.
+ * lifecycle and sends the shipped email: one, with the tracking when there is a number. A purchased label is the exception: its email
+ * waits for the carrier's first scan (ShipmentTrackingService). Nothing here is carrier specific.
  *
  * Label creation is optional (shipping.labels_enabled, OFF by default). When off, no label provider is ever resolved:
  * ship() takes the manual path (the admin typed the carrier and tracking number). When on and the admin asked for a
@@ -218,6 +219,7 @@ class ShippingService
                     'tracking_number' => $result->trackingNumber,
                     'label_path' => $path,
                     'pickup_date' => $input->pickupDate,
+                    'notify_on_pickup' => true,
                     'status' => $result->awaitingPayment ? Shipment::STATUS_AWAITING_PAYMENT : Shipment::STATUS_CREATED,
                     'request_payload' => $result->raw ?: null,
                     'created_by' => $actor->getKey(),
@@ -259,9 +261,8 @@ class ShippingService
             'tracking_driver' => $order->tracking_driver,
         ]);
 
-        $emailFailed = ! $this->emails->sendOrderShipped($order, $result->trackingNumber);
-
-        return new ShipOutcome($shipment, $emailFailed);
+        // No email yet: the customer is told when the carrier first scans the parcel (ShipmentTrackingService)
+        return new ShipOutcome($shipment, false);
     }
 
     /**
@@ -397,6 +398,11 @@ class ShippingService
     public function trackingChanged(Order $order): bool
     {
         if ($order->status !== 'shipped') {
+            return true;
+        }
+
+        // a purchased label's shipped email waits for the first carrier scan: editing the number must not send it early
+        if ($order->shipments()->where('notify_on_pickup', true)->exists()) {
             return true;
         }
 

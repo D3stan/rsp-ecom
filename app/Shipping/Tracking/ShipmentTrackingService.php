@@ -6,6 +6,7 @@ use App\Exceptions\InvalidOrderTransition;
 use App\Models\Order;
 use App\Models\Shipment;
 use App\Models\ShipmentTrackingEvent;
+use App\Services\EmailService;
 use App\Shipping\Tracking\DTO\TrackingEvent;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\DTO\TrackingResult;
@@ -251,12 +252,36 @@ class ShipmentTrackingService
             $order->save();
         }
 
+        // Checked on the resulting status (not only on a move) so a shipped email that could not be queued is retried
+        if (in_array($this->resultingStatus($order), [TrackingStatus::InTransit, TrackingStatus::OutForDelivery, TrackingStatus::Delivered], true)) {
+            $this->sendDeferredShippedEmail($order);
+        }
+
         Log::info('Tracking update applied', [
             'order_id' => $order->id,
             'provider' => $provider,
             'status' => $order->tracking_status,
             'new_events' => $newEvents,
         ]);
+    }
+
+    /** Label purchases hold the shipped email back until the carrier has the parcel. */
+    private function sendDeferredShippedEmail(Order $order): void
+    {
+        $shipment = $order->shipments()->where('notify_on_pickup', true)->reorder()->latest('id')->first();
+
+        if ($shipment === null) {
+            return;
+        }
+
+        // a parcel first seen as delivered gets the delivered email only
+        if ($this->resultingStatus($order) === TrackingStatus::Delivered || app(EmailService::class)->sendOrderShipped($order, $order->tracking_number)) {
+            $shipment->update(['notify_on_pickup' => false]);
+
+            return;
+        }
+
+        Log::warning('Deferred shipped email could not be queued; it will be retried on the next sync', ['order_id' => $order->id]);
     }
 
     private function autoDeliver(): bool

@@ -645,7 +645,11 @@ class OrdersController extends Controller
 
         // label: the order page then offers to print the label just bought
         $response = redirect()->route('admin.orders.show', $wantsLabel ? [$order, 'label' => $outcome->shipment->id] : $order)
-            ->with('success', 'Order has been shipped successfully!');
+            ->with('success', match (true) {
+                ! $wantsLabel => 'Order has been shipped successfully!',
+                $outcome->shipment->status === Shipment::STATUS_AWAITING_PAYMENT => 'Draft created on '.($shipping->providerNames()[$outcome->shipment->driver] ?? 'the carrier').'. Pay it there, then press "Check payment" on this order.',
+                default => 'Label bought. The customer is emailed when the carrier picks the parcel up.',
+            });
 
         return $outcome->emailFailed
             ? $response->with('warning', 'The order was marked as shipped, but the shipping email could not be queued. Please check the application logs.')
