@@ -13,7 +13,17 @@ import { groupIcon } from './group-icon';
 import { restoreGroupHash } from './hash';
 import { HistoryPanel } from './HistoryPanel';
 import { SettingFieldRow } from './SettingFieldRow';
-import { draftFromGroup, formatValue, groupErrors, isFieldDirty, toDraft, toPayload, type DraftValue, type GroupDraft, type RowDraft } from './values';
+import {
+    draftFromGroup,
+    formatValue,
+    groupErrors,
+    isFieldDirty,
+    toDraft,
+    toPayload,
+    type DraftValue,
+    type GroupDraft,
+    type RowDraft,
+} from './values';
 
 // Extra links shown under a group (the box sizes and their shipping costs have their own admin page).
 const GROUP_LINKS: Record<string, { href: string; labelKey: string }> = {
@@ -181,9 +191,11 @@ export function GroupForm({ group, onDirtyChange }: GroupFormProps) {
                                 {group.fields.map((field) => {
                                     const controller = field.dependsOn ? fieldsByKey.get(field.dependsOn) : undefined;
                                     const source = field.memberOf ? fieldsByKey.get(field.memberOf) : undefined;
+                                    // json rows (shipping.carriers): their codes are the options, their names the labels
+                                    const rows = source?.type === 'json' ? (draft[source.name] as RowDraft[]).filter((row) => row.code) : undefined;
                                     const options = source
-                                        ? source.type === 'json'
-                                            ? (draft[source.name] as RowDraft[]).map((row) => String(row.code ?? '')).filter(Boolean)
+                                        ? rows
+                                            ? rows.map((row) => String(row.code))
                                             : (draft[source.name] as string[])
                                         : field.type === 'countries'
                                           ? COUNTRY_CODES
@@ -196,6 +208,9 @@ export function GroupForm({ group, onDirtyChange }: GroupFormProps) {
                                             value={draft[field.name]}
                                             options={options}
                                             countryOptions={field.type === 'countries' || source?.type === 'countries'}
+                                            optionNames={
+                                                rows && Object.fromEntries(rows.map((row) => [String(row.code), String(row.name || row.code)]))
+                                            }
                                             errors={errorsByField[field.name]}
                                             disabledBy={controller && !draft[controller.name] ? controller.label : undefined}
                                             busy={processing}

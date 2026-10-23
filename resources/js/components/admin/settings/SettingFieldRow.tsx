@@ -23,6 +23,8 @@ export interface SettingFieldRowProps {
     options: string[];
     /** options are ISO country codes: show localized names */
     countryOptions: boolean;
+    /** display names of the options (code => name), e.g. carrier names when the options are carrier codes */
+    optionNames?: Record<string, string>;
     errors?: FieldErrors;
     /** label of the switch this field depends on, when that switch is off */
     disabledBy?: string;
@@ -40,6 +42,7 @@ export const SettingFieldRow = memo(function SettingFieldRow({
     value,
     options,
     countryOptions,
+    optionNames,
     errors,
     disabledBy,
     busy,
@@ -58,7 +61,10 @@ export const SettingFieldRow = memo(function SettingFieldRow({
         (option: string) => (countryOptions ? `${countryName(option, locale)} (${option})` : option),
         [countryOptions, locale],
     );
-    const listLabel = useCallback((option: string) => (countryOptions ? countryName(option, locale) : option), [countryOptions, locale]);
+    const listLabel = useCallback(
+        (option: string) => (countryOptions ? countryName(option, locale) : (optionNames?.[option] ?? option)),
+        [countryOptions, optionNames, locale],
+    );
 
     const nested = errors?.nested ?? {};
     const hasNestedList = field.type !== 'json' && Object.keys(nested).length > 0;
