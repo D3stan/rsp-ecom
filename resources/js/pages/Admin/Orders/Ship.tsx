@@ -21,7 +21,21 @@ import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { AlertCircle, AlertTriangle, ArrowLeft, Clock, Loader2, MapPin, Package, RefreshCw, Star, Truck, Wallet } from 'lucide-react';
+import {
+    AlertCircle,
+    AlertTriangle,
+    ArrowLeft,
+    ArrowUpDown,
+    ChevronDown,
+    Clock,
+    Loader2,
+    MapPin,
+    Package,
+    RefreshCw,
+    Star,
+    Truck,
+    Wallet,
+} from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 
 interface Order {
@@ -189,6 +203,7 @@ export default function OrderShip({
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [refreshCount, setRefreshCount] = useState(0);
     const [favourites, setFavourites] = useState<string[]>(preferred_carriers);
+    const [sortBy, setSortBy] = useState<'price' | 'provider'>('price');
 
     const orderValue = Number(order.subtotal ?? 0);
     const customerPaid = Number(order.shipping_cost ?? shipping_cost ?? 0);
@@ -412,9 +427,19 @@ export default function OrderShip({
         (quote) =>
             quoteKey(quote) === selectedKey || (recommended && quoteKey(quote) === quoteKey(recommended)) || isFavourite(quote) || isLastUsed(quote),
     );
+    // by provider: provider name A→Z, then carrier name, then price (quotes arrive sorted by price)
+    const sortedQuotes =
+        sortBy === 'price'
+            ? rates.quotes
+            : [...rates.quotes].sort(
+                  (a, b) =>
+                      (provider_names[a.provider] ?? a.provider).localeCompare(provider_names[b.provider] ?? b.provider) ||
+                      a.carrier_name.localeCompare(b.carrier_name) ||
+                      a.total_price - b.total_price,
+              );
     const visibleQuotes = showAllQuotes
-        ? rates.quotes
-        : rates.quotes.filter((quote, i) => (pinnedQuotes.length > 0 ? pinnedQuotes.includes(quote) : i < VISIBLE_QUOTES));
+        ? sortedQuotes
+        : sortedQuotes.filter((quote, i) => (pinnedQuotes.length > 0 ? pinnedQuotes.includes(quote) : i < VISIBLE_QUOTES));
 
     // the selected provider's prepaid balance, shown only when it would cover just a few more labels
     const selectedBalance = selected ? balanceAmount(rates.balances[selected.provider]) : null;
@@ -717,9 +742,21 @@ export default function OrderShip({
                                     {/* Rates: fetched automatically, best one preselected */}
                                     {sender_configured && (
                                         <div className="space-y-3">
-                                            <div className="flex items-center justify-between gap-3">
+                                            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                                                 <h4 className="text-sm font-medium">{t('admin.orders.ship.rates')}</h4>
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 gap-1 px-2 text-xs"
+                                                        onClick={() => setSortBy(sortBy === 'price' ? 'provider' : 'price')}
+                                                    >
+                                                        <ArrowUpDown className="h-3.5 w-3.5" />
+                                                        {sortBy === 'price'
+                                                            ? t('admin.orders.ship.sort_price')
+                                                            : t('admin.orders.ship.sort_provider')}
+                                                    </Button>
                                                     <span>{t('admin.orders.ship.customer_paid', { amount: customerPaid.toFixed(2) })}</span>
                                                     <Button
                                                         type="button"
@@ -767,114 +804,132 @@ export default function OrderShip({
                                                         const margin = quote.margin_delta ?? customerPaid - quote.total_price;
 
                                                         return (
-                                                            <div key={key} className="flex items-center gap-1">
-                                                                <button
-                                                                    type="button"
-                                                                    role="radio"
-                                                                    aria-checked={isSelected}
-                                                                    disabled={!canBuy}
-                                                                    onClick={() => selectQuote(quote)}
-                                                                    className={cn(
-                                                                        'flex min-w-0 flex-1 items-center gap-3 rounded-md border bg-card p-3 text-left transition-colors',
-                                                                        isSelected
-                                                                            ? 'border-primary ring-2 ring-primary/20'
-                                                                            : 'hover:border-muted-foreground/30',
-                                                                        !canBuy && 'cursor-not-allowed opacity-60 hover:border-border',
-                                                                    )}
-                                                                >
-                                                                    <span
-                                                                        className={cn(
-                                                                            'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                                                                            isSelected && 'border-primary',
-                                                                        )}
+                                                            <div
+                                                                key={key}
+                                                                className={cn(
+                                                                    'rounded-md border bg-card transition-colors',
+                                                                    isSelected
+                                                                        ? 'border-primary ring-2 ring-primary/20'
+                                                                        : 'hover:border-muted-foreground/30',
+                                                                    !canBuy && 'opacity-60 hover:border-border',
+                                                                )}
+                                                            >
+                                                                <div className="flex items-start">
+                                                                    <button
+                                                                        type="button"
+                                                                        role="radio"
+                                                                        aria-checked={isSelected}
+                                                                        disabled={!canBuy}
+                                                                        onClick={() => selectQuote(quote)}
+                                                                        className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left disabled:cursor-not-allowed"
                                                                     >
-                                                                        {isSelected && <span className="h-2 w-2 rounded-full bg-primary" />}
-                                                                    </span>
-                                                                    <span className="min-w-0 flex-1 space-y-0.5">
-                                                                        <span className="flex flex-wrap items-center gap-1.5">
-                                                                            <span className="text-sm font-semibold">{quote.carrier_name}</span>
-                                                                            <span className="text-xs text-muted-foreground">
-                                                                                {quote.service_name}
-                                                                            </span>
-                                                                            {recommended && key === quoteKey(recommended) && (
-                                                                                <Badge className="px-1.5 py-0 text-[10px]">
-                                                                                    {t('admin.orders.ship.recommended')}
-                                                                                </Badge>
-                                                                            )}
-                                                                            {isLastUsed(quote) && (
-                                                                                <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                                                                                    {t('admin.orders.ship.last_used')}
-                                                                                </Badge>
-                                                                            )}
-                                                                        </span>
-                                                                        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                                                                            <span>{driverName(quote.provider)}</span>
-                                                                            {quote.estimated_delivery && (
-                                                                                <span className="inline-flex items-center gap-1">
-                                                                                    <Clock className="h-3 w-3" />
-                                                                                    {quote.estimated_delivery}
-                                                                                </span>
-                                                                            )}
-                                                                            {quote.dimensional_weight_applied && (
-                                                                                <span className="text-amber-700 dark:text-amber-400">
-                                                                                    {t('admin.orders.ship.volumetric')}
-                                                                                    {quote.taxable_weight_kg != null &&
-                                                                                        ` ${quote.taxable_weight_kg} kg`}
-                                                                                </span>
-                                                                            )}
-                                                                            {!canBuy && (
-                                                                                <span className="text-amber-700 dark:text-amber-400">
-                                                                                    {unavailableReason(quote)}
-                                                                                </span>
-                                                                            )}
-                                                                        </span>
-                                                                        {quote.warnings?.map((warning) => (
-                                                                            <span
-                                                                                key={warning}
-                                                                                className="block text-xs text-amber-700 dark:text-amber-400"
-                                                                            >
-                                                                                {warning}
-                                                                            </span>
-                                                                        ))}
-                                                                    </span>
-                                                                    <span className="shrink-0 text-right">
-                                                                        <span className="block text-base font-bold">{euro(quote.total_price)}</span>
                                                                         <span
                                                                             className={cn(
-                                                                                'block text-xs font-medium',
-                                                                                margin >= 0
-                                                                                    ? 'text-emerald-700 dark:text-emerald-400'
-                                                                                    : 'text-red-700 dark:text-red-400',
+                                                                                'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                                                                                isSelected && 'border-primary',
                                                                             )}
                                                                         >
-                                                                            {margin >= 0 ? `+${euro(margin)}` : `−${euro(Math.abs(margin))}`}
+                                                                            {isSelected && <span className="h-2 w-2 rounded-full bg-primary" />}
                                                                         </span>
-                                                                    </span>
-                                                                </button>
-                                                                {canBuy && (
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-8 w-8 shrink-0"
-                                                                        aria-pressed={isFavourite(quote)}
-                                                                        aria-label={t(
-                                                                            isFavourite(quote)
-                                                                                ? 'admin.orders.ship.favourite_remove'
-                                                                                : 'admin.orders.ship.favourite_add',
-                                                                            { carrier: quote.carrier_name },
-                                                                        )}
-                                                                        onClick={() => toggleFavourite(quote)}
-                                                                    >
-                                                                        <Star
-                                                                            className={cn(
-                                                                                'h-4 w-4',
+                                                                        <span className="min-w-0 flex-1 space-y-0.5">
+                                                                            <span className="flex flex-wrap items-center gap-1.5">
+                                                                                <span className="text-sm font-semibold break-words">
+                                                                                    {quote.carrier_name}
+                                                                                </span>
+                                                                                <span className="text-xs text-muted-foreground">
+                                                                                    {quote.service_name}
+                                                                                </span>
+                                                                                {recommended && key === quoteKey(recommended) && (
+                                                                                    <Badge className="px-1.5 py-0 text-[10px]">
+                                                                                        {t('admin.orders.ship.recommended')}
+                                                                                    </Badge>
+                                                                                )}
+                                                                                {isLastUsed(quote) && (
+                                                                                    <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                                                                                        {t('admin.orders.ship.last_used')}
+                                                                                    </Badge>
+                                                                                )}
+                                                                            </span>
+                                                                            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                                                                                <span>{driverName(quote.provider)}</span>
+                                                                                {quote.estimated_delivery && (
+                                                                                    <span className="inline-flex items-center gap-1">
+                                                                                        <Clock className="h-3 w-3" />
+                                                                                        {quote.estimated_delivery}
+                                                                                    </span>
+                                                                                )}
+                                                                                {quote.dimensional_weight_applied && (
+                                                                                    <span className="text-amber-700 dark:text-amber-400">
+                                                                                        {t('admin.orders.ship.volumetric')}
+                                                                                        {quote.taxable_weight_kg != null &&
+                                                                                            ` ${quote.taxable_weight_kg} kg`}
+                                                                                    </span>
+                                                                                )}
+                                                                                {!canBuy && (
+                                                                                    <span className="text-amber-700 dark:text-amber-400">
+                                                                                        {unavailableReason(quote)}
+                                                                                    </span>
+                                                                                )}
+                                                                            </span>
+                                                                        </span>
+                                                                        <span className="shrink-0 text-right">
+                                                                            <span className="block text-base font-bold">
+                                                                                {euro(quote.total_price)}
+                                                                            </span>
+                                                                            <span
+                                                                                className={cn(
+                                                                                    'block text-xs font-medium',
+                                                                                    margin >= 0
+                                                                                        ? 'text-emerald-700 dark:text-emerald-400'
+                                                                                        : 'text-red-700 dark:text-red-400',
+                                                                                )}
+                                                                            >
+                                                                                {margin >= 0 ? `+${euro(margin)}` : `−${euro(Math.abs(margin))}`}
+                                                                            </span>
+                                                                        </span>
+                                                                    </button>
+                                                                    {canBuy && (
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="mt-2.5 mr-1.5 h-8 w-8 shrink-0"
+                                                                            aria-pressed={isFavourite(quote)}
+                                                                            aria-label={t(
                                                                                 isFavourite(quote)
-                                                                                    ? 'fill-amber-400 text-amber-500'
-                                                                                    : 'text-muted-foreground',
+                                                                                    ? 'admin.orders.ship.favourite_remove'
+                                                                                    : 'admin.orders.ship.favourite_add',
+                                                                                {
+                                                                                    carrier: quote.carrier_name,
+                                                                                },
                                                                             )}
-                                                                        />
-                                                                    </Button>
+                                                                            onClick={() => toggleFavourite(quote)}
+                                                                        >
+                                                                            <Star
+                                                                                className={cn(
+                                                                                    'h-4 w-4',
+                                                                                    isFavourite(quote)
+                                                                                        ? 'fill-amber-400 text-amber-500'
+                                                                                        : 'text-muted-foreground',
+                                                                                )}
+                                                                            />
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                                {/* carrier notes (limits, terms) can run long: collapsed by default */}
+                                                                {!!quote.warnings?.length && (
+                                                                    <details className="group border-t px-3 py-2 text-xs">
+                                                                        <summary className="flex cursor-pointer list-none items-center gap-1 text-amber-700 dark:text-amber-400 [&::-webkit-details-marker]:hidden">
+                                                                            <AlertTriangle className="h-3 w-3 shrink-0" />
+                                                                            {t('admin.orders.ship.notes', { count: quote.warnings.length })}
+                                                                            <ChevronDown className="h-3 w-3 shrink-0 transition-transform group-open:rotate-180" />
+                                                                        </summary>
+                                                                        <div className="mt-1.5 space-y-1 break-words text-muted-foreground">
+                                                                            {quote.warnings.map((warning) => (
+                                                                                <p key={warning}>{warning}</p>
+                                                                            ))}
+                                                                        </div>
+                                                                    </details>
                                                                 )}
                                                             </div>
                                                         );
@@ -1063,7 +1118,7 @@ export default function OrderShip({
                                 {tab === 'manual'
                                     ? t('admin.orders.ship.submit')
                                     : selected
-                                      ? t('admin.orders.ship.buy_label', { carrier: selected.carrier_name, price: selected.total_price.toFixed(2) })
+                                      ? t('admin.orders.ship.tab_buy')
                                       : t('admin.orders.ship.select_rate')}
                             </Button>
                         </div>

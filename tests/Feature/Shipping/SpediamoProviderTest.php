@@ -6,8 +6,11 @@
 */
 
 use App\Mail\OrderDelivered;
+use App\Models\Shipment;
 use App\Models\ShipmentTrackingEvent;
+use App\Shipping\Providers\Spediamo\SpediamoLabelProvider;
 use App\Shipping\Providers\Spediamo\SpediamoProvider;
+use App\Shipping\Tracking\Contracts\SupportsWebhooks;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\Enums\TrackingStatus as S;
 use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;
@@ -19,6 +22,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Monolog\Handler\TestHandler;
 use Monolog\Level;
+use Monolog\Logger;
 use Tests\Feature\Shipping\Support\TrackingFixtures as Fx;
 
 const SPD_TOKEN = 'spd-secret-token-123';
@@ -70,7 +74,7 @@ function spdAnswer(array $overrides = []): array
 function spdCaptureLogs(): TestHandler
 {
     $handler = new TestHandler;
-    Log::swap(new Illuminate\Log\Logger(new Monolog\Logger('test', [$handler])));
+    Log::swap(new Illuminate\Log\Logger(new Logger('test', [$handler])));
 
     return $handler;
 }
@@ -91,7 +95,7 @@ it('is registered as a pollable driver, not a passive or webhook one', function 
         ->and($manager->driverNames())->toContain('spediamo')
         ->and($manager->canPoll())->toBeTrue()
         ->and($manager->driver()->name())->toBe('spediamo')
-        ->and($manager->driver())->not->toBeInstanceOf(App\Shipping\Tracking\Contracts\SupportsWebhooks::class);
+        ->and($manager->driver())->not->toBeInstanceOf(SupportsWebhooks::class);
 });
 
 it('requests the tracking endpoint with the bearer token and no If-None-Match the first time', function () {
@@ -392,7 +396,7 @@ it('promotes Spediamo code to carrier waybill on manual shipment, preserves trac
         'tracking_carrier' => 'sda',
         'tracking_number' => 'A422-098-162-296',
         'external_id' => null,
-        'status' => \App\Models\Shipment::STATUS_CREATED,
+        'status' => Shipment::STATUS_CREATED,
     ]);
 
     Http::fake([
@@ -442,3 +446,8 @@ it('promotes Spediamo code to carrier waybill on manual shipment, preserves trac
     });
 });
 
+it('can book the Poste Delivery Business courier that Spediamo quotes', function () {
+    $labels = new SpediamoLabelProvider(config('shipping.providers.spediamo'));
+
+    expect($labels->supports('pdb'))->toBeTrue();
+});

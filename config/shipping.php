@@ -84,6 +84,8 @@ return [
                 'sda' => 'SDA',
                 'poste' => 'SDA',
                 'poste_italiane' => 'SDA',
+                // Poste Delivery Business: the courier Spediamo quotes for most domestic parcels
+                'pdb' => 'PDB',
                 'brt' => 'BRT',
                 'bartolini' => 'BRT',
                 'gls' => 'GLS',
