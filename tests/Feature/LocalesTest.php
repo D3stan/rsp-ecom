@@ -29,7 +29,7 @@ class LocalesTest extends TestCase
 
     public function test_helper_validates_and_falls_back(): void
     {
-        config(['app.locale' => 'it']);
+        config(['app.default_locale' => 'it']);
 
         $this->assertTrue(Locales::isSupported('de'));
         $this->assertFalse(Locales::isSupported('xx'));
@@ -69,7 +69,9 @@ class LocalesTest extends TestCase
 
         $response = $this->getJson('/api/translations/xx')->assertOk();
         // assertTrue on purpose: diffing two translation files with assertSame/assertExactJson exhausts memory
-        $this->assertTrue($response->json() === json_decode(file_get_contents(lang_path(Locales::fallback().'.json')), true));
+        $this->assertTrue($response->json() === Locales::translations(Locales::fallback()));
+        // the session's German must not leak into the fallback
+        $this->assertSame(config('app.default_locale'), Locales::fallback());
     }
 
     /**

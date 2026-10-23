@@ -73,8 +73,8 @@ it('sends the welcome email in the language captured when the job was dispatched
     expect($mail->getHtmlBody())->not->toContain('emails.')->not->toContain(route('products'));
 })->with(['de', 'es', 'fr', 'en', 'it']);
 
-it('falls back to the app locale when the captured locale is not one of the supported ones', function () {
-    config(['app.locale' => 'it']);
+it('falls back to the default locale when the captured locale is not one of the supported ones', function () {
+    config(['app.default_locale' => 'it']);
 
     expect((new SendWelcomeEmail(1, 'xx'))->locale)->toBe('it')
         ->and((new SendWelcomeEmail(1, 'DE'))->locale)->toBe('it')

@@ -243,7 +243,7 @@ it('falls back to the app locale for unknown order locales', function () {
 
     Queue::fake();
     Mail::fake();
-    config(['app.locale' => 'it']);
+    config(['app.default_locale' => 'it']);
     $order = makeOrder(['locale' => 'xx']);
     app(EmailService::class)->sendOrderConfirmation($order);
 

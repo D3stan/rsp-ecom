@@ -25,7 +25,8 @@ class Locales
      */
     public static function fallback(): string
     {
-        return config('app.locale');
+        // not app.locale: App::setLocale() rewrites it, so it would return the last locale switched to
+        return config('app.default_locale');
     }
 
     /**
