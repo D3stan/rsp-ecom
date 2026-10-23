@@ -33,12 +33,14 @@ use Illuminate\Support\Facades\Http;
 |    Spediamo expects "type" to be the shipment destination scope (e.g. "DOMESTIC"
 |    or "INTERNATIONAL"). If "type=packages" is sent, Spediamo returns:
 |    {"errors":[{"field":"type","code":"invalid","message":"Non valido"}]}
-|    Package dimensions belong in the "packages" parameter (e.g. "1x1x35x25x8").
+|    Package dimensions belong in the "packages" parameter, not in "type".
 |
 | 3. Package formatting & sender postal code validation:
-|    - If packages omits quantity and sends weight first (e.g. "2.5x30x25x20"),
-|      Spediamo maps the first token to packages[0].quantity and fails with:
+|    - The string form ("packages=1x1x35x25x8") is rejected by the live API with
 |      {"errors":[{"field":"packages[0].quantity","code":"integer","message":"Deve essere un numero senza virgole"}]}
+|      The sender/recipient fields in the same request are accepted.
+|    - What the live API accepts is "quantity:weight:height:length:width", parcels joined
+|      by "," (see SpediamoPackages and the recorded requests in tests/Fixtures/spediamo/probes).
 |    - If senderPostalCode is an obsolete generic code like "20100" instead of a real
 |      Milano delivery CAP (e.g. 20121, 20124), Spediamo returns:
 |      {"errors":[{"field":"senderPostalCode","code":"invalid","message":"Non valido"}]}
@@ -164,8 +166,8 @@ it('inspects the outgoing HTTP payload structure sent by SpediamoRateProvider', 
 
         // 1. Implementation sends type as 'DOMESTIC'
         expect($data['type'])->toBe('DOMESTIC')
-            // 2. Outgoing packages string
-            ->and($data['packages'])->toBe('1x1x35x25x8')
+            // 2. Outgoing packages
+            ->and($data['packages'])->toBe('1:1:8:35:25')
             // 3. Sender / Recipient fields
             ->and($data['senderPostalCode'])->toBe('20100')
             ->and($data['recipientPostalCode'])->toBe('48015');
@@ -191,7 +193,7 @@ it('inspects the outgoing payload structure mapped by SpediamoLabelRequestMapper
 
     // Shows that SpediamoLabelRequestMapper sets 'type' => 'DOMESTIC'
     expect($mapped['type'])->toBe('DOMESTIC')
-        ->and($mapped['packages'])->toBe('1x1x35x25x8');
+        ->and($mapped['packages'])->toBe('1:1:8:35:25');
 });
 
 it('reproduces the exact Spediamo error when packages[0].quantity has decimals and senderPostalCode is invalid', function () {

@@ -64,8 +64,7 @@ class SpediamoLabelRequestMapper
             'recipientPhone' => $recipient->phone,
             'recipientEmail' => $recipient->email,
             'referenceNumber' => $request->reference,
-            // one "packages" line per parcel: "quantity x weight x length x width x height" (cm/kg)
-            'packages' => $this->packages($request),
+            ...SpediamoPackages::fields($request->parcels, $this->defaultParcel),
         ];
 
         if ($request->carrierCode !== '') {
@@ -101,46 +100,5 @@ class SpediamoLabelRequestMapper
         }
 
         return array_filter($params, fn ($value) => $value !== '' && $value !== null);
-    }
-
-    private function packages(ShipmentRequest $request): string
-    {
-        $lines = [];
-
-        foreach ($request->parcels as $parcel) {
-            $qty = max(1, (int) ($parcel->quantity ?? 1));
-            $lines[] = implode('x', [
-                $qty,
-                $this->num($parcel->weightKg),
-                $this->num($parcel->lengthCm ?? 0),
-                $this->num($parcel->widthCm ?? 0),
-                $this->num($parcel->heightCm ?? 0),
-            ]);
-        }
-
-        if (empty($lines) && ! empty($this->defaultParcel)) {
-            $weight = (float) ($this->defaultParcel['weight'] ?? $this->defaultParcel['weightKg'] ?? $this->defaultParcel['weight_kg'] ?? 1);
-            $length = (float) ($this->defaultParcel['length'] ?? $this->defaultParcel['lengthCm'] ?? $this->defaultParcel['length_cm'] ?? 0);
-            $width = (float) ($this->defaultParcel['width'] ?? $this->defaultParcel['widthCm'] ?? $this->defaultParcel['width_cm'] ?? 0);
-            $height = (float) ($this->defaultParcel['height'] ?? $this->defaultParcel['heightCm'] ?? $this->defaultParcel['height_cm'] ?? 0);
-
-            $w = $this->num($weight);
-            $l = $this->num($length);
-            $wi = $this->num($width);
-            $h = $this->num($height);
-
-            $lines[] = "1x{$w}x{$l}x{$wi}x{$h}";
-        }
-
-        if (empty($lines)) {
-            $lines[] = '1x1x10x10x10';
-        }
-
-        return implode(',', $lines);
-    }
-
-    private function num(float $value): string
-    {
-        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
     }
 }

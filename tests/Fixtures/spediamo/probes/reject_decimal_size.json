@@ -1,0 +1,38 @@
+{
+    "scenario": "reject_decimal_size",
+    "method": "POST",
+    "path": "/v1/shipments",
+    "request": {
+        "packages": "1:2:20:30.5:25",
+        "type": "DOMESTIC",
+        "senderName": "Test Sender",
+        "senderContactName": "Test Sender",
+        "senderCountry": "IT",
+        "senderProvince": "FC",
+        "senderTown": "Cesena",
+        "senderPostalCode": "47522",
+        "senderAddress": "Via Pola 2",
+        "senderPhone": "3331234567",
+        "senderEmail": "sender@example.test",
+        "recipientName": "Test Customer",
+        "recipientContactName": "Test Customer",
+        "recipientCountry": "IT",
+        "recipientProvince": "RA",
+        "recipientTown": "Cervia",
+        "recipientPostalCode": "48015",
+        "recipientAddress": "Via Roma 1"
+    },
+    "status": 400,
+    "response": {
+        "errors": [
+            {
+                "field": "packages[0].length",
+                "code": "integer",
+                "message": "Deve essere un numero senza virgole"
+            }
+        ],
+        "warnings": null
+    },
+    "draft_delete_status": null,
+    "recorded_at": "2026-10-23T16:23:01+00:00"
+}

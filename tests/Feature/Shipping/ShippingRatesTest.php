@@ -254,7 +254,7 @@ it('spediamo rate provider parses shipment_draft.json into RateQuote DTO and aut
             && ($request['type'] ?? null) === 'DOMESTIC'
             && ($request['senderPostalCode'] ?? null) === '20100'
             && ($request['recipientPostalCode'] ?? null) === '00100'
-            && ($request['packages'] ?? null) === '1x2.5x30x25x20';
+            && ($request['packages'] ?? null) === '1:2.5:20:30:25';
     });
 
     // Verify DELETE was triggered to clean up the temporary draft

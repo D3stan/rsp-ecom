@@ -1,0 +1,38 @@
+{
+    "scenario": "reject_invalid_recipient_postal_code",
+    "method": "POST",
+    "path": "/v1/shipments",
+    "request": {
+        "packages": "1:1:8:35:25",
+        "recipientPostalCode": "48105",
+        "type": "DOMESTIC",
+        "senderName": "Test Sender",
+        "senderContactName": "Test Sender",
+        "senderCountry": "IT",
+        "senderProvince": "FC",
+        "senderTown": "Cesena",
+        "senderPostalCode": "47522",
+        "senderAddress": "Via Pola 2",
+        "senderPhone": "3331234567",
+        "senderEmail": "sender@example.test",
+        "recipientName": "Test Customer",
+        "recipientContactName": "Test Customer",
+        "recipientCountry": "IT",
+        "recipientProvince": "RA",
+        "recipientTown": "Cervia",
+        "recipientAddress": "Via Roma 1"
+    },
+    "status": 400,
+    "response": {
+        "errors": [
+            {
+                "field": "recipientPostalCode",
+                "code": "invalid",
+                "message": "Non valido"
+            }
+        ],
+        "warnings": null
+    },
+    "draft_delete_status": null,
+    "recorded_at": "2026-10-23T16:23:01+00:00"
+}

@@ -22,6 +22,9 @@ class SpediamoRateProvider implements RateProvider
 
     private const DEFAULT_BASE_URL = 'https://api.spediamo.it';
 
+    /** Fields a draft reports as missing until it is booked, irrelevant for a quote. */
+    private const BOOKING_FIELDS = ['requestedPickupDate', 'requestedPickupTime'];
+
     private readonly string $baseUrl;
 
     private readonly int $timeout;
@@ -67,8 +70,10 @@ class SpediamoRateProvider implements RateProvider
 
             $shipmentId = trim((string) ($data['id'] ?? ''));
 
-            if (! empty($data['errors']) && is_array($data['errors'])) {
-                $errorMsg = $this->formatErrors($data['errors']);
+            $errors = $this->blockingErrors($data['errors'] ?? null);
+
+            if ($errors !== []) {
+                $errorMsg = $this->formatErrors($errors);
                 $e = new RateRejected(self::NAME.': '.$errorMsg);
                 if (method_exists($e, 'withHttpStatus')) {
                     $e->withHttpStatus($response->status());
@@ -157,7 +162,7 @@ class SpediamoRateProvider implements RateProvider
             'recipientAddress' => $recipient->street,
             'recipientPhone' => $recipient->phone,
             'recipientEmail' => $recipient->email,
-            'packages' => $this->formatPackages($request->parcels),
+            ...SpediamoPackages::fields($request->parcels),
         ];
 
         if ($request->carrierCode !== null && trim($request->carrierCode) !== '') {
@@ -182,35 +187,6 @@ class SpediamoRateProvider implements RateProvider
         }
 
         return array_filter($payload, fn ($v) => $v !== '' && $v !== null);
-    }
-
-    private function formatPackages(array $parcels): string
-    {
-        $lines = [];
-
-        foreach ($parcels as $parcel) {
-            $qty = max(1, (int) ($parcel->quantity ?? 1));
-            $lines[] = implode('x', [
-                $qty,
-                $this->formatNum((float) $parcel->weightKg),
-                $this->formatNum((float) ($parcel->lengthCm ?? 0)),
-                $this->formatNum((float) ($parcel->widthCm ?? 0)),
-                $this->formatNum((float) ($parcel->heightCm ?? 0)),
-            ]);
-        }
-
-        if (empty($lines)) {
-            $lines[] = '1x1x10x10x10';
-        }
-
-        return implode(',', $lines);
-    }
-
-    private function formatNum(float $value): string
-    {
-        $formatted = rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
-
-        return $formatted !== '' ? $formatted : '0';
     }
 
     private function mapQuote(array $data, ?string $shipmentId, ?string $requestedCarrier = null): RateQuote
@@ -323,6 +299,25 @@ class SpediamoRateProvider implements RateProvider
             $ex->withHttpStatus($status);
         }
         throw $ex;
+    }
+
+    /**
+     * A priced draft still lists what is missing before it can be booked. The pickup date is chosen at purchase time,
+     * so "required" on it does not make the quote invalid.
+     *
+     * @return array<int|string, mixed>
+     */
+    private function blockingErrors(mixed $errors): array
+    {
+        if (! is_array($errors)) {
+            return [];
+        }
+
+        return array_filter($errors, fn ($error) => ! (
+            is_array($error)
+            && ($error['code'] ?? null) === 'required'
+            && in_array($error['field'] ?? null, self::BOOKING_FIELDS, true)
+        ));
     }
 
     private function formatErrors(array $errors): string
