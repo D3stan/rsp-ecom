@@ -6,6 +6,7 @@ use App\Shipping\Rates\DTO\RateAddress;
 use App\Shipping\Rates\DTO\RateParcel;
 use App\Shipping\Rates\DTO\RateRequest;
 use App\Shipping\Rates\Exceptions\RateRejected;
+use App\Shipping\Rates\RateManager;
 use Illuminate\Support\Facades\Http;
 
 function spediamoProbe(string $name): array
@@ -68,4 +69,22 @@ it('keeps unknown fields as other issues with the carrier text', function () {
     [$issues] = spediamoIssuesFor(['status' => 400, 'response' => ['errors' => [['field' => 'weird', 'code' => 'x', 'message' => 'Boh']]]]);
 
     expect($issues[0])->toMatchArray(['kind' => 'other', 'field' => 'weird', 'message' => 'Boh']);
+});
+
+it('reports a missing Dvaexpress recipient postal code as an address issue', function () {
+    config(['shipping.providers.dvaexpress.api_key' => 'k']);
+    $provider = app(RateManager::class)->driver('dvaexpress');
+
+    $request = new RateRequest(
+        sender: new RateAddress('47522', 'Cesena', 'FC', 'IT'),
+        recipient: new RateAddress('', 'Cervia', 'RA', 'IT'),
+        parcels: [new RateParcel(weightKg: 1)],
+    );
+
+    try {
+        $provider->quote($request);
+        $this->fail('expected a rejection');
+    } catch (RateRejected $e) {
+        expect($e->issues[0]->toArray())->toMatchArray(['kind' => 'address', 'field' => 'recipient.postal_code', 'code' => 'required']);
+    }
 });

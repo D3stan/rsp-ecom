@@ -7,7 +7,9 @@ use App\Shipping\Rates\Contracts\RateProvider;
 use App\Shipping\Rates\DTO\AccountBalance;
 use App\Shipping\Rates\DTO\RateQuote;
 use App\Shipping\Rates\DTO\RateRequest;
+use App\Shipping\Rates\Exceptions\RateRejected;
 use App\Shipping\Support\CarrierCodeMap;
+use App\Shipping\Support\ShippingIssue;
 
 class DvaexpressRateProvider implements InspectsBalance, RateProvider
 {
@@ -50,15 +52,15 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
     public function quote(RateRequest $request): array
     {
         if (trim((string) $request->sender->postalCode) === '' || trim((string) $request->sender->city) === '') {
-            throw new \App\Shipping\Rates\Exceptions\RateRejected(
-                'Dvaexpress: Sender address requires at least postal code and city (configure shipping.sender_postal_code and shipping.sender_city in settings or .env).'
-            );
+            throw (new RateRejected('Dvaexpress: Sender address requires at least postal code and city (configure shipping.sender_postal_code and shipping.sender_city in settings or .env).'))
+                ->withIssues([new ShippingIssue(self::NAME, ShippingIssue::SETTINGS, 'sender.postal_code', 'required', 'Sender postal code and city are required')]);
         }
 
-        if (trim((string) $request->recipient->postalCode) === '' || trim((string) $request->recipient->city) === '') {
-            throw new \App\Shipping\Rates\Exceptions\RateRejected(
-                'Dvaexpress: Recipient address requires at least postal code and city.'
-            );
+        foreach (['postalCode' => 'postal_code', 'city' => 'city'] as $property => $field) {
+            if (trim((string) $request->recipient->{$property}) === '') {
+                throw (new RateRejected('Dvaexpress: Recipient address requires at least postal code and city.'))
+                    ->withIssues([new ShippingIssue(self::NAME, ShippingIssue::ADDRESS, "recipient.{$field}", 'required', 'Required')]);
+            }
         }
 
         $senderCountry = strtoupper(trim($request->sender->country));
@@ -75,9 +77,8 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
         }
 
         if (in_array($recipientCountry, ['US', 'CA'], true) && trim((string) $request->recipient->province) === '') {
-            throw new \App\Shipping\Rates\Exceptions\RateRejected(
-                "Dvaexpress: Recipient province (state code) is required for {$recipientCountry}."
-            );
+            throw (new RateRejected("Dvaexpress: Recipient province (state code) is required for {$recipientCountry}."))
+                ->withIssues([new ShippingIssue(self::NAME, ShippingIssue::ADDRESS, 'recipient.province', 'required', 'Required')]);
         }
 
         $tipoSpedizione = $this->resolveShipmentType($senderCountry, $recipientCountry);
