@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Order;
-use App\Models\User;
 use Illuminate\Support\Facades\Http;
 
 it('runs shipping:test-rates command with fake driver successfully', function () {
@@ -67,7 +66,7 @@ it('tests mock HTTP request payloads for spediamo and dvaexpress with --raw', fu
         '--raw' => true,
     ])
         ->expectsOutputToContain('>>>> POST https://api.spediamo.it/v1/shipments')
-        ->expectsOutputToContain('"type": "packages"')
+        ->expectsOutputToContain('type=DOMESTIC')
         ->assertSuccessful();
 
     $this->artisan('shipping:test-rates', [

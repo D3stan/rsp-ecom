@@ -105,7 +105,7 @@ class SpediamoLabelProvider implements CancelsShipments, LabelProvider
         }
 
         if ($data === null) {
-            $response = $this->send(fn (PendingRequest $http) => $http->post('/v1/shipments', $this->mapper->map($request)), method: 'post');
+            $response = $this->send(fn (PendingRequest $http) => $http->asForm()->post('/v1/shipments', $this->mapper->map($request)), method: 'post');
             $data = $response->json();
         }
 

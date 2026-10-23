@@ -26,22 +26,28 @@ class SpediamoLabelRequestMapper
         $recipient = $request->recipient;
 
         $senderCountry = strtoupper(trim((string) $sender->country));
+        $senderCountry = $senderCountry !== '' ? $senderCountry : 'IT';
+
+        $recipientCountry = strtoupper(trim((string) $recipient->country));
+        $recipientCountry = $recipientCountry !== '' ? $recipientCountry : 'IT';
+
+        $type = ($senderCountry === 'IT' && $recipientCountry === 'IT') ? 'DOMESTIC' : 'INTERNATIONAL';
+
         $senderPostal = trim((string) $sender->postalCode);
-        if (($senderCountry === 'IT' || $senderCountry === '') && is_numeric($senderPostal)) {
+        if ($senderCountry === 'IT' && is_numeric($senderPostal)) {
             $senderPostal = str_pad($senderPostal, 5, '0', STR_PAD_LEFT);
         }
 
-        $recipientCountry = strtoupper(trim((string) $recipient->country));
         $recipientPostal = trim((string) $recipient->postalCode);
-        if (($recipientCountry === 'IT' || $recipientCountry === '') && is_numeric($recipientPostal)) {
+        if ($recipientCountry === 'IT' && is_numeric($recipientPostal)) {
             $recipientPostal = str_pad($recipientPostal, 5, '0', STR_PAD_LEFT);
         }
 
         $params = [
-            'type' => 'packages',
+            'type' => $type,
             'senderName' => $sender->company !== '' ? $sender->company : $sender->name,
             'senderContactName' => $sender->name,
-            'senderCountry' => $senderCountry !== '' ? $senderCountry : 'IT',
+            'senderCountry' => $senderCountry,
             'senderProvince' => $sender->province,
             'senderTown' => $sender->city,
             'senderPostalCode' => $senderPostal,
@@ -50,7 +56,7 @@ class SpediamoLabelRequestMapper
             'senderEmail' => $sender->email,
             'recipientName' => $recipient->company !== '' ? $recipient->company : $recipient->name,
             'recipientContactName' => $recipient->name,
-            'recipientCountry' => $recipientCountry !== '' ? $recipientCountry : 'IT',
+            'recipientCountry' => $recipientCountry,
             'recipientProvince' => $recipient->province,
             'recipientTown' => $recipient->city,
             'recipientPostalCode' => $recipientPostal,

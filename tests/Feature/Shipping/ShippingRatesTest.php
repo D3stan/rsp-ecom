@@ -187,6 +187,8 @@ it('spediamo rate provider parses shipment_draft.json into RateQuote DTO and aut
     Http::assertSent(function ($request) {
         return $request->url() === 'https://api.spediamo.it/v1/shipments'
             && $request->method() === 'POST'
+            && $request->isForm()
+            && ($request['type'] ?? null) === 'DOMESTIC'
             && ($request['senderPostalCode'] ?? null) === '20100'
             && ($request['recipientPostalCode'] ?? null) === '00100'
             && ($request['packages'] ?? null) === '2.5x30x25x20';
@@ -229,6 +231,50 @@ it('spediamo rate provider preserves quoteToken when cleanup_quote_drafts is fal
     });
 });
 
+it('spediamo rate provider parses responses with polymorphic object price representations', function () {
+    $objectPriceFixture = [
+        'id' => 'spd-draft-obj',
+        'courier' => 'SDA',
+        'type' => 'DOMESTIC',
+        'basePrice' => ['value' => 5.56, 'localizedValue' => '5,56'],
+        'vat' => ['value' => 1.22, 'localizedValue' => '1,22'],
+        'netPrice' => ['value' => 6.12, 'localizedValue' => '6,12'],
+        'totalPrice' => ['value' => 7.46, 'localizedValue' => '7,46'],
+        'fuelSurcharge' => ['value' => 0.56, 'localizedValue' => '0,56'],
+    ];
+
+    Http::fake([
+        'https://api.spediamo.it/v1/shipments*' => Http::response($objectPriceFixture, 200),
+    ]);
+
+    $config = [
+        'base_url' => 'https://api.spediamo.it',
+        'token' => 'test-spediamo-rate-token',
+        'cleanup_quote_drafts' => false,
+        'carrier_map' => [
+            'sda' => 'SDA',
+        ],
+    ];
+
+    $provider = new SpediamoRateProvider($config, new BearerTokenAuthenticator('test-spediamo-rate-token'));
+
+    $rateRequest = new RateRequest(
+        sender: new RateAddress(postalCode: '20100', city: 'Milano', province: 'MI', country: 'IT'),
+        recipient: new RateAddress(postalCode: '00100', city: 'Roma', province: 'RM', country: 'IT'),
+        parcels: [new RateParcel(weightKg: 1.0)],
+    );
+
+    $quotes = $provider->quote($rateRequest);
+
+    expect($quotes)->toBeArray()->toHaveCount(1);
+    $quote = $quotes[0];
+
+    expect($quote->netPrice)->toBe(6.12)
+        ->and($quote->totalPrice)->toBe(7.46)
+        ->and($quote->listPrice)->toBe(5.56)
+        ->and($quote->surcharges['fuel'])->toBe(0.56);
+});
+
 /*
 |--------------------------------------------------------------------------
 | 3. RateManager::quoteAll() aggregation, sorting, balances, fault isolation
@@ -238,10 +284,20 @@ it('spediamo rate provider preserves quoteToken when cleanup_quote_drafts is fal
 it('rate manager quoteAll aggregates quotes, sorts by totalPrice ascending, collects balances and isolates driver failures', function () {
     $manager = app(RateManager::class);
 
-    $manager->extend('provider_fast', fn () => new class implements RateProvider {
-        public function name(): string { return 'provider_fast'; }
-        public function supports(string $carrierCode): bool { return true; }
-        public function quote(RateRequest $request): array {
+    $manager->extend('provider_fast', fn () => new class implements RateProvider
+    {
+        public function name(): string
+        {
+            return 'provider_fast';
+        }
+
+        public function supports(string $carrierCode): bool
+        {
+            return true;
+        }
+
+        public function quote(RateRequest $request): array
+        {
             return [
                 new RateQuote(
                     provider: 'provider_fast',
@@ -256,10 +312,20 @@ it('rate manager quoteAll aggregates quotes, sorts by totalPrice ascending, coll
         }
     });
 
-    $manager->extend('provider_economy', fn () => new class implements InspectsBalance, RateProvider {
-        public function name(): string { return 'provider_economy'; }
-        public function supports(string $carrierCode): bool { return true; }
-        public function quote(RateRequest $request): array {
+    $manager->extend('provider_economy', fn () => new class implements InspectsBalance, RateProvider
+    {
+        public function name(): string
+        {
+            return 'provider_economy';
+        }
+
+        public function supports(string $carrierCode): bool
+        {
+            return true;
+        }
+
+        public function quote(RateRequest $request): array
+        {
             return [
                 new RateQuote(
                     provider: 'provider_economy',
@@ -272,7 +338,9 @@ it('rate manager quoteAll aggregates quotes, sorts by totalPrice ascending, coll
                 ),
             ];
         }
-        public function balance(): AccountBalance {
+
+        public function balance(): AccountBalance
+        {
             return new AccountBalance(
                 provider: 'provider_economy',
                 balance: 180.25,
@@ -281,10 +349,20 @@ it('rate manager quoteAll aggregates quotes, sorts by totalPrice ascending, coll
         }
     });
 
-    $manager->extend('provider_failing', fn () => new class implements RateProvider {
-        public function name(): string { return 'provider_failing'; }
-        public function supports(string $carrierCode): bool { return true; }
-        public function quote(RateRequest $request): array {
+    $manager->extend('provider_failing', fn () => new class implements RateProvider
+    {
+        public function name(): string
+        {
+            return 'provider_failing';
+        }
+
+        public function supports(string $carrierCode): bool
+        {
+            return true;
+        }
+
+        public function quote(RateRequest $request): array
+        {
             throw new RateProviderUnavailable('Provider API endpoint unreachable.');
         }
     });

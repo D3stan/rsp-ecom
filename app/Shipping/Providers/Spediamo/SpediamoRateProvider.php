@@ -54,7 +54,7 @@ class SpediamoRateProvider implements RateProvider
         $shipmentId = null;
 
         try {
-            $response = $this->send(fn (PendingRequest $http) => $http->post('/v1/shipments', $payload));
+            $response = $this->send(fn (PendingRequest $http) => $http->asForm()->post('/v1/shipments', $payload));
             $data = $response->json();
 
             if (! is_array($data)) {
@@ -117,14 +117,20 @@ class SpediamoRateProvider implements RateProvider
         }
 
         $senderCountry = strtoupper(trim((string) $sender->country));
+        $senderCountry = $senderCountry !== '' ? $senderCountry : 'IT';
+
+        $recipientCountry = strtoupper(trim((string) $recipient->country));
+        $recipientCountry = $recipientCountry !== '' ? $recipientCountry : 'IT';
+
+        $type = ($senderCountry === 'IT' && $recipientCountry === 'IT') ? 'DOMESTIC' : 'INTERNATIONAL';
+
         $senderPostal = trim((string) $sender->postalCode);
-        if (($senderCountry === 'IT' || $senderCountry === '') && is_numeric($senderPostal)) {
+        if ($senderCountry === 'IT' && is_numeric($senderPostal)) {
             $senderPostal = str_pad($senderPostal, 5, '0', STR_PAD_LEFT);
         }
 
-        $recipientCountry = strtoupper(trim((string) $recipient->country));
         $recipientPostal = trim((string) $recipient->postalCode);
-        if (($recipientCountry === 'IT' || $recipientCountry === '') && is_numeric($recipientPostal)) {
+        if ($recipientCountry === 'IT' && is_numeric($recipientPostal)) {
             $recipientPostal = str_pad($recipientPostal, 5, '0', STR_PAD_LEFT);
         }
 
@@ -132,10 +138,10 @@ class SpediamoRateProvider implements RateProvider
         $recipientName = property_exists($recipient, 'company') && ! empty($recipient->company) ? $recipient->company : $recipient->name;
 
         $payload = [
-            'type' => 'packages',
+            'type' => $type,
             'senderName' => $senderName,
             'senderContactName' => $sender->name,
-            'senderCountry' => $senderCountry !== '' ? $senderCountry : 'IT',
+            'senderCountry' => $senderCountry,
             'senderProvince' => $sender->province,
             'senderTown' => $sender->city,
             'senderPostalCode' => $senderPostal,
@@ -144,7 +150,7 @@ class SpediamoRateProvider implements RateProvider
             'senderEmail' => $sender->email,
             'recipientName' => $recipientName,
             'recipientContactName' => $recipient->name,
-            'recipientCountry' => $recipientCountry !== '' ? $recipientCountry : 'IT',
+            'recipientCountry' => $recipientCountry,
             'recipientProvince' => $recipient->province,
             'recipientTown' => $recipient->city,
             'recipientPostalCode' => $recipientPostal,
@@ -224,10 +230,10 @@ class SpediamoRateProvider implements RateProvider
         $quoteToken = $cleanup ? null : ($shipmentId !== '' && $shipmentId !== null ? $shipmentId : null);
 
         $surcharges = array_filter([
-            'fuel' => (float) ($data['fuelSurcharge'] ?? 0),
-            'destination' => (float) ($data['destinationSurcharge'] ?? 0),
-            'cod' => (float) ($data['cashOnDeliveryCommission'] ?? 0),
-            'insurance' => (float) ($data['insuranceCommission'] ?? 0),
+            'fuel' => $this->parseAmount($data['fuelSurcharge'] ?? null),
+            'destination' => $this->parseAmount($data['destinationSurcharge'] ?? null),
+            'cod' => $this->parseAmount($data['cashOnDeliveryCommission'] ?? null),
+            'insurance' => $this->parseAmount($data['insuranceCommission'] ?? null),
         ], fn (float $val) => abs($val) > 0.0001);
 
         $warnings = [];
@@ -245,17 +251,26 @@ class SpediamoRateProvider implements RateProvider
             }
         }
 
+        $netPrice = $this->parseAmountNullable($data['netPrice'] ?? null)
+            ?? $this->parseAmountNullable($data['basePrice'] ?? null)
+            ?? 0.0;
+        $totalPrice = $this->parseAmountNullable($data['totalPrice'] ?? null)
+            ?? $this->parseAmountNullable($data['netPrice'] ?? null)
+            ?? $netPrice;
+        $listPrice = isset($data['basePrice']) ? $this->parseAmountNullable($data['basePrice']) : null;
+        $taxableWeight = isset($data['taxableWeight']) ? $this->parseAmountNullable($data['taxableWeight']) : null;
+
         return new RateQuote(
             provider: self::NAME,
             carrierCode: $carrierCode,
             carrierName: $rawCourier,
             rawCarrierCode: $rawCourier,
             serviceName: (string) ($data['type'] ?? 'DOMESTIC'),
-            netPrice: (float) ($data['netPrice'] ?? $data['basePrice'] ?? 0.0),
-            totalPrice: (float) ($data['totalPrice'] ?? $data['netPrice'] ?? 0.0),
-            listPrice: isset($data['basePrice']) ? (float) $data['basePrice'] : null,
+            netPrice: $netPrice,
+            totalPrice: $totalPrice,
+            listPrice: $listPrice,
             currency: (string) ($data['currency'] ?? 'EUR'),
-            taxableWeightKg: isset($data['taxableWeight']) ? (float) $data['taxableWeight'] : null,
+            taxableWeightKg: $taxableWeight,
             dimensionalWeightApplied: (bool) ($data['dimensionalWeightApplied'] ?? false),
             estimatedDelivery: isset($data['expectedDeliveryDate']) && (string) $data['expectedDeliveryDate'] !== '' ? (string) $data['expectedDeliveryDate'] : null,
             quoteToken: $quoteToken,
@@ -321,7 +336,7 @@ class SpediamoRateProvider implements RateProvider
             if (is_scalar($v)) {
                 $valStr = trim((string) $v);
                 $valStr = (string) preg_replace('/^\d+:\s*/', '', $valStr);
-                $parts[] = $prefix . $valStr;
+                $parts[] = $prefix.$valStr;
             } elseif (is_array($v)) {
                 $subParts = [];
                 foreach ($v as $subK => $subV) {
@@ -329,14 +344,14 @@ class SpediamoRateProvider implements RateProvider
                     if (is_scalar($subV)) {
                         $subValStr = trim((string) $subV);
                         $subValStr = (string) preg_replace('/^\d+:\s*/', '', $subValStr);
-                        $subParts[] = $subPrefix . $subValStr;
+                        $subParts[] = $subPrefix.$subValStr;
                     } else {
                         $subParts[] = json_encode($subV);
                     }
                 }
-                $parts[] = $prefix . implode('; ', $subParts);
+                $parts[] = $prefix.implode('; ', $subParts);
             } else {
-                $parts[] = $prefix . json_encode($v);
+                $parts[] = $prefix.json_encode($v);
             }
         }
 
@@ -364,5 +379,61 @@ class SpediamoRateProvider implements RateProvider
         $message = $body['message'] ?? $body['error'] ?? $body['description'] ?? null;
 
         return is_string($message) && trim($message) !== '' ? trim($message) : null;
+    }
+
+    private function parseAmount(mixed $value, float $default = 0.0): float
+    {
+        return $this->parseAmountNullable($value) ?? $default;
+    }
+
+    private function parseAmountNullable(mixed $value): ?float
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (float) $value;
+        }
+
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if ($trimmed === '') {
+                return null;
+            }
+            if (is_numeric($trimmed)) {
+                return (float) $trimmed;
+            }
+            $normalized = str_replace(',', '.', $trimmed);
+            if (is_numeric($normalized)) {
+                return (float) $normalized;
+            }
+
+            return null;
+        }
+
+        if (is_array($value)) {
+            if (array_key_exists('value', $value)) {
+                return $this->parseAmountNullable($value['value']);
+            }
+            if (array_key_exists('amount', $value)) {
+                return $this->parseAmountNullable($value['amount']);
+            }
+
+            return null;
+        }
+
+        if (is_object($value)) {
+            if (isset($value->value)) {
+                return $this->parseAmountNullable($value->value);
+            }
+            if (isset($value->amount)) {
+                return $this->parseAmountNullable($value->amount);
+            }
+
+            return null;
+        }
+
+        return null;
     }
 }

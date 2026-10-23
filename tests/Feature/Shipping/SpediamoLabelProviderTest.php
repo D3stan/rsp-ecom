@@ -1,13 +1,13 @@
 <?php
 
-use App\Shipping\Providers\Spediamo\SpediamoLabelProvider;
-use App\Shipping\Providers\Spediamo\SpediamoLabelRequestMapper;
-use App\Shipping\Support\CarrierCodeMap;
 use App\Shipping\Labels\DTO\Address;
 use App\Shipping\Labels\DTO\Parcel;
 use App\Shipping\Labels\DTO\ShipmentRequest;
 use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
 use App\Shipping\Labels\Exceptions\LabelRejected;
+use App\Shipping\Providers\Spediamo\SpediamoLabelProvider;
+use App\Shipping\Providers\Spediamo\SpediamoLabelRequestMapper;
+use App\Shipping\Support\CarrierCodeMap;
 use Illuminate\Support\Facades\Http;
 
 /*
@@ -48,6 +48,8 @@ it('creates a shipment and maps the response', function () {
         $data = $request->data();
 
         return str_contains($request->url(), '/v1/shipments')
+            && $request->isForm()
+            && ($data['type'] ?? null) === 'DOMESTIC'
             && $request->hasHeader('Authorization', 'Bearer label-token')
             && ($data['recipientName'] ?? null) === 'Mario Rossi'
             && ($data['recipientPostalCode'] ?? null) === '00100'
@@ -274,4 +276,3 @@ it('fails pre-flight validation when sender or recipient address is missing post
     expect(fn () => $provider->createShipment($badRecipient))
         ->toThrow(LabelRejected::class, 'Recipient address requires at least postal code and city');
 });
-
