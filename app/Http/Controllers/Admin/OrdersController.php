@@ -521,6 +521,10 @@ class OrdersController extends Controller
             'label_drivers' => $labelsEnabled ? app(LabelManager::class)->driverNames() : [],
             // carriers the rate list recommends first (shipping.preferred_carriers)
             'preferred_carriers' => (array) settings('shipping.preferred_carriers', []),
+            // the carrier of the last label bought: kept in view in the rate list
+            'last_carrier' => $labelsEnabled
+                ? Shipment::query()->where('driver', '!=', Shipment::DRIVER_MANUAL)->latest('id')->value('carrier_code')
+                : null,
             'provider_names' => app(ShippingService::class)->providerNames(),
             'tracking_drivers' => $trackingManager->selectableDriverNames(),
             'default_tracking_driver' => $trackingManager->getDefaultDriver(),

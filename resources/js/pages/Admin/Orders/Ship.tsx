@@ -21,7 +21,7 @@ import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { AlertCircle, AlertTriangle, ArrowLeft, Clock, Loader2, MapPin, Package, RefreshCw, Truck, Wallet } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, Clock, Loader2, MapPin, Package, RefreshCw, Star, Truck, Wallet } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 
 interface Order {
@@ -116,6 +116,8 @@ interface Props {
     label_drivers?: string[];
     // carrier codes recommended first (settings); empty = any
     preferred_carriers?: string[];
+    // carrier of the last label bought (kept in view in the rate list)
+    last_carrier?: string | null;
     // admin-facing provider names keyed by driver name (from each provider manifest)
     provider_names?: Record<string, string>;
     tracking_drivers?: string[];
@@ -144,10 +146,12 @@ type ShipForm = {
     pickup_date: string;
 };
 
-// quotes shown before "show more"
+// quotes shown before "show more" when no rate is recommended, starred or last used
 const VISIBLE_QUOTES = 3;
 
-const quoteKey = (quote: RateQuote) => `${quote.provider}:${quote.carrier_code}:${quote.service_name}`;
+// one provider can return several offers for the same courier and service: the offer token (or raw code + price) tells them apart
+const quoteKey = (quote: RateQuote) =>
+    `${quote.provider}:${quote.raw_carrier_code ?? quote.carrier_code}:${quote.service_name}:${quote.quote_token ?? quote.total_price}`;
 const euro = (amount: number) => `€${Number(amount).toFixed(2)}`;
 const balanceAmount = (balance: DriverBalance | number | null | undefined) =>
     typeof balance === 'object' && balance !== null ? Number(balance.balance ?? balance.amount ?? 0) : balance == null ? null : Number(balance);
@@ -166,6 +170,7 @@ export default function OrderShip({
     parcels = [],
     label_drivers = [],
     preferred_carriers = [],
+    last_carrier = null,
     provider_names = {},
     tracking_drivers = [],
     default_tracking_driver = '',
@@ -183,6 +188,7 @@ export default function OrderShip({
     const [rates, setRates] = useState<Rates>({ status: 'idle', quotes: [], balances: {}, issues: [] });
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [refreshCount, setRefreshCount] = useState(0);
+    const [favourites, setFavourites] = useState<string[]>(preferred_carriers);
 
     const orderValue = Number(order.subtotal ?? 0);
     const customerPaid = Number(order.shipping_cost ?? shipping_cost ?? 0);
@@ -233,7 +239,7 @@ export default function OrderShip({
     // cheapest buyable rate the customer's shipping covers, from a preferred carrier when one qualifies (quotes arrive sorted by price)
     const recommend = (quotes: RateQuote[]) => {
         const covered = quotes.filter((quote) => quote.store_carrier_code && (quote.margin_delta ?? customerPaid - quote.total_price) >= 0);
-        return covered.find((quote) => preferred_carriers.includes(quote.store_carrier_code as string)) ?? covered[0] ?? null;
+        return covered.find((quote) => favourites.includes(quote.store_carrier_code as string)) ?? covered[0] ?? null;
     };
     const buyable = rates.quotes.filter((quote) => quote.store_carrier_code);
     const recommended = recommend(rates.quotes);
@@ -294,6 +300,29 @@ export default function OrderShip({
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [quoteInputs, tab, refreshCount]);
+
+    // the star saves the carrier in the preferred carriers setting (optimistic, restored on failure)
+    const toggleFavourite = async (quote: RateQuote) => {
+        const code = quote.store_carrier_code as string;
+        const previous = favourites;
+        setFavourites(previous.includes(code) ? previous.filter((c) => c !== code) : [...previous, code]);
+        try {
+            const response = await fetch('/admin/shipping/preferred-carriers/toggle', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': getCsrfToken(),
+                },
+                body: JSON.stringify({ carrier_code: code, carrier_name: quote.carrier_name }),
+            });
+            if (!response.ok) throw new Error();
+            setFavourites((await response.json()).preferred_carriers ?? []);
+        } catch {
+            setFavourites(previous);
+        }
+    };
 
     const switchTab = (next: Tab) => {
         setTab(next);
@@ -376,8 +405,16 @@ export default function OrderShip({
         .filter(Boolean)
         .join(', ');
 
-    // the selected rate stays visible even when it is not among the first few
-    const visibleQuotes = showAllQuotes ? rates.quotes : rates.quotes.filter((quote, i) => i < VISIBLE_QUOTES || quoteKey(quote) === selectedKey);
+    // in view by default: the selected and recommended rates, starred carriers and the last one used; else the cheapest few
+    const isFavourite = (quote: RateQuote) => !!quote.store_carrier_code && favourites.includes(quote.store_carrier_code);
+    const isLastUsed = (quote: RateQuote) => !!quote.store_carrier_code && quote.store_carrier_code === last_carrier;
+    const pinnedQuotes = rates.quotes.filter(
+        (quote) =>
+            quoteKey(quote) === selectedKey || (recommended && quoteKey(quote) === quoteKey(recommended)) || isFavourite(quote) || isLastUsed(quote),
+    );
+    const visibleQuotes = showAllQuotes
+        ? rates.quotes
+        : rates.quotes.filter((quote, i) => (pinnedQuotes.length > 0 ? pinnedQuotes.includes(quote) : i < VISIBLE_QUOTES));
 
     // the selected provider's prepaid balance, shown only when it would cover just a few more labels
     const selectedBalance = selected ? balanceAmount(rates.balances[selected.provider]) : null;
@@ -561,6 +598,7 @@ export default function OrderShip({
                                             <div className="space-y-3">
                                                 {data.parcels.map((parcel, index) => (
                                                     <div key={index} className="grid grid-cols-2 gap-2 rounded-md border p-3 md:grid-cols-5">
+                                                        {parcel.label && <p className="col-span-full text-xs font-medium">{parcel.label}</p>}
                                                         <div className="space-y-1">
                                                             <Label htmlFor={`weight-${index}`} className="text-xs">
                                                                 {t('admin.orders.ship.weight')}
@@ -729,82 +767,116 @@ export default function OrderShip({
                                                         const margin = quote.margin_delta ?? customerPaid - quote.total_price;
 
                                                         return (
-                                                            <button
-                                                                key={key}
-                                                                type="button"
-                                                                role="radio"
-                                                                aria-checked={isSelected}
-                                                                disabled={!canBuy}
-                                                                onClick={() => selectQuote(quote)}
-                                                                className={cn(
-                                                                    'flex w-full items-center gap-3 rounded-md border bg-card p-3 text-left transition-colors',
-                                                                    isSelected
-                                                                        ? 'border-primary ring-2 ring-primary/20'
-                                                                        : 'hover:border-muted-foreground/30',
-                                                                    !canBuy && 'cursor-not-allowed opacity-60 hover:border-border',
-                                                                )}
-                                                            >
-                                                                <span
+                                                            <div key={key} className="flex items-center gap-1">
+                                                                <button
+                                                                    type="button"
+                                                                    role="radio"
+                                                                    aria-checked={isSelected}
+                                                                    disabled={!canBuy}
+                                                                    onClick={() => selectQuote(quote)}
                                                                     className={cn(
-                                                                        'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                                                                        isSelected && 'border-primary',
+                                                                        'flex min-w-0 flex-1 items-center gap-3 rounded-md border bg-card p-3 text-left transition-colors',
+                                                                        isSelected
+                                                                            ? 'border-primary ring-2 ring-primary/20'
+                                                                            : 'hover:border-muted-foreground/30',
+                                                                        !canBuy && 'cursor-not-allowed opacity-60 hover:border-border',
                                                                     )}
                                                                 >
-                                                                    {isSelected && <span className="h-2 w-2 rounded-full bg-primary" />}
-                                                                </span>
-                                                                <span className="min-w-0 flex-1 space-y-0.5">
-                                                                    <span className="flex flex-wrap items-center gap-1.5">
-                                                                        <span className="text-sm font-semibold">{quote.carrier_name}</span>
-                                                                        <span className="text-xs text-muted-foreground">{quote.service_name}</span>
-                                                                        {recommended && key === quoteKey(recommended) && (
-                                                                            <Badge className="px-1.5 py-0 text-[10px]">
-                                                                                {t('admin.orders.ship.recommended')}
-                                                                            </Badge>
-                                                                        )}
-                                                                    </span>
-                                                                    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                                                                        <span>{driverName(quote.provider)}</span>
-                                                                        {quote.estimated_delivery && (
-                                                                            <span className="inline-flex items-center gap-1">
-                                                                                <Clock className="h-3 w-3" />
-                                                                                {quote.estimated_delivery}
-                                                                            </span>
-                                                                        )}
-                                                                        {quote.dimensional_weight_applied && (
-                                                                            <span className="text-amber-700 dark:text-amber-400">
-                                                                                {t('admin.orders.ship.volumetric')}
-                                                                                {quote.taxable_weight_kg != null && ` ${quote.taxable_weight_kg} kg`}
-                                                                            </span>
-                                                                        )}
-                                                                        {!canBuy && (
-                                                                            <span className="text-amber-700 dark:text-amber-400">
-                                                                                {unavailableReason(quote)}
-                                                                            </span>
-                                                                        )}
-                                                                    </span>
-                                                                    {quote.warnings?.map((warning) => (
-                                                                        <span
-                                                                            key={warning}
-                                                                            className="block text-xs text-amber-700 dark:text-amber-400"
-                                                                        >
-                                                                            {warning}
-                                                                        </span>
-                                                                    ))}
-                                                                </span>
-                                                                <span className="shrink-0 text-right">
-                                                                    <span className="block text-base font-bold">{euro(quote.total_price)}</span>
                                                                     <span
                                                                         className={cn(
-                                                                            'block text-xs font-medium',
-                                                                            margin >= 0
-                                                                                ? 'text-emerald-700 dark:text-emerald-400'
-                                                                                : 'text-red-700 dark:text-red-400',
+                                                                            'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                                                                            isSelected && 'border-primary',
                                                                         )}
                                                                     >
-                                                                        {margin >= 0 ? `+${euro(margin)}` : `−${euro(Math.abs(margin))}`}
+                                                                        {isSelected && <span className="h-2 w-2 rounded-full bg-primary" />}
                                                                     </span>
-                                                                </span>
-                                                            </button>
+                                                                    <span className="min-w-0 flex-1 space-y-0.5">
+                                                                        <span className="flex flex-wrap items-center gap-1.5">
+                                                                            <span className="text-sm font-semibold">{quote.carrier_name}</span>
+                                                                            <span className="text-xs text-muted-foreground">
+                                                                                {quote.service_name}
+                                                                            </span>
+                                                                            {recommended && key === quoteKey(recommended) && (
+                                                                                <Badge className="px-1.5 py-0 text-[10px]">
+                                                                                    {t('admin.orders.ship.recommended')}
+                                                                                </Badge>
+                                                                            )}
+                                                                            {isLastUsed(quote) && (
+                                                                                <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                                                                                    {t('admin.orders.ship.last_used')}
+                                                                                </Badge>
+                                                                            )}
+                                                                        </span>
+                                                                        <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                                                                            <span>{driverName(quote.provider)}</span>
+                                                                            {quote.estimated_delivery && (
+                                                                                <span className="inline-flex items-center gap-1">
+                                                                                    <Clock className="h-3 w-3" />
+                                                                                    {quote.estimated_delivery}
+                                                                                </span>
+                                                                            )}
+                                                                            {quote.dimensional_weight_applied && (
+                                                                                <span className="text-amber-700 dark:text-amber-400">
+                                                                                    {t('admin.orders.ship.volumetric')}
+                                                                                    {quote.taxable_weight_kg != null &&
+                                                                                        ` ${quote.taxable_weight_kg} kg`}
+                                                                                </span>
+                                                                            )}
+                                                                            {!canBuy && (
+                                                                                <span className="text-amber-700 dark:text-amber-400">
+                                                                                    {unavailableReason(quote)}
+                                                                                </span>
+                                                                            )}
+                                                                        </span>
+                                                                        {quote.warnings?.map((warning) => (
+                                                                            <span
+                                                                                key={warning}
+                                                                                className="block text-xs text-amber-700 dark:text-amber-400"
+                                                                            >
+                                                                                {warning}
+                                                                            </span>
+                                                                        ))}
+                                                                    </span>
+                                                                    <span className="shrink-0 text-right">
+                                                                        <span className="block text-base font-bold">{euro(quote.total_price)}</span>
+                                                                        <span
+                                                                            className={cn(
+                                                                                'block text-xs font-medium',
+                                                                                margin >= 0
+                                                                                    ? 'text-emerald-700 dark:text-emerald-400'
+                                                                                    : 'text-red-700 dark:text-red-400',
+                                                                            )}
+                                                                        >
+                                                                            {margin >= 0 ? `+${euro(margin)}` : `−${euro(Math.abs(margin))}`}
+                                                                        </span>
+                                                                    </span>
+                                                                </button>
+                                                                {canBuy && (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 shrink-0"
+                                                                        aria-pressed={isFavourite(quote)}
+                                                                        aria-label={t(
+                                                                            isFavourite(quote)
+                                                                                ? 'admin.orders.ship.favourite_remove'
+                                                                                : 'admin.orders.ship.favourite_add',
+                                                                            { carrier: quote.carrier_name },
+                                                                        )}
+                                                                        onClick={() => toggleFavourite(quote)}
+                                                                    >
+                                                                        <Star
+                                                                            className={cn(
+                                                                                'h-4 w-4',
+                                                                                isFavourite(quote)
+                                                                                    ? 'fill-amber-400 text-amber-500'
+                                                                                    : 'text-muted-foreground',
+                                                                            )}
+                                                                        />
+                                                                    </Button>
+                                                                )}
+                                                            </div>
                                                         );
                                                     })}
                                                 </div>
@@ -838,9 +910,7 @@ export default function OrderShip({
                                             )}
 
                                             {rates.status === 'ready' && rates.quotes.length > 0 && buyable.length === 0 && (
-                                                <p className="text-xs text-amber-700 dark:text-amber-400">
-                                                    {t('admin.orders.ship.none_buyable')}
-                                                </p>
+                                                <p className="text-xs text-amber-700 dark:text-amber-400">{t('admin.orders.ship.none_buyable')}</p>
                                             )}
 
                                             <ShippingIssues

@@ -41,7 +41,8 @@ class ShipmentBuilder
     }
 
     /**
-     * Prefilled parcels for the ship form: one per distinct box size on the order, each with the default weight.
+     * Prefilled parcels for the ship form: one box per unit ordered (a quantity of 2 ships in 2 boxes), each with its
+     * size's packed weight or the default weight, capped at the form's 20 parcels.
      *
      * @return list<array{weight: float, length: float|null, width: float|null, height: float|null, label: string}>
      */
@@ -54,17 +55,21 @@ class ShipmentBuilder
 
         foreach ($order->orderItems as $item) {
             $size = $item->size;
+            $quantity = max(1, (int) $item->quantity);
+            $name = trim($item->product_name.($size?->name ? " ({$size->name})" : '')) ?: 'Parcel';
 
-            $parcels[] = [
-                'weight' => $size?->weight_kg !== null ? (float) $size->weight_kg : $weight,
-                'length' => $size?->length !== null ? (float) $size->length : null,
-                'width' => $size?->width !== null ? (float) $size->width : null,
-                'height' => $size?->height !== null ? (float) $size->height : null,
-                'label' => $size?->name ? (string) $size->name : 'Parcel',
-            ];
+            for ($unit = 1; $unit <= $quantity; $unit++) {
+                $parcels[] = [
+                    'weight' => $size?->weight_kg !== null ? (float) $size->weight_kg : $weight,
+                    'length' => $size?->length !== null ? (float) $size->length : null,
+                    'width' => $size?->width !== null ? (float) $size->width : null,
+                    'height' => $size?->height !== null ? (float) $size->height : null,
+                    'label' => $quantity > 1 ? "{$name} {$unit}/{$quantity}" : $name,
+                ];
+            }
         }
 
-        return $parcels !== [] ? $parcels : [['weight' => $weight, 'length' => null, 'width' => null, 'height' => null, 'label' => 'Parcel']];
+        return $parcels !== [] ? array_slice($parcels, 0, 20) : [['weight' => $weight, 'length' => null, 'width' => null, 'height' => null, 'label' => 'Parcel']];
     }
 
     private function sender(): Address

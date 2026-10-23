@@ -6,6 +6,7 @@ use App\Models\Size;
 use App\Models\User;
 use App\Shipping\Labels\LabelManager;
 use App\Shipping\Support\NextWorkingDay;
+use App\Shipping\Tracking\TrackingManager;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -179,6 +180,29 @@ it('prefills label parcels with the packed weight of the box size, else the defa
         ->assertInertia(fn (Assert $page) => $page
             ->where('parcels.0.weight', 2.35)
             ->where('parcels.1.weight', 1));
+});
+
+it('prefills one parcel per unit ordered, named after the item', function () {
+    $size = Size::factory()->create(['name' => 'M', 'weight_kg' => 0.5]);
+    $this->order->orderItems()->delete();
+    $this->order->orderItems()->create(['product_name' => 'Tee', 'quantity' => 2, 'price' => 10, 'total' => 20, 'size_id' => $size->id]);
+
+    $this->actingAs($this->admin)->get(route('admin.orders.show-ship', $this->order))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('parcels', 2)
+            ->where('parcels.0.label', 'Tee (M) 1/2')
+            ->where('parcels.1.label', 'Tee (M) 2/2'));
+});
+
+it('stars and unstars a carrier as a preferred carrier, registering a new courier first', function () {
+    $toggle = fn () => $this->actingAs($this->admin)
+        ->postJson(route('admin.shipping.preferred-carriers.toggle'), ['carrier_code' => 'brt', 'carrier_name' => 'BRT']);
+
+    $toggle()->assertOk()->assertJsonPath('preferred_carriers', ['brt']);
+    expect(app(TrackingManager::class)->carrierCodes())->toContain('brt');
+
+    $toggle()->assertOk()->assertJsonPath('preferred_carriers', []);
+    expect(settings('shipping.preferred_carriers'))->toBe([]);
 });
 
 it('does not resolve a provider when labels are off even if create_label is sent', function () {

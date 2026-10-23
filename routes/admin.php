@@ -1,21 +1,20 @@
 <?php
 
-use App\Http\Controllers\Admin\CustomersController;
-use App\Http\Controllers\Admin\OrdersController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\CategoriesAndSizesController;
+use App\Http\Controllers\Admin\CustomersController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\NewsletterCampaignsController;
+use App\Http\Controllers\Admin\NewsletterSubscribersController;
+use App\Http\Controllers\Admin\OrdersController;
+use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReviewMediaController;
 use App\Http\Controllers\Admin\ReviewsController;
-use App\Http\Controllers\Admin\NewsletterSubscribersController;
-use App\Http\Controllers\Admin\NewsletterCampaignsController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\ShippingQuotesController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    
+
     // Admin Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -39,6 +38,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     // Shipping Quotes
     Route::get('shipping/quotes', [ShippingQuotesController::class, 'index'])->name('shipping.quotes');
     Route::post('shipping/quotes/calculate', [ShippingQuotesController::class, 'quote'])->name('shipping.quotes.calculate');
+    Route::post('shipping/preferred-carriers/toggle', [ShippingQuotesController::class, 'togglePreferredCarrier'])->name('shipping.preferred-carriers.toggle');
 
     // Products Management
     Route::resource('products', ProductController::class);
@@ -48,12 +48,12 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
     // Categories & Sizes Management
     Route::get('/categories-sizes', [CategoriesAndSizesController::class, 'index'])->name('categories-sizes');
-    
+
     // Category routes
     Route::post('/categories', [CategoriesAndSizesController::class, 'storeCategory'])->name('categories.store');
     Route::patch('/categories/{category}', [CategoriesAndSizesController::class, 'updateCategory'])->name('categories.update');
     Route::delete('/categories/{category}', [CategoriesAndSizesController::class, 'destroyCategory'])->name('categories.destroy');
-    
+
     // Size routes
     Route::post('/sizes', [CategoriesAndSizesController::class, 'storeSize'])->name('sizes.store');
     Route::patch('/sizes/{size}', [CategoriesAndSizesController::class, 'updateSize'])->name('sizes.update');
@@ -98,5 +98,5 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::resource('customers', CustomersController::class)->only(['index', 'show', 'update']);
     Route::patch('customers/{customer}/active', [CustomersController::class, 'toggleActive'])->name('customers.toggle-active');
     Route::post('customers/{customer}/reset-link', [CustomersController::class, 'sendResetLink'])->middleware('throttle:6,1')->name('customers.reset-link');
-    
+
 });

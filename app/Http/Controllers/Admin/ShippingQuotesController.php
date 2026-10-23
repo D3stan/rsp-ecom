@@ -197,6 +197,32 @@ class ShippingQuotesController extends Controller
     }
 
     /**
+     * Star or unstar a carrier on the ship page: shipping.preferred_carriers is the favourites list. A courier first
+     * seen in a quote is added to the store's carriers so it can be a member of the list.
+     */
+    public function togglePreferredCarrier(Request $request, TrackingManager $tracking): JsonResponse
+    {
+        $data = $request->validate([
+            'carrier_code' => ['required', 'string', 'regex:'.TrackingManager::CARRIER_CODE_PATTERN],
+            'carrier_name' => ['nullable', 'string', 'max:80'],
+        ]);
+
+        $code = $data['carrier_code'];
+        $preferred = array_values((array) settings('shipping.preferred_carriers', []));
+
+        if (in_array($code, $preferred, true)) {
+            $preferred = array_values(array_diff($preferred, [$code]));
+        } else {
+            $tracking->registerCarrier($code, $data['carrier_name'] ?? null, $request->user());
+            $preferred[] = $code;
+        }
+
+        settings()->set('shipping.preferred_carriers', $preferred, $request->user());
+
+        return response()->json(['preferred_carriers' => $preferred]);
+    }
+
+    /**
      * The carrier code to ship this quote under, or null when no label driver can buy it. A carrier already in the
      * store list for the same courier wins (`poste` for a quote coded `pdb`); otherwise the quote's own code, which
      * the ship form registers on purchase.
