@@ -343,6 +343,8 @@ export default function OrderShip({
         .join(', ');
 
     const providerErrors = Object.entries(rates.errors);
+    // nothing to pick from: the provider errors are the answer, so show them without a click
+    const noQuotes = rates.status === 'ready' && rates.quotes.length === 0;
     // the selected rate stays visible even when it is not among the first few
     const visibleQuotes = showAllQuotes ? rates.quotes : rates.quotes.filter((quote, i) => i < VISIBLE_QUOTES || quoteKey(quote) === selectedKey);
 
@@ -457,7 +459,7 @@ export default function OrderShip({
                                 {t('admin.orders.ship.shipment')}
                             </CardTitle>
                             {labels_enabled && (
-                                <div role="tablist" className="inline-flex w-full rounded-lg bg-muted p-1 sm:w-auto">
+                                <div role="tablist" className="grid w-full grid-cols-2 gap-1 rounded-lg bg-muted p-1">
                                     {(['label', 'manual'] as const).map((value) => (
                                         <button
                                             key={value}
@@ -466,7 +468,7 @@ export default function OrderShip({
                                             aria-selected={tab === value}
                                             onClick={() => switchTab(value)}
                                             className={cn(
-                                                'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors sm:flex-none',
+                                                'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                                                 tab === value ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
                                             )}
                                         >
@@ -798,17 +800,17 @@ export default function OrderShip({
                                             )}
 
                                             {providerErrors.length > 0 && (
-                                                <div className="text-xs text-muted-foreground">
+                                                <div className={cn('text-xs', noQuotes ? 'text-destructive' : 'text-muted-foreground')}>
                                                     <button
                                                         type="button"
                                                         className="inline-flex items-center gap-1 hover:text-foreground"
-                                                        aria-expanded={showProviderErrors}
+                                                        aria-expanded={showProviderErrors || noQuotes}
                                                         onClick={() => setShowProviderErrors(!showProviderErrors)}
                                                     >
                                                         <AlertCircle className="h-3.5 w-3.5" />
                                                         {t('admin.orders.ship.providers_unavailable', { count: providerErrors.length })}
                                                     </button>
-                                                    {showProviderErrors && (
+                                                    {(showProviderErrors || noQuotes) && (
                                                         <ul className="mt-1 space-y-0.5 pl-5">
                                                             {providerErrors.map(([provider, message]) => (
                                                                 <li key={provider}>
