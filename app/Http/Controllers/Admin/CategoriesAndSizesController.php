@@ -114,6 +114,7 @@ class CategoriesAndSizesController extends Controller
             'length' => 'required|numeric|min:0.1',
             'width' => 'required|numeric|min:0.1',
             'height' => 'required|numeric|min:0.1',
+            'weight_kg' => 'nullable|numeric|min:0.01|max:1000',
             'box_type' => 'required|in:box,non_rigid_box',
             'shipping_cost' => 'required|numeric|min:0',
         ]);
@@ -130,6 +131,7 @@ class CategoriesAndSizesController extends Controller
             'length' => 'required|numeric|min:0.1',
             'width' => 'required|numeric|min:0.1',
             'height' => 'required|numeric|min:0.1',
+            'weight_kg' => 'nullable|numeric|min:0.01|max:1000',
             'box_type' => 'required|in:box,non_rigid_box',
             'shipping_cost' => 'required|numeric|min:0',
         ]);

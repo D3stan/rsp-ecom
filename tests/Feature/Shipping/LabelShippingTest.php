@@ -63,8 +63,10 @@ it('resolves no label provider at all when labels are off', function () {
 });
 
 it('creates a label: shipment row, stored PDF, carrier tracking number, shipped and one email', function () {
-    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody())
-        ->assertRedirect(route('admin.orders.show', $this->order))
+    $response = $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody());
+
+    // the order page gets the new shipment id so it can offer to print the label
+    $response->assertRedirect(route('admin.orders.show', [$this->order, 'label' => $this->order->shipments()->value('id')]))
         ->assertSessionHas('success');
 
     $order = $this->order->fresh();
@@ -135,8 +137,22 @@ it('gives the ship page the labels flag, driver and prefilled parcels', function
             ->where('labels_enabled', true)
             ->has('parcels')
             ->where('carriers.0.code', 'acme')
-            ->has('label_driver_carriers')
-            ->where('label_driver_carriers.fake.0', 'acme'));
+            ->where('label_drivers', fn ($drivers) => collect($drivers)->contains('fake'))
+            ->where('preferred_carriers', []));
+});
+
+it('prefills label parcels with the packed weight of the box size, else the default weight', function () {
+    settings()->set('shipping.default_parcel_weight_kg', 1.0);
+    $weighed = \App\Models\Size::factory()->create(['weight_kg' => 2.35]);
+    $unweighed = \App\Models\Size::factory()->create(['weight_kg' => null]);
+    $this->order->orderItems()->delete();
+    $this->order->orderItems()->create(['product_name' => 'A', 'quantity' => 1, 'price' => 10, 'total' => 10, 'size_id' => $weighed->id]);
+    $this->order->orderItems()->create(['product_name' => 'B', 'quantity' => 1, 'price' => 10, 'total' => 10, 'size_id' => $unweighed->id]);
+
+    $this->actingAs($this->admin)->get(route('admin.orders.show-ship', $this->order))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('parcels.0.weight', 2.35)
+            ->where('parcels.1.weight', 1));
 });
 
 it('does not resolve a provider when labels are off even if create_label is sent', function () {
@@ -152,7 +168,7 @@ it('does not resolve a provider when labels are off even if create_label is sent
 it('ignores manual tracking_driver when creating a label and assigns the label provider tracking driver', function () {
     $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody([
         'tracking_driver' => 'manual',
-    ]))->assertRedirect(route('admin.orders.show', $this->order))->assertSessionHas('success');
+    ]))->assertRedirectContains(route('admin.orders.show', $this->order))->assertSessionHas('success');
 
     $order = $this->order->fresh();
     expect($order->status)->toBe('shipped')
@@ -172,7 +188,7 @@ it('clears stale tracking_driver when shipping manually with default tracking dr
     expect($this->order->fresh()->tracking_driver)->toBeNull();
 });
 
-it('provides empty label_driver_carriers when labels are disabled without resolving drivers', function () {
+it('provides no label drivers when labels are disabled without resolving drivers', function () {
     settings()->set('shipping.labels_enabled', false);
 
     $this->mock(LabelManager::class, function ($mock) {
@@ -183,5 +199,5 @@ it('provides empty label_driver_carriers when labels are disabled without resolv
     $this->actingAs($this->admin)->get(route('admin.orders.show-ship', $this->order))
         ->assertInertia(fn (Assert $page) => $page
             ->where('labels_enabled', false)
-            ->where('label_driver_carriers', []));
+            ->where('label_drivers', []));
 });

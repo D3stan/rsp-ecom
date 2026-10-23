@@ -53,7 +53,7 @@ class ShipmentBuilder
             $size = $item->size;
 
             $parcels[] = [
-                'weight' => $weight,
+                'weight' => $size?->weight_kg !== null ? (float) $size->weight_kg : $weight,
                 'length' => $size?->length !== null ? (float) $size->length : null,
                 'width' => $size?->width !== null ? (float) $size->width : null,
                 'height' => $size?->height !== null ? (float) $size->height : null,

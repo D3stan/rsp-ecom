@@ -135,6 +135,8 @@ return [
         ['key' => 'shipping.labels_enabled', 'type' => 'bool', 'default' => (bool) $shipping['labels']['enabled'], 'risk' => 'high', 'config_bridge' => 'shipping.labels.enabled', 'seed' => false],
         // Name of the registered label adapter to use (validated at runtime against the registered drivers).
         ['key' => 'shipping.label_driver', 'type' => 'string', 'default' => (string) $shipping['labels']['driver'], 'max' => 50, 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.driver', 'seed' => false],
+        // Carriers the ship form recommends first (cheapest rate the customer's shipping covers); empty = any carrier.
+        ['key' => 'shipping.preferred_carriers', 'type' => 'list', 'default' => [], 'max' => 30, 'item_max' => 32, 'member_of' => 'shipping.carriers', 'depends_on' => 'shipping.labels_enabled'],
         // Default parcel weight (kg) prefilled on the ship form when labels are on.
         ['key' => 'shipping.default_parcel_weight_kg', 'type' => 'float', 'default' => (float) $shipping['labels']['default_parcel_weight_kg'], 'min' => 0.01, 'max' => 1000, 'unit' => 'kg', 'depends_on' => 'shipping.labels_enabled', 'config_bridge' => 'shipping.labels.default_parcel_weight_kg', 'seed' => false],
         // Sender address printed on the label (falls back to the store identity where empty).

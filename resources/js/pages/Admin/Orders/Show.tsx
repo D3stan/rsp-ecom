@@ -20,7 +20,7 @@ import { Separator } from '@/components/ui/separator';
 import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { forwardTransitions } from '@/lib/order-transitions';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
     ArrowRight,
@@ -193,6 +193,9 @@ export default function OrderShow({
     const { t, locale } = useTranslation();
     const [cancelShipmentId, setCancelShipmentId] = useState<number | null>(null);
     const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
+    // ?label=<shipment id>: the ship page just bought this label, offer to print it right away
+    const labelId = Number(new URLSearchParams(usePage().url.split('?')[1] ?? '').get('label'));
+    const justBought = shipments.find((shipment) => shipment.id === labelId && shipment.status !== 'cancelled');
     const [isUpdating, setIsUpdating] = useState(false);
     const [isAddingTracking, setIsAddingTracking] = useState(false);
     const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || '');
@@ -329,6 +332,26 @@ export default function OrderShow({
                         </Button>
                     </div>
                 </div>
+
+                {justBought && (
+                    <div className="flex flex-col gap-3 rounded-lg border border-green-200 bg-green-50 p-4 text-green-900 sm:flex-row sm:items-center sm:justify-between dark:border-green-900 dark:bg-green-950 dark:text-green-100">
+                        <div className="flex items-center gap-3">
+                            <CheckCircle className="h-5 w-5 shrink-0" />
+                            <p className="font-medium">
+                                {t('admin.orders.ship.label_bought')}
+                                <span className="ml-2 font-normal">
+                                    {carriers.find((carrier) => carrier.code === justBought.carrier_code)?.name ?? justBought.carrier_code}
+                                    {justBought.tracking_number && <span className="ml-1 font-mono">{justBought.tracking_number}</span>}
+                                </span>
+                            </p>
+                        </div>
+                        <Button size="sm" asChild>
+                            <a href={`/admin/orders/${order.id}/shipments/${justBought.id}/label`} target="_blank" rel="noopener noreferrer">
+                                {t('admin.orders.ship.print_label')}
+                            </a>
+                        </Button>
+                    </div>
+                )}
 
                 {stock?.has_oversold_items && (
                     <div className="flex items-start space-x-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900">

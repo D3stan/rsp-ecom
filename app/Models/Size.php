@@ -14,6 +14,7 @@ class Size extends Model
         'length',
         'width',
         'height',
+        'weight_kg',
         'box_type',
         'shipping_cost',
     ];
@@ -22,6 +23,7 @@ class Size extends Model
         'length' => 'decimal:2',
         'width' => 'decimal:2',
         'height' => 'decimal:2',
+        'weight_kg' => 'decimal:3',
         'shipping_cost' => 'decimal:2',
     ];
 

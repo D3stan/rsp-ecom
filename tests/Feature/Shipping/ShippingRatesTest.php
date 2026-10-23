@@ -584,6 +584,26 @@ it('POST /admin/orders/{order}/quotes calculates quotes and computes margin_delt
     }
 });
 
+it('POST /admin/orders/{order}/quotes marks a quote buyable only when its provider labels one of our carriers', function () {
+    settings()->set('shipping.labels_enabled', true);
+    // fake rates return sda and dhl; only sda is one of our carriers
+    config(['shipping.carriers' => ['sda' => ['name' => 'SDA', 'tracking_url' => 'https://track.example.test/?n={number}']]]);
+    $order = Order::factory()->create(['status' => 'processing', 'payment_status' => 'succeeded', 'shipping_amount' => 10.00]);
+
+    $quotes = collect($this->actingAs($this->admin)
+        ->postJson(route('admin.orders.quotes', $order), ['drivers' => ['fake']])
+        ->assertOk()
+        ->json('quotes'))->keyBy('carrier_code');
+
+    expect($quotes['sda']['store_carrier_code'])->toBe('sda')
+        ->and($quotes['dhl']['store_carrier_code'])->toBeNull();
+
+    // labels off: nothing can be bought, the rates are still shown
+    settings()->set('shipping.labels_enabled', false);
+    $quotes = $this->actingAs($this->admin)->postJson(route('admin.orders.quotes', $order), ['drivers' => ['fake']])->json('quotes');
+    expect(collect($quotes)->pluck('store_carrier_code')->filter())->toBeEmpty();
+});
+
 /*
 |--------------------------------------------------------------------------
 | 5. End-to-end quote-to-label purchase handoff
@@ -656,7 +676,7 @@ it('completes end-to-end quote-to-label purchase handoff via POST /admin/orders/
     $response = $this->actingAs($this->admin)
         ->post(route('admin.orders.process-ship', $order), $shipPayload);
 
-    $response->assertRedirect(route('admin.orders.show', $order))
+    $response->assertRedirectContains(route('admin.orders.show', $order))
         ->assertSessionHas('success');
 
     // 1. Order transitioned to shipped with tracking number & carrier

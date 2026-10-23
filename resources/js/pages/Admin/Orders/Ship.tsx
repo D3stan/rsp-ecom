@@ -19,23 +19,8 @@ import useTranslation from '@/hooks/useTranslation';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { Head, Link, useForm } from '@inertiajs/react';
-import {
-    AlertCircle,
-    AlertTriangle,
-    ArrowLeft,
-    Check,
-    Clock,
-    ExternalLink,
-    Loader2,
-    MapPin,
-    Package,
-    Scale,
-    Sparkles,
-    Truck,
-    Wallet,
-    X,
-} from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import { AlertCircle, AlertTriangle, ArrowLeft, Clock, Loader2, MapPin, Package, RefreshCw, Truck, Wallet } from 'lucide-react';
+import { FormEvent, useEffect, useState } from 'react';
 
 interface Order {
     id: number;
@@ -44,6 +29,7 @@ interface Order {
     tracking_carrier?: string | null;
     tracking_driver?: string | null;
     shipping_cost?: number;
+    subtotal?: number;
     shippingAddress?: {
         first_name: string;
         last_name: string;
@@ -96,6 +82,8 @@ export interface RateQuote {
     surcharges?: Record<string, unknown>;
     warnings?: string[];
     margin_delta?: number;
+    // our carrier code when this quote can be bought here (label driver + enabled carrier), else null
+    store_carrier_code?: string | null;
     [key: string]: unknown;
 }
 
@@ -106,10 +94,12 @@ export interface DriverBalance {
     [key: string]: unknown;
 }
 
-interface RatesResult {
+interface Rates {
+    status: 'idle' | 'loading' | 'ready' | 'error';
     quotes: RateQuote[];
-    balances?: Record<string, DriverBalance | number | null | undefined>;
-    errors?: Record<string, string>;
+    balances: Record<string, DriverBalance | number | null | undefined>;
+    errors: Record<string, string>;
+    message?: string;
 }
 
 interface Props {
@@ -122,16 +112,15 @@ interface Props {
     // parcels prefilled from the order's box sizes (label mode)
     parcels?: Parcel[];
     label_drivers?: string[];
-    label_driver_carriers?: Record<string, string[]>;
-    default_label_driver?: string;
+    // carrier codes recommended first (settings); empty = any
+    preferred_carriers?: string[];
     tracking_drivers?: string[];
     default_tracking_driver?: string;
-    rate_drivers?: string[];
     shipping_cost?: number;
     sender_configured?: boolean;
 }
 
-const DEFAULT_DRIVER = '__default__';
+type Tab = 'label' | 'manual';
 
 type ShipForm = {
     tracking_carrier: string;
@@ -147,10 +136,19 @@ type ShipForm = {
     quote_token: string;
 };
 
+// quotes shown before "show more"
+const VISIBLE_QUOTES = 3;
+
+const quoteKey = (quote: RateQuote) => `${quote.provider}:${quote.carrier_code}:${quote.service_name}`;
+const euro = (amount: number) => `€${Number(amount).toFixed(2)}`;
+const balanceAmount = (balance: DriverBalance | number | null | undefined) =>
+    typeof balance === 'object' && balance !== null ? Number(balance.balance ?? balance.amount ?? 0) : balance == null ? null : Number(balance);
+
 /**
- * Ship form: carrier, provider, and tracking number or label parcels. The server (ShippingService) records the shipment,
- * moves the order to "shipped" and sends one shipped email, with the tracking. Shipping without a number is possible
- * after an explicit confirmation; the customer is then emailed now only when "notify now" is ticked.
+ * Ship page, two ways to ship. "Buy label": parcels prefilled from the box sizes, rates fetched automatically and the
+ * cheapest buyable one that the customer's shipping covers preselected; the admin reviews and buys. "Already have a
+ * label": a shipment bought elsewhere (a shipping platform's site, a carrier counter) is attached by tracking number.
+ * The server (ShippingService) records the shipment, moves the order to "shipped" and sends one shipped email.
  */
 export default function OrderShip({
     order,
@@ -159,44 +157,38 @@ export default function OrderShip({
     labels_enabled = false,
     parcels = [],
     label_drivers = [],
-    label_driver_carriers = {},
-    default_label_driver = '',
+    preferred_carriers = [],
     tracking_drivers = [],
     default_tracking_driver = '',
     shipping_cost,
     sender_configured = true,
 }: Props) {
     const { t } = useTranslation();
+    const [tab, setTab] = useState<Tab>(labels_enabled ? 'label' : 'manual');
     const [confirming, setConfirming] = useState(false);
-    // with labels on the default flow is "create label"; the admin can switch to typing a tracking number
-    const [labelMode, setLabelMode] = useState(labels_enabled);
-    const [comparingRates, setComparingRates] = useState(false);
-    const [rateComparisonError, setRateComparisonError] = useState<string | null>(null);
-    const [ratesResult, setRatesResult] = useState<RatesResult | null>(null);
-    const [selectedQuoteKey, setSelectedQuoteKey] = useState<string | null>(null);
-    const [carrierWarning, setCarrierWarning] = useState<string | null>(null);
+    const [parcelsOpen, setParcelsOpen] = useState(false);
+    const [optionsOpen, setOptionsOpen] = useState(false);
+    const [showAllQuotes, setShowAllQuotes] = useState(false);
+    const [showProviderErrors, setShowProviderErrors] = useState(false);
+    const [rates, setRates] = useState<Rates>({ status: 'idle', quotes: [], balances: {}, errors: {} });
+    const [selectedKey, setSelectedKey] = useState<string | null>(null);
+    const [refreshCount, setRefreshCount] = useState(0);
 
+    const orderValue = Number(order.subtotal ?? 0);
+    const customerPaid = Number(order.shipping_cost ?? shipping_cost ?? 0);
     const initialTrackingDriver =
         order.tracking_driver && tracking_drivers.includes(order.tracking_driver)
             ? order.tracking_driver
             : tracking_drivers.includes(default_tracking_driver)
               ? default_tracking_driver
               : '';
-    const initialLabelDriver = label_drivers.includes(default_label_driver) ? default_label_driver : (label_drivers[0] ?? '');
-    const initialSupportedCarriers =
-        labels_enabled && label_driver_carriers[initialLabelDriver] !== undefined
-            ? label_driver_carriers[initialLabelDriver]
-            : null;
-    const initialCarrierValid =
-        carriers.some((carrier) => carrier.code === order.tracking_carrier) &&
-        (initialSupportedCarriers === null || initialSupportedCarriers.includes(order.tracking_carrier as string));
 
     const { data, setData, post, processing, errors } = useForm<ShipForm>({
         // a carrier/number saved earlier on the order is prefilled
-        tracking_carrier: initialCarrierValid ? (order.tracking_carrier as string) : '',
+        tracking_carrier: carriers.some((carrier) => carrier.code === order.tracking_carrier) ? (order.tracking_carrier as string) : '',
         tracking_number: order.tracking_number ?? '',
         tracking_driver: initialTrackingDriver,
-        label_driver: initialLabelDriver,
+        label_driver: '',
         ship_without_tracking: false,
         notify_customer: false,
         create_label: labels_enabled,
@@ -215,188 +207,89 @@ export default function OrderShip({
         return metaTag?.content ?? '';
     };
 
-    const compareLiveRates = async () => {
-        setComparingRates(true);
-        setRateComparisonError(null);
-        try {
-            const response = await fetch(`/admin/orders/${order.id}/quotes`, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': getCsrfToken(),
-                },
-                body: JSON.stringify({
-                    parcels: data.parcels,
-                    insurance_amount: data.insurance_amount || null,
-                    cod_amount: data.cod_amount || null,
-                }),
-            });
-
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.message || `Request failed with status ${response.status}`);
-            }
-
-            const result = await response.json();
-            setRatesResult({
-                quotes: Array.isArray(result.quotes) ? result.quotes : [],
-                balances: result.balances ?? {},
-                errors: result.errors ?? {},
-            });
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : '';
-            setRateComparisonError(
-                message || t('admin.orders.ship.compare_error', { defaultValue: 'Failed to compare live rates. Please try again.' }),
-            );
-        } finally {
-            setComparingRates(false);
-        }
+    const selectQuote = (quote: RateQuote) => {
+        setSelectedKey(quoteKey(quote));
+        setData((prev) => ({
+            ...prev,
+            label_driver: quote.provider,
+            tracking_carrier: quote.store_carrier_code ?? '',
+            quote_token: quote.quote_token ?? '',
+        }));
     };
 
-    const getDisplayedCarriers = (driver: string) => {
-        return labelMode && label_driver_carriers[driver] !== undefined
-            ? carriers.filter((carrier) => label_driver_carriers[driver].includes(carrier.code))
-            : carriers;
+    // cheapest buyable rate the customer's shipping covers, from a preferred carrier when one qualifies (quotes arrive sorted by price)
+    const recommend = (quotes: RateQuote[]) => {
+        const covered = quotes.filter((quote) => quote.store_carrier_code && (quote.margin_delta ?? customerPaid - quote.total_price) >= 0);
+        return covered.find((quote) => preferred_carriers.includes(quote.store_carrier_code as string)) ?? covered[0] ?? null;
     };
+    const buyable = rates.quotes.filter((quote) => quote.store_carrier_code);
+    const recommended = recommend(rates.quotes);
 
-    const displayedCarriers = getDisplayedCarriers(data.label_driver);
-
-    const findCarrierMatch = (carrierList: Carrier[], quote: RateQuote): Carrier | undefined => {
-        const qCode = quote.carrier_code.trim().toLowerCase();
-        const qRaw = (quote.raw_carrier_code || '').trim().toLowerCase();
-        const qName = (quote.carrier_name || '').trim().toLowerCase();
-
-        // 1. Direct match by carrier_code
-        const direct = carrierList.find((c) => c.code.toLowerCase() === qCode);
-        if (direct) {
-            return direct;
+    // Rates follow the parcels and insurance: any change makes the current ones (and their quote token) stale.
+    const quoteInputs = JSON.stringify([data.parcels, data.insurance_amount]);
+    useEffect(() => {
+        if (tab !== 'label' || !sender_configured) {
+            return;
         }
 
-        // 2. Direct match by raw_carrier_code
-        if (qRaw) {
-            const rawMatch = carrierList.find((c) => c.code.toLowerCase() === qRaw);
-            if (rawMatch) {
-                return rawMatch;
-            }
-        }
-
-        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const normQ = normalize(qCode);
-        const normRaw = normalize(qRaw);
-        const normName = normalize(qName);
-
-        // 3. Prefix or substring match on codes
-        const prefixOrSub = carrierList.find((c) => {
-            const cCode = c.code.toLowerCase();
-            const normC = normalize(cCode);
-            return (
-                qCode.startsWith(cCode) ||
-                cCode.startsWith(qCode) ||
-                qCode.includes(cCode) ||
-                cCode.includes(qCode) ||
-                (normRaw && (normRaw.startsWith(normC) || normC.startsWith(normRaw) || normRaw.includes(normC) || normC.includes(normRaw)))
-            );
-        });
-        if (prefixOrSub) {
-            return prefixOrSub;
-        }
-
-        // 4. Shared courier groups (e.g. SDA / Poste Italiane, BRT / Bartolini, TNT / FedEx)
-        const courierAliasGroups: string[][] = [
-            ['poste', 'posteitaliane', 'sda', 'sdam', 'pdb'],
-            ['brt', 'bartolini', 'dpd'],
-            ['gls'],
-            ['dhl'],
-            ['ups'],
-            ['tnt', 'fedex'],
-        ];
-
-        for (const group of courierAliasGroups) {
-            const qMatchesGroup = group.some(
-                (alias) =>
-                    normQ.includes(alias) ||
-                    alias.includes(normQ) ||
-                    (normRaw && (normRaw.includes(alias) || alias.includes(normRaw))) ||
-                    (normName && (normName.includes(alias) || alias.includes(normName))),
-            );
-            if (qMatchesGroup) {
-                const matched = carrierList.find((c) => {
-                    const normC = normalize(c.code);
-                    const normCName = normalize(c.name);
-                    return group.some(
-                        (alias) =>
-                            normC.includes(alias) ||
-                            alias.includes(normC) ||
-                            normCName.includes(alias) ||
-                            alias.includes(normCName),
-                    );
-                });
-                if (matched) {
-                    return matched;
-                }
-            }
-        }
-
-        // 5. Courier name match (carrier.name matches quote.carrier_name or quote.carrier_code)
-        const nameMatch = carrierList.find((c) => {
-            const normCName = normalize(c.name);
-            return (
-                (normName && (normCName.includes(normName) || normName.includes(normCName))) ||
-                normCName.includes(normQ) ||
-                normQ.includes(normCName)
-            );
-        });
-        if (nameMatch) {
-            return nameMatch;
-        }
-
-        return undefined;
-    };
-
-    const handleUseQuote = (quote: RateQuote) => {
-        const quoteKey = `${quote.provider}:${quote.carrier_code}:${quote.service_name}`;
-        setSelectedQuoteKey(quoteKey);
-
-        const nextLabelDriver = label_drivers.includes(quote.provider) ? quote.provider : data.label_driver;
-        const targetCarriers = getDisplayedCarriers(nextLabelDriver);
-
-        const matchedCarrier = findCarrierMatch(targetCarriers, quote);
-
-        if (matchedCarrier) {
-            setCarrierWarning(null);
-            setData((prev) => ({
-                ...prev,
-                label_driver: nextLabelDriver,
-                tracking_carrier: matchedCarrier.code,
-                quote_token: quote.quote_token ?? '',
-            }));
-        } else {
-            const carrierLabel = quote.carrier_name || quote.carrier_code;
-            const warningMsg = t('admin.orders.ship.carrier_not_in_store_settings', {
-                defaultValue: `Carrier "${carrierLabel}" from this quote is not enabled in your store settings. Enable it in Settings to create labels with this carrier.`,
-                carrier: carrierLabel,
-            });
-            setCarrierWarning(warningMsg);
-            setData((prev) => ({
-                ...prev,
-                label_driver: nextLabelDriver,
-                quote_token: quote.quote_token ?? '',
-            }));
-        }
-    };
-
-    const handleClearQuoteToken = () => {
+        setSelectedKey(null);
         setData('quote_token', '');
-        setSelectedQuoteKey(null);
-        setCarrierWarning(null);
+        setRates((prev) => ({ ...prev, status: 'loading' }));
+
+        const controller = new AbortController();
+        const timer = setTimeout(async () => {
+            try {
+                const response = await fetch(`/admin/orders/${order.id}/quotes`, {
+                    method: 'POST',
+                    signal: controller.signal,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-XSRF-TOKEN': getCsrfToken(),
+                    },
+                    body: JSON.stringify({ parcels: data.parcels, insurance_amount: data.insurance_amount || null }),
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.message || `Request failed with status ${response.status}`);
+                }
+
+                const result = await response.json();
+                const quotes: RateQuote[] = Array.isArray(result.quotes) ? result.quotes : [];
+                setRates({ status: 'ready', quotes, balances: result.balances ?? {}, errors: result.errors ?? {} });
+
+                const pick = recommend(quotes);
+                if (pick) {
+                    selectQuote(pick);
+                }
+            } catch (err: unknown) {
+                if (controller.signal.aborted) return;
+                const message = err instanceof Error ? err.message : '';
+                setRates({ status: 'error', quotes: [], balances: {}, errors: {}, message: message || t('admin.orders.ship.compare_error') });
+            }
+        }, 500);
+
+        return () => {
+            clearTimeout(timer);
+            controller.abort();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quoteInputs, tab, refreshCount]);
+
+    const switchTab = (next: Tab) => {
+        setTab(next);
+        setData('create_label', next === 'label');
     };
 
+    const selected = rates.quotes.find((quote) => quoteKey(quote) === selectedKey) ?? null;
     const withoutNumber = data.tracking_number.trim() === '';
-    const canSubmit = displayedCarriers.some((carrier) => carrier.code === data.tracking_carrier)
-        && (labelMode || !withoutNumber || data.ship_without_tracking)
-        && !processing;
+    const canSubmit =
+        !processing &&
+        (tab === 'label'
+            ? rates.status === 'ready' && selected !== null && sender_configured
+            : carriers.some((carrier) => carrier.code === data.tracking_carrier) && (!withoutNumber || data.ship_without_tracking));
 
     const send = () => post(`/admin/orders/${order.id}/ship`, { preserveScroll: true, onFinish: () => setConfirming(false) });
 
@@ -405,7 +298,6 @@ export default function OrderShip({
             'parcels',
             data.parcels.map((parcel, i) => (i === index ? { ...parcel, [field]: value } : parcel)),
         );
-
     const addParcel = () => setData('parcels', [...data.parcels, { weight: '', length: '', width: '', height: '' }]);
     const removeParcel = (index: number) =>
         setData(
@@ -413,43 +305,12 @@ export default function OrderShip({
             data.parcels.filter((_, i) => i !== index),
         );
 
-    const handleLabelDriverChange = (driver: string) => {
-        setCarrierWarning(null);
-        const supported = label_driver_carriers[driver];
-        if (supported !== undefined && data.tracking_carrier !== '' && !supported.includes(data.tracking_carrier)) {
-            setData((prev) => ({
-                ...prev,
-                label_driver: driver,
-                tracking_carrier: '',
-            }));
-        } else {
-            setData('label_driver', driver);
-        }
-    };
-
-    const switchLabelMode = (on: boolean) => {
-        setLabelMode(on);
-        setCarrierWarning(null);
-        if (on) {
-            const supported = label_driver_carriers[data.label_driver];
-            if (supported !== undefined && data.tracking_carrier !== '' && !supported.includes(data.tracking_carrier)) {
-                setData((prev) => ({
-                    ...prev,
-                    create_label: true,
-                    tracking_carrier: '',
-                }));
-                return;
-            }
-        }
-        setData('create_label', on);
-    };
-
     const submit = (event: FormEvent) => {
         event.preventDefault();
         if (!canSubmit) return;
 
-        // manual mode with no tracking number: ask first (the customer gets no tracking link now)
-        if (!labelMode && withoutNumber) {
+        // no tracking number: ask first (the customer gets no tracking link now)
+        if (tab === 'manual' && withoutNumber) {
             setConfirming(true);
             return;
         }
@@ -459,13 +320,48 @@ export default function OrderShip({
 
     const emailHint = !shipped_email_enabled
         ? t('admin.orders.ship.email_disabled')
-        : !withoutNumber
+        : tab === 'label' || !withoutNumber
           ? t('admin.orders.ship.email_with_tracking')
           : data.notify_customer
             ? t('admin.orders.ship.email_now')
             : t('admin.orders.ship.email_later');
 
     const address = order.shippingAddress;
+    const addressWarnings = address
+        ? [!address.phone?.trim() && t('admin.orders.ship.missing_phone'), !address.state?.trim() && t('admin.orders.ship.missing_province')].filter(
+              Boolean,
+          )
+        : [];
+
+    const totalWeight = data.parcels.reduce((sum, parcel) => sum + (Number(parcel.weight) || 0), 0);
+    const parcelDims = data.parcels
+        .map((parcel) => (parcel.length && parcel.width && parcel.height ? `${parcel.length}×${parcel.width}×${parcel.height}` : null))
+        .filter(Boolean)
+        .join(', ');
+
+    const providerErrors = Object.entries(rates.errors);
+    // the selected rate stays visible even when it is not among the first few
+    const visibleQuotes = showAllQuotes ? rates.quotes : rates.quotes.filter((quote, i) => i < VISIBLE_QUOTES || quoteKey(quote) === selectedKey);
+
+    // the selected provider's prepaid balance, shown only when it would cover just a few more labels
+    const selectedBalance = selected ? balanceAmount(rates.balances[selected.provider]) : null;
+    const balanceState =
+        selected && selectedBalance !== null
+            ? selectedBalance < selected.total_price
+                ? 'insufficient'
+                : selectedBalance < selected.total_price * 3
+                  ? 'low'
+                  : null
+            : null;
+
+    // provider names stay generic here (ArchitectureTest keeps providers out of shared code)
+    const driverName = (driver: string) =>
+        driver === 'manual' ? t('admin.orders.ship.bought_direct') : driver.charAt(0).toUpperCase() + driver.slice(1);
+
+    const unavailableReason = (quote: RateQuote) =>
+        label_drivers.includes(quote.provider)
+            ? t('admin.orders.ship.carrier_not_enabled')
+            : t('admin.orders.ship.no_label_driver', { provider: driverName(quote.provider) });
 
     return (
         <AppLayout
@@ -493,25 +389,6 @@ export default function OrderShip({
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-base">
-                                <Package className="h-4 w-4" />
-                                {t('admin.orders.ship.items')}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <ul className="space-y-1 text-sm">
-                                {(order.orderItems ?? []).map((item) => (
-                                    <li key={item.id}>
-                                        {item.quantity} × {item.product.name}
-                                        {item.variant?.name ? <span className="text-muted-foreground"> ({item.variant.name})</span> : null}
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base">
                                 <MapPin className="h-4 w-4" />
                                 {t('admin.orders.ship.address')}
                             </CardTitle>
@@ -530,511 +407,503 @@ export default function OrderShip({
                                     </p>
                                     <p>{address.country}</p>
                                     {address.phone && <p className="text-muted-foreground">{address.phone}</p>}
+                                    {addressWarnings.length > 0 && (
+                                        <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+                                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                            <div className="space-y-0.5">
+                                                {addressWarnings.map((warning) => (
+                                                    <p key={String(warning)}>{warning}</p>
+                                                ))}
+                                                <Link href={`/admin/orders/${order.id}/edit`} className="font-medium underline">
+                                                    {t('admin.orders.ship.edit_address')}
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    )}
                                 </>
                             ) : (
                                 <p className="text-muted-foreground">—</p>
                             )}
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <Package className="h-4 w-4" />
+                                {t('admin.orders.ship.items')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="space-y-1 text-sm">
+                                {(order.orderItems ?? []).map((item) => (
+                                    <li key={item.id}>
+                                        {item.quantity} × {item.product.name}
+                                        {item.variant?.name ? <span className="text-muted-foreground"> ({item.variant.name})</span> : null}
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <form onSubmit={submit}>
                     <Card>
-                        <CardHeader>
+                        <CardHeader className="space-y-3">
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <Truck className="h-4 w-4" />
                                 {t('admin.orders.ship.shipment')}
                             </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-5">
-                            {labelMode && sender_configured === false && (
-                                <div className="flex flex-col gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between text-amber-800 dark:text-amber-300">
-                                    <div className="flex items-start gap-3">
-                                        <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-                                        <div className="space-y-0.5 text-sm">
-                                            <p className="font-semibold">
-                                                {t('admin.orders.ship.sender_not_configured_title', {
-                                                    defaultValue: 'Sender shipping address not configured',
-                                                })}
-                                            </p>
-                                            <p className="text-xs text-amber-700/90 dark:text-amber-300/90">
-                                                {t('admin.orders.ship.sender_not_configured_warning', {
-                                                    defaultValue:
-                                                        'Sender shipping address is not configured yet. Configure the sender postal code and city in Settings to enable live rate comparisons and automatic carrier labels.',
-                                                })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="border-amber-500/40 bg-background hover:bg-muted text-xs"
-                                            asChild
+                            {labels_enabled && (
+                                <div role="tablist" className="inline-flex w-full rounded-lg bg-muted p-1 sm:w-auto">
+                                    {(['label', 'manual'] as const).map((value) => (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            role="tab"
+                                            aria-selected={tab === value}
+                                            onClick={() => switchTab(value)}
+                                            className={cn(
+                                                'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors sm:flex-none',
+                                                tab === value ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                                            )}
                                         >
-                                            <Link href="/admin/settings/shipping">
-                                                {t('admin.orders.ship.configure_sender_settings', {
-                                                    defaultValue: 'Configure Settings',
-                                                })}
-                                            </Link>
-                                        </Button>
-                                    </div>
+                                            {value === 'label' ? t('admin.orders.ship.tab_buy') : t('admin.orders.ship.tab_have')}
+                                        </button>
+                                    ))}
                                 </div>
                             )}
+                        </CardHeader>
+                        <CardContent className="space-y-5">
+                            {tab === 'label' ? (
+                                <>
+                                    {!sender_configured && (
+                                        <div className="flex flex-col gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-amber-800 sm:flex-row sm:items-center sm:justify-between dark:text-amber-300">
+                                            <div className="flex items-start gap-3">
+                                                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                                <div className="space-y-0.5 text-sm">
+                                                    <p className="font-semibold">{t('admin.orders.ship.sender_not_configured_title')}</p>
+                                                    <p className="text-xs text-amber-700/90 dark:text-amber-300/90">
+                                                        {t('admin.orders.ship.sender_not_configured_warning')}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="shrink-0 border-amber-500/40 bg-background text-xs"
+                                                asChild
+                                            >
+                                                <Link href="/admin/settings/shipping">{t('admin.orders.ship.configure_sender_settings')}</Link>
+                                            </Button>
+                                        </div>
+                                    )}
 
-                            <div className="space-y-2">
-                                <Label htmlFor="tracking_carrier">{t('tracking_admin.carrier')}</Label>
-                                {displayedCarriers.length === 0 ? (
-                                    <p className="text-sm text-destructive">{t('admin.orders.ship.no_carriers')}</p>
-                                ) : (
-                                    <Select
-                                        value={data.tracking_carrier}
-                                        onValueChange={(value) => {
-                                            setData('tracking_carrier', value);
-                                            setCarrierWarning(null);
-                                        }}
-                                    >
-                                        <SelectTrigger id="tracking_carrier" aria-invalid={!!errors.tracking_carrier}>
-                                            <SelectValue placeholder={t('tracking_admin.carrier_select')} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {displayedCarriers.map((carrier) => (
-                                                <SelectItem key={carrier.code} value={carrier.code}>
-                                                    {carrier.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                                {carrierWarning && (
-                                    <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-400">
-                                        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                                        <div className="flex-1 space-y-1">
-                                            <p>{carrierWarning}</p>
-                                            <div>
-                                                <Link
-                                                    href="/admin/settings/shipping"
-                                                    className="font-medium underline hover:text-amber-900 dark:hover:text-amber-200"
-                                                >
-                                                    {t('admin.orders.ship.configure_carrier_settings', {
-                                                        defaultValue: 'Configure Carriers in Settings',
+                                    {/* Parcels: one summary line, the grid on demand */}
+                                    <div className="space-y-3 border-b pb-4">
+                                        <div className="flex items-center justify-between gap-3 text-sm">
+                                            <div className="min-w-0">
+                                                <span className="font-medium">{t('admin.orders.ship.parcels')}</span>
+                                                <span className="ml-2 text-muted-foreground">
+                                                    {t('admin.orders.ship.parcels_total', {
+                                                        count: data.parcels.length,
+                                                        weight: totalWeight.toFixed(2),
                                                     })}
-                                                </Link>
+                                                    {parcelDims && ` · ${parcelDims}`}
+                                                </span>
                                             </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                aria-expanded={parcelsOpen}
+                                                onClick={() => setParcelsOpen(!parcelsOpen)}
+                                            >
+                                                {parcelsOpen ? t('admin.orders.ship.done') : t('admin.orders.ship.edit')}
+                                            </Button>
                                         </div>
-                                    </div>
-                                )}
-                                {errors.tracking_carrier && <p className="text-sm text-destructive">{errors.tracking_carrier}</p>}
-                            </div>
-
-                            {labelMode ? (
-                                <div className="space-y-4">
-                                    {label_drivers.length > 1 && (
-                                        <div className="space-y-2">
-                                            <Label htmlFor="label_driver">{t('admin.orders.ship.provider', { defaultValue: 'Label Provider' })}</Label>
-                                            <Select value={data.label_driver} onValueChange={handleLabelDriverChange}>
-                                                <SelectTrigger id="label_driver" aria-invalid={!!errors.label_driver}>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {label_drivers.map((driver) => (
-                                                        <SelectItem key={driver} value={driver}>
-                                                            {driver}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {errors.label_driver && <p className="text-sm text-destructive">{errors.label_driver}</p>}
-                                        </div>
-                                    )}
-                                    {(errors as Record<string, string>).label && (
-                                        <p className="text-sm text-destructive">{(errors as Record<string, string>).label}</p>
-                                    )}
-                                    <div className="space-y-3">
-                                        <Label>{t('admin.orders.ship.parcels')}</Label>
-                                        {data.parcels.map((parcel, index) => (
-                                            <div key={index} className="grid grid-cols-2 gap-2 rounded-md border p-3 md:grid-cols-5">
-                                                <div className="space-y-1">
-                                                    <Label htmlFor={`weight-${index}`} className="text-xs">
-                                                        {t('admin.orders.ship.weight')}
-                                                    </Label>
-                                                    <Input
-                                                        id={`weight-${index}`}
-                                                        type="number"
-                                                        step="0.01"
-                                                        min="0"
-                                                        value={parcel.weight ?? ''}
-                                                        onChange={(event) => setParcel(index, 'weight', event.target.value)}
-                                                    />
-                                                </div>
-                                                {(['length', 'width', 'height'] as const).map((dim) => (
-                                                    <div key={dim} className="space-y-1">
-                                                        <Label htmlFor={`${dim}-${index}`} className="text-xs">
-                                                            {t(`admin.orders.ship.${dim}`)}
-                                                        </Label>
-                                                        <Input
-                                                            id={`${dim}-${index}`}
-                                                            type="number"
-                                                            step="0.1"
-                                                            min="0"
-                                                            value={parcel[dim] ?? ''}
-                                                            onChange={(event) => setParcel(index, dim, event.target.value)}
-                                                        />
-                                                    </div>
-                                                ))}
-                                                <div className="flex items-end">
-                                                    {data.parcels.length > 1 && (
-                                                        <Button type="button" variant="ghost" size="sm" onClick={() => removeParcel(index)}>
-                                                            {t('admin.orders.ship.remove_parcel')}
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                        <Button type="button" variant="outline" size="sm" onClick={addParcel}>
-                                            {t('admin.orders.ship.add_parcel')}
-                                        </Button>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <div className="space-y-1">
-                                            <Label htmlFor="insurance_amount">
-                                                {t('admin.orders.ship.insurance_amount', { defaultValue: 'Insured Value (€)' })}
-                                            </Label>
-                                            <Input
-                                                id="insurance_amount"
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                value={data.insurance_amount}
-                                                onChange={(event) => setData('insurance_amount', event.target.value)}
-                                                placeholder="0.00"
-                                            />
-                                            {errors.insurance_amount && (
-                                                <p className="text-sm text-destructive">{errors.insurance_amount}</p>
-                                            )}
-                                        </div>
-                                        <div className="space-y-1">
-                                            <Label htmlFor="cod_amount">
-                                                {t('admin.orders.ship.cod_amount', { defaultValue: 'Cash on Delivery (€)' })}
-                                            </Label>
-                                            <Input
-                                                id="cod_amount"
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                value={data.cod_amount}
-                                                onChange={(event) => setData('cod_amount', event.target.value)}
-                                                placeholder="0.00"
-                                            />
-                                            {errors.cod_amount && (
-                                                <p className="text-sm text-destructive">{errors.cod_amount}</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
-                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Scale className="h-4 w-4 text-primary" />
-                                                <h4 className="text-sm font-semibold">
-                                                    {t('admin.orders.ship.compare_live_rates_title', { defaultValue: 'Live Rate Comparison' })}
-                                                </h4>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    type="button"
-                                                    size="sm"
-                                                    variant="default"
-                                                    onClick={compareLiveRates}
-                                                    disabled={comparingRates}
-                                                >
-                                                    {comparingRates ? (
-                                                        <>
-                                                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                                                            {t('admin.orders.ship.comparing_rates', { defaultValue: 'Comparing...' })}
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                                                            {t('admin.orders.ship.compare_live_rates', { defaultValue: 'Compare Live Rates' })}
-                                                        </>
-                                                    )}
-                                                </Button>
-                                                <Button type="button" size="sm" variant="outline" asChild>
-                                                    <Link href="/admin/shipping/quotes">
-                                                        <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                                                        {t('admin.orders.ship.open_rate_simulator', { defaultValue: 'Open Rate Simulator' })}
-                                                    </Link>
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        {data.quote_token ? (
-                                            <div className="flex items-center justify-between rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-xs">
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="default" className="text-[10px] uppercase font-bold">
-                                                        {t('admin.orders.ship.locked', { defaultValue: 'Locked' })}
-                                                    </Badge>
-                                                    <span className="font-medium text-foreground">
-                                                        {t('admin.orders.ship.quote_token', { defaultValue: 'Quote Token' })}:
-                                                    </span>
-                                                    <code className="rounded bg-background/80 px-1.5 py-0.5 font-mono text-[11px] border">
-                                                        {data.quote_token}
-                                                    </code>
-                                                </div>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
-                                                    onClick={handleClearQuoteToken}
-                                                >
-                                                    <X className="mr-1 h-3 w-3" />
-                                                    {t('admin.orders.ship.clear_quote_token', { defaultValue: 'Clear' })}
-                                                </Button>
-                                            </div>
-                                        ) : null}
-
-                                        {rateComparisonError && (
-                                            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-xs text-destructive">
-                                                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                                                <span>{rateComparisonError}</span>
-                                            </div>
-                                        )}
-
-                                        {carrierWarning && (
-                                            <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-400">
-                                                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                                                <div className="flex-1 space-y-1">
-                                                    <p>{carrierWarning}</p>
-                                                    <div>
-                                                        <Link
-                                                            href="/admin/settings/shipping"
-                                                            className="font-medium underline hover:text-amber-900 dark:hover:text-amber-200"
-                                                        >
-                                                            {t('admin.orders.ship.configure_carrier_settings', {
-                                                                defaultValue: 'Configure Carriers in Settings',
-                                                            })}
-                                                        </Link>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {ratesResult && (
-                                            <div className="space-y-3 pt-1">
-                                                {ratesResult.balances && Object.keys(ratesResult.balances).length > 0 && (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="text-xs font-medium text-muted-foreground">
-                                                            {t('admin.orders.ship.prepaid_balances', { defaultValue: 'Balances' })}:
-                                                        </span>
-                                                        {Object.entries(ratesResult.balances).map(([provider, balanceData]) => {
-                                                            const amount = typeof balanceData === 'object' && balanceData !== null
-                                                                ? (balanceData.balance ?? balanceData.amount ?? 0)
-                                                                : Number(balanceData);
-                                                            const curr = typeof balanceData === 'object' && balanceData !== null && balanceData.currency
-                                                                ? (balanceData.currency === 'EUR' ? '€' : balanceData.currency)
-                                                                : '€';
-                                                            return (
-                                                                <div
-                                                                    key={provider}
-                                                                    className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2.5 py-1 text-xs shadow-xs"
-                                                                >
-                                                                    <Wallet className="h-3 w-3 text-muted-foreground" />
-                                                                    <span className="font-medium capitalize">{provider}:</span>
-                                                                    <span className="font-semibold text-foreground">
-                                                                        {curr}{Number(amount).toFixed(2)}
-                                                                    </span>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
-
-                                                {ratesResult.errors && Object.keys(ratesResult.errors).length > 0 && (
-                                                    <div className="space-y-1.5">
-                                                        {Object.entries(ratesResult.errors).map(([provider, err]) => (
-                                                            <div
-                                                                key={provider}
-                                                                className="flex items-start gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400"
-                                                            >
-                                                                <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                                                                <div>
-                                                                    <span className="font-semibold capitalize">{provider}: </span>
-                                                                    <span>{err}</span>
-                                                                </div>
+                                        {parcelsOpen && (
+                                            <div className="space-y-3">
+                                                {data.parcels.map((parcel, index) => (
+                                                    <div key={index} className="grid grid-cols-2 gap-2 rounded-md border p-3 md:grid-cols-5">
+                                                        <div className="space-y-1">
+                                                            <Label htmlFor={`weight-${index}`} className="text-xs">
+                                                                {t('admin.orders.ship.weight')}
+                                                            </Label>
+                                                            <Input
+                                                                id={`weight-${index}`}
+                                                                type="number"
+                                                                step="0.01"
+                                                                min="0"
+                                                                value={parcel.weight ?? ''}
+                                                                onChange={(event) => setParcel(index, 'weight', event.target.value)}
+                                                            />
+                                                        </div>
+                                                        {(['length', 'width', 'height'] as const).map((dim) => (
+                                                            <div key={dim} className="space-y-1">
+                                                                <Label htmlFor={`${dim}-${index}`} className="text-xs">
+                                                                    {t(`admin.orders.ship.${dim}`)}
+                                                                </Label>
+                                                                <Input
+                                                                    id={`${dim}-${index}`}
+                                                                    type="number"
+                                                                    step="0.1"
+                                                                    min="0"
+                                                                    value={parcel[dim] ?? ''}
+                                                                    onChange={(event) => setParcel(index, dim, event.target.value)}
+                                                                />
                                                             </div>
                                                         ))}
+                                                        <div className="flex items-end">
+                                                            {data.parcels.length > 1 && (
+                                                                <Button type="button" variant="ghost" size="sm" onClick={() => removeParcel(index)}>
+                                                                    {t('admin.orders.ship.remove_parcel')}
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                )}
-
-                                                {ratesResult.quotes.length === 0 ? (
-                                                    <p className="text-xs text-muted-foreground py-2 text-center">
-                                                        {t('admin.orders.ship.no_quotes_returned', {
-                                                            defaultValue: 'No live rates returned for this configuration.',
-                                                        })}
-                                                    </p>
-                                                ) : (
-                                                    <div className="space-y-2">
-                                                        {ratesResult.quotes.map((quote, idx) => {
-                                                            const quoteKey = `${quote.provider}:${quote.carrier_code}:${quote.service_name}`;
-                                                            const isSelected =
-                                                                (Boolean(quote.quote_token) && data.quote_token === quote.quote_token) ||
-                                                                selectedQuoteKey === quoteKey;
-                                                            const customerPaid = Number(order.shipping_cost ?? shipping_cost ?? 0);
-                                                            const marginDelta =
-                                                                typeof quote.margin_delta === 'number'
-                                                                    ? quote.margin_delta
-                                                                    : customerPaid - quote.total_price;
-                                                            const isMarginPositive = marginDelta >= 0;
-
-                                                            return (
-                                                                <div
-                                                                    key={`${quoteKey}-${idx}`}
-                                                                    className={cn(
-                                                                        'rounded-md border bg-card p-3 transition-colors',
-                                                                        isSelected
-                                                                            ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
-                                                                            : 'hover:border-muted-foreground/30',
-                                                                    )}
-                                                                >
-                                                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                                                        <div className="space-y-1">
-                                                                            <div className="flex flex-wrap items-center gap-1.5">
-                                                                                <Badge variant="secondary" className="text-[11px] capitalize">
-                                                                                    {quote.provider}
-                                                                                </Badge>
-                                                                                <span className="font-semibold text-sm">
-                                                                                    {quote.carrier_name}
-                                                                                </span>
-                                                                                {quote.raw_carrier_code && (
-                                                                                    <span className="text-xs text-muted-foreground">
-                                                                                        ({quote.raw_carrier_code})
-                                                                                    </span>
-                                                                                )}
-                                                                                <span className="text-xs text-muted-foreground font-medium">
-                                                                                    • {quote.service_name}
-                                                                                </span>
-                                                                            </div>
-
-                                                                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                                                                {quote.estimated_delivery && (
-                                                                                    <span className="inline-flex items-center gap-1">
-                                                                                        <Clock className="h-3 w-3" />
-                                                                                        {quote.estimated_delivery}
-                                                                                    </span>
-                                                                                )}
-                                                                                {quote.taxable_weight_kg !== null && quote.taxable_weight_kg !== undefined && (
-                                                                                    <span>
-                                                                                        {quote.taxable_weight_kg} kg
-                                                                                    </span>
-                                                                                )}
-                                                                                {quote.dimensional_weight_applied && (
-                                                                                    <Badge
-                                                                                        variant="outline"
-                                                                                        className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] px-1.5 py-0"
-                                                                                    >
-                                                                                        {t('admin.orders.ship.volumetric', { defaultValue: 'Volumetric' })}
-                                                                                    </Badge>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div className="flex items-center gap-3 self-end sm:self-center">
-                                                                            <div className="text-right space-y-0.5">
-                                                                                <div className="flex items-baseline justify-end gap-1.5">
-                                                                                    {quote.list_price !== null && quote.list_price !== undefined && quote.list_price > quote.total_price && (
-                                                                                        <span className="text-xs text-muted-foreground line-through">
-                                                                                            €{Number(quote.list_price).toFixed(2)}
-                                                                                        </span>
-                                                                                    )}
-                                                                                    <span className="text-base font-bold text-foreground">
-                                                                                        €{Number(quote.total_price).toFixed(2)}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="flex items-center justify-end gap-1.5">
-                                                                                    {quote.net_price !== null && quote.net_price !== undefined && (
-                                                                                        <span className="text-[11px] text-muted-foreground">
-                                                                                            Net: €{Number(quote.net_price).toFixed(2)}
-                                                                                        </span>
-                                                                                    )}
-                                                                                    <Badge
-                                                                                        variant="outline"
-                                                                                        className={cn(
-                                                                                            'text-[10px] font-semibold px-1.5 py-0',
-                                                                                            isMarginPositive
-                                                                                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                                                                                                : 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400',
-                                                                                        )}
-                                                                                    >
-                                                                                        {isMarginPositive ? `+€${marginDelta.toFixed(2)}` : `-€${Math.abs(marginDelta).toFixed(2)}`}
-                                                                                    </Badge>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <Button
-                                                                                type="button"
-                                                                                size="sm"
-                                                                                variant={isSelected ? 'default' : 'outline'}
-                                                                                onClick={() => handleUseQuote(quote)}
-                                                                            >
-                                                                                {isSelected ? (
-                                                                                    <>
-                                                                                        <Check className="mr-1 h-3.5 w-3.5" />
-                                                                                        {t('admin.orders.ship.selected', { defaultValue: 'Selected' })}
-                                                                                    </>
-                                                                                ) : (
-                                                                                    t('admin.orders.ship.use_quote', { defaultValue: 'Use Quote' })
-                                                                                )}
-                                                                            </Button>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {quote.warnings && quote.warnings.length > 0 && (
-                                                                        <div className="mt-2 space-y-0.5 border-t pt-1.5 text-xs text-amber-600 dark:text-amber-400">
-                                                                            {quote.warnings.map((warning, wIdx) => (
-                                                                                <p key={wIdx}>• {warning}</p>
-                                                                            ))}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
+                                                ))}
+                                                <Button type="button" variant="outline" size="sm" onClick={addParcel}>
+                                                    {t('admin.orders.ship.add_parcel')}
+                                                </Button>
                                             </div>
                                         )}
                                     </div>
-                                </div>
+
+                                    {/* Options: insurance (COD never applies: payments go through Stripe) */}
+                                    <div className="space-y-3 border-b pb-4">
+                                        <div className="flex items-center justify-between gap-3 text-sm">
+                                            <div>
+                                                <span className="font-medium">{t('admin.orders.ship.options')}</span>
+                                                <span className="ml-2 text-muted-foreground">
+                                                    {data.insurance_amount
+                                                        ? t('admin.orders.ship.insured_for', { amount: Number(data.insurance_amount).toFixed(2) })
+                                                        : t('admin.orders.ship.insurance_none')}
+                                                </span>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                aria-expanded={optionsOpen}
+                                                onClick={() => setOptionsOpen(!optionsOpen)}
+                                            >
+                                                {optionsOpen ? t('admin.orders.ship.done') : t('admin.orders.ship.edit')}
+                                            </Button>
+                                        </div>
+                                        {optionsOpen && (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Checkbox
+                                                        id="insure"
+                                                        checked={data.insurance_amount !== ''}
+                                                        onCheckedChange={(checked) =>
+                                                            setData('insurance_amount', checked === true ? orderValue.toFixed(2) : '')
+                                                        }
+                                                    />
+                                                    <Label htmlFor="insure">
+                                                        {t('admin.orders.ship.insure_order_value', { amount: orderValue.toFixed(2) })}
+                                                    </Label>
+                                                </div>
+                                                {data.insurance_amount !== '' && (
+                                                    <div className="max-w-48 space-y-1 pl-6">
+                                                        <Label htmlFor="insurance_amount" className="text-xs">
+                                                            {t('admin.orders.ship.insurance_amount')}
+                                                        </Label>
+                                                        <Input
+                                                            id="insurance_amount"
+                                                            type="number"
+                                                            step="0.01"
+                                                            min="0"
+                                                            value={data.insurance_amount}
+                                                            onChange={(event) => setData('insurance_amount', event.target.value)}
+                                                        />
+                                                    </div>
+                                                )}
+                                                {errors.insurance_amount && <p className="text-sm text-destructive">{errors.insurance_amount}</p>}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Rates: fetched automatically, best one preselected */}
+                                    {sender_configured && (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <h4 className="text-sm font-medium">{t('admin.orders.ship.rates')}</h4>
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <span>{t('admin.orders.ship.customer_paid', { amount: customerPaid.toFixed(2) })}</span>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7"
+                                                        aria-label={t('admin.orders.ship.refresh')}
+                                                        disabled={rates.status === 'loading'}
+                                                        onClick={() => setRefreshCount((n) => n + 1)}
+                                                    >
+                                                        <RefreshCw className={cn('h-3.5 w-3.5', rates.status === 'loading' && 'animate-spin')} />
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            {rates.status === 'error' && (
+                                                <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-xs text-destructive">
+                                                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                                                    <span>{rates.message}</span>
+                                                </div>
+                                            )}
+
+                                            {rates.status === 'loading' && rates.quotes.length === 0 && (
+                                                <div className="space-y-2" aria-busy="true">
+                                                    {[0, 1, 2].map((i) => (
+                                                        <div key={i} className="h-14 animate-pulse rounded-md border bg-muted/40" />
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {rates.quotes.length > 0 && (
+                                                <div
+                                                    role="radiogroup"
+                                                    aria-label={t('admin.orders.ship.rates')}
+                                                    aria-busy={rates.status === 'loading'}
+                                                    className={cn(
+                                                        'space-y-2 transition-opacity',
+                                                        rates.status === 'loading' && 'pointer-events-none opacity-50',
+                                                    )}
+                                                >
+                                                    {visibleQuotes.map((quote) => {
+                                                        const key = quoteKey(quote);
+                                                        const isSelected = selectedKey === key;
+                                                        const canBuy = Boolean(quote.store_carrier_code);
+                                                        const margin = quote.margin_delta ?? customerPaid - quote.total_price;
+
+                                                        return (
+                                                            <button
+                                                                key={key}
+                                                                type="button"
+                                                                role="radio"
+                                                                aria-checked={isSelected}
+                                                                disabled={!canBuy}
+                                                                onClick={() => selectQuote(quote)}
+                                                                className={cn(
+                                                                    'flex w-full items-center gap-3 rounded-md border bg-card p-3 text-left transition-colors',
+                                                                    isSelected
+                                                                        ? 'border-primary ring-2 ring-primary/20'
+                                                                        : 'hover:border-muted-foreground/30',
+                                                                    !canBuy && 'cursor-not-allowed opacity-60 hover:border-border',
+                                                                )}
+                                                            >
+                                                                <span
+                                                                    className={cn(
+                                                                        'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                                                                        isSelected && 'border-primary',
+                                                                    )}
+                                                                >
+                                                                    {isSelected && <span className="h-2 w-2 rounded-full bg-primary" />}
+                                                                </span>
+                                                                <span className="min-w-0 flex-1 space-y-0.5">
+                                                                    <span className="flex flex-wrap items-center gap-1.5">
+                                                                        <span className="text-sm font-semibold">{quote.carrier_name}</span>
+                                                                        <span className="text-xs text-muted-foreground">{quote.service_name}</span>
+                                                                        {recommended && key === quoteKey(recommended) && (
+                                                                            <Badge className="px-1.5 py-0 text-[10px]">
+                                                                                {t('admin.orders.ship.recommended')}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </span>
+                                                                    <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                                                                        <span>{driverName(quote.provider)}</span>
+                                                                        {quote.estimated_delivery && (
+                                                                            <span className="inline-flex items-center gap-1">
+                                                                                <Clock className="h-3 w-3" />
+                                                                                {quote.estimated_delivery}
+                                                                            </span>
+                                                                        )}
+                                                                        {quote.dimensional_weight_applied && (
+                                                                            <span className="text-amber-700 dark:text-amber-400">
+                                                                                {t('admin.orders.ship.volumetric')}
+                                                                                {quote.taxable_weight_kg != null && ` ${quote.taxable_weight_kg} kg`}
+                                                                            </span>
+                                                                        )}
+                                                                        {!canBuy && (
+                                                                            <span className="text-amber-700 dark:text-amber-400">
+                                                                                {unavailableReason(quote)}
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                    {quote.warnings?.map((warning) => (
+                                                                        <span
+                                                                            key={warning}
+                                                                            className="block text-xs text-amber-700 dark:text-amber-400"
+                                                                        >
+                                                                            {warning}
+                                                                        </span>
+                                                                    ))}
+                                                                </span>
+                                                                <span className="shrink-0 text-right">
+                                                                    <span className="block text-base font-bold">{euro(quote.total_price)}</span>
+                                                                    <span
+                                                                        className={cn(
+                                                                            'block text-xs font-medium',
+                                                                            margin >= 0
+                                                                                ? 'text-emerald-700 dark:text-emerald-400'
+                                                                                : 'text-red-700 dark:text-red-400',
+                                                                        )}
+                                                                    >
+                                                                        {margin >= 0 ? `+${euro(margin)}` : `−${euro(Math.abs(margin))}`}
+                                                                    </span>
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+
+                                            {rates.quotes.length > VISIBLE_QUOTES &&
+                                                (showAllQuotes || visibleQuotes.length < rates.quotes.length) && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="link"
+                                                        size="sm"
+                                                        className="h-auto p-0"
+                                                        onClick={() => setShowAllQuotes(!showAllQuotes)}
+                                                    >
+                                                        {showAllQuotes
+                                                            ? t('admin.orders.ship.show_less')
+                                                            : t('admin.orders.ship.show_more', { count: rates.quotes.length - visibleQuotes.length })}
+                                                    </Button>
+                                                )}
+
+                                            {rates.status === 'ready' && rates.quotes.length === 0 && (
+                                                <p className="py-2 text-center text-xs text-muted-foreground">
+                                                    {t('admin.orders.ship.no_quotes_returned')}
+                                                </p>
+                                            )}
+
+                                            {rates.status === 'ready' && buyable.length > 0 && !recommended && (
+                                                <p className="text-xs text-amber-700 dark:text-amber-400">
+                                                    {t('admin.orders.ship.no_positive_margin')}
+                                                </p>
+                                            )}
+
+                                            {rates.status === 'ready' && rates.quotes.length > 0 && buyable.length === 0 && (
+                                                <p className="text-xs text-amber-700 dark:text-amber-400">
+                                                    {t('admin.orders.ship.none_buyable')}{' '}
+                                                    <Link href="/admin/settings/shipping" className="font-medium underline">
+                                                        {t('admin.orders.ship.configure_carrier_settings')}
+                                                    </Link>
+                                                </p>
+                                            )}
+
+                                            {providerErrors.length > 0 && (
+                                                <div className="text-xs text-muted-foreground">
+                                                    <button
+                                                        type="button"
+                                                        className="inline-flex items-center gap-1 hover:text-foreground"
+                                                        aria-expanded={showProviderErrors}
+                                                        onClick={() => setShowProviderErrors(!showProviderErrors)}
+                                                    >
+                                                        <AlertCircle className="h-3.5 w-3.5" />
+                                                        {t('admin.orders.ship.providers_unavailable', { count: providerErrors.length })}
+                                                    </button>
+                                                    {showProviderErrors && (
+                                                        <ul className="mt-1 space-y-0.5 pl-5">
+                                                            {providerErrors.map(([provider, message]) => (
+                                                                <li key={provider}>
+                                                                    <span className="font-medium">{driverName(provider)}:</span> {message}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {selected && balanceState && (
+                                                <div
+                                                    className={cn(
+                                                        'flex items-center gap-2 rounded-md border p-2 text-xs',
+                                                        balanceState === 'insufficient'
+                                                            ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                                                            : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+                                                    )}
+                                                >
+                                                    <Wallet className="h-3.5 w-3.5 shrink-0" />
+                                                    {balanceState === 'insufficient'
+                                                        ? t('admin.orders.ship.balance_insufficient', {
+                                                              provider: driverName(selected.provider),
+                                                              amount: Number(selectedBalance).toFixed(2),
+                                                          })
+                                                        : t('admin.orders.ship.balance_low', {
+                                                              provider: driverName(selected.provider),
+                                                              amount: Number(selectedBalance).toFixed(2),
+                                                          })}
+                                                </div>
+                                            )}
+
+                                            {(errors as Record<string, string>).label && (
+                                                <p className="text-sm text-destructive">{(errors as Record<string, string>).label}</p>
+                                            )}
+                                            {errors.tracking_carrier && <p className="text-sm text-destructive">{errors.tracking_carrier}</p>}
+                                        </div>
+                                    )}
+                                </>
                             ) : (
                                 <>
+                                    {/* A shipment bought elsewhere: where it was bought decides how it is tracked */}
                                     {tracking_drivers.length > 1 && (
                                         <div className="space-y-2">
-                                            <Label htmlFor="tracking_driver">
-                                                {t('tracking_admin.provider', { defaultValue: 'Tracking Provider' })}
-                                            </Label>
-                                            <Select
-                                                value={data.tracking_driver || DEFAULT_DRIVER}
-                                                onValueChange={(value) => setData('tracking_driver', value === DEFAULT_DRIVER ? '' : value)}
-                                            >
-                                                <SelectTrigger id="tracking_driver" aria-invalid={!!errors.tracking_driver}>
-                                                    <SelectValue placeholder={t('tracking_admin.provider_default', { defaultValue: 'Default' })} />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value={DEFAULT_DRIVER}>
-                                                        {t('tracking_admin.provider_default', { defaultValue: 'Default' })}
-                                                    </SelectItem>
-                                                    {tracking_drivers.map((driver) => (
-                                                        <SelectItem key={driver} value={driver}>
-                                                            {driver}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <Label id="bought-on">{t('admin.orders.ship.bought_on')}</Label>
+                                            <div role="radiogroup" aria-labelledby="bought-on" className="flex flex-wrap gap-2">
+                                                {tracking_drivers.map((driver) => (
+                                                    <button
+                                                        key={driver}
+                                                        type="button"
+                                                        role="radio"
+                                                        aria-checked={data.tracking_driver === driver}
+                                                        onClick={() => setData('tracking_driver', driver)}
+                                                        className={cn(
+                                                            'rounded-md border px-3 py-1.5 text-sm transition-colors',
+                                                            data.tracking_driver === driver
+                                                                ? 'border-primary bg-primary/10 font-medium'
+                                                                : 'hover:border-muted-foreground/30',
+                                                        )}
+                                                    >
+                                                        {driverName(driver)}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            {data.tracking_driver && (
+                                                <p className="text-xs text-muted-foreground">
+                                                    {data.tracking_driver === 'manual'
+                                                        ? t('admin.orders.ship.bought_on_help_manual')
+                                                        : t('admin.orders.ship.bought_on_help_api', { provider: driverName(data.tracking_driver) })}
+                                                </p>
+                                            )}
                                             {errors.tracking_driver && <p className="text-sm text-destructive">{errors.tracking_driver}</p>}
                                         </div>
                                     )}
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="tracking_carrier">{t('tracking_admin.carrier')}</Label>
+                                        {carriers.length === 0 ? (
+                                            <p className="text-sm text-destructive">{t('admin.orders.ship.no_carriers')}</p>
+                                        ) : (
+                                            <Select value={data.tracking_carrier} onValueChange={(value) => setData('tracking_carrier', value)}>
+                                                <SelectTrigger id="tracking_carrier" aria-invalid={!!errors.tracking_carrier}>
+                                                    <SelectValue placeholder={t('tracking_admin.carrier_select')} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {carriers.map((carrier) => (
+                                                        <SelectItem key={carrier.code} value={carrier.code}>
+                                                            {carrier.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                        {errors.tracking_carrier && <p className="text-sm text-destructive">{errors.tracking_carrier}</p>}
+                                    </div>
+
                                     <div className="space-y-2">
                                         <Label htmlFor="tracking_number">{t('admin.orders.ship.tracking_number')}</Label>
                                         <Input
@@ -1076,22 +945,24 @@ export default function OrderShip({
                                     )}
                                 </>
                             )}
-
-                            {!labelMode && <p className="text-sm text-muted-foreground">{emailHint}</p>}
-
-                            {labels_enabled && (
-                                <button type="button" className="text-sm text-muted-foreground underline" onClick={() => switchLabelMode(!labelMode)}>
-                                    {labelMode ? t('admin.orders.ship.enter_tracking_instead') : t('admin.orders.ship.create_label_instead')}
-                                </button>
-                            )}
-
-                            <div className="flex justify-end">
-                                <Button type="submit" disabled={!canSubmit}>
-                                    <Truck className="mr-2 h-4 w-4" />
-                                    {labelMode ? t('admin.orders.ship.create_label') : t('admin.orders.ship.submit')}
-                                </Button>
-                            </div>
                         </CardContent>
+
+                        {/* Sticky footer: the button names what is about to happen */}
+                        <div className="sticky bottom-0 flex flex-col gap-2 rounded-b-xl border-t bg-background/95 px-6 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-xs text-muted-foreground">{emailHint}</p>
+                            <Button type="submit" disabled={!canSubmit} className="shrink-0">
+                                {processing || (tab === 'label' && rates.status === 'loading') ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Truck className="mr-2 h-4 w-4" />
+                                )}
+                                {tab === 'manual'
+                                    ? t('admin.orders.ship.submit')
+                                    : selected
+                                      ? t('admin.orders.ship.buy_label', { carrier: selected.carrier_name, price: selected.total_price.toFixed(2) })
+                                      : t('admin.orders.ship.select_rate')}
+                            </Button>
+                        </div>
                     </Card>
                 </form>
             </div>

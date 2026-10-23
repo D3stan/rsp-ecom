@@ -492,19 +492,6 @@ class OrdersController extends Controller
         $labelsEnabled = app(ShippingService::class)->labelsEnabled();
         $trackingManager = app(TrackingManager::class);
 
-        $labelDrivers = [];
-        $labelDriverCarriers = [];
-
-        if ($labelsEnabled) {
-            $labelManager = app(\App\Shipping\Labels\LabelManager::class);
-            $labelDrivers = $labelManager->driverNames();
-            $carrierCodes = $trackingManager->carrierCodes();
-
-            foreach ($labelDrivers as $driver) {
-                $labelDriverCarriers[$driver] = $labelManager->supportedCarriersFor($driver, $carrierCodes);
-            }
-        }
-
         $senderConfigured = ! empty(trim((string) (settings('shipping.sender_postal_code') ?: config('shipping.labels.sender.postal_code') ?: env('SHIPPING_SENDER_POSTAL_CODE', ''))))
             && ! empty(trim((string) (settings('shipping.sender_city') ?: config('shipping.labels.sender.city') ?: env('SHIPPING_SENDER_CITY', ''))));
 
@@ -516,12 +503,12 @@ class OrdersController extends Controller
             // optional label creation (OFF by default): when on, the form shows parcel fields and a "create label" button
             'labels_enabled' => $labelsEnabled,
             'parcels' => $labelsEnabled ? app(ShipmentBuilder::class)->prefillParcels($order) : [],
-            'label_drivers' => $labelDrivers,
-            'label_driver_carriers' => $labelDriverCarriers,
-            'default_label_driver' => $labelsEnabled ? (string) settings('shipping.label_driver', '') : '',
+            // which rate providers can also buy labels (quotes from the others are shown but not buyable)
+            'label_drivers' => $labelsEnabled ? app(\App\Shipping\Labels\LabelManager::class)->driverNames() : [],
+            // carriers the rate list recommends first (shipping.preferred_carriers)
+            'preferred_carriers' => (array) settings('shipping.preferred_carriers', []),
             'tracking_drivers' => $trackingManager->selectableDriverNames(),
             'default_tracking_driver' => $trackingManager->getDefaultDriver(),
-            'rate_drivers' => app(\App\Shipping\Rates\RateManager::class)->selectableDriverNames(),
             'shipping_cost' => (float) ($order->shipping_cost ?? $order->shipping_amount ?? 0.0),
             'sender_configured' => $senderConfigured,
         ]);
@@ -588,7 +575,9 @@ class OrdersController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        $response = redirect()->route('admin.orders.show', $order)->with('success', 'Order has been shipped successfully!');
+        // label: the order page then offers to print the label just bought
+        $response = redirect()->route('admin.orders.show', $wantsLabel ? [$order, 'label' => $outcome->shipment->id] : $order)
+            ->with('success', 'Order has been shipped successfully!');
 
         return $outcome->emailFailed
             ? $response->with('warning', 'The order was marked as shipped, but the shipping email could not be queued. Please check the application logs.')

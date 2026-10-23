@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Shipping\Labels\LabelManager;
 use App\Shipping\Rates\DTO\RateAddress;
 use App\Shipping\Rates\DTO\RateParcel;
 use App\Shipping\Rates\DTO\RateQuote;
 use App\Shipping\Rates\DTO\RateRequest;
 use App\Shipping\Rates\RateManager;
+use App\Shipping\ShippingService;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -129,7 +131,7 @@ class ShippingQuotesController extends Controller
         ]);
     }
 
-    public function quoteOrder(Request $request, Order $order, RateManager $rates): JsonResponse
+    public function quoteOrder(Request $request, Order $order, RateManager $rates, TrackingManager $tracking, ShippingService $shipping, LabelManager $labels): JsonResponse
     {
         $data = $request->validate([
             'parcels' => 'sometimes|array|max:20',
@@ -160,9 +162,17 @@ class ShippingQuotesController extends Controller
 
         $customerShippingCost = (float) ($order->shipping_cost ?? $order->shipping_amount ?? 0.0);
 
-        $quotes = array_map(function (RateQuote $quote) use ($customerShippingCost) {
+        // A quote can be bought here only when its provider has a label driver that ships its carrier (one of ours).
+        $labelDrivers = $shipping->labelsEnabled() ? $labels->driverNames() : [];
+        $storeCarriers = $tracking->carrierCodes();
+        $supported = [];
+
+        $quotes = array_map(function (RateQuote $quote) use ($customerShippingCost, $labelDrivers, $storeCarriers, $labels, &$supported) {
             $quoteArray = $quote->toArray();
             $quoteArray['margin_delta'] = round($customerShippingCost - $quote->totalPrice, 2);
+            $buyable = in_array($quote->provider, $labelDrivers, true)
+                && in_array($quote->carrierCode, $supported[$quote->provider] ??= $labels->supportedCarriersFor($quote->provider, $storeCarriers), true);
+            $quoteArray['store_carrier_code'] = $buyable ? $quote->carrierCode : null;
 
             return $quoteArray;
         }, $result['quotes']);

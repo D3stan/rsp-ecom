@@ -165,6 +165,21 @@ it('validates the carriers table', function () {
     expect(fn () => $settings->set('shipping.carriers', [['code' => 'a', 'name' => 'A', 'tracking_url' => ''], ['code' => 'a', 'name' => 'B', 'tracking_url' => '']]))->toThrow(ValidationException::class);
 });
 
+it('keeps the preferred carriers among the configured carrier codes', function () {
+    $settings = app(Settings::class);
+    $settings->set('shipping.carriers', [
+        ['code' => 'sda', 'name' => 'SDA', 'tracking_url' => ''],
+        ['code' => 'brt', 'name' => 'BRT', 'tracking_url' => ''],
+    ]);
+
+    $settings->set('shipping.preferred_carriers', ['brt']);
+    expect($settings->get('shipping.preferred_carriers'))->toBe(['brt']);
+
+    expect(fn () => $settings->set('shipping.preferred_carriers', ['brt', 'dhl']))->toThrow(ValidationException::class);
+    // removing a preferred carrier from the table is refused until it is unpreferred
+    expect(fn () => $settings->set('shipping.carriers', [['code' => 'sda', 'name' => 'SDA', 'tracking_url' => '']]))->toThrow(ValidationException::class);
+});
+
 it('rejects unknown keys and read-only settings', function () {
     $settings = app(Settings::class);
 

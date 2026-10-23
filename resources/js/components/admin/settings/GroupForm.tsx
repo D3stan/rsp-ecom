@@ -13,7 +13,7 @@ import { groupIcon } from './group-icon';
 import { restoreGroupHash } from './hash';
 import { HistoryPanel } from './HistoryPanel';
 import { SettingFieldRow } from './SettingFieldRow';
-import { draftFromGroup, formatValue, groupErrors, isFieldDirty, toDraft, toPayload, type DraftValue, type GroupDraft } from './values';
+import { draftFromGroup, formatValue, groupErrors, isFieldDirty, toDraft, toPayload, type DraftValue, type GroupDraft, type RowDraft } from './values';
 
 // Extra links shown under a group (the box sizes and their shipping costs have their own admin page).
 const GROUP_LINKS: Record<string, { href: string; labelKey: string }> = {
@@ -182,7 +182,9 @@ export function GroupForm({ group, onDirtyChange }: GroupFormProps) {
                                     const controller = field.dependsOn ? fieldsByKey.get(field.dependsOn) : undefined;
                                     const source = field.memberOf ? fieldsByKey.get(field.memberOf) : undefined;
                                     const options = source
-                                        ? (draft[source.name] as string[])
+                                        ? source.type === 'json'
+                                            ? (draft[source.name] as RowDraft[]).map((row) => String(row.code ?? '')).filter(Boolean)
+                                            : (draft[source.name] as string[])
                                         : field.type === 'countries'
                                           ? COUNTRY_CODES
                                           : field.options;

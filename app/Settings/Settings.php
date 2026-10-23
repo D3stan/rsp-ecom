@@ -263,7 +263,13 @@ class Settings
             }
 
             if ($definition->memberOf !== null && (array_key_exists($key, $values) || array_key_exists($definition->memberOf, $values))) {
-                if (! in_array($current($key), (array) $current($definition->memberOf), true)) {
+                $value = $current($key);
+                $members = self::members($current($definition->memberOf));
+                // a list value: every item must be a member
+                $outside = is_array($value)
+                    ? array_filter($value, fn ($item) => ! in_array($item, $members, true)) !== []
+                    : ! in_array($value, $members, true);
+                if ($outside) {
                     $errors[$key] = __('settings.ui.validation.member_of', ['other' => __($this->registry->get($definition->memberOf)->labelKey())]);
                 }
             }
@@ -542,13 +548,23 @@ class Settings
     }
 
     /**
+     * The values a member_of setting may take: the other list's items, or the `code` column of json rows (shipping.carriers).
+     *
+     * @return list<mixed>
+     */
+    private static function members(mixed $value): array
+    {
+        return array_values(array_map(fn ($member) => is_array($member) ? ($member['code'] ?? null) : $member, (array) $value));
+    }
+
+    /**
      * @param  array<string, string>  $rows
      * @return array<string, mixed>
      */
     private function field(SettingDefinition $definition, array $rows): array
     {
         $options = $definition->memberOf !== null
-            ? (array) $this->valueFor($this->registry->get($definition->memberOf), $rows)
+            ? self::members($this->valueFor($this->registry->get($definition->memberOf), $rows))
             : $definition->options;
 
         return [

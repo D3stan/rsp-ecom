@@ -33,6 +33,7 @@ interface Size {
     length: number;
     width: number;
     height: number;
+    weight_kg?: number | null;
     box_type?: string;
     shipping_cost: number;
     products_count: number;
@@ -106,6 +107,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
         length: 1,
         width: 1,
         height: 1,
+        weight_kg: '' as number | '',
         box_type: getRandomBoxType(),
         shipping_cost: 0,
     });
@@ -194,6 +196,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
             length: size.length,
             width: size.width,
             height: size.height,
+            weight_kg: size.weight_kg ?? '',
             box_type: size.box_type || '',
             shipping_cost: size.shipping_cost,
         });
@@ -565,6 +568,19 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                 </div>
 
                                 <div>
+                                    <Label htmlFor="size-weight">{t('admin.categories_sizes.weight_kg')}</Label>
+                                    <Input
+                                        id="size-weight"
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        value={sizeForm.data.weight_kg}
+                                        onChange={(e) => sizeForm.setData('weight_kg', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                    />
+                                    <p className="mt-1 text-xs text-muted-foreground">{t('admin.categories_sizes.weight_kg_help')}</p>
+                                </div>
+
+                                <div>
                                     <Label htmlFor="size-shipping-cost">{t('admin.categories_sizes.shipping_cost')}</Label>
                                     <Input
                                         id="size-shipping-cost"
@@ -800,6 +816,19 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                    </div>
+
+                                    <div>
+                                        <Label htmlFor="mobile-size-weight">{t('admin.categories_sizes.weight_kg')}</Label>
+                                        <Input
+                                            id="mobile-size-weight"
+                                            type="number"
+                                            step="0.01"
+                                            min="0.01"
+                                            value={sizeForm.data.weight_kg}
+                                            onChange={(e) => sizeForm.setData('weight_kg', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                        />
+                                        <p className="mt-1 text-xs text-muted-foreground">{t('admin.categories_sizes.weight_kg_help')}</p>
                                     </div>
 
                                     <div>
