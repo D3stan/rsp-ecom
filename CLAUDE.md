@@ -12,6 +12,14 @@ Rules:
 ===
 
 <laravel-boost-guidelines>
+=== .ai/deployment rules ===
+
+# Deployment
+
+- This application is deployed on [Dokploy](https://dokploy.com/) as Docker Compose stacks, managed through the `dokploy-mcp` server. There is a production stack (`docker-compose.yml`) and a sandbox stack (`docker-compose.sandbox.yml`, with Mailpit, MariaDB and Redis for testing).
+- Activate the `deploying-to-dokploy` skill whenever deploying, changing Dokploy environment variables or domains, reading build or container logs, or troubleshooting a Dokploy deployment.
+- Never deploy production unless the user explicitly asks.
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
@@ -103,13 +111,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Use TitleCase for Enum keys: `FavoritePerson`, `BestLake`, `Monthly`.
 - Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
 - Use array shape type definitions in PHPDoc blocks.
-
-=== deployments rules ===
-
-# Deployment
-
-- Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
-- Activate the `deploying-to-cloud` skill whenever deploying to Laravel Cloud, configuring Cloud environments or resources, using the Cloud CLI, or troubleshooting Cloud deployments.
 
 === tests rules ===
 

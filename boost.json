@@ -4,18 +4,18 @@
         "codex",
         "opencode"
     ],
-    "cloud": true,
+    "cloud": false,
     "guidelines": true,
     "mcp": true,
     "nightwatch": false,
     "sail": false,
     "skills": [
         "infer-conventions",
-        "deploying-to-cloud",
         "laravel-best-practices",
         "testing-best-practices",
         "socialite-development",
         "inertia-react-development",
-        "tailwindcss-development"
+        "tailwindcss-development",
+        "deploying-to-dokploy"
     ]
 }
