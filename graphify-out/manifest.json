@@ -210,9 +210,9 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/Admin/OrdersController.php": {
-    "mtime": 1792765966.9391272,
-    "seen": 1792765995.359021,
-    "ast_hash": "f5d52c22f961bc760d04ff0c1577c118",
+    "mtime": 1792773731.7762344,
+    "seen": 1792773912.142284,
+    "ast_hash": "d823307a20652c3d23e84f05fe25150d",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Admin/ProductController.php": {
@@ -1938,33 +1938,33 @@
     "semantic_hash": ""
   },
   "lang/de.json": {
-    "mtime": 1792772948.607882,
-    "seen": 1792773076.5449102,
-    "ast_hash": "edcb5c9c237735441b6afb1e4748c8e5",
+    "mtime": 1792773822.4600592,
+    "seen": 1792773912.142532,
+    "ast_hash": "09d28558945044802304228471632771",
     "semantic_hash": ""
   },
   "lang/en.json": {
-    "mtime": 1792772948.6047173,
-    "seen": 1792773076.5449102,
-    "ast_hash": "6aa86c26dc6c17e31b5c9c3755a08b4c",
+    "mtime": 1792773822.460407,
+    "seen": 1792773912.142533,
+    "ast_hash": "0461dff0d25442a93db0dbb5d353d7cd",
     "semantic_hash": ""
   },
   "lang/es.json": {
-    "mtime": 1792772948.619015,
-    "seen": 1792773076.5449111,
-    "ast_hash": "e3ccd2c1b558abb569bd2080b9afba55",
+    "mtime": 1792773822.4607432,
+    "seen": 1792773912.1425338,
+    "ast_hash": "d5d0aadc515ba154d89151d8825fd78a",
     "semantic_hash": ""
   },
   "lang/fr.json": {
-    "mtime": 1792772948.616998,
-    "seen": 1792773076.5449111,
-    "ast_hash": "7d1dba6d891cc4e2b8fe2a3fc13c4bd1",
+    "mtime": 1792773822.4610784,
+    "seen": 1792773912.1425338,
+    "ast_hash": "28bc25ba286f117a03674ade345c2f1b",
     "semantic_hash": ""
   },
   "lang/it.json": {
-    "mtime": 1792772948.6062374,
-    "seen": 1792773076.5449119,
-    "ast_hash": "62d913aad004f71675218eb99c5c4109",
+    "mtime": 1792773822.4613938,
+    "seen": 1792773912.142535,
+    "ast_hash": "696e531358f9b78a8d43e08c2cdd23cc",
     "semantic_hash": ""
   },
   "lang/vendor/cookieConsent/ca/cookies.php": {
@@ -3042,9 +3042,9 @@
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Orders/Ship.tsx": {
-    "mtime": 1792771486.1788845,
-    "seen": 1792771496.5478468,
-    "ast_hash": "b243b7683221e26c217b54f11f6a687d",
+    "mtime": 1792773828.66804,
+    "seen": 1792773912.142669,
+    "ast_hash": "396b91f06f88275c9263055f2b5b29a3",
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Orders/Show.tsx": {
@@ -3870,9 +3870,9 @@
     "semantic_hash": ""
   },
   "routes/admin.php": {
-    "mtime": 1792424921.3011637,
-    "seen": 1792764504.685854,
-    "ast_hash": "e8b8e0973e46e60f9862b4038b2e1a8c",
+    "mtime": 1792773731.7760046,
+    "seen": 1792773912.1427672,
+    "ast_hash": "745048b1c4177aeacdf702fc59409c2e",
     "semantic_hash": ""
   },
   "routes/api.php": {
@@ -5352,8 +5352,8 @@
     "semantic_hash": ""
   },
   "public/robots.txt": {
-    "mtime": 1792766286.48286,
-    "seen": 1792771496.5480902,
+    "mtime": 1792773895.266951,
+    "seen": 1792773912.14303,
     "ast_hash": "6e727c612c31b851a4920603c90bd023",
     "semantic_hash": ""
   },
@@ -5508,9 +5508,9 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/Admin/ShippingQuotesController.php": {
-    "mtime": 1792764395.0870879,
-    "seen": 1792764504.685282,
-    "ast_hash": "043f513a408498cabe84a6ef03f2161c",
+    "mtime": 1792773664.038373,
+    "seen": 1792773912.1422899,
+    "ast_hash": "e541d37f3d23edec449eca70eed7da0a",
     "semantic_hash": ""
   },
   "app/Providers/RateServiceProvider.php": {
@@ -5592,9 +5592,9 @@
     "semantic_hash": ""
   },
   "app/Shipping/Providers/Dvaexpress/DvaexpressRateProvider.php": {
-    "mtime": 1792762618.5007205,
-    "seen": 1792764504.6854231,
-    "ast_hash": "eb2da06e2df9ce7b768b75a8052fea30",
+    "mtime": 1792773615.3551447,
+    "seen": 1792773912.142406,
+    "ast_hash": "ef05bf522003aff417a6a3ceb08c38dd",
     "semantic_hash": ""
   },
   "app/Shipping/Providers/Dvaexpress/DvaexpressResponseMapper.php": {
@@ -5640,9 +5640,9 @@
     "semantic_hash": ""
   },
   "app/Shipping/Providers/Spediamo/SpediamoRateProvider.php": {
-    "mtime": 1792772569.1325002,
-    "seen": 1792772635.229544,
-    "ast_hash": "069603490c3ec861c82cf11e333c7e04",
+    "mtime": 1792773597.6807067,
+    "seen": 1792773912.1424158,
+    "ast_hash": "9cfcfc25132ffc8a2215a5422be798c4",
     "semantic_hash": ""
   },
   "app/Shipping/Providers/Spediamo/SpediamoResponseMapper.php": {
@@ -5706,9 +5706,9 @@
     "semantic_hash": ""
   },
   "app/Shipping/Rates/Exceptions/RateException.php": {
-    "mtime": 1792423852.0322158,
-    "seen": 1792764504.685442,
-    "ast_hash": "2bb8bf8cbd8db3d97e9f700b3773d23c",
+    "mtime": 1792773571.5825932,
+    "seen": 1792773912.142425,
+    "ast_hash": "a47ec0e224362403c02c98b07f662134",
     "semantic_hash": ""
   },
   "app/Shipping/Rates/Exceptions/RateProviderUnavailable.php": {
@@ -5724,9 +5724,9 @@
     "semantic_hash": ""
   },
   "app/Shipping/Rates/RateManager.php": {
-    "mtime": 1792765966.9396856,
-    "seen": 1792765995.359207,
-    "ast_hash": "f3ada187838ae359fed5526021c39cd2",
+    "mtime": 1792773664.3987632,
+    "seen": 1792773912.142427,
+    "ast_hash": "8de3161304e1c82ab5dd1ee7943fdde5",
     "semantic_hash": ""
   },
   "app/Shipping/Support/CarrierCodeMap.php": {
@@ -5892,9 +5892,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Checkout/SavedAddressTest.php": {
-    "mtime": 1792773014.9642673,
-    "seen": 1792773076.5451012,
-    "ast_hash": "fe9355e179f6b79be20ddf7c58eb97ae",
+    "mtime": 1792773081.6042001,
+    "seen": 1792773912.142796,
+    "ast_hash": "35d8040c532660f7c5183b5e1b5b7230",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-10-23-shipping-error-handling.md": {
@@ -6051,6 +6051,60 @@
     "mtime": 1792772896.7855675,
     "seen": 1792773076.545032,
     "ast_hash": "4a4945b5f98e42d72f266604da229915",
+    "semantic_hash": ""
+  },
+  "app/Shipping/Providers/Spediamo/SpediamoIssueMapper.php": {
+    "mtime": 1792773597.6265159,
+    "seen": 1792773912.14241,
+    "ast_hash": "cdc0c2464a5e7ee8ad118acedee4ab48",
+    "semantic_hash": ""
+  },
+  "app/Shipping/Support/CarriesIssues.php": {
+    "mtime": 1792773571.5802114,
+    "seen": 1792773912.142431,
+    "ast_hash": "cf69949fe3a389ef7e3d5bcf8f5fdf47",
+    "semantic_hash": ""
+  },
+  "app/Shipping/Support/RecipientAddressCheck.php": {
+    "mtime": 1792773635.4789956,
+    "seen": 1792773912.142431,
+    "ast_hash": "75cf40dfad6ba17b1a2acabdcd56d483",
+    "semantic_hash": ""
+  },
+  "app/Shipping/Support/ShippingIssue.php": {
+    "mtime": 1792773571.577564,
+    "seen": 1792773912.142433,
+    "ast_hash": "542c9a2b512140bd4adfdf8aa2f0f77e",
+    "semantic_hash": ""
+  },
+  "resources/js/components/admin/orders/ShippingIssues.tsx": {
+    "mtime": 1792773823.1424863,
+    "seen": 1792773912.142567,
+    "ast_hash": "5c4aa4ee41c2f5710645f1d7a2ec132e",
+    "semantic_hash": ""
+  },
+  "tests/Feature/Shipping/ShippingAddressCorrectionTest.php": {
+    "mtime": 1792773708.4565456,
+    "seen": 1792773912.1429062,
+    "ast_hash": "18cdbccb6b8628ed8684ec2b51aa8a7e",
+    "semantic_hash": ""
+  },
+  "tests/Feature/Shipping/ShippingIssuesTest.php": {
+    "mtime": 1792773664.06493,
+    "seen": 1792773912.142907,
+    "ast_hash": "6e08cd58a599538c29d93364690971c8",
+    "semantic_hash": ""
+  },
+  "tests/Unit/Shipping/RecipientAddressCheckTest.php": {
+    "mtime": 1792773635.482861,
+    "seen": 1792773912.142941,
+    "ast_hash": "66b12f97525de72b9f0060a28099f9cc",
+    "semantic_hash": ""
+  },
+  "tests/Unit/Shipping/ShippingIssueTest.php": {
+    "mtime": 1792773571.5851798,
+    "seen": 1792773912.142942,
+    "ast_hash": "ea25bae0f8a3ae613893b2700359310a",
     "semantic_hash": ""
   }
 }
