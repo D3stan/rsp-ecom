@@ -665,6 +665,7 @@ it('completes end-to-end quote-to-label purchase handoff via POST /admin/orders/
 
     $shipPayload = [
         'create_label' => true,
+        'pickup_date' => \App\Shipping\Support\NextWorkingDay::after(\Carbon\CarbonImmutable::now())->toDateString(),
         'label_driver' => 'dvaexpress',
         'tracking_carrier' => 'sda',
         'quote_token' => '5dcc4a53b00fc',

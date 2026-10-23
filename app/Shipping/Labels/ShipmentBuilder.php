@@ -25,6 +25,7 @@ class ShipmentBuilder
         ?float $insurance = null,
         ?float $cod = null,
         ?string $quoteToken = null,
+        ?string $pickupDate = null,
     ): ShipmentRequest {
         return new ShipmentRequest(
             carrierCode: $carrierCode,
@@ -35,6 +36,7 @@ class ShipmentBuilder
             insuranceAmount: $insurance,
             codAmount: $cod,
             quoteToken: $quoteToken,
+            pickupDate: $pickupDate,
         );
     }
 

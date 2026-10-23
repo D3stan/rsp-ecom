@@ -39,6 +39,7 @@ function labelShipBody(array $extra = []): array
     return array_merge([
         'tracking_carrier' => 'acme',
         'create_label' => true,
+        'pickup_date' => \App\Shipping\Support\NextWorkingDay::after(\Carbon\CarbonImmutable::now())->toDateString(),
         'parcels' => [['weight' => 1.5]],
     ], $extra);
 }

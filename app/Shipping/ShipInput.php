@@ -21,6 +21,9 @@ final readonly class ShipInput
 
     public ?string $quoteToken;
 
+    /** Label mode: the day the carrier collects the parcel (Y-m-d). */
+    public ?string $pickupDate;
+
     /**
      * @param  list<array<string, mixed>>  $parcels  weight/length/width/height per parcel (label mode)
      */
@@ -37,6 +40,7 @@ final readonly class ShipInput
         ?string $labelDriver = null,
         ?string $trackingDriver = null,
         ?string $quoteToken = null,
+        ?string $pickupDate = null,
     ) {
         $trackingNumber = trim((string) $trackingNumber);
         $this->trackingNumber = $trackingNumber !== '' ? $trackingNumber : null;
@@ -49,5 +53,8 @@ final readonly class ShipInput
 
         $quoteToken = trim((string) $quoteToken);
         $this->quoteToken = $quoteToken !== '' ? $quoteToken : null;
+
+        $pickupDate = trim((string) $pickupDate);
+        $this->pickupDate = $pickupDate !== '' ? $pickupDate : null;
     }
 }

@@ -219,6 +219,7 @@ it('creates and cancels labels across coexisting label providers regardless of g
     $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $orderFake), [
         'tracking_carrier' => 'acme',
         'create_label' => true,
+        'pickup_date' => \App\Shipping\Support\NextWorkingDay::after(\Carbon\CarbonImmutable::now())->toDateString(),
         'label_driver' => 'fake',
         'parcels' => [['weight' => 1.0]],
     ])->assertSessionHas('success');
@@ -226,6 +227,7 @@ it('creates and cancels labels across coexisting label providers regardless of g
     $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $orderAlpha), [
         'tracking_carrier' => 'acme',
         'create_label' => true,
+        'pickup_date' => \App\Shipping\Support\NextWorkingDay::after(\Carbon\CarbonImmutable::now())->toDateString(),
         'label_driver' => 'alpha_labels',
         'parcels' => [['weight' => 2.0]],
     ])->assertSessionHas('success');

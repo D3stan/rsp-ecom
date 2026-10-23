@@ -189,7 +189,7 @@ class ShippingService
             throw new LabelRejected('The selected carrier is not available for label creation.');
         }
 
-        $request = $this->builder->build($order, $input->carrierCode, $input->parcels, $input->insuranceAmount, $input->codAmount, $input->quoteToken);
+        $request = $this->builder->build($order, $input->carrierCode, $input->parcels, $input->insuranceAmount, $input->codAmount, $input->quoteToken, $input->pickupDate);
 
         // 1. Carrier creates the shipment and the label (may throw LabelRejected / LabelProviderUnavailable)
         $result = $provider->createShipment($request);
@@ -224,6 +224,7 @@ class ShippingService
                     'external_id' => $result->externalId,
                     'tracking_number' => $result->trackingNumber,
                     'label_path' => $path,
+                    'pickup_date' => $input->pickupDate,
                     'status' => Shipment::STATUS_CREATED,
                     'request_payload' => $result->raw ?: null,
                     'created_by' => $actor->getKey(),
@@ -413,6 +414,7 @@ class ShippingService
                 'external_id' => $result->externalId,
                 'tracking_number' => $result->trackingNumber,
                 'label_path' => $path,
+                'pickup_date' => $input->pickupDate,
                 'status' => Shipment::STATUS_CREATED,
                 'request_payload' => $result->raw ?: null,
                 'created_by' => $actor->getKey(),

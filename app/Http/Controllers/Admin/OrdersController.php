@@ -513,6 +513,8 @@ class OrdersController extends Controller
             'shipping_cost' => (float) ($order->shipping_cost ?? $order->shipping_amount ?? 0.0),
             // rates and labels need at least the sender's postal code and city
             'sender_configured' => $sender['postal_code'] !== '' && $sender['city'] !== '',
+            // the pickup date the form starts from; the carrier collects on working days only
+            'default_pickup_date' => \App\Shipping\Support\NextWorkingDay::after(\Carbon\CarbonImmutable::now())->toDateString(),
         ]);
     }
 
@@ -593,6 +595,16 @@ class OrdersController extends Controller
             'insurance_amount' => 'sometimes|nullable|numeric|min:0|max:1000000',
             'cod_amount' => 'sometimes|nullable|numeric|min:0|max:1000000',
             'quote_token' => 'sometimes|nullable|string|max:191',
+            'pickup_date' => ['bail', Rule::requiredIf($wantsLabel), 'nullable', 'date_format:Y-m-d', function ($attribute, $value, $fail) {
+                if ($value === null) {
+                    return;
+                }
+
+                $day = \Carbon\CarbonImmutable::parse($value);
+                if ($day->lessThanOrEqualTo(now()->startOfDay()) || ! \App\Shipping\Support\NextWorkingDay::isWorkingDay($day)) {
+                    $fail('The pickup date must be a future working day.');
+                }
+            }],
         ];
 
         $data = $request->validate($rules);
@@ -615,6 +627,7 @@ class OrdersController extends Controller
                 labelDriver: $wantsLabel ? ($data['label_driver'] ?? null) : null,
                 trackingDriver: $trackingDriver,
                 quoteToken: $wantsLabel && isset($data['quote_token']) ? (string) $data['quote_token'] : null,
+                pickupDate: $wantsLabel ? ($data['pickup_date'] ?? null) : null,
             ), $request->user());
         } catch (InvalidOrderTransition $e) {
             return $this->refusedTransition($e);

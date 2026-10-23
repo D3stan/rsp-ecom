@@ -20,5 +20,7 @@ final readonly class ShipmentRequest
         public ?float $codAmount = null,
         public string $notes = '',
         public ?string $quoteToken = null,
+        /** Y-m-d, the day the carrier collects the parcel; null lets the provider pick its default. */
+        public ?string $pickupDate = null,
     ) {}
 }
