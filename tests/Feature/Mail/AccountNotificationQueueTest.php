@@ -26,7 +26,7 @@ function sentMailLinks(): string
 }
 
 beforeEach(function () {
-    $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
 });
 
 it('queues the contact message once instead of sending it in the request', function () {

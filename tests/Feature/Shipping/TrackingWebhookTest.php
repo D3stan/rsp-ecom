@@ -6,7 +6,7 @@ use App\Models\ShipmentTrackingEvent;
 use App\Shipping\Tracking\Drivers\FakeProvider;
 use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;
 use App\Shipping\Tracking\TrackingManager;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Queue;
 use Tests\Feature\Shipping\Support\TrackingFixtures as Fx;
 
@@ -164,14 +164,14 @@ it('is rate limited and registered as a CSRF-exempt route', function () {
 
 it('accepts a POST without CSRF token (middleware really enforced, as in production)', function () {
     // Laravel skips CSRF while running unit tests; force the real check to prove the exemption works.
-    $enforcing = new class(app(), app('encrypter')) extends ValidateCsrfToken
+    $enforcing = new class(app(), app('encrypter')) extends PreventRequestForgery
     {
         protected function runningUnitTests()
         {
             return false;
         }
     };
-    app()->bind(ValidateCsrfToken::class, fn () => $enforcing);
+    app()->bind(PreventRequestForgery::class, fn () => $enforcing);
     Fx::shippedOrder();
 
     trkPost('fake', trkPayload())->assertOk();

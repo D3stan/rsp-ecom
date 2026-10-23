@@ -14,7 +14,7 @@ use App\Models\User;
 use App\Models\Wishlist;
 use App\Services\StockService;
 use Illuminate\Events\CallQueuedListener;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
@@ -453,7 +453,7 @@ it('accepts the one-click POST from mail clients without a CSRF token', function
     $this->post(URL::signedRoute('restock.unsubscribe', ['user' => $user->id]), ['List-Unsubscribe' => 'One-Click'])->assertOk();
 
     expect($user->fresh()->notify_back_in_stock)->toBeFalse()
-        ->and(app(ValidateCsrfToken::class)->getExcludedPaths())->toContain('restock/unsubscribe/*');
+        ->and(app(PreventRequestForgery::class)->getExcludedPaths())->toContain('restock/unsubscribe/*');
 });
 
 it('refuses an unsigned or tampered unsubscribe link', function () {

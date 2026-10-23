@@ -60,7 +60,7 @@ function paidOrderOf(User $user, ?int $addressOwnerId): Order
 
 function deleteAccount(User $user): void
 {
-    test()->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+    test()->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
 
     test()->actingAs($user)
         ->delete(route('profile.destroy'), ['password' => 'password'])

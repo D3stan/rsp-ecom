@@ -74,7 +74,7 @@ class RouteHygieneTest extends TestCase
         $this->assertSame('stripe/webhook', $route->uri());
         $this->assertSame('Laravel\\Cashier\\Http\\Controllers\\WebhookController@handleWebhook', $route->getActionName());
         $this->assertContains('web', $route->excludedMiddleware());
-        $this->assertNotContains(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class, app('router')->resolveMiddleware($route->gatherMiddleware(), $route->excludedMiddleware()));
+        $this->assertNotContains(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class, app('router')->resolveMiddleware($route->gatherMiddleware(), $route->excludedMiddleware()));
     }
 
     private function routeFor(string $method, string $uri): ?\Illuminate\Routing\Route

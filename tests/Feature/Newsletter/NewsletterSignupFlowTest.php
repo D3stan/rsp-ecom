@@ -6,7 +6,7 @@ use App\Models\NewsletterSubscriber;
 use App\Models\PendingUserVerification;
 use App\Models\User;
 use App\Services\Newsletter\MarketingConsent;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -160,7 +160,7 @@ it('confirms with the POST of the button exactly once, logging the IP and user a
 });
 
 it('protects the confirm POST with CSRF and throttles it', function () {
-    $middleware = new class(app(), app('encrypter')) extends ValidateCsrfToken
+    $middleware = new class(app(), app('encrypter')) extends PreventRequestForgery
     {
         public function excludes(Request $request): bool
         {
@@ -235,7 +235,7 @@ it('unsubscribes immediately with a one-click POST on the signed link', function
 it('exempts the one-click unsubscribe target from CSRF (mail clients post without a token)', function () {
     $subscriber = confirmedSubscriber();
 
-    $middleware = new class(app(), app('encrypter')) extends ValidateCsrfToken
+    $middleware = new class(app(), app('encrypter')) extends PreventRequestForgery
     {
         public function excludes(Request $request): bool
         {

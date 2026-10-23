@@ -134,6 +134,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Session Serialization
+    |--------------------------------------------------------------------------
+    |
+    | Laravel 13's skeleton defaults to "json". It stays on "php" here so that
+    | switching it does not invalidate every active session; move to "json"
+    | once the application is known to store no PHP objects in the session.
+    |
+    */
+
+    'serialization' => 'php',
+
+    /*
+    |--------------------------------------------------------------------------
     | Session Cookie Path
     |--------------------------------------------------------------------------
     |
