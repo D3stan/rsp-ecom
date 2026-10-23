@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Cashier\Billable;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -197,6 +198,60 @@ class User extends Authenticatable implements MustVerifyEmail
             ->where('type', 'shipping')
             ->where('is_default', true)
             ->first();
+    }
+
+    /** Address-book size limit: the oldest non-default entry makes room for a new one. */
+    public const MAX_SAVED_ADDRESSES = 10;
+
+    /**
+     * Save an address in the address book and make it the default (the one the customer just shipped to). An address
+     * the book already has is left alone: the customer's own choice of default stays.
+     */
+    public function rememberShippingAddress(Address $address): void
+    {
+        $fields = $address->only(Address::CHECKOUT_FIELDS);
+
+        if ($this->addresses()->shipping()->where($fields)->exists()) {
+            return;
+        }
+
+        DB::transaction(function () use ($fields) {
+            $book = $this->addresses()->shipping();
+
+            if ((clone $book)->count() >= self::MAX_SAVED_ADDRESSES) {
+                (clone $book)->where('is_default', false)->oldest('id')->first()?->delete();
+            }
+
+            $this->addresses()->shipping()->update(['is_default' => false]);
+            $this->addresses()->create($fields + ['type' => 'shipping', 'is_default' => true]);
+        });
+    }
+
+    /**
+     * Orders placed as a guest with this (verified) email belong to the account now: they show up in the order
+     * history, and when the address book is still empty the latest one's address becomes the default.
+     * Idempotent; returns how many orders were attached.
+     */
+    public function claimGuestOrders(): int
+    {
+        if (! $this->hasVerifiedEmail()) {
+            return 0;
+        }
+
+        $orders = Order::guestOrders()->whereRaw('lower(guest_email) = ?', [mb_strtolower($this->email)])->get();
+
+        if ($orders->isEmpty()) {
+            return 0;
+        }
+
+        $claimed = Order::whereKey($orders->modelKeys())->whereNull('user_id')->update(['user_id' => $this->id]);
+
+        $address = $orders->sortByDesc('id')->first()->shippingAddress;
+        if ($address && ! $this->addresses()->shipping()->exists()) {
+            $this->rememberShippingAddress($address);
+        }
+
+        return $claimed;
     }
 
     public function getDefaultBillingAddress(): ?Address

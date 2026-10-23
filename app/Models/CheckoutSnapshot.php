@@ -43,6 +43,7 @@ class CheckoutSnapshot extends Model
         'currency',
         'coupon_code',
         'cart_hash',
+        'shipping_address',
         'consumed_at',
         'email',
         'locale',
@@ -54,6 +55,7 @@ class CheckoutSnapshot extends Model
 
     protected $casts = [
         'lines' => 'array',
+        'shipping_address' => 'array',
         'subtotal' => 'decimal:2',
         'shipping' => 'decimal:2',
         'discount' => 'decimal:2',
@@ -89,6 +91,7 @@ class CheckoutSnapshot extends Model
         ?string $guestSessionId,
         ?string $couponCode,
         array $previousPrices = [],
+        array $shippingAddress = [],
     ): self {
         $lines = $cart->cartItems->map(function (CartItem $item) use ($previousPrices) {
             $variant = $item->productVariant ?? $item->product?->defaultVariant;
@@ -126,6 +129,7 @@ class CheckoutSnapshot extends Model
             'currency' => strtoupper((string) config('cashier.currency', 'eur')),
             'coupon_code' => $couponCode !== '' ? $couponCode : null,
             'cart_hash' => $cart->contentHash(),
+            'shipping_address' => $shippingAddress ?: null,
         ]);
     }
 

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\Locales;
 use App\Support\Vat;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Stripe\StripeObject;
@@ -60,6 +61,11 @@ class OrderCreationService
 
         if (! $order) {
             return null;
+        }
+
+        // Only when the customer ticked "save this address" at checkout
+        if ($order->wasRecentlyCreated && ($session['metadata']['save_address'] ?? null) === '1') {
+            $this->rememberShippingAddress($order);
         }
 
         // Outside the transaction: the order is committed. EmailService is idempotent, so calling
@@ -290,8 +296,9 @@ class OrderCreationService
         $cartItems = $cart ? $cart->cartItems : collect();
 
         $addressParts = $this->parseShippingAddress($metadata['shipping_address'] ?? '');
-        $billingAddress = $this->createAddress($session, $addressParts, 'billing');
-        $shippingAddress = $this->createAddress($session, $addressParts, 'shipping');
+        $entered = (array) $snapshot?->shipping_address;
+        $billingAddress = $this->createAddress($session, $addressParts, 'billing', $entered);
+        $shippingAddress = $this->createAddress($session, $addressParts, 'shipping', $entered);
 
         $totals = $snapshot ? $this->totalsFromSnapshot($snapshot, $session) : $this->calculateTotals($session, $cart);
 
@@ -738,9 +745,12 @@ class OrderCreationService
     }
 
     /**
-     * Create an address record; metadata values win, Stripe's customer details are the fallback.
+     * Create an address record; the address as entered at checkout (snapshot) wins, then the metadata values,
+     * with Stripe's customer details as the fallback.
+     *
+     * @param  array<string, mixed>  $entered
      */
-    protected function createAddress(array $session, array $addressParts, string $type): Address
+    protected function createAddress(array $session, array $addressParts, string $type, array $entered = []): Address
     {
         $customerDetails = $session['customer_details'] ?? [];
         $address = is_array($customerDetails['address'] ?? null) ? $customerDetails['address'] : [];
@@ -753,7 +763,7 @@ class OrderCreationService
         $state = $statePostalParts[0] ?? '';
         $postalCode = $statePostalParts[1] ?? '';
 
-        return Address::create([
+        return Address::create(array_replace([
             'user_id' => null, // Guest address
             'type' => $type,
             'first_name' => $firstName,
@@ -766,7 +776,28 @@ class OrderCreationService
             'postal_code' => $postalCode ?: ($address['postal_code'] ?? ''),
             'country' => $addressParts['country'] ?: ($address['country'] ?? 'IT'),
             'phone' => ($session['metadata']['customer_phone'] ?? null) ?: ($customerDetails['phone'] ?? null),
-        ]);
+        ], array_filter(
+            Arr::only($entered, Address::CHECKOUT_FIELDS),
+            fn ($value) => is_string($value) && $value !== '',
+        )));
+    }
+
+    /**
+     * Save the address of a registered customer's new order as their default for the next checkout. Best effort:
+     * the order is already committed.
+     */
+    protected function rememberShippingAddress(Order $order): void
+    {
+        try {
+            if ($order->user && $order->shippingAddress) {
+                $order->user->rememberShippingAddress($order->shippingAddress);
+            }
+        } catch (Throwable $e) {
+            Log::warning('Could not save the order address as the customer default', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     protected function requestConfirmationEmail(Order $order): void

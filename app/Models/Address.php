@@ -10,6 +10,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Address extends Model
 {
     use HasFactory;
+
+    /** The fields of an address as typed in the checkout form. */
+    public const CHECKOUT_FIELDS = ['first_name', 'last_name', 'company', 'address_line_1', 'address_line_2', 'city', 'state', 'postal_code', 'country', 'phone'];
+
     protected $fillable = [
         'user_id',
         'type',

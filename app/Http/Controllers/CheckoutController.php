@@ -12,7 +12,9 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Support\AddressRules;
 use App\Support\CheckoutTotals;
+use App\Support\ItalianProvinces;
 use App\Support\Money;
 use App\Support\Vat;
 use App\Models\CheckoutSnapshot;
@@ -114,6 +116,8 @@ class CheckoutController extends Controller
                     'customer_email' => $isOwner
                         ? ($checkoutSession->customer_details->email ?? $checkoutSession->metadata->guest_email ?? '')
                         : '',
+                    // pre-fills the "create an account" offer of a guest buyer
+                    'customer_name' => $isOwner ? (string) ($order?->shippingAddress?->full_name ?? '') : '',
                     'amount_total' => (float) ($checkoutSession->amount_total / 100),
                     'currency' => $checkoutSession->currency,
                     'created' => $checkoutSession->created,
@@ -244,8 +248,11 @@ class CheckoutController extends Controller
             // Charge every line at the current catalogue price of ITS OWN variant (never the default variant's price)
             $cart->refreshPrices();
 
-            return Inertia::render('Checkout/Details', $this->detailsProps($cart));
-            
+            return Inertia::render('Checkout/Details', array_merge($this->detailsProps($cart), [
+                'savedAddresses' => $user->addresses()->shipping()->orderByDesc('is_default')->orderByDesc('id')->get()
+                    ->map(fn ($address) => $address->only(['id', 'is_default', ...\App\Models\Address::CHECKOUT_FIELDS]))->all(),
+            ]));
+
         } catch (\Exception $e) {
             Log::error('Failed to show checkout details: ' . $e->getMessage());
             return redirect()->route('cart')->with('error', 'Unable to load checkout page.');
@@ -307,6 +314,8 @@ class CheckoutController extends Controller
             'total' => $totals['total'],
             'totalItems' => $cart->cartItems->sum('quantity'),
             'freeShippingRemaining' => $totals['free_shipping_remaining'],
+            'provinces' => ItalianProvinces::ALL,
+            'savedAddresses' => [],
         ];
     }
 
@@ -356,14 +365,8 @@ class CheckoutController extends Controller
         return [
             'email' => 'required|email|max:255',
             'shipping_address' => 'required|array',
-            'shipping_address.first_name' => 'required|string|max:255',
-            'shipping_address.last_name' => 'required|string|max:255',
-            'shipping_address.address_line_1' => 'required|string|max:255',
-            'shipping_address.city' => 'required|string|max:255',
-            'shipping_address.state' => 'required|string|max:255',
-            'shipping_address.postal_code' => 'required|string|max:20',
-            'shipping_address.country' => ['required', 'string', 'size:2', Rule::in((array) settings('shipping.destinations', ['IT']))],
-            'shipping_address.phone' => 'nullable|string|max:20',
+            ...AddressRules::for('shipping_address.'),
+            'save_address' => 'sometimes|boolean',
             'order_notes' => ['nullable', 'string', 'max:'.(int) settings('orders.order_notes_max', 500)],
             'coupon_code' => 'nullable|string|max:50',
         ];
@@ -499,7 +502,7 @@ class CheckoutController extends Controller
 
             // What is charged, frozen and committed BEFORE the Stripe call (no transaction around the call): the order
             // is built from it, whatever the customer does to the cart while paying
-            $snapshot = CheckoutSnapshot::capture($cart, $totals, $user->id, null, $validated['coupon_code'] ?? null, $priceChanges);
+            $snapshot = CheckoutSnapshot::capture($cart, $totals, $user->id, null, $validated['coupon_code'] ?? null, $priceChanges, $validated['shipping_address']);
             app(AbandonedCheckoutReminders::class)->rememberContact($snapshot, $request, $validated['email'], $user);
 
             // Use Cashier's checkoutCharge for the entire cart
@@ -508,6 +511,8 @@ class CheckoutController extends Controller
                 'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('checkout.cancel'),
                 'expires_at' => app(AbandonedCheckoutReminders::class)->sessionExpiresAt(),
+                // the customer may tick Stripe's own "save my card" box (needs the customer, which checkoutCharge sets)
+                'saved_payment_method_options' => ['payment_method_save' => 'enabled'],
                 'metadata' => [
                     'cart_id' => $cart->id,
                     'user_id' => $user->id,
@@ -519,6 +524,7 @@ class CheckoutController extends Controller
                     'customer_phone' => $validated['shipping_address']['phone'] ?? '',
                     'order_notes' => $validated['order_notes'] ?? '',
                     'coupon_code' => $validated['coupon_code'] ?? '',
+                    'save_address' => $request->boolean('save_address') ? '1' : '0',
                     'locale' => app()->getLocale(),
                     'source' => OrderCreationService::SESSION_SOURCE,
                     'cart_hash' => $cart->contentHash(),
@@ -620,7 +626,7 @@ class CheckoutController extends Controller
             }
             
             // What is charged, frozen and committed BEFORE the Stripe call (no transaction around the call)
-            $snapshot = CheckoutSnapshot::capture($cart, $totals, null, $guestSessionId, $validated['coupon_code'] ?? null, $priceChanges);
+            $snapshot = CheckoutSnapshot::capture($cart, $totals, null, $guestSessionId, $validated['coupon_code'] ?? null, $priceChanges, $validated['shipping_address']);
             app(AbandonedCheckoutReminders::class)->rememberContact($snapshot, $request, $validated['email']);
 
             try {
