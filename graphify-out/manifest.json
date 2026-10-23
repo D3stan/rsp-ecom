@@ -210,9 +210,9 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/Admin/OrdersController.php": {
-    "mtime": 1792764942.2335095,
-    "seen": 1792765115.6443741,
-    "ast_hash": "e885644a5a6da2abe4d5d3ee60055236",
+    "mtime": 1792765534.4846675,
+    "seen": 1792765588.758086,
+    "ast_hash": "03c0d5722dd14cfceadd0040c5a0be6d",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Admin/ProductController.php": {
@@ -1116,9 +1116,9 @@
     "semantic_hash": ""
   },
   "app/Shipping/ShippingService.php": {
-    "mtime": 1792601917.622732,
-    "seen": 1792764504.685448,
-    "ast_hash": "ec9e0d8dcd075985bb371d0432ec44f8",
+    "mtime": 1792765534.484154,
+    "seen": 1792765588.7582982,
+    "ast_hash": "742afb7ba97d7896c05972ac097be70c",
     "semantic_hash": ""
   },
   "app/Shipping/Tracking/Contracts/PassiveProvider.php": {
@@ -3042,9 +3042,9 @@
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Orders/Ship.tsx": {
-    "mtime": 1792764955.537138,
-    "seen": 1792765115.644966,
-    "ast_hash": "dcb142e621f2e73102fc39e3ef3b078b",
+    "mtime": 1792765562.3371027,
+    "seen": 1792765588.758642,
+    "ast_hash": "bdfce448e096022457f4ed776d3dfa09",
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Orders/Show.tsx": {
@@ -4578,9 +4578,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Shipping/LabelShippingTest.php": {
-    "mtime": 1792764970.6347268,
-    "seen": 1792765115.6453178,
-    "ast_hash": "24755114b2e28a242a041e79bc6d8106",
+    "mtime": 1792765534.5218375,
+    "seen": 1792765588.758969,
+    "ast_hash": "e968e25d75be75aac6ecb4b5f43e85c2",
     "semantic_hash": ""
   },
   "tests/Feature/Shipping/ShipFormTest.php": {
@@ -5352,8 +5352,8 @@
     "semantic_hash": ""
   },
   "public/robots.txt": {
-    "mtime": 1792765024.650217,
-    "seen": 1792765115.645498,
+    "mtime": 1792765129.1529536,
+    "seen": 1792765588.759136,
     "ast_hash": "6e727c612c31b851a4920603c90bd023",
     "semantic_hash": ""
   },
@@ -5550,9 +5550,9 @@
     "semantic_hash": ""
   },
   "app/Shipping/Contracts/ShippingProviderManifest.php": {
-    "mtime": 1792423912.6042082,
-    "seen": 1792764504.6854029,
-    "ast_hash": "5b62e5dd62553fcf20f4e9dfeb3687d9",
+    "mtime": 1792765534.4825158,
+    "seen": 1792765588.758241,
+    "ast_hash": "9174a987e5061e620ad43aec5a3e2965",
     "semantic_hash": ""
   },
   "app/Shipping/Exceptions/ShippingCredentialsException.php": {
@@ -5580,9 +5580,9 @@
     "semantic_hash": ""
   },
   "app/Shipping/Providers/Dvaexpress/DvaexpressManifest.php": {
-    "mtime": 1792424313.1600766,
-    "seen": 1792764504.6854222,
-    "ast_hash": "72439195fa2b1a00e4b8fe2e6c8b7642",
+    "mtime": 1792765534.4829721,
+    "seen": 1792765588.758265,
+    "ast_hash": "8b753019c6177eca887298262b7e1750",
     "semantic_hash": ""
   },
   "app/Shipping/Providers/Dvaexpress/DvaexpressProvider.php": {
@@ -5628,9 +5628,9 @@
     "semantic_hash": ""
   },
   "app/Shipping/Providers/Spediamo/SpediamoManifest.php": {
-    "mtime": 1792424143.043431,
-    "seen": 1792764504.68543,
-    "ast_hash": "e92c4b6f931538fb443dcbf56974e91d",
+    "mtime": 1792765534.4833176,
+    "seen": 1792765588.7582772,
+    "ast_hash": "51020212e8741bf30d45a25736b3b08e",
     "semantic_hash": ""
   },
   "app/Shipping/Providers/Spediamo/SpediamoProvider.php": {
@@ -5784,9 +5784,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Shipping/CoexistingProvidersTest.php": {
-    "mtime": 1792605225.3411565,
-    "seen": 1792764504.686008,
-    "ast_hash": "edeedcb90d6d9e35e7aca2eb39bb0657",
+    "mtime": 1792765534.4836912,
+    "seen": 1792765588.7589629,
+    "ast_hash": "9cf31542e10ba7496c9e245f1d6618b3",
     "semantic_hash": ""
   },
   "tests/Feature/Shipping/DvaexpressLabelProviderTest.php": {

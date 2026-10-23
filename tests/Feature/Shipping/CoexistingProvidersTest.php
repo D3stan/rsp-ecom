@@ -334,6 +334,11 @@ it('registers partial manifests only for their declared capabilities (tracking o
             return 'tracking_only_carrier';
         }
 
+        public static function displayName(): string
+        {
+            return 'Tracking Only';
+        }
+
         public static function hasTracking(): bool
         {
             return true;
@@ -370,6 +375,11 @@ it('registers partial manifests only for their declared capabilities (tracking o
         public static function name(): string
         {
             return 'label_only_carrier';
+        }
+
+        public static function displayName(): string
+        {
+            return 'Label Only';
         }
 
         public static function hasTracking(): bool

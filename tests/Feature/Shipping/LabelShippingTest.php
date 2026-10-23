@@ -138,7 +138,8 @@ it('gives the ship page the labels flag, driver and prefilled parcels', function
             ->has('parcels')
             ->where('carriers.0.code', 'acme')
             ->where('label_drivers', fn ($drivers) => collect($drivers)->contains('fake'))
-            ->where('preferred_carriers', []));
+            ->where('preferred_carriers', [])
+            ->where('provider_names.dvaexpress', 'DVA Express'));
 });
 
 it('prefills label parcels with the packed weight of the box size, else the default weight', function () {

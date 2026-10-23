@@ -17,6 +17,11 @@ final class DvaexpressManifest implements ShippingProviderManifest
         return DvaexpressProvider::NAME;
     }
 
+    public static function displayName(): string
+    {
+        return 'DVA Express';
+    }
+
     public static function hasTracking(): bool
     {
         return true;

@@ -41,6 +41,18 @@ class ShippingService
     /** Private disk that holds the label PDFs (never public). */
     private const LABEL_DISK = 'local';
 
+    /**
+     * Admin-facing names of the registered provider modules, keyed by driver name.
+     *
+     * @return array<string, string>
+     */
+    public function providerNames(): array
+    {
+        return collect((array) config('shipping.manifests', []))
+            ->mapWithKeys(fn (string $manifest) => [$manifest::name() => $manifest::displayName()])
+            ->all();
+    }
+
     public function labelsEnabled(): bool
     {
         return (bool) settings('shipping.labels_enabled', false);

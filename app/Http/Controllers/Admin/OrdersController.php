@@ -507,6 +507,7 @@ class OrdersController extends Controller
             'label_drivers' => $labelsEnabled ? app(\App\Shipping\Labels\LabelManager::class)->driverNames() : [],
             // carriers the rate list recommends first (shipping.preferred_carriers)
             'preferred_carriers' => (array) settings('shipping.preferred_carriers', []),
+            'provider_names' => app(ShippingService::class)->providerNames(),
             'tracking_drivers' => $trackingManager->selectableDriverNames(),
             'default_tracking_driver' => $trackingManager->getDefaultDriver(),
             'shipping_cost' => (float) ($order->shipping_cost ?? $order->shipping_amount ?? 0.0),

@@ -20,6 +20,11 @@ interface ShippingProviderManifest
     public static function name(): string;
 
     /**
+     * Name shown to admins (e.g. "DVA Express").
+     */
+    public static function displayName(): string;
+
+    /**
      * Whether this provider implements carrier tracking.
      */
     public static function hasTracking(): bool;

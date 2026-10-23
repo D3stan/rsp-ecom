@@ -114,6 +114,8 @@ interface Props {
     label_drivers?: string[];
     // carrier codes recommended first (settings); empty = any
     preferred_carriers?: string[];
+    // admin-facing provider names keyed by driver name (from each provider manifest)
+    provider_names?: Record<string, string>;
     tracking_drivers?: string[];
     default_tracking_driver?: string;
     shipping_cost?: number;
@@ -158,6 +160,7 @@ export default function OrderShip({
     parcels = [],
     label_drivers = [],
     preferred_carriers = [],
+    provider_names = {},
     tracking_drivers = [],
     default_tracking_driver = '',
     shipping_cost,
@@ -354,9 +357,8 @@ export default function OrderShip({
                   : null
             : null;
 
-    // provider names stay generic here (ArchitectureTest keeps providers out of shared code)
     const driverName = (driver: string) =>
-        driver === 'manual' ? t('admin.orders.ship.bought_direct') : driver.charAt(0).toUpperCase() + driver.slice(1);
+        driver === 'manual' ? t('admin.orders.ship.bought_direct') : (provider_names[driver] ?? driver.charAt(0).toUpperCase() + driver.slice(1));
 
     const unavailableReason = (quote: RateQuote) =>
         label_drivers.includes(quote.provider)

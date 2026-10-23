@@ -18,6 +18,11 @@ final class SpediamoManifest implements ShippingProviderManifest
         return SpediamoProvider::NAME;
     }
 
+    public static function displayName(): string
+    {
+        return 'Spediamo';
+    }
+
     public static function hasTracking(): bool
     {
         return true;
