@@ -1,3 +1,4 @@
+import BuyLabelDialog from '@/components/admin/orders/BuyLabelDialog';
 import ShippingIssues, { ShippingIssue } from '@/components/admin/orders/ShippingIssues';
 import {
     AlertDialog,
@@ -121,6 +122,8 @@ interface Props {
     default_tracking_driver?: string;
     shipping_cost?: number;
     sender_configured?: boolean;
+    // the next working day (Y-m-d): the pickup date the form starts from
+    default_pickup_date?: string;
 }
 
 type Tab = 'label' | 'manual';
@@ -137,6 +140,7 @@ type ShipForm = {
     insurance_amount: string;
     cod_amount: string;
     quote_token: string;
+    pickup_date: string;
 };
 
 // quotes shown before "show more"
@@ -166,10 +170,12 @@ export default function OrderShip({
     default_tracking_driver = '',
     shipping_cost,
     sender_configured = true,
+    default_pickup_date = '',
 }: Props) {
     const { t } = useTranslation();
     const [tab, setTab] = useState<Tab>(labels_enabled ? 'label' : 'manual');
     const [confirming, setConfirming] = useState(false);
+    const [buying, setBuying] = useState(false);
     const [parcelsOpen, setParcelsOpen] = useState(false);
     const [optionsOpen, setOptionsOpen] = useState(false);
     const [showAllQuotes, setShowAllQuotes] = useState(false);
@@ -199,6 +205,7 @@ export default function OrderShip({
         insurance_amount: '',
         cod_amount: '',
         quote_token: '',
+        pickup_date: default_pickup_date,
     });
 
     const getCsrfToken = (): string => {
@@ -228,8 +235,8 @@ export default function OrderShip({
     const buyable = rates.quotes.filter((quote) => quote.store_carrier_code);
     const recommended = recommend(rates.quotes);
 
-    // Rates follow the parcels and insurance: any change makes the current ones (and their quote token) stale.
-    const quoteInputs = JSON.stringify([data.parcels, data.insurance_amount]);
+    // Rates follow the parcels, insurance and pickup date: any change makes the current ones (and their quote token) stale.
+    const quoteInputs = JSON.stringify([data.parcels, data.insurance_amount, data.pickup_date]);
     useEffect(() => {
         if (tab !== 'label' || !sender_configured) {
             return;
@@ -251,7 +258,11 @@ export default function OrderShip({
                         'Content-Type': 'application/json',
                         'X-XSRF-TOKEN': getCsrfToken(),
                     },
-                    body: JSON.stringify({ parcels: data.parcels, insurance_amount: data.insurance_amount || null }),
+                    body: JSON.stringify({
+                        parcels: data.parcels,
+                        insurance_amount: data.insurance_amount || null,
+                        pickup_date: data.pickup_date || null,
+                    }),
                 });
 
                 if (!response.ok) {
@@ -291,10 +302,22 @@ export default function OrderShip({
     const canSubmit =
         !processing &&
         (tab === 'label'
-            ? rates.status === 'ready' && selected !== null && sender_configured
+            ? rates.status === 'ready' && selected !== null && sender_configured && data.pickup_date !== ''
             : carriers.some((carrier) => carrier.code === data.tracking_carrier) && (!withoutNumber || data.ship_without_tracking));
 
-    const send = () => post(`/admin/orders/${order.id}/ship`, { preserveScroll: true, onFinish: () => setConfirming(false) });
+    const send = () =>
+        post(`/admin/orders/${order.id}/ship`, {
+            preserveScroll: true,
+            onFinish: () => {
+                setConfirming(false);
+                setBuying(false);
+            },
+        });
+
+    // the earliest date the form accepts: tomorrow, in the admin's own calendar
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const minPickupDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
     const setParcel = (index: number, field: keyof Parcel, value: string) =>
         setData(
@@ -312,8 +335,14 @@ export default function OrderShip({
         event.preventDefault();
         if (!canSubmit) return;
 
+        // buying costs money: confirm price, pickup date and balance first
+        if (tab === 'label') {
+            setBuying(true);
+            return;
+        }
+
         // no tracking number: ask first (the customer gets no tracking link now)
-        if (tab === 'manual' && withoutNumber) {
+        if (withoutNumber) {
             setConfirming(true);
             return;
         }
@@ -323,11 +352,13 @@ export default function OrderShip({
 
     const emailHint = !shipped_email_enabled
         ? t('admin.orders.ship.email_disabled')
-        : tab === 'label' || !withoutNumber
-          ? t('admin.orders.ship.email_with_tracking')
-          : data.notify_customer
-            ? t('admin.orders.ship.email_now')
-            : t('admin.orders.ship.email_later');
+        : tab === 'label'
+          ? t('admin.orders.ship.email_on_pickup')
+          : !withoutNumber
+            ? t('admin.orders.ship.email_with_tracking')
+            : data.notify_customer
+              ? t('admin.orders.ship.email_now')
+              : t('admin.orders.ship.email_later');
 
     const address = order.shippingAddress;
     const addressWarnings = address
@@ -571,8 +602,24 @@ export default function OrderShip({
                                         )}
                                     </div>
 
-                                    {/* Options: insurance (COD never applies: payments go through Stripe) */}
+                                    {/* Options: pickup date, insurance (COD never applies: payments go through Stripe) */}
                                     <div className="space-y-3 border-b pb-4">
+                                        <div className="space-y-1.5">
+                                            <Label htmlFor="pickup_date" className="text-sm font-medium">
+                                                {t('admin.orders.ship.pickup_date')}
+                                            </Label>
+                                            <Input
+                                                id="pickup_date"
+                                                type="date"
+                                                className="max-w-48"
+                                                min={minPickupDate}
+                                                value={data.pickup_date}
+                                                onChange={(event) => setData('pickup_date', event.target.value)}
+                                                aria-invalid={!!errors.pickup_date}
+                                            />
+                                            <p className="text-xs text-muted-foreground">{t('admin.orders.ship.pickup_date_help')}</p>
+                                            {errors.pickup_date && <p className="text-sm text-destructive">{errors.pickup_date}</p>}
+                                        </div>
                                         <div className="flex items-center justify-between gap-3 text-sm">
                                             <div>
                                                 <span className="font-medium">{t('admin.orders.ship.options')}</span>
@@ -953,6 +1000,21 @@ export default function OrderShip({
                     </Card>
                 </form>
             </div>
+
+            {selected && data.pickup_date !== '' && (
+                <BuyLabelDialog
+                    open={buying}
+                    onOpenChange={setBuying}
+                    onConfirm={send}
+                    processing={processing}
+                    quote={selected}
+                    providerName={driverName(selected.provider)}
+                    pickupDate={data.pickup_date}
+                    margin={selected.margin_delta ?? customerPaid - selected.total_price}
+                    address={order.shippingAddress ?? null}
+                    balance={selectedBalance}
+                />
+            )}
 
             <AlertDialog open={confirming} onOpenChange={(open) => !open && !processing && setConfirming(false)}>
                 <AlertDialogContent>

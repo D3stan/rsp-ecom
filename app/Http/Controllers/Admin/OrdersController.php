@@ -604,8 +604,9 @@ class OrdersController extends Controller
             'insurance_amount' => 'sometimes|nullable|numeric|min:0|max:1000000',
             'cod_amount' => 'sometimes|nullable|numeric|min:0|max:1000000',
             'quote_token' => 'sometimes|nullable|string|max:191',
-            'pickup_date' => ['bail', Rule::requiredIf($wantsLabel), 'nullable', 'date_format:Y-m-d', function ($attribute, $value, $fail) {
-                if ($value !== null && ! \App\Shipping\Support\NextWorkingDay::isFutureWorkingDay($value)) {
+            // only a label purchase uses the date: a stale value from the other tab must not block a manual shipment
+            'pickup_date' => ! $wantsLabel ? ['nullable', 'date_format:Y-m-d'] : ['bail', 'required', 'date_format:Y-m-d', function ($attribute, $value, $fail) {
+                if (! \App\Shipping\Support\NextWorkingDay::isFutureWorkingDay($value)) {
                     $fail('The pickup date must be a future working day.');
                 }
             }],

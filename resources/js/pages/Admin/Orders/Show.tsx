@@ -140,6 +140,14 @@ interface Props {
         tracking_number: string | null;
         can_cancel: boolean;
         status?: string;
+        // Y-m-d the carrier collects the parcel
+        pickup_date?: string | null;
+        // the customer's shipped email is still waiting for the carrier's first scan
+        notify_on_pickup?: boolean;
+        // awaiting_payment: where the owner pays the draft, the draft's code and the provider's name
+        pay_url?: string | null;
+        draft_code?: string | null;
+        provider_name?: string;
     }>;
     stock?: StockInfo;
 }
@@ -192,10 +200,11 @@ export default function OrderShow({
 }: Props) {
     const { t, locale } = useTranslation();
     const [cancelShipmentId, setCancelShipmentId] = useState<number | null>(null);
+    const [checkingShipmentId, setCheckingShipmentId] = useState<number | null>(null);
     const carrierName = carriers.find((carrier) => carrier.code === order.tracking_carrier)?.name ?? order.tracking_carrier;
     // ?label=<shipment id>: the ship page just bought this label, offer to print it right away
     const labelId = Number(new URLSearchParams(usePage().url.split('?')[1] ?? '').get('label'));
-    const justBought = shipments.find((shipment) => shipment.id === labelId && shipment.status !== 'cancelled');
+    const justBought = shipments.find((shipment) => shipment.id === labelId && shipment.status === 'created');
     const [isUpdating, setIsUpdating] = useState(false);
     const [isAddingTracking, setIsAddingTracking] = useState(false);
     const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || '');
@@ -646,49 +655,124 @@ export default function OrderShow({
                                         {/* Label shipments: download the PDF, cancel at the carrier (optional label layer) */}
                                         {shipments.length > 0 && (
                                             <div className="space-y-2">
-                                                {shipments.map((shipment) => (
-                                                    <div
-                                                        key={shipment.id}
-                                                        className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm"
-                                                    >
-                                                        <span className="font-mono">{shipment.tracking_number ?? '—'}</span>
-                                                        {shipment.driver && (
-                                                            <Badge variant="secondary" className="text-xs">
-                                                                {shipment.driver}
-                                                            </Badge>
-                                                        )}
-                                                        {shipment.status === 'cancelled' ? (
-                                                            <Badge variant="outline" className="border-red-200 bg-red-50 text-xs text-red-700">
-                                                                {t('admin.orders.ship.status_cancelled')}
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge variant="outline" className="border-green-200 bg-green-50 text-xs text-green-700">
-                                                                {t('admin.orders.ship.status_active')}
-                                                            </Badge>
-                                                        )}
-                                                        <div className="ml-auto flex gap-2">
-                                                            <Button variant="outline" size="sm" asChild>
-                                                                <a
-                                                                    href={`/admin/orders/${order.id}/shipments/${shipment.id}/label`}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                >
-                                                                    {t('admin.orders.ship.download_label')}
-                                                                </a>
-                                                            </Button>
-                                                            {shipment.can_cancel && (
+                                                {shipments.map((shipment) =>
+                                                    shipment.status === 'awaiting_payment' ? (
+                                                        <div
+                                                            key={shipment.id}
+                                                            className="space-y-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100"
+                                                        >
+                                                            <div className="space-y-1">
+                                                                <p className="font-medium">
+                                                                    {t('admin.orders.ship.awaiting_payment_title', {
+                                                                        provider: shipment.provider_name ?? shipment.driver ?? '',
+                                                                    })}
+                                                                </p>
+                                                                <p>
+                                                                    {t('admin.orders.ship.awaiting_payment_body', {
+                                                                        provider: shipment.provider_name ?? shipment.driver ?? '',
+                                                                        code: shipment.draft_code ?? '',
+                                                                    })}
+                                                                </p>
+                                                                {shipment.pickup_date && (
+                                                                    <p className="text-xs">
+                                                                        {t('admin.orders.ship.confirm_pickup', { date: shipment.pickup_date })}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {shipment.pay_url && (
+                                                                    <Button size="sm" asChild>
+                                                                        <a href={shipment.pay_url} target="_blank" rel="noopener noreferrer">
+                                                                            {t('admin.orders.ship.pay_on_provider', {
+                                                                                provider: shipment.provider_name ?? shipment.driver ?? '',
+                                                                            })}
+                                                                        </a>
+                                                                    </Button>
+                                                                )}
                                                                 <Button
                                                                     variant="outline"
                                                                     size="sm"
-                                                                    className="text-red-600"
-                                                                    onClick={() => setCancelShipmentId(shipment.id)}
+                                                                    disabled={checkingShipmentId === shipment.id}
+                                                                    onClick={() => {
+                                                                        setCheckingShipmentId(shipment.id);
+                                                                        router.post(
+                                                                            `/admin/orders/${order.id}/shipments/${shipment.id}/complete`,
+                                                                            {},
+                                                                            { preserveScroll: true, onFinish: () => setCheckingShipmentId(null) },
+                                                                        );
+                                                                    }}
                                                                 >
-                                                                    {t('admin.orders.ship.cancel_shipment')}
+                                                                    {t('admin.orders.ship.check_payment')}
                                                                 </Button>
-                                                            )}
+                                                                {shipment.can_cancel && (
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="text-red-600"
+                                                                        onClick={() => setCancelShipmentId(shipment.id)}
+                                                                    >
+                                                                        {t('admin.orders.ship.cancel_shipment')}
+                                                                    </Button>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    ) : (
+                                                        <div
+                                                            key={shipment.id}
+                                                            className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm"
+                                                        >
+                                                            <span className="font-mono">{shipment.tracking_number ?? '—'}</span>
+                                                            {shipment.driver && (
+                                                                <Badge variant="secondary" className="text-xs">
+                                                                    {shipment.driver}
+                                                                </Badge>
+                                                            )}
+                                                            {shipment.status === 'cancelled' ? (
+                                                                <Badge variant="outline" className="border-red-200 bg-red-50 text-xs text-red-700">
+                                                                    {t('admin.orders.ship.status_cancelled')}
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="border-green-200 bg-green-50 text-xs text-green-700"
+                                                                >
+                                                                    {t('admin.orders.ship.label_ready')}
+                                                                </Badge>
+                                                            )}
+                                                            {shipment.pickup_date && (
+                                                                <span className="text-xs text-muted-foreground">
+                                                                    {t('admin.orders.ship.confirm_pickup', { date: shipment.pickup_date })}
+                                                                </span>
+                                                            )}
+                                                            {shipment.status !== 'cancelled' && shipment.notify_on_pickup && (
+                                                                <span className="basis-full text-xs text-muted-foreground">
+                                                                    {t('admin.orders.ship.email_on_pickup')}
+                                                                </span>
+                                                            )}
+                                                            <div className="ml-auto flex gap-2">
+                                                                <Button variant="outline" size="sm" asChild>
+                                                                    <a
+                                                                        href={`/admin/orders/${order.id}/shipments/${shipment.id}/label`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                    >
+                                                                        {t('admin.orders.ship.download_label')}
+                                                                    </a>
+                                                                </Button>
+                                                                {shipment.can_cancel && (
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="text-red-600"
+                                                                        onClick={() => setCancelShipmentId(shipment.id)}
+                                                                    >
+                                                                        {t('admin.orders.ship.cancel_shipment')}
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ),
+                                                )}
                                             </div>
                                         )}
 

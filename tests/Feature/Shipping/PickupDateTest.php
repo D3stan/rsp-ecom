@@ -184,3 +184,11 @@ it('lets the order quote endpoint take a pickup date, refusing one the carrier c
 
     expect(app(RateManager::class)->requestFromOrder($this->order, [], null, null, null, null, '2026-10-26')->pickupDate)->toBe('2026-10-26');
 });
+
+it('ignores a stale pickup date from the label tab when shipping manually', function () {
+    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), [
+        'tracking_carrier' => 'acme', 'tracking_number' => 'TYPED-1', 'pickup_date' => '2026-10-24',
+    ])->assertSessionHasNoErrors()->assertSessionHas('success');
+
+    expect($this->order->shipments()->first()->pickup_date)->toBeNull();
+});
