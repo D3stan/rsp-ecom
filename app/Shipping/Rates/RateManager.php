@@ -10,8 +10,11 @@ use App\Shipping\Rates\DTO\RateAddress;
 use App\Shipping\Rates\DTO\RateParcel;
 use App\Shipping\Rates\DTO\RateQuote;
 use App\Shipping\Rates\DTO\RateRequest;
+use App\Shipping\Rates\Exceptions\RateException;
 use App\Shipping\Rates\Exceptions\RateProviderUnavailable;
+use App\Shipping\Rates\Exceptions\RateRejected;
 use App\Shipping\Support\SenderAddress;
+use App\Shipping\Support\ShippingIssue;
 use Closure;
 use Illuminate\Support\Manager;
 use Illuminate\Support\Str;
@@ -69,7 +72,7 @@ class RateManager extends Manager
 
     /**
      * @param  list<string>|null  $drivers
-     * @return array{quotes: list<RateQuote>, errors: array<string, string>, balances: array<string, array<string, mixed>>}
+     * @return array{quotes: list<RateQuote>, errors: array<string, string>, balances: array<string, array<string, mixed>>, issues: list<ShippingIssue>}
      */
     public function quoteAll(RateRequest $request, ?array $drivers = null): array
     {
@@ -77,12 +80,15 @@ class RateManager extends Manager
         $quotes = [];
         $errors = [];
         $balances = [];
+        $issues = [];
 
         foreach ($driverNames as $name) {
             try {
                 $provider = $this->driver($name);
             } catch (Throwable $e) {
                 $errors[$name] = $e->getMessage();
+                array_push($issues, ...self::issuesOf($name, $e));
+
                 continue;
             }
 
@@ -93,6 +99,7 @@ class RateManager extends Manager
                 }
             } catch (Throwable $e) {
                 $errors[$name] = $e->getMessage();
+                array_push($issues, ...self::issuesOf($name, $e));
             }
 
             if ($provider instanceof InspectsBalance) {
@@ -110,7 +117,18 @@ class RateManager extends Manager
             'quotes' => $quotes,
             'errors' => $errors,
             'balances' => $balances,
+            'issues' => $issues,
         ];
+    }
+
+    /** @return list<ShippingIssue> */
+    private static function issuesOf(string $provider, Throwable $e): array
+    {
+        if ($e instanceof RateException && $e->issues !== []) {
+            return $e->issues;
+        }
+
+        return [new ShippingIssue($provider, $e instanceof RateRejected ? ShippingIssue::OTHER : ShippingIssue::UNAVAILABLE, null, 'error', $e->getMessage())];
     }
 
     public function senderFromSettings(): RateAddress
@@ -165,6 +183,7 @@ class RateManager extends Manager
         foreach ($parcels as $parcel) {
             if ($parcel instanceof RateParcel) {
                 $builtParcels[] = $parcel;
+
                 continue;
             }
 

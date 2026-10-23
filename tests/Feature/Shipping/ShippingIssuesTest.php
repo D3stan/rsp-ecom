@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Order;
+use App\Models\User;
 use App\Shipping\Auth\BearerTokenAuthenticator;
 use App\Shipping\Providers\Spediamo\SpediamoRateProvider;
 use App\Shipping\Rates\DTO\RateAddress;
@@ -87,4 +89,39 @@ it('reports a missing Dvaexpress recipient postal code as an address issue', fun
     } catch (RateRejected $e) {
         expect($e->issues[0]->toArray())->toMatchArray(['kind' => 'address', 'field' => 'recipient.postal_code', 'code' => 'required']);
     }
+});
+
+it('returns provider issues next to the error strings from quoteAll', function () {
+    config(['shipping.providers.spediamo.token' => 't', 'shipping.providers.spediamo.base_url' => 'https://api.spediamo.it']);
+    Http::fake(['api.spediamo.it/v1/shipments' => Http::response(spediamoProbe('reject_invalid_recipient_postal_code')['response'], 400)]);
+
+    $result = app(RateManager::class)->quoteAll(new RateRequest(
+        sender: new RateAddress('47522', 'Cesena', 'FC', 'IT'),
+        recipient: new RateAddress('48105', 'Cervia', 'RA', 'IT'),
+        parcels: [new RateParcel(weightKg: 1)],
+    ), ['spediamo']);
+
+    expect($result['errors'])->toHaveKey('spediamo')
+        ->and($result['issues'][0]->field)->toBe('recipient.postal_code');
+});
+
+it('wraps an exception without issues as one issue so nothing is lost', function () {
+    $result = app(RateManager::class)->quoteAll(new RateRequest(
+        sender: new RateAddress('47522', 'Cesena', 'FC', 'IT'),
+        recipient: new RateAddress('48015', 'Cervia', 'RA', 'IT'),
+        parcels: [new RateParcel(weightKg: 1)],
+    ), ['nope']);
+
+    expect($result['issues'][0]->toArray())->toMatchArray(['provider' => 'nope', 'kind' => 'unavailable']);
+});
+
+it('adds the store-side recipient issues to the order quotes response', function () {
+    $order = Order::factory()->create(['user_id' => null, 'guest_email' => 'g@example.test', 'status' => 'processing', 'payment_status' => 'succeeded']);
+    $order->shippingAddress->update(['postal_code' => '48015', 'state' => 'RA', 'country' => 'IT', 'address_line_1' => 'Via Roma 1', 'phone' => '']);
+
+    $issues = test()->actingAs(User::factory()->create(['role' => 'admin']))
+        ->postJson(route('admin.orders.quotes', $order), ['drivers' => ['fake']])
+        ->assertOk()->json('issues');
+
+    expect(collect($issues)->where('field', 'recipient.phone')->first())->toMatchArray(['provider' => 'store', 'kind' => 'address', 'code' => 'required']);
 });

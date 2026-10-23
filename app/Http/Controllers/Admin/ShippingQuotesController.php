@@ -11,6 +11,8 @@ use App\Shipping\Rates\DTO\RateQuote;
 use App\Shipping\Rates\DTO\RateRequest;
 use App\Shipping\Rates\RateManager;
 use App\Shipping\ShippingService;
+use App\Shipping\Support\RecipientAddressCheck;
+use App\Shipping\Support\ShippingIssue;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -181,6 +183,10 @@ class ShippingQuotesController extends Controller
             'quotes' => $quotes,
             'errors' => $result['errors'],
             'balances' => $result['balances'],
+            'issues' => array_map(
+                fn (ShippingIssue $issue) => $issue->toArray(),
+                [...RecipientAddressCheck::issues($rateRequest->recipient), ...$result['issues']],
+            ),
             'customer_shipping_cost' => round($customerShippingCost, 2),
         ]);
     }
