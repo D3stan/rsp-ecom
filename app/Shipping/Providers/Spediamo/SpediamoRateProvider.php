@@ -74,7 +74,7 @@ class SpediamoRateProvider implements RateProvider
 
             if ($errors !== []) {
                 $errorMsg = $this->formatErrors($errors);
-                $e = new RateRejected(self::NAME.': '.$errorMsg);
+                $e = (new RateRejected(self::NAME.': '.$errorMsg))->withIssues(SpediamoIssueMapper::fromErrors($errors));
                 if (method_exists($e, 'withHttpStatus')) {
                     $e->withHttpStatus($response->status());
                 }
@@ -285,7 +285,8 @@ class SpediamoRateProvider implements RateProvider
 
         if (in_array($status, [400, 404, 422], true)) {
             $msg = $this->extractErrorMessage($response);
-            $ex = new RateRejected($msg ?? self::NAME.': HTTP '.$status);
+            $ex = (new RateRejected($msg ?? self::NAME.': HTTP '.$status))
+                ->withIssues(SpediamoIssueMapper::fromErrors((array) ($response->json('errors') ?? [])));
             if (method_exists($ex, 'withHttpStatus')) {
                 $ex->withHttpStatus($status);
             }
