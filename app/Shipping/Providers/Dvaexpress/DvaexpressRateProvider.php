@@ -190,12 +190,29 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
                 continue;
             }
 
+            $vettore = (string) ($item['vettore'] ?? $item['famiglia'] ?? '');
+            $famiglia = (string) ($item['famiglia'] ?? '');
+            $nomeVettore = (string) ($item['nome_vettore'] ?? '');
+            $totalPrice = (float) ($item['totale_dovuto'] ?? 0.0);
+
+            $vettoreUpper = strtoupper(trim($vettore));
+            $famigliaUpper = strtoupper(trim($famiglia));
+            $nomeVettoreUpper = strtoupper(trim($nomeVettore));
+
+            // Exclude manual quote request services (e.g. DVA / DVALM "QUOTAZIONE" entries with €0.01 dummy fees)
+            if (
+                in_array($vettoreUpper, ['DVA', 'DVALM'], true) ||
+                in_array($famigliaUpper, ['DVA', 'DVALM'], true) ||
+                str_starts_with($nomeVettoreUpper, 'QUOTAZIONE') ||
+                $totalPrice <= 0.01
+            ) {
+                continue;
+            }
+
             $preferred = (property_exists($request, 'carrierCode') && $request->carrierCode !== null && trim($request->carrierCode) !== '')
                 ? [trim($request->carrierCode)]
                 : null;
 
-            $vettore = (string) ($item['vettore'] ?? $item['famiglia'] ?? '');
-            $famiglia = (string) ($item['famiglia'] ?? '');
             $carrierCode = $this->carriers->fromProvider($vettore, $preferred)
                 ?? ($this->carriers->fromProvider($famiglia, $preferred)
                 ?? strtolower($famiglia !== '' ? $famiglia : $vettore));
@@ -203,7 +220,6 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
             $carrierName = (string) ($item['nome_vettore'] ?? ($famiglia !== '' ? $famiglia : $vettore));
             $serviceName = ((string) ($item['consegna'] ?? '')) === 'E' ? 'Express' : 'Standard';
             $netPrice = (float) ($item['totale_dovuto'] ?? 0.0);
-            $totalPrice = (float) ($item['totale_dovuto'] ?? 0.0);
             $listPrice = isset($item['importo_tariffa']) && $item['importo_tariffa'] !== null ? (float) $item['importo_tariffa'] : null;
             $taxableWeightKg = isset($item['peso_volumetrico']) && $item['peso_volumetrico'] !== null ? (float) $item['peso_volumetrico'] : null;
             $dimApplied = $taxableWeightKg !== null && $taxableWeightKg > $actualWeight;

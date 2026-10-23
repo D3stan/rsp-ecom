@@ -115,6 +115,69 @@ it('dvaexpress rate provider parses quotation.json into RateQuote DTOs and balan
     });
 });
 
+it('dvaexpress rate provider ignores 0.01 placeholder quote request entries like DVA and DVALM', function () {
+    $quotationFixture = [
+        'result' => 'OK',
+        'errorcode' => 0,
+        'quotation' => [
+            [
+                'codice_offerta' => 'dva-placeholder-1',
+                'vettore' => 'DVA',
+                'famiglia' => 'DVA',
+                'nome_vettore' => 'QUOTAZIONE',
+                'consegna' => 'E',
+                'totale_dovuto' => '0.01',
+                'messaggio_tariffa' => 'Da qui puoi richiedere un preventivo in tempo reale...',
+            ],
+            [
+                'codice_offerta' => 'dvalm-placeholder-2',
+                'vettore' => 'DVALM',
+                'famiglia' => 'DVALM',
+                'nome_vettore' => 'QUOTAZIONE - LAST MINUTE',
+                'consegna' => 'E',
+                'totale_dovuto' => '0.01',
+                'messaggio_tariffa' => 'Da qui puoi richiedere un preventivo in tempo reale per una spedizione LAST MINUTE...',
+            ],
+            [
+                'codice_offerta' => 'sda-real-quote',
+                'vettore' => 'SDAM',
+                'famiglia' => 'SDA',
+                'nome_vettore' => 'SDA',
+                'consegna' => 'E',
+                'totale_dovuto' => '6.90',
+                'importo_tariffa' => '10.62',
+            ],
+        ],
+    ];
+
+    Http::fake([
+        'https://api.easyparcel.it/quotation/test-dva-rate-key*' => Http::response($quotationFixture, 200),
+    ]);
+
+    $config = [
+        'base_url' => 'https://api.easyparcel.it',
+        'api_key' => 'test-dva-rate-key',
+        'carrier_map' => [
+            'sda' => 'SDAM',
+            'brt' => 'BRT',
+        ],
+    ];
+
+    $provider = new DvaexpressRateProvider($config);
+    $request = new RateRequest(
+        sender: new RateAddress(postalCode: '20100', city: 'Milano', province: 'MI', country: 'IT'),
+        recipient: new RateAddress(postalCode: '00100', city: 'Roma', province: 'RM', country: 'IT'),
+        parcels: [new RateParcel(weightKg: 2.0)],
+    );
+
+    $quotes = $provider->quote($request);
+
+    // Only real courier quote should be retained; 0.01 quote requests are filtered out
+    expect($quotes)->toHaveCount(1)
+        ->and($quotes[0]->carrierCode)->toBe('sda')
+        ->and($quotes[0]->totalPrice)->toBe(6.90);
+});
+
 /*
 |--------------------------------------------------------------------------
 | 2. SpediamoRateProvider: quote() and auto-cleanup of draft
