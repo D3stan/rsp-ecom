@@ -16,6 +16,7 @@ use App\Models\Refund;
 use App\Models\Shipment;
 use App\Services\EmailService;
 use App\Services\RefundService;
+use App\Shipping\Labels\Exceptions\LabelException;
 use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
 use App\Shipping\Labels\Exceptions\LabelRejected;
 use App\Shipping\Labels\ShipmentBuilder;
@@ -165,13 +166,21 @@ class OrdersController extends Controller
             ],
             'carriers' => app(TrackingManager::class)->carriers(),
             // Label shipments (newest first): "Download label" and "Cancel shipment" on the order page
-            'shipments' => $order->shipments()->whereNotNull('label_path')->reorder()->latest('id')->get()
+            'shipments' => $order->shipments()
+                ->where(fn ($query) => $query->whereNotNull('label_path')->orWhere('status', Shipment::STATUS_AWAITING_PAYMENT))
+                ->reorder()->latest('id')->get()
                 ->map(fn (Shipment $shipment) => [
                     'id' => $shipment->id,
                     'status' => $shipment->status,
                     'carrier_code' => $shipment->carrier_code,
                     'driver' => $shipment->driver,
                     'tracking_number' => $shipment->tracking_number,
+                    'pickup_date' => $shipment->pickup_date?->toDateString(),
+                    'notify_on_pickup' => $shipment->notify_on_pickup,
+                    // a draft the owner still has to pay on the carrier's site (the label comes after "Check payment")
+                    'pay_url' => $shipment->status === Shipment::STATUS_AWAITING_PAYMENT ? ($shipment->request_payload['pay_url'] ?? null) : null,
+                    'draft_code' => $shipment->status === Shipment::STATUS_AWAITING_PAYMENT ? $shipment->tracking_number : null,
+                    'provider_name' => app(ShippingService::class)->providerNames()[$shipment->driver] ?? $shipment->driver,
                     'can_cancel' => in_array($shipment->status, Shipment::ACTIVE_STATUSES, true) && $this->driverCancels($shipment),
                 ])->values()->all(),
             // Internal stock bookkeeping (hidden from every customer-facing array): units sold beyond the stock
@@ -658,6 +667,28 @@ class OrdersController extends Controller
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="label-'.$order->order_number.'.pdf"',
         ]);
+    }
+
+    /**
+     * "Check payment" on a draft that is paid on the carrier's own site: when the carrier shows it as paid, fetch the label.
+     */
+    public function completeShipment(Order $order, Shipment $shipment, ShippingService $shipping): RedirectResponse
+    {
+        abort_unless($shipment->order_id === $order->id, 404);
+
+        try {
+            $paid = $shipping->completePurchase($shipment);
+        } catch (LabelException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        if (! $paid) {
+            $name = $shipping->providerNames()[$shipment->driver] ?? 'The carrier';
+
+            return back()->with('warning', "{$name} still shows this shipment as unpaid. Pay it on {$name}, then check again.");
+        }
+
+        return back()->with('success', 'Payment received, the label is ready to download.');
     }
 
     /**

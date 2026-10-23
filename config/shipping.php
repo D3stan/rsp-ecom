@@ -1,5 +1,8 @@
 <?php
 
+use App\Shipping\Providers\Dvaexpress\DvaexpressManifest;
+use App\Shipping\Providers\Spediamo\SpediamoManifest;
+
 return [
 
     /*
@@ -67,14 +70,16 @@ return [
     */
 
     'manifests' => [
-        \App\Shipping\Providers\Spediamo\SpediamoManifest::class,
-        \App\Shipping\Providers\Dvaexpress\DvaexpressManifest::class,
+        SpediamoManifest::class,
+        DvaexpressManifest::class,
     ],
 
     'providers' => [
         'spediamo' => [
             'base_url' => env('SHIPPING_TRACKING_SPEDIAMO_URL', 'https://api.spediamo.it'),
             'token' => env('SHIPPING_TRACKING_SPEDIAMO_TOKEN'),
+            // where the owner pays a label draft (the API has no pay operation)
+            'purchase_url' => env('SPEDIAMO_PURCHASE_URL', 'https://spediamo.it/app/v1#/spedizioni/da-acquistare'),
             'carrier_map' => [
                 'sda' => 'SDA',
                 'poste' => 'SDA',

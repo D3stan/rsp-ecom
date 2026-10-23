@@ -9,6 +9,8 @@ use App\Models\Shipment;
 use App\Models\User;
 use App\Services\EmailService;
 use App\Shipping\Labels\Contracts\CancelsShipments;
+use App\Shipping\Labels\Contracts\ConfirmsPayment;
+use App\Shipping\Labels\Contracts\LabelProvider;
 use App\Shipping\Labels\DTO\ShipmentResult;
 use App\Shipping\Labels\Exceptions\LabelException;
 use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
@@ -191,24 +193,15 @@ class ShippingService
 
         $request = $this->builder->build($order, $input->carrierCode, $input->parcels, $input->insuranceAmount, $input->codAmount, $input->quoteToken, $input->pickupDate);
 
-        // 1. Carrier creates the shipment and the label (may throw LabelRejected / LabelProviderUnavailable)
+        // 1. Carrier creates the shipment (may throw LabelRejected / LabelProviderUnavailable). A draft that still has to
+        // be paid on the carrier's site has no label yet: it is fetched later by completePurchase().
         $result = $provider->createShipment($request);
-        $document = $provider->label($result);
 
-        // When a label provider obtains the carrier's real waybill number during waybill generation,
-        // promote it onto the ShipmentResult so the customer and order receive the real waybill.
-        if ($document->trackingNumber !== null && trim($document->trackingNumber) !== '') {
-            $result = new ShipmentResult(
-                externalId: $result->externalId,
-                trackingNumber: trim($document->trackingNumber),
-                carrierCode: $result->carrierCode,
-                raw: array_merge($result->raw, ['trackingNumber' => trim($document->trackingNumber)]),
-            );
+        // 2. Fetch the label and store the PDF on the private disk before any DB change, so the label is never lost
+        $path = null;
+        if (! $result->awaitingPayment) {
+            [$result, $path] = $this->fetchAndStoreLabel($provider, $result, $order);
         }
-
-        // 2. Store the PDF on the private disk before any DB change, so the label is never lost
-        $path = sprintf('labels/%d/%s.pdf', $order->id, Str::uuid());
-        Storage::disk(self::LABEL_DISK)->put($path, $document->contents);
 
         $shipmentDriver = $result->raw['driver'] ?? $provider->name();
         $trackingDriver = $this->resolveTrackingDriverForLabel($input, $shipmentDriver);
@@ -225,7 +218,7 @@ class ShippingService
                     'tracking_number' => $result->trackingNumber,
                     'label_path' => $path,
                     'pickup_date' => $input->pickupDate,
-                    'status' => Shipment::STATUS_CREATED,
+                    'status' => $result->awaitingPayment ? Shipment::STATUS_AWAITING_PAYMENT : Shipment::STATUS_CREATED,
                     'request_payload' => $result->raw ?: null,
                     'created_by' => $actor->getKey(),
                 ]);
@@ -272,6 +265,33 @@ class ShippingService
     }
 
     /**
+     * Fetch the label PDF of a bought shipment and keep it on the private disk.
+     *
+     * @return array{0: ShipmentResult, 1: string} the result (carrying the carrier's real waybill number when the label
+     *                                             step revealed it) and the stored path
+     */
+    private function fetchAndStoreLabel(LabelProvider $provider, ShipmentResult $result, Order $order): array
+    {
+        $document = $provider->label($result);
+
+        // When a label provider obtains the carrier's real waybill number during waybill generation,
+        // promote it onto the ShipmentResult so the customer and order receive the real waybill.
+        if ($document->trackingNumber !== null && trim($document->trackingNumber) !== '') {
+            $result = new ShipmentResult(
+                externalId: $result->externalId,
+                trackingNumber: trim($document->trackingNumber),
+                carrierCode: $result->carrierCode,
+                raw: array_merge($result->raw, ['trackingNumber' => trim($document->trackingNumber)]),
+            );
+        }
+
+        $path = sprintf('labels/%d/%s.pdf', $order->id, Str::uuid());
+        Storage::disk(self::LABEL_DISK)->put($path, $document->contents);
+
+        return [$result, $path];
+    }
+
+    /**
      * Determine the order's tracking_driver when a label is created via API:
      * explicit input wins; otherwise use the label provider's name if it is a registered pollable tracking driver.
      */
@@ -298,6 +318,46 @@ class ShippingService
         }
 
         return Storage::disk(self::LABEL_DISK)->get($shipment->label_path);
+    }
+
+    /**
+     * An awaiting_payment shipment: ask the carrier whether it has been paid and, if so, fetch the label and finish it.
+     * Returns false while it is still unpaid (nothing changes).
+     *
+     * @throws LabelException
+     */
+    public function completePurchase(Shipment $shipment): bool
+    {
+        if ($shipment->status !== Shipment::STATUS_AWAITING_PAYMENT || ! $shipment->external_id) {
+            throw new LabelRejected('This shipment is not waiting for payment.');
+        }
+
+        $provider = $this->labels->driver($shipment->driver);
+
+        if (! $provider instanceof ConfirmsPayment) {
+            throw new LabelRejected('This carrier does not need a separate payment.');
+        }
+
+        $paid = $provider->confirmPurchase($shipment->external_id);
+
+        if ($paid === null) {
+            return false;
+        }
+
+        $order = $shipment->order;
+        [$paid, $path] = $this->fetchAndStoreLabel($provider, $paid, $order);
+
+        $shipment->update([
+            'status' => Shipment::STATUS_CREATED,
+            'tracking_number' => $paid->trackingNumber,
+            'label_path' => $path,
+            'request_payload' => array_merge((array) $shipment->request_payload, $paid->raw),
+        ]);
+
+        // query builder: Order::updating would wipe the tracking status and polling schedule
+        Order::query()->whereKey($order->id)->toBase()->update(['tracking_number' => $paid->trackingNumber]);
+
+        return true;
     }
 
     /**
@@ -405,7 +465,7 @@ class ShippingService
         }
     }
 
-    private function recordOrphanShipment(Order $order, ShipInput $input, ShipmentResult $result, string $path, User $actor, string $driver): void
+    private function recordOrphanShipment(Order $order, ShipInput $input, ShipmentResult $result, ?string $path, User $actor, string $driver): void
     {
         try {
             $order->shipments()->create([
@@ -415,7 +475,7 @@ class ShippingService
                 'tracking_number' => $result->trackingNumber,
                 'label_path' => $path,
                 'pickup_date' => $input->pickupDate,
-                'status' => Shipment::STATUS_CREATED,
+                'status' => $result->awaitingPayment ? Shipment::STATUS_AWAITING_PAYMENT : Shipment::STATUS_CREATED,
                 'request_payload' => $result->raw ?: null,
                 'created_by' => $actor->getKey(),
             ]);

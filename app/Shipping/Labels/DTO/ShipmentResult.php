@@ -16,5 +16,7 @@ final readonly class ShipmentResult
         public string $trackingNumber,
         public string $carrierCode,
         public array $raw = [],
+        /** A draft only: the carrier still has to be paid before a label exists (see ConfirmsPayment). */
+        public bool $awaitingPayment = false,
     ) {}
 }

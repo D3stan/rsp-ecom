@@ -5,6 +5,7 @@ namespace App\Shipping\Providers\Spediamo;
 use App\Shipping\Auth\BearerTokenAuthenticator;
 use App\Shipping\Exceptions\ShippingCredentialsException;
 use App\Shipping\Labels\Contracts\CancelsShipments;
+use App\Shipping\Labels\Contracts\ConfirmsPayment;
 use App\Shipping\Labels\Contracts\LabelProvider;
 use App\Shipping\Labels\DTO\LabelDocument;
 use App\Shipping\Labels\DTO\ShipmentRequest;
@@ -25,17 +26,25 @@ use Throwable;
  *   GET  {base_url}/v1/waybills/{id}/pdf    download the label PDF
  *       Authorization: Bearer {token}
  *
+ * The API cannot pay a draft: createShipment() returns it flagged awaitingPayment (the owner pays it on Spediamo with
+ * their prepaid balance) and confirmPurchase() later reads GET /v1/shipments/{id} to see whether it has been bought.
+ * Statuses (Spediamo docs): draft = not bought, booked = bought, ready = scheduled for pickup, current = on its way,
+ * on_hold, underpaid, failed. The response of a PAID shipment has not been recorded from the live API yet.
+ *
  * It reuses the shared bearer authenticator and the SAME credentials
  * (shipping.tracking.drivers.spediamo via config('shipping.labels.drivers.spediamo')): no duplicate env var.
  * Failures become the label layer's own exceptions: 400/404/422 -> LabelRejected (shown to the admin);
  * 401/403/408/429/5xx, timeouts and a missing token -> LabelProviderUnavailable (retry). Nothing here logs the token,
  * headers or bodies: exception messages carry the HTTP status only.
  */
-class SpediamoLabelProvider implements CancelsShipments, LabelProvider
+class SpediamoLabelProvider implements CancelsShipments, ConfirmsPayment, LabelProvider
 {
     public const NAME = 'spediamo';
 
     private const DEFAULT_BASE_URL = 'https://api.spediamo.it';
+
+    /** Statuses of a shipment that has been bought (anything else, including an unknown status, counts as unpaid). */
+    private const PAID_STATUSES = ['BOOKED', 'READY', 'CURRENT', 'ON_HOLD'];
 
     private readonly string $baseUrl;
 
@@ -133,11 +142,43 @@ class SpediamoLabelProvider implements CancelsShipments, LabelProvider
             $id = $tracking;
         }
 
+        $raw = array_intersect_key($data, array_flip(['id', 'shipmentId', 'trackingNumber', 'code', 'tracking_code', 'courier', 'status', 'waybillAvailable']));
+        $awaitingPayment = $status === 'DRAFT';
+
+        if ($awaitingPayment && ($this->config['purchase_url'] ?? '') !== '') {
+            $raw['pay_url'] = (string) $this->config['purchase_url'];
+        }
+
         return new ShipmentResult(
             externalId: $id,
             trackingNumber: $tracking,
             carrierCode: $request->carrierCode,
-            raw: array_intersect_key($data, array_flip(['id', 'shipmentId', 'trackingNumber', 'code', 'tracking_code', 'courier', 'status', 'waybillAvailable'])),
+            raw: $raw,
+            awaitingPayment: $awaitingPayment,
+        );
+    }
+
+    public function confirmPurchase(string $externalId): ?ShipmentResult
+    {
+        $data = $this->send(fn (PendingRequest $http) => $http->get("/v1/shipments/{$externalId}"), method: 'get')->json();
+
+        if (! is_array($data)) {
+            throw new LabelProviderUnavailable(self::NAME.': unexpected response');
+        }
+
+        $status = strtoupper(trim((string) ($data['status'] ?? '')));
+
+        if (! in_array($status, self::PAID_STATUSES, true)) {
+            return null;
+        }
+
+        $tracking = trim((string) ($data['trackingNumber'] ?? $data['code'] ?? ''));
+
+        return new ShipmentResult(
+            externalId: $externalId,
+            trackingNumber: $tracking !== '' ? $tracking : $externalId,
+            carrierCode: '',
+            raw: array_intersect_key($data, array_flip(['id', 'trackingNumber', 'code', 'courier', 'status', 'waybillAvailable'])),
         );
     }
 

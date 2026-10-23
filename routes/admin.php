@@ -29,6 +29,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('orders/{order}/quotes', [ShippingQuotesController::class, 'quoteOrder'])->name('orders.quotes');
     // Optional label layer: stream a shipment's label PDF, cancel a shipment at the carrier
     Route::get('orders/{order}/shipments/{shipment}/label', [OrdersController::class, 'downloadLabel'])->scopeBindings()->name('orders.shipments.label');
+    Route::post('orders/{order}/shipments/{shipment}/complete', [OrdersController::class, 'completeShipment'])->scopeBindings()->name('orders.shipments.complete');
     Route::delete('orders/{order}/shipments/{shipment}', [OrdersController::class, 'cancelShipment'])->scopeBindings()->name('orders.shipments.cancel');
     Route::patch('orders/{order}/status', [OrdersController::class, 'updateStatus'])->name('orders.update-status');
     Route::patch('orders/{order}/cancel', [OrdersController::class, 'cancel'])->name('orders.cancel');
