@@ -80,3 +80,34 @@ it('tests mock HTTP request payloads for spediamo and dvaexpress with --raw', fu
         ->expectsOutputToContain('>>>> POST https://api.easyparcel.it/quotation/mock-key')
         ->assertSuccessful();
 });
+
+it('displays the exact Spediamo validation errors when running shipping:test-rates', function () {
+    Http::fake([
+        'https://api.spediamo.it/v1/shipments*' => Http::response([
+            'errors' => [
+                [
+                    'field' => 'packages[0].quantity',
+                    'code' => 'integer',
+                    'message' => 'Deve essere un numero senza virgole',
+                ],
+                [
+                    'field' => 'senderPostalCode',
+                    'code' => 'invalid',
+                    'message' => 'Non valido',
+                ],
+            ],
+            'warnings' => null,
+        ], 400),
+    ]);
+
+    $this->artisan('shipping:test-rates', [
+        '--driver' => 'spediamo',
+        '--token' => 'mock-token',
+        '--sender-cap' => '20100',
+        '--sender-city' => 'Milano',
+        '--sender-prov' => 'MI',
+    ])
+        ->expectsOutputToContain('--- Provider Errors ---')
+        ->expectsOutputToContain('field: packages[0].quantity')
+        ->assertFailed();
+});

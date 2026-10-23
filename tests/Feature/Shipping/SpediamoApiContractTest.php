@@ -35,6 +35,14 @@ use Illuminate\Support\Facades\Http;
 |    {"errors":[{"field":"type","code":"invalid","message":"Non valido"}]}
 |    Package dimensions belong in the "packages" parameter (e.g. "1x1x35x25x8").
 |
+| 3. Package formatting & sender postal code validation:
+|    - If packages omits quantity and sends weight first (e.g. "2.5x30x25x20"),
+|      Spediamo maps the first token to packages[0].quantity and fails with:
+|      {"errors":[{"field":"packages[0].quantity","code":"integer","message":"Deve essere un numero senza virgole"}]}
+|    - If senderPostalCode is an obsolete generic code like "20100" instead of a real
+|      Milano delivery CAP (e.g. 20121, 20124), Spediamo returns:
+|      {"errors":[{"field":"senderPostalCode","code":"invalid","message":"Non valido"}]}
+|
 */
 
 it('reproduces the exact Spediamo error mapping for required type field', function () {
@@ -184,4 +192,81 @@ it('inspects the outgoing payload structure mapped by SpediamoLabelRequestMapper
     // Shows that SpediamoLabelRequestMapper sets 'type' => 'DOMESTIC'
     expect($mapped['type'])->toBe('DOMESTIC')
         ->and($mapped['packages'])->toBe('1x1x35x25x8');
+});
+
+it('reproduces the exact Spediamo error when packages[0].quantity has decimals and senderPostalCode is invalid', function () {
+    Http::fake([
+        'https://api.spediamo.it/v1/shipments' => Http::response([
+            'errors' => [
+                [
+                    'field' => 'packages[0].quantity',
+                    'code' => 'integer',
+                    'message' => 'Deve essere un numero senza virgole',
+                ],
+                [
+                    'field' => 'senderPostalCode',
+                    'code' => 'invalid',
+                    'message' => 'Non valido',
+                ],
+            ],
+            'warnings' => null,
+        ], 400),
+    ]);
+
+    $provider = new SpediamoRateProvider(
+        ['base_url' => 'https://api.spediamo.it', 'token' => 'dummy-token'],
+        new BearerTokenAuthenticator('dummy-token'),
+    );
+
+    // RateRequest using 20100 (generic legacy Milano CAP) and a decimal parcel
+    $rateRequest = new RateRequest(
+        sender: new RateAddress(postalCode: '20100', city: 'Milano', province: 'MI', country: 'IT'),
+        recipient: new RateAddress(postalCode: '48015', city: 'Cervia', province: 'RA', country: 'IT'),
+        parcels: [new RateParcel(weightKg: 2.5, lengthCm: 30, widthCm: 25, heightCm: 20)],
+    );
+
+    expect(fn () => $provider->quote($rateRequest))
+        ->toThrow(
+            RateRejected::class,
+            'field: packages[0].quantity; code: integer; message: Deve essere un numero senza virgole, field: senderPostalCode; code: invalid; message: Non valido'
+        );
+});
+
+it('reproduces the exact combined error surfaced to the admin UI via RateManager', function () {
+    Http::fake([
+        'https://api.spediamo.it/v1/shipments' => Http::response([
+            'errors' => [
+                [
+                    'field' => 'packages[0].quantity',
+                    'code' => 'integer',
+                    'message' => 'Deve essere un numero senza virgole',
+                ],
+                [
+                    'field' => 'senderPostalCode',
+                    'code' => 'invalid',
+                    'message' => 'Non valido',
+                ],
+            ],
+            'warnings' => null,
+        ], 400),
+    ]);
+
+    config([
+        'shipping.providers.spediamo.token' => 'dummy-token',
+        'shipping.providers.spediamo.base_url' => 'https://api.spediamo.it',
+    ]);
+
+    $manager = app(RateManager::class);
+    $rateRequest = new RateRequest(
+        sender: new RateAddress(postalCode: '20100', city: 'Milano', province: 'MI', country: 'IT'),
+        recipient: new RateAddress(postalCode: '48015', city: 'Cervia', province: 'RA', country: 'IT'),
+        parcels: [new RateParcel(weightKg: 2.5, lengthCm: 30, widthCm: 25, heightCm: 20)],
+    );
+
+    $result = $manager->quoteAll($rateRequest, ['spediamo']);
+
+    expect($result['errors'])->toHaveKey('spediamo')
+        ->and($result['errors']['spediamo'])->toBe(
+            'field: packages[0].quantity; code: integer; message: Deve essere un numero senza virgole, field: senderPostalCode; code: invalid; message: Non valido'
+        );
 });
