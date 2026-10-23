@@ -64,7 +64,7 @@ class SpediamoLabelRequestMapper
             'recipientPhone' => $recipient->phone,
             'recipientEmail' => $recipient->email,
             'referenceNumber' => $request->reference,
-            // one "packages" line per parcel: "weight x length x width x height" (cm/kg)
+            // one "packages" line per parcel: "quantity x weight x length x width x height" (cm/kg)
             'packages' => $this->packages($request),
         ];
 
@@ -108,7 +108,9 @@ class SpediamoLabelRequestMapper
         $lines = [];
 
         foreach ($request->parcels as $parcel) {
+            $qty = max(1, (int) ($parcel->quantity ?? 1));
             $lines[] = implode('x', [
+                $qty,
                 $this->num($parcel->weightKg),
                 $this->num($parcel->lengthCm ?? 0),
                 $this->num($parcel->widthCm ?? 0),
@@ -122,12 +124,16 @@ class SpediamoLabelRequestMapper
             $width = (float) ($this->defaultParcel['width'] ?? $this->defaultParcel['widthCm'] ?? $this->defaultParcel['width_cm'] ?? 0);
             $height = (float) ($this->defaultParcel['height'] ?? $this->defaultParcel['heightCm'] ?? $this->defaultParcel['height_cm'] ?? 0);
 
-            $lines[] = implode('x', [
-                $this->num($weight),
-                $this->num($length),
-                $this->num($width),
-                $this->num($height),
-            ]);
+            $w = $this->num($weight);
+            $l = $this->num($length);
+            $wi = $this->num($width);
+            $h = $this->num($height);
+
+            $lines[] = "1x{$w}x{$l}x{$wi}x{$h}";
+        }
+
+        if (empty($lines)) {
+            $lines[] = '1x1x10x10x10';
         }
 
         return implode(',', $lines);

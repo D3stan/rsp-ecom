@@ -22,7 +22,7 @@ class TestShippingRates extends Command
     protected $signature = 'shipping:test-rates
                             {--driver= : Test specific driver (fake, or any registered rate driver)}
                             {--order= : Order ID or order number to load recipient and items from}
-                            {--dest-cap=48105 : Recipient postal code}
+                            {--dest-cap=48015 : Recipient postal code}
                             {--dest-city=Cervia : Recipient city}
                             {--dest-prov=RA : Recipient province}
                             {--dest-country=IT : Recipient country}

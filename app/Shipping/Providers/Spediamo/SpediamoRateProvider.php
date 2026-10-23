@@ -190,20 +190,17 @@ class SpediamoRateProvider implements RateProvider
 
         foreach ($parcels as $parcel) {
             $qty = max(1, (int) ($parcel->quantity ?? 1));
-            $line = implode('x', [
+            $lines[] = implode('x', [
+                $qty,
                 $this->formatNum((float) $parcel->weightKg),
                 $this->formatNum((float) ($parcel->lengthCm ?? 0)),
                 $this->formatNum((float) ($parcel->widthCm ?? 0)),
                 $this->formatNum((float) ($parcel->heightCm ?? 0)),
             ]);
-
-            for ($i = 0; $i < $qty; $i++) {
-                $lines[] = $line;
-            }
         }
 
         if (empty($lines)) {
-            $lines[] = '1x0x0x0';
+            $lines[] = '1x1x10x10x10';
         }
 
         return implode(',', $lines);

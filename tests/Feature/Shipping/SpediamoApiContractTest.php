@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\Http;
 |    Spediamo expects "type" to be the shipment destination scope (e.g. "DOMESTIC"
 |    or "INTERNATIONAL"). If "type=packages" is sent, Spediamo returns:
 |    {"errors":[{"field":"type","code":"invalid","message":"Non valido"}]}
-|    Package dimensions belong in the "packages" parameter (e.g. "1x35x25x8").
+|    Package dimensions belong in the "packages" parameter (e.g. "1x1x35x25x8").
 |
 */
 
@@ -58,7 +58,7 @@ it('reproduces the exact Spediamo error mapping for required type field', functi
 
     $rateRequest = new RateRequest(
         sender: new RateAddress(postalCode: '20100', city: 'Milano', province: 'MI', country: 'IT'),
-        recipient: new RateAddress(postalCode: '48105', city: 'Cervia', province: 'RA', country: 'IT'),
+        recipient: new RateAddress(postalCode: '48015', city: 'Cervia', province: 'RA', country: 'IT'),
         parcels: [new RateParcel(weightKg: 1.0, lengthCm: 35, widthCm: 25, heightCm: 8)],
     );
 
@@ -88,7 +88,7 @@ it('reproduces RateManager error message formatting as reported in the UI', func
     $manager = app(RateManager::class);
     $rateRequest = new RateRequest(
         sender: new RateAddress(postalCode: '20100', city: 'Milano', province: 'MI', country: 'IT'),
-        recipient: new RateAddress(postalCode: '48105', city: 'Cervia', province: 'RA', country: 'IT'),
+        recipient: new RateAddress(postalCode: '48015', city: 'Cervia', province: 'RA', country: 'IT'),
         parcels: [new RateParcel(weightKg: 1.0, lengthCm: 35, widthCm: 25, heightCm: 8)],
     );
 
@@ -119,7 +119,7 @@ it('reproduces the Spediamo error mapping when type is invalid (e.g. packages)',
 
     $rateRequest = new RateRequest(
         sender: new RateAddress(postalCode: '20100', city: 'Milano', province: 'MI', country: 'IT'),
-        recipient: new RateAddress(postalCode: '48105', city: 'Cervia', province: 'RA', country: 'IT'),
+        recipient: new RateAddress(postalCode: '48015', city: 'Cervia', province: 'RA', country: 'IT'),
         parcels: [new RateParcel(weightKg: 1.0, lengthCm: 35, widthCm: 25, heightCm: 8)],
     );
 
@@ -145,7 +145,7 @@ it('inspects the outgoing HTTP payload structure sent by SpediamoRateProvider', 
 
     $rateRequest = new RateRequest(
         sender: new RateAddress(postalCode: '20100', city: 'Milano', province: 'MI', country: 'IT', name: 'Sender Store'),
-        recipient: new RateAddress(postalCode: '48105', city: 'Cervia', province: 'RA', country: 'IT', name: 'John Doe'),
+        recipient: new RateAddress(postalCode: '48015', city: 'Cervia', province: 'RA', country: 'IT', name: 'John Doe'),
         parcels: [new RateParcel(weightKg: 1.0, lengthCm: 35, widthCm: 25, heightCm: 8)],
     );
 
@@ -157,10 +157,10 @@ it('inspects the outgoing HTTP payload structure sent by SpediamoRateProvider', 
         // 1. Implementation sends type as 'DOMESTIC'
         expect($data['type'])->toBe('DOMESTIC')
             // 2. Outgoing packages string
-            ->and($data['packages'])->toBe('1x35x25x8')
+            ->and($data['packages'])->toBe('1x1x35x25x8')
             // 3. Sender / Recipient fields
             ->and($data['senderPostalCode'])->toBe('20100')
-            ->and($data['recipientPostalCode'])->toBe('48105');
+            ->and($data['recipientPostalCode'])->toBe('48015');
 
         // 4. Content-Type is form-urlencoded
         expect($request->isForm())->toBeTrue();
@@ -175,7 +175,7 @@ it('inspects the outgoing payload structure mapped by SpediamoLabelRequestMapper
     $shipmentRequest = new ShipmentRequest(
         carrierCode: 'sda',
         sender: new Address(name: 'Sender Store', street: 'Via Store 1', city: 'Milano', postalCode: '20100', province: 'MI', country: 'IT'),
-        recipient: new Address(name: 'Customer', street: 'Via Roma 1', city: 'Cervia', postalCode: '48105', province: 'RA', country: 'IT'),
+        recipient: new Address(name: 'Customer', street: 'Via Roma 1', city: 'Cervia', postalCode: '48015', province: 'RA', country: 'IT'),
         parcels: [new Parcel(weightKg: 1.0, lengthCm: 35, widthCm: 25, heightCm: 8)],
     );
 
@@ -183,5 +183,5 @@ it('inspects the outgoing payload structure mapped by SpediamoLabelRequestMapper
 
     // Shows that SpediamoLabelRequestMapper sets 'type' => 'DOMESTIC'
     expect($mapped['type'])->toBe('DOMESTIC')
-        ->and($mapped['packages'])->toBe('1x35x25x8');
+        ->and($mapped['packages'])->toBe('1x1x35x25x8');
 });

@@ -16,7 +16,7 @@ it('runs shipping:test-rates with order option', function () {
         'order_number' => 'ORD-TEST-HARNESS',
     ]);
     $order->shippingAddress->update([
-        'postal_code' => '48105',
+        'postal_code' => '48015',
         'city' => 'Cervia',
         'state' => 'RA',
         'country' => 'IT',
