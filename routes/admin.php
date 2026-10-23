@@ -25,6 +25,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::resource('orders', OrdersController::class)->only(['index', 'show', 'edit', 'update']);
     Route::get('orders/{order}/ship', [OrdersController::class, 'showShip'])->name('orders.show-ship');
     Route::post('orders/{order}/ship', [OrdersController::class, 'processShip'])->name('orders.process-ship');
+    Route::patch('orders/{order}/shipping-address', [OrdersController::class, 'updateShippingAddress'])->name('orders.update-shipping-address');
     Route::post('orders/{order}/quotes', [ShippingQuotesController::class, 'quoteOrder'])->name('orders.quotes');
     // Optional label layer: stream a shipment's label PDF, cancel a shipment at the carrier
     Route::get('orders/{order}/shipments/{shipment}/label', [OrdersController::class, 'downloadLabel'])->scopeBindings()->name('orders.shipments.label');

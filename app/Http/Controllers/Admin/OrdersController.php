@@ -11,6 +11,7 @@ use App\Exceptions\RefundUnconfirmed;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderEmail;
+use App\Models\OrderEvent;
 use App\Models\Refund;
 use App\Models\Shipment;
 use App\Services\EmailService;
@@ -513,6 +514,55 @@ class OrdersController extends Controller
             // rates and labels need at least the sender's postal code and city
             'sender_configured' => $sender['postal_code'] !== '' && $sender['city'] !== '',
         ]);
+    }
+
+    /** Correct the recipient while the order can still ship (typo found when a carrier rejects the address). */
+    public function updateShippingAddress(Request $request, Order $order): RedirectResponse
+    {
+        if (! $order->canShip()) {
+            return back()->with('error', "Order {$order->order_number} can no longer be edited: it is not waiting to ship.");
+        }
+
+        $data = $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'company' => 'nullable|string|max:100',
+            'address_line_1' => 'required|string|max:255',
+            'address_line_2' => 'nullable|string|max:255',
+            'city' => 'required|string|max:100',
+            'state' => 'required|string|max:50',
+            'postal_code' => 'required|string|max:20',
+            'country' => 'required|string|size:2',
+            'phone' => 'nullable|string|max:50',
+        ]);
+
+        $address = $order->shippingAddress;
+        $changes = collect($data)
+            ->filter(fn ($value, $key) => (string) $value !== (string) $address->{$key})
+            ->map(fn ($value, $key) => "{$key}: {$address->{$key}} → {$value}");
+
+        if ($changes->isEmpty()) {
+            return back();
+        }
+
+        DB::transaction(function () use ($order, $address, $data, $changes, $request) {
+            if ($address->user_id !== null) {
+                // never edit the customer's saved address behind their back: the order gets its own copy
+                $copy = $address->replicate()->fill([...$data, 'user_id' => null, 'is_default' => false]);
+                $copy->save();
+                $order->update(['shipping_address_id' => $copy->id]);
+            } else {
+                $address->update($data);
+            }
+
+            $order->events()->create([
+                'actor_id' => $request->user()->id,
+                'type' => OrderEvent::TYPE_NOTE,
+                'payload' => ['reason' => 'Shipping address corrected: '.$changes->implode('; '), 'meta' => ['source' => 'admin']],
+            ]);
+        });
+
+        return back()->with('success', 'Shipping address updated.');
     }
 
     /**
