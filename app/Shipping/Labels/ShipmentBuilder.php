@@ -6,9 +6,10 @@ use App\Models\Order;
 use App\Shipping\Labels\DTO\Address;
 use App\Shipping\Labels\DTO\Parcel;
 use App\Shipping\Labels\DTO\ShipmentRequest;
+use App\Shipping\Support\SenderAddress;
 
 /**
- * Builds a provider-neutral ShipmentRequest from an order: the sender from the shipping settings, the recipient from
+ * Builds a provider-neutral ShipmentRequest from an order: the sender from the shipping settings (SenderAddress), the recipient from
  * the order's shipping address, and the parcels from the admin's parcel input (prefilled from the order items' box
  * sizes and a default weight). Carrier specific nothing lives here.
  */
@@ -66,100 +67,17 @@ class ShipmentBuilder
 
     private function sender(): Address
     {
-        $country = trim((string) settings('shipping.sender_country', ''));
-        if ($country === '') {
-            $country = trim((string) settings('shipping.default_country', ''));
-        }
-        if ($country === '') {
-            $country = trim((string) config('shipping.labels.sender.country', ''));
-        }
-        if ($country === '') {
-            $country = trim((string) env('SHIPPING_SENDER_COUNTRY', ''));
-        }
-        if ($country === '') {
-            $country = 'IT';
-        }
-
-        $postalCode = trim((string) settings('shipping.sender_postal_code', ''));
-        if ($postalCode === '') {
-            $postalCode = trim((string) config('shipping.labels.sender.postal_code', ''));
-        }
-        if ($postalCode === '') {
-            $postalCode = trim((string) env('SHIPPING_SENDER_POSTAL_CODE', ''));
-        }
-        if (strtoupper($country) === 'IT' && is_numeric($postalCode) && $postalCode !== '') {
-            $postalCode = str_pad($postalCode, 5, '0', STR_PAD_LEFT);
-        }
-
-        $city = trim((string) settings('shipping.sender_city', ''));
-        if ($city === '') {
-            $city = trim((string) config('shipping.labels.sender.city', ''));
-        }
-        if ($city === '') {
-            $city = trim((string) env('SHIPPING_SENDER_CITY', ''));
-        }
-
-        $province = trim((string) settings('shipping.sender_province', ''));
-        if ($province === '') {
-            $province = trim((string) config('shipping.labels.sender.province', ''));
-        }
-        if ($province === '') {
-            $province = trim((string) env('SHIPPING_SENDER_PROVINCE', ''));
-        }
-
-        $name = trim((string) settings('shipping.sender_name', ''));
-        if ($name === '') {
-            $name = trim((string) config('shipping.labels.sender.name', ''));
-        }
-        if ($name === '') {
-            $name = trim((string) env('SHIPPING_SENDER_NAME', ''));
-        }
-        if ($name === '') {
-            $name = trim((string) settings('store.name', ''));
-        }
-
-        $street = trim((string) settings('shipping.sender_street', ''));
-        if ($street === '') {
-            $street = trim((string) config('shipping.labels.sender.street', ''));
-        }
-        if ($street === '') {
-            $street = trim((string) env('SHIPPING_SENDER_STREET', ''));
-        }
-        if ($street === '') {
-            $street = trim((string) settings('store.address', ''));
-        }
-
-        $phone = trim((string) settings('shipping.sender_phone', ''));
-        if ($phone === '') {
-            $phone = trim((string) config('shipping.labels.sender.phone', ''));
-        }
-        if ($phone === '') {
-            $phone = trim((string) env('SHIPPING_SENDER_PHONE', ''));
-        }
-        if ($phone === '') {
-            $phone = trim((string) settings('contact.phone', ''));
-        }
-
-        $email = trim((string) settings('shipping.sender_email', ''));
-        if ($email === '') {
-            $email = trim((string) config('shipping.labels.sender.email', ''));
-        }
-        if ($email === '') {
-            $email = trim((string) env('SHIPPING_SENDER_EMAIL', ''));
-        }
-        if ($email === '') {
-            $email = trim((string) settings('contact.support_email', ''));
-        }
+        $sender = SenderAddress::fromSettings();
 
         return new Address(
-            name: $name,
-            street: $street,
-            city: $city,
-            postalCode: $postalCode,
-            province: $province,
-            country: $country,
-            phone: $phone,
-            email: $email,
+            name: $sender['name'],
+            street: $sender['street'],
+            city: $sender['city'],
+            postalCode: $sender['postal_code'],
+            province: $sender['province'],
+            country: $sender['country'],
+            phone: $sender['phone'],
+            email: $sender['email'],
         );
     }
 

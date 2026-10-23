@@ -492,8 +492,7 @@ class OrdersController extends Controller
         $labelsEnabled = app(ShippingService::class)->labelsEnabled();
         $trackingManager = app(TrackingManager::class);
 
-        $senderConfigured = ! empty(trim((string) (settings('shipping.sender_postal_code') ?: config('shipping.labels.sender.postal_code') ?: env('SHIPPING_SENDER_POSTAL_CODE', ''))))
-            && ! empty(trim((string) (settings('shipping.sender_city') ?: config('shipping.labels.sender.city') ?: env('SHIPPING_SENDER_CITY', ''))));
+        $sender = \App\Shipping\Support\SenderAddress::fromSettings();
 
         return Inertia::render('Admin/Orders/Ship', [
             'order' => $order->toFrontendArray(),
@@ -511,7 +510,8 @@ class OrdersController extends Controller
             'tracking_drivers' => $trackingManager->selectableDriverNames(),
             'default_tracking_driver' => $trackingManager->getDefaultDriver(),
             'shipping_cost' => (float) ($order->shipping_cost ?? $order->shipping_amount ?? 0.0),
-            'sender_configured' => $senderConfigured,
+            // rates and labels need at least the sender's postal code and city
+            'sender_configured' => $sender['postal_code'] !== '' && $sender['city'] !== '',
         ]);
     }
 

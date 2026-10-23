@@ -11,6 +11,7 @@ use App\Shipping\Rates\DTO\RateParcel;
 use App\Shipping\Rates\DTO\RateQuote;
 use App\Shipping\Rates\DTO\RateRequest;
 use App\Shipping\Rates\Exceptions\RateProviderUnavailable;
+use App\Shipping\Support\SenderAddress;
 use Closure;
 use Illuminate\Support\Manager;
 use Illuminate\Support\Str;
@@ -114,100 +115,17 @@ class RateManager extends Manager
 
     public function senderFromSettings(): RateAddress
     {
-        $country = trim((string) settings('shipping.sender_country', ''));
-        if ($country === '') {
-            $country = trim((string) settings('shipping.default_country', ''));
-        }
-        if ($country === '') {
-            $country = trim((string) config('shipping.labels.sender.country', ''));
-        }
-        if ($country === '') {
-            $country = trim((string) env('SHIPPING_SENDER_COUNTRY', ''));
-        }
-        if ($country === '') {
-            $country = 'IT';
-        }
-
-        $postalCode = trim((string) settings('shipping.sender_postal_code', ''));
-        if ($postalCode === '') {
-            $postalCode = trim((string) config('shipping.labels.sender.postal_code', ''));
-        }
-        if ($postalCode === '') {
-            $postalCode = trim((string) env('SHIPPING_SENDER_POSTAL_CODE', ''));
-        }
-        if (strtoupper($country) === 'IT' && is_numeric($postalCode) && $postalCode !== '') {
-            $postalCode = str_pad($postalCode, 5, '0', STR_PAD_LEFT);
-        }
-
-        $city = trim((string) settings('shipping.sender_city', ''));
-        if ($city === '') {
-            $city = trim((string) config('shipping.labels.sender.city', ''));
-        }
-        if ($city === '') {
-            $city = trim((string) env('SHIPPING_SENDER_CITY', ''));
-        }
-
-        $province = trim((string) settings('shipping.sender_province', ''));
-        if ($province === '') {
-            $province = trim((string) config('shipping.labels.sender.province', ''));
-        }
-        if ($province === '') {
-            $province = trim((string) env('SHIPPING_SENDER_PROVINCE', ''));
-        }
-
-        $name = trim((string) settings('shipping.sender_name', ''));
-        if ($name === '') {
-            $name = trim((string) config('shipping.labels.sender.name', ''));
-        }
-        if ($name === '') {
-            $name = trim((string) env('SHIPPING_SENDER_NAME', ''));
-        }
-        if ($name === '') {
-            $name = trim((string) settings('store.name', ''));
-        }
-
-        $street = trim((string) settings('shipping.sender_street', ''));
-        if ($street === '') {
-            $street = trim((string) config('shipping.labels.sender.street', ''));
-        }
-        if ($street === '') {
-            $street = trim((string) env('SHIPPING_SENDER_STREET', ''));
-        }
-        if ($street === '') {
-            $street = trim((string) settings('store.address', ''));
-        }
-
-        $phone = trim((string) settings('shipping.sender_phone', ''));
-        if ($phone === '') {
-            $phone = trim((string) config('shipping.labels.sender.phone', ''));
-        }
-        if ($phone === '') {
-            $phone = trim((string) env('SHIPPING_SENDER_PHONE', ''));
-        }
-        if ($phone === '') {
-            $phone = trim((string) settings('contact.phone', ''));
-        }
-
-        $email = trim((string) settings('shipping.sender_email', ''));
-        if ($email === '') {
-            $email = trim((string) config('shipping.labels.sender.email', ''));
-        }
-        if ($email === '') {
-            $email = trim((string) env('SHIPPING_SENDER_EMAIL', ''));
-        }
-        if ($email === '') {
-            $email = trim((string) settings('contact.support_email', ''));
-        }
+        $sender = SenderAddress::fromSettings();
 
         return new RateAddress(
-            postalCode: $postalCode,
-            city: $city,
-            province: $province,
-            country: $country,
-            name: $name,
-            street: $street,
-            phone: $phone,
-            email: $email,
+            postalCode: $sender['postal_code'],
+            city: $sender['city'],
+            province: $sender['province'],
+            country: $sender['country'],
+            name: $sender['name'],
+            street: $sender['street'],
+            phone: $sender['phone'],
+            email: $sender['email'],
         );
     }
 
