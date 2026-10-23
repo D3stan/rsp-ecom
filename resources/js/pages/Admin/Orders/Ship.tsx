@@ -1,3 +1,4 @@
+import ShippingIssues, { ShippingIssue } from '@/components/admin/orders/ShippingIssues';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -98,7 +99,7 @@ interface Rates {
     status: 'idle' | 'loading' | 'ready' | 'error';
     quotes: RateQuote[];
     balances: Record<string, DriverBalance | number | null | undefined>;
-    errors: Record<string, string>;
+    issues: ShippingIssue[];
     message?: string;
 }
 
@@ -172,8 +173,7 @@ export default function OrderShip({
     const [parcelsOpen, setParcelsOpen] = useState(false);
     const [optionsOpen, setOptionsOpen] = useState(false);
     const [showAllQuotes, setShowAllQuotes] = useState(false);
-    const [showProviderErrors, setShowProviderErrors] = useState(false);
-    const [rates, setRates] = useState<Rates>({ status: 'idle', quotes: [], balances: {}, errors: {} });
+    const [rates, setRates] = useState<Rates>({ status: 'idle', quotes: [], balances: {}, issues: [] });
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
     const [refreshCount, setRefreshCount] = useState(0);
 
@@ -261,7 +261,7 @@ export default function OrderShip({
 
                 const result = await response.json();
                 const quotes: RateQuote[] = Array.isArray(result.quotes) ? result.quotes : [];
-                setRates({ status: 'ready', quotes, balances: result.balances ?? {}, errors: result.errors ?? {} });
+                setRates({ status: 'ready', quotes, balances: result.balances ?? {}, issues: result.issues ?? [] });
 
                 const pick = recommend(quotes);
                 if (pick) {
@@ -270,7 +270,7 @@ export default function OrderShip({
             } catch (err: unknown) {
                 if (controller.signal.aborted) return;
                 const message = err instanceof Error ? err.message : '';
-                setRates({ status: 'error', quotes: [], balances: {}, errors: {}, message: message || t('admin.orders.ship.compare_error') });
+                setRates({ status: 'error', quotes: [], balances: {}, issues: [], message: message || t('admin.orders.ship.compare_error') });
             }
         }, 500);
 
@@ -342,9 +342,6 @@ export default function OrderShip({
         .filter(Boolean)
         .join(', ');
 
-    const providerErrors = Object.entries(rates.errors);
-    // nothing to pick from: the provider errors are the answer, so show them without a click
-    const noQuotes = rates.status === 'ready' && rates.quotes.length === 0;
     // the selected rate stays visible even when it is not among the first few
     const visibleQuotes = showAllQuotes ? rates.quotes : rates.quotes.filter((quote, i) => i < VISIBLE_QUOTES || quoteKey(quote) === selectedKey);
 
@@ -799,28 +796,14 @@ export default function OrderShip({
                                                 </p>
                                             )}
 
-                                            {providerErrors.length > 0 && (
-                                                <div className={cn('text-xs', noQuotes ? 'text-destructive' : 'text-muted-foreground')}>
-                                                    <button
-                                                        type="button"
-                                                        className="inline-flex items-center gap-1 hover:text-foreground"
-                                                        aria-expanded={showProviderErrors || noQuotes}
-                                                        onClick={() => setShowProviderErrors(!showProviderErrors)}
-                                                    >
-                                                        <AlertCircle className="h-3.5 w-3.5" />
-                                                        {t('admin.orders.ship.providers_unavailable', { count: providerErrors.length })}
-                                                    </button>
-                                                    {(showProviderErrors || noQuotes) && (
-                                                        <ul className="mt-1 space-y-0.5 pl-5">
-                                                            {providerErrors.map(([provider, message]) => (
-                                                                <li key={provider}>
-                                                                    <span className="font-medium">{driverName(provider)}:</span> {message}
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    )}
-                                                </div>
-                                            )}
+                                            <ShippingIssues
+                                                orderId={order.id}
+                                                address={order.shippingAddress ?? null}
+                                                issues={rates.issues}
+                                                providerName={driverName}
+                                                onEditParcels={() => setParcelsOpen(true)}
+                                                onFixed={() => setRefreshCount((n) => n + 1)}
+                                            />
 
                                             {selected && balanceState && (
                                                 <div
