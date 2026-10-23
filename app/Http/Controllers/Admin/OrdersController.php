@@ -16,14 +16,19 @@ use App\Models\Refund;
 use App\Models\Shipment;
 use App\Services\EmailService;
 use App\Services\RefundService;
+use App\Shipping\Labels\Contracts\CancelsShipments;
 use App\Shipping\Labels\Exceptions\LabelException;
 use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
 use App\Shipping\Labels\Exceptions\LabelRejected;
+use App\Shipping\Labels\LabelManager;
 use App\Shipping\Labels\ShipmentBuilder;
 use App\Shipping\ShipInput;
 use App\Shipping\ShippingService;
+use App\Shipping\Support\NextWorkingDay;
+use App\Shipping\Support\SenderAddress;
 use App\Shipping\Tracking\TrackingManager;
 use App\Support\Revenue;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -502,7 +507,7 @@ class OrdersController extends Controller
         $labelsEnabled = app(ShippingService::class)->labelsEnabled();
         $trackingManager = app(TrackingManager::class);
 
-        $sender = \App\Shipping\Support\SenderAddress::fromSettings();
+        $sender = SenderAddress::fromSettings();
 
         return Inertia::render('Admin/Orders/Ship', [
             'order' => $order->toFrontendArray(),
@@ -513,7 +518,7 @@ class OrdersController extends Controller
             'labels_enabled' => $labelsEnabled,
             'parcels' => $labelsEnabled ? app(ShipmentBuilder::class)->prefillParcels($order) : [],
             // which rate providers can also buy labels (quotes from the others are shown but not buyable)
-            'label_drivers' => $labelsEnabled ? app(\App\Shipping\Labels\LabelManager::class)->driverNames() : [],
+            'label_drivers' => $labelsEnabled ? app(LabelManager::class)->driverNames() : [],
             // carriers the rate list recommends first (shipping.preferred_carriers)
             'preferred_carriers' => (array) settings('shipping.preferred_carriers', []),
             'provider_names' => app(ShippingService::class)->providerNames(),
@@ -523,7 +528,7 @@ class OrdersController extends Controller
             // rates and labels need at least the sender's postal code and city
             'sender_configured' => $sender['postal_code'] !== '' && $sender['city'] !== '',
             // the pickup date the form starts from; the carrier collects on working days only
-            'default_pickup_date' => \App\Shipping\Support\NextWorkingDay::after(\Carbon\CarbonImmutable::now())->toDateString(),
+            'default_pickup_date' => NextWorkingDay::after(CarbonImmutable::now())->toDateString(),
         ]);
     }
 
@@ -587,11 +592,13 @@ class OrdersController extends Controller
         $trackingManager = app(TrackingManager::class);
 
         $rules = [
-            'tracking_carrier' => ['required', 'string', 'max:50', Rule::in($trackingManager->carrierCodes())],
+            // a label purchase may use a courier not in the store list yet: it is registered once the label is bought
+            'tracking_carrier' => ['required', 'string', 'max:50', $wantsLabel ? 'regex:'.TrackingManager::CARRIER_CODE_PATTERN : Rule::in($trackingManager->carrierCodes())],
+            'carrier_name' => ['sometimes', 'nullable', 'string', 'max:80'],
             'tracking_number' => [Rule::requiredIf(! $wantsLabel && ! $request->boolean('ship_without_tracking')), 'nullable', 'string', 'max:100'],
             'tracking_driver' => ['sometimes', 'nullable', 'string', 'max:50', Rule::in(array_merge($trackingManager->driverNames(), ['']))],
             'label_driver' => $wantsLabel
-                ? ['sometimes', 'nullable', 'string', 'max:50', Rule::in(app(\App\Shipping\Labels\LabelManager::class)->driverNames())]
+                ? ['sometimes', 'nullable', 'string', 'max:50', Rule::in(app(LabelManager::class)->driverNames())]
                 : ['sometimes', 'nullable', 'string', 'max:50'],
             'ship_without_tracking' => 'sometimes|boolean',
             'notify_customer' => 'sometimes|boolean',
@@ -606,7 +613,7 @@ class OrdersController extends Controller
             'quote_token' => 'sometimes|nullable|string|max:191',
             // only a label purchase uses the date: a stale value from the other tab must not block a manual shipment
             'pickup_date' => ! $wantsLabel ? ['nullable', 'date_format:Y-m-d'] : ['bail', 'required', 'date_format:Y-m-d', function ($attribute, $value, $fail) {
-                if (! \App\Shipping\Support\NextWorkingDay::isFutureWorkingDay($value)) {
+                if (! NextWorkingDay::isFutureWorkingDay($value)) {
                     $fail('The pickup date must be a future working day.');
                 }
             }],
@@ -642,6 +649,10 @@ class OrdersController extends Controller
         } catch (LabelProviderUnavailable $e) {
             // Transient/infrastructure problem: error flash, nothing changed (already logged with a reference id).
             return back()->with('error', $e->getMessage());
+        }
+
+        if ($wantsLabel) {
+            $trackingManager->registerCarrier($data['tracking_carrier'], $data['carrier_name'] ?? null, $request->user());
         }
 
         // label: the order page then offers to print the label just bought
@@ -753,8 +764,8 @@ class OrdersController extends Controller
         }
 
         try {
-            return app(\App\Shipping\Labels\LabelManager::class)->driver($shipment->driver)
-                instanceof \App\Shipping\Labels\Contracts\CancelsShipments;
+            return app(LabelManager::class)->driver($shipment->driver)
+                instanceof CancelsShipments;
         } catch (\Throwable) {
             return false;
         }

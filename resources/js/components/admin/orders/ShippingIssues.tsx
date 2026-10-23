@@ -140,7 +140,7 @@ export default function ShippingIssues({ orderId, address, issues, providerName 
                     <li key={i} className="list-disc">
                         {text(issue)}{' '}
                         {(issue.kind === 'settings' || issue.kind === 'unavailable') && (
-                            <Link href="/admin/settings/shipping" className="font-medium underline">
+                            <Link href="/admin/settings/#shipping" className="font-medium underline">
                                 {t('admin.orders.ship.settings_link')}
                             </Link>
                         )}

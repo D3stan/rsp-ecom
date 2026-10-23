@@ -84,7 +84,7 @@ export interface RateQuote {
     surcharges?: Record<string, unknown>;
     warnings?: string[];
     margin_delta?: number;
-    // our carrier code when this quote can be bought here (label driver + enabled carrier), else null
+    // our carrier code when a label driver can buy this quote (the ship registers it if it is new), else null
     store_carrier_code?: string | null;
     [key: string]: unknown;
 }
@@ -130,6 +130,7 @@ type Tab = 'label' | 'manual';
 
 type ShipForm = {
     tracking_carrier: string;
+    carrier_name: string;
     tracking_number: string;
     tracking_driver: string;
     label_driver: string;
@@ -195,6 +196,7 @@ export default function OrderShip({
     const { data, setData, post, processing, errors } = useForm<ShipForm>({
         // a carrier/number saved earlier on the order is prefilled
         tracking_carrier: carriers.some((carrier) => carrier.code === order.tracking_carrier) ? (order.tracking_carrier as string) : '',
+        carrier_name: '',
         tracking_number: order.tracking_number ?? '',
         tracking_driver: initialTrackingDriver,
         label_driver: '',
@@ -223,6 +225,7 @@ export default function OrderShip({
             ...prev,
             label_driver: quote.provider,
             tracking_carrier: quote.store_carrier_code ?? '',
+            carrier_name: quote.carrier_name ?? '',
             quote_token: quote.quote_token ?? '',
         }));
     };
@@ -526,7 +529,7 @@ export default function OrderShip({
                                                 className="shrink-0 border-amber-500/40 bg-background text-xs"
                                                 asChild
                                             >
-                                                <Link href="/admin/settings/shipping">{t('admin.orders.ship.configure_sender_settings')}</Link>
+                                                <Link href="/admin/settings/#shipping">{t('admin.orders.ship.configure_sender_settings')}</Link>
                                             </Button>
                                         </div>
                                     )}
@@ -836,10 +839,7 @@ export default function OrderShip({
 
                                             {rates.status === 'ready' && rates.quotes.length > 0 && buyable.length === 0 && (
                                                 <p className="text-xs text-amber-700 dark:text-amber-400">
-                                                    {t('admin.orders.ship.none_buyable')}{' '}
-                                                    <Link href="/admin/settings/shipping" className="font-medium underline">
-                                                        {t('admin.orders.ship.configure_carrier_settings')}
-                                                    </Link>
+                                                    {t('admin.orders.ship.none_buyable')}
                                                 </p>
                                             )}
 

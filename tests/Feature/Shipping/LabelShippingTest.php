@@ -92,6 +92,25 @@ it('creates a label: shipment row, stored PDF, carrier tracking number, shipped,
     Queue::assertNothingPushed();
 });
 
+it('registers the carrier of a bought label when the store does not list it yet', function () {
+    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody([
+        'tracking_carrier' => 'pdb',
+        'carrier_name' => 'Poste Delivery Business US',
+    ]))->assertSessionHas('success');
+
+    expect($this->order->fresh()->tracking_carrier)->toBe('pdb')
+        ->and(collect(settings('shipping.carriers'))->firstWhere('code', 'pdb')['name'])->toBe('Poste Delivery Business US');
+});
+
+it('still requires a listed carrier for a manual shipment', function () {
+    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), [
+        'tracking_carrier' => 'pdb',
+        'tracking_number' => 'T1',
+    ])->assertSessionHasErrors('tracking_carrier');
+
+    expect(settings('shipping.carriers'))->toBeEmpty();
+});
+
 it('shows the carriers message on a carrier rejection and does not change the order', function () {
     // the fake driver rejects a parcel over its weight limit
     $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody([

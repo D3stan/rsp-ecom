@@ -2,6 +2,8 @@
 
 namespace App\Shipping\Tracking;
 
+use App\Models\Order;
+use App\Models\User;
 use App\Shipping\Tracking\Contracts\PassiveProvider;
 use App\Shipping\Tracking\Contracts\TrackingProvider;
 use App\Shipping\Tracking\Drivers\FakeProvider;
@@ -31,6 +33,9 @@ use Throwable;
  */
 class TrackingManager extends Manager
 {
+    /** The shape of a code in the shipping.carriers setting. */
+    public const CARRIER_CODE_PATTERN = '/^[a-z0-9_-]{1,32}$/';
+
     public function getDefaultDriver(): string
     {
         $name = trim((string) $this->config->get('shipping.tracking.driver', 'manual'));
@@ -187,7 +192,7 @@ class TrackingManager extends Manager
         }
 
         try {
-            return \App\Models\Order::query()
+            return Order::query()
                 ->where('status', 'shipped')
                 ->whereNotNull('tracking_driver')
                 ->whereIn('tracking_driver', $pollable)
@@ -250,6 +255,22 @@ class TrackingManager extends Manager
         $name = ((array) $this->config->get('shipping.carriers', []))[$carrierCode]['name'] ?? null;
 
         return is_string($name) && $name !== '' ? $name : $carrierCode;
+    }
+
+    /**
+     * Add a carrier to the shipping.carriers setting when it is not there yet, so a label bought for a courier the
+     * admin never listed still ships under a named carrier.
+     */
+    public function registerCarrier(string $code, ?string $name, ?User $by = null): void
+    {
+        if (in_array($code, $this->carrierCodes(), true) || preg_match(self::CARRIER_CODE_PATTERN, $code) !== 1) {
+            return;
+        }
+
+        $rows = (array) settings('shipping.carriers', []);
+        $rows[] = ['code' => $code, 'name' => mb_substr(trim((string) $name) ?: strtoupper($code), 0, 80), 'tracking_url' => ''];
+
+        settings()->set('shipping.carriers', $rows, $by);
     }
 
     /**

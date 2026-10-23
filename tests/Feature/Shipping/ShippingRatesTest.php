@@ -14,7 +14,10 @@ use App\Shipping\Rates\DTO\RateParcel;
 use App\Shipping\Rates\DTO\RateQuote;
 use App\Shipping\Rates\DTO\RateRequest;
 use App\Shipping\Rates\Exceptions\RateProviderUnavailable;
+use App\Shipping\Rates\Exceptions\RateRejected;
 use App\Shipping\Rates\RateManager;
+use App\Shipping\Support\NextWorkingDay;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -584,10 +587,13 @@ it('POST /admin/orders/{order}/quotes calculates quotes and computes margin_delt
     }
 });
 
-it('POST /admin/orders/{order}/quotes marks a quote buyable only when its provider labels one of our carriers', function () {
+it('POST /admin/orders/{order}/quotes marks a quote buyable when its provider labels the courier, listed or not', function () {
     settings()->set('shipping.labels_enabled', true);
-    // fake rates return sda and dhl; only sda is one of our carriers
-    config(['shipping.carriers' => ['sda' => ['name' => 'SDA', 'tracking_url' => 'https://track.example.test/?n={number}']]]);
+    // fake rates return sda and dhl; the store lists only a legacy alias of sda
+    config([
+        'shipping.carriers' => ['legacy' => ['name' => 'Legacy SDA', 'tracking_url' => 'https://track.example.test/?n={number}']],
+        'shipping.providers.fake.carrier_map' => ['sda' => 'SDA', 'legacy' => 'SDA', 'dhl' => 'DHL'],
+    ]);
     $order = Order::factory()->create(['status' => 'processing', 'payment_status' => 'succeeded', 'shipping_amount' => 10.00]);
 
     $quotes = collect($this->actingAs($this->admin)
@@ -595,8 +601,9 @@ it('POST /admin/orders/{order}/quotes marks a quote buyable only when its provid
         ->assertOk()
         ->json('quotes'))->keyBy('carrier_code');
 
-    expect($quotes['sda']['store_carrier_code'])->toBe('sda')
-        ->and($quotes['dhl']['store_carrier_code'])->toBeNull();
+    // the listed alias of the same courier wins; an unlisted courier is bought under its own code
+    expect($quotes['sda']['store_carrier_code'])->toBe('legacy')
+        ->and($quotes['dhl']['store_carrier_code'])->toBe('dhl');
 
     // labels off: nothing can be bought, the rates are still shown
     settings()->set('shipping.labels_enabled', false);
@@ -665,7 +672,7 @@ it('completes end-to-end quote-to-label purchase handoff via POST /admin/orders/
 
     $shipPayload = [
         'create_label' => true,
-        'pickup_date' => \App\Shipping\Support\NextWorkingDay::after(\Carbon\CarbonImmutable::now())->toDateString(),
+        'pickup_date' => NextWorkingDay::after(CarbonImmutable::now())->toDateString(),
         'label_driver' => 'dvaexpress',
         'tracking_carrier' => 'sda',
         'quote_token' => '5dcc4a53b00fc',
@@ -782,7 +789,7 @@ it('dvaexpress rate provider pads IT cap, defaults international province to --,
         parcels: [new RateParcel(weightKg: 1.0)],
     );
     expect(fn () => $provider->quote($reqUsNoState))
-        ->toThrow(\App\Shipping\Rates\Exceptions\RateRejected::class, 'Recipient province (state code) is required for US');
+        ->toThrow(RateRejected::class, 'Recipient province (state code) is required for US');
 });
 
 it('dvaexpress and spediamo filter quotes using areSameCourier aliases', function () {
@@ -872,7 +879,7 @@ it('spediamo formats validation errors without numeric index prefix', function (
             parcels: [new RateParcel(weightKg: 1.0)],
         ));
         test()->fail('Expected RateRejected was not thrown');
-    } catch (\App\Shipping\Rates\Exceptions\RateRejected $e) {
+    } catch (RateRejected $e) {
         expect($e->getMessage())->not->toContain('0:')
             ->and($e->getMessage())->toContain('Il campo senderTown è obbligatorio')
             ->and($e->getMessage())->toContain('senderPostalCode: Il CAP non è valido.');

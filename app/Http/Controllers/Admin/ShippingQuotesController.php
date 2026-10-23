@@ -11,6 +11,7 @@ use App\Shipping\Rates\DTO\RateQuote;
 use App\Shipping\Rates\DTO\RateRequest;
 use App\Shipping\Rates\RateManager;
 use App\Shipping\ShippingService;
+use App\Shipping\Support\CarrierCodeMap;
 use App\Shipping\Support\NextWorkingDay;
 use App\Shipping\Support\RecipientAddressCheck;
 use App\Shipping\Support\ShippingIssue;
@@ -171,17 +172,14 @@ class ShippingQuotesController extends Controller
 
         $customerShippingCost = (float) ($order->shipping_cost ?? $order->shipping_amount ?? 0.0);
 
-        // A quote can be bought here only when its provider has a label driver that ships its carrier (one of ours).
+        // A quote can be bought here when its provider has a label driver that ships its courier; the store's carrier list does not gate it.
         $labelDrivers = $shipping->labelsEnabled() ? $labels->driverNames() : [];
         $storeCarriers = $tracking->carrierCodes();
-        $supported = [];
 
-        $quotes = array_map(function (RateQuote $quote) use ($customerShippingCost, $labelDrivers, $storeCarriers, $labels, &$supported) {
+        $quotes = array_map(function (RateQuote $quote) use ($customerShippingCost, $labelDrivers, $storeCarriers, $labels) {
             $quoteArray = $quote->toArray();
             $quoteArray['margin_delta'] = round($customerShippingCost - $quote->totalPrice, 2);
-            $buyable = in_array($quote->provider, $labelDrivers, true)
-                && in_array($quote->carrierCode, $supported[$quote->provider] ??= $labels->supportedCarriersFor($quote->provider, $storeCarriers), true);
-            $quoteArray['store_carrier_code'] = $buyable ? $quote->carrierCode : null;
+            $quoteArray['store_carrier_code'] = $this->bookableCarrierCode($quote, $labelDrivers, $storeCarriers, $labels);
 
             return $quoteArray;
         }, $result['quotes']);
@@ -196,5 +194,30 @@ class ShippingQuotesController extends Controller
             ),
             'customer_shipping_cost' => round($customerShippingCost, 2),
         ]);
+    }
+
+    /**
+     * The carrier code to ship this quote under, or null when no label driver can buy it. A carrier already in the
+     * store list for the same courier wins (`poste` for a quote coded `pdb`); otherwise the quote's own code, which
+     * the ship form registers on purchase.
+     *
+     * @param  list<string>  $labelDrivers
+     * @param  list<string>  $storeCarriers
+     */
+    private function bookableCarrierCode(RateQuote $quote, array $labelDrivers, array $storeCarriers, LabelManager $labels): ?string
+    {
+        if (! in_array($quote->provider, $labelDrivers, true) || $labels->supportedCarriersFor($quote->provider, [$quote->carrierCode]) === []) {
+            return null;
+        }
+
+        $couriers = CarrierCodeMap::fromDriverConfig((array) config("shipping.providers.{$quote->provider}", []));
+
+        foreach ($storeCarriers as $code) {
+            if ($couriers->areSameCourier($code, $quote->carrierCode)) {
+                return $code;
+            }
+        }
+
+        return preg_match(TrackingManager::CARRIER_CODE_PATTERN, $quote->carrierCode) === 1 ? $quote->carrierCode : null;
     }
 }
