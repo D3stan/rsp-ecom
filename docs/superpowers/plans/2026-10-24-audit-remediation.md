@@ -1180,14 +1180,11 @@ In `bootstrap/app.php` add `use Illuminate\Http\Request;` with the other `Illumi
 with
 
 ```php
-        // Traefik (and the container's own nginx) sit in the Docker private ranges. Trust only those, and never
-        // X-Forwarded-Host: the Host header Traefik passes on is the real one.
+        // Traefik (and the container's own nginx) sit in the Docker private ranges. Trust only those, and only for
+        // the client IP and scheme: Host, Prefix and Port are deliberately not trusted.
         $middleware->trustProxies(
             at: ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', 'fc00::/7'],
-            headers: Request::HEADER_X_FORWARDED_FOR
-                | Request::HEADER_X_FORWARDED_PROTO
-                | Request::HEADER_X_FORWARDED_PORT
-                | Request::HEADER_X_FORWARDED_PREFIX,
+            headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO,
         );
 ```
 
@@ -1374,3 +1371,37 @@ git commit -m "fix: refuse to delete an address that an order still uses"
 - **Coverage:** every row of the scope table maps to a task (3 → T1, 6 → T2, 7 → T3, 4/5/19/25 → T4-T6, 18 → T7, 2 → T8, 8 → T9, 1 → T10). Claims the review found false have no task, listed explicitly. The Low batch is deferred by name, not forgotten.
 - **Placeholders:** none; each code step carries the code. The two places that depend on facts only a live run can show (Spediamo's 409 mapping in Task 7 Step 2, the peer range in Task 8) say exactly what to read and what to change.
 - **Names:** `editedPaymentStatus` (Task 4) is extended in Task 5 and its result `$paymentStatus` is used in Task 6; `OrderEditRefused::paymentStatusMoved` (Task 4) and `paymentStatus()` (existing, Task 5) are the only exception factories used; `undoesShipment`/`voidActiveShipments` are defined and used in Task 7 only; the lock key `ship-order:{id}` is identical in the code and in the tests of Task 2.
+
+---
+
+## Execution notes (2026-10-24)
+
+Branch `fix/audit-remediation`, one commit per task, each reviewed for spec compliance and code quality.
+
+| Task | Commits | Notes |
+|---|---|---|
+| 1 | 11c3d1c | as planned |
+| 2 | fdee634 | as planned |
+| 3 | 6dd959e | as planned (Step 6 data check left to the owner) |
+| 4 | d6cc0fd, 138a510 | review found `payment_status_was` read from the refreshed prop; now captured once at mount |
+| 5 | d2f5a59 | as planned |
+| 6 | 836ca0c | as planned |
+| 7 | 65d517e | as planned |
+| 8 | b600fb5, b1c3a3f | review found `X-Forwarded-Prefix` also poisons `root()` (`@evil.example`); Prefix and Port are no longer trusted (the Task 8 code above is the corrected version) |
+| 8b | 9b4f8bd | not in the original plan: `TrustAppUrlScheme` middleware, see below |
+| 9 | ea24ced | as planned |
+| 10 | not done | conditional on V4 and the owner's approval |
+
+**Task 8b: why it exists.** Phase 0 and a follow-up check showed the real topology is Cloudflare, then Traefik, then nginx in `serversideup/php:8.5-fpm-nginx`. That image rewrites the client address from `CF-Connecting-IP`, so PHP's `REMOTE_ADDR` is the public client IP, and it sets no `HTTPS` fastcgi param. With Task 8 alone the peer is untrusted, `X-Forwarded-Proto` is ignored, `isSecure()` is false, cookies lose `Secure` and signed links (generated https by `forceScheme`, validated against the request scheme) would be rejected. `TrustAppUrlScheme` sets `HTTPS=on` when `APP_URL` is https and the environment is not local/testing, which is correct under either topology.
+
+**Phase 0 results.** V1: local cache is redis; remote `CACHE_STORE` unreadable (Dokploy redacts env), so it must be confirmed by the owner. V2: the sandbox accepted a spoofed `X-Forwarded-Host` (redirect to `https://evil.example/register`) before Task 8; `LoginRequest::throttleKey` uses `ip()`. V3 and V4: not run (need a real Spediamo draft and the production database). V5: Spediamo deletes only DRAFT shipments, DVA Express cancels through `richiesta-storno` for shipments that have not departed. V6: sandbox `/settings/profile` redirected to `/login` (sandbox env redacted, so not conclusive).
+
+**Open items for the owner before the single deploy**
+1. In Dokploy (sandbox first): `APP_URL` starts with `https://`; `APP_ENV` is not `local`/`testing`; `CACHE_STORE` is `redis`, `database` or `file`; set `SESSION_SECURE_COOKIE=true` (belt and braces; the middleware also covers it).
+2. Behind Cloudflare the image trusts `CF-Connecting-IP` from private peers: make sure the origin is only reachable through Cloudflare, otherwise a client can forge its IP at nginx level (or set `TRUSTED_PROXY=off`/`local` in the container env).
+3. After deploying the sandbox: open a real emailed verification link (it must validate); `curl -sI https://<sandbox>/ | grep -i set-cookie` must show `secure`; replay the `X-Forwarded-Host: evil.example` and `X-Forwarded-Prefix: @evil.example` probes (the redirect and email links must stay on the sandbox host); confirm Task 1 with `curl -s -o /dev/null -w '%{http_code}' https://<host>/settings/profile` returning `302`.
+4. Run V4 on production before deciding on Task 10; hand over the Task 3 Step 6 list if V3 shows the lockout is live.
+5. Behaviour changes to tell support staff: Stripe-captured payment status is read-only and cannot be set to refunded by hand; shipped/delivered orders have locked lines and totals; undoing a shipment with a bought Spediamo label is refused (Spediamo cannot void it through the API, cancel in the Spediamo portal); a second label purchase for the same order is refused.
+6. Existing `storage/logs/laravel.log` files may still contain rejected verification tokens from before Task 9.
+
+**Minor review notes not acted on** (candidates for the Low-severity follow-up plan): `HttpResponseException` is not excluded by the Task 1 guard (unused today); cache outage while taking/releasing the Task 2 lock gives a raw 500 (fails closed); no test that the Task 2 lock is released after a carrier failure; the shipped-order lock message still says "paid or in progress"; the payment status Select still offers options the server refuses; the same reason text is stored on both events when status and payment change together; the `str_starts_with(app.url, 'https://')` check now exists in `AppServiceProvider` and `TrustAppUrlScheme`; `docs/reports/mixed-content-https-fix.md` still describes `$proxies = '*'`; `PendingUserVerificationController` and `bootstrap/app.php` carry pre-existing Pint style violations that were left untouched to keep diffs minimal.
