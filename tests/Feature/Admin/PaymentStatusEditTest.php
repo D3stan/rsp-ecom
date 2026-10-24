@@ -58,3 +58,36 @@ it('still lets an admin mark an offline order as paid', function () {
 
     expect($order->fresh()->payment_status)->toBe('succeeded');
 });
+
+it('does not let a Stripe-captured payment be taken back by an edit', function () {
+    $order = paymentEditOrder('succeeded', ['stripe_payment_intent_id' => 'pi_test_1']);
+
+    $this->actingAs($this->admin)->put(route('admin.orders.update', $order), [
+        'payment_status' => 'pending',
+        'payment_status_was' => 'succeeded',
+    ])->assertSessionHasErrors('order');
+
+    expect($order->fresh()->payment_status)->toBe('succeeded');
+});
+
+it('does not let anyone set a refunded status by hand on a Stripe order', function (string $status) {
+    $order = paymentEditOrder('pending', ['stripe_payment_intent_id' => 'pi_test_1']);
+
+    $this->actingAs($this->admin)->put(route('admin.orders.update', $order), [
+        'payment_status' => $status,
+        'payment_status_was' => 'pending',
+    ])->assertSessionHasErrors('order');
+
+    expect($order->fresh()->payment_status)->toBe('pending');
+})->with(['refunded', 'partially_refunded']);
+
+it('locks lines and totals once the order has shipped, even when the payment status was edited', function (string $status) {
+    $order = paymentEditOrder('pending', ['status' => $status]);
+    $item = $order->orderItems->first();
+
+    $this->actingAs($this->admin)->put(route('admin.orders.update', $order), [
+        'order_items' => json_encode([['id' => $item->id, 'quantity' => 5, 'price' => 10]]),
+    ])->assertSessionHasErrors('order');
+
+    expect($item->fresh()->quantity)->toBe(2);
+})->with(['shipped', 'delivered']);

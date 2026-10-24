@@ -783,6 +783,8 @@ class OrdersController extends Controller
             throw OrderEditRefused::paymentStatusMoved((string) $order->order_number, (string) $order->payment_status);
         }
 
+        OrderFinancialEdit::assertPaymentStatusEditable($order, $wanted);
+
         return $wanted;
     }
 

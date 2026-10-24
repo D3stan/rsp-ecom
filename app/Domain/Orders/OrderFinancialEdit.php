@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 /**
  * The money side of an admin order edit (Admin\OrdersController::update).
  *
- * - payment_status is editable directly by admins in the edit order form.
+ * - payment_status is editable by admins for orders paid outside Stripe; see assertPaymentStatusEditable().
  * - Once the payment is captured or in flight (Order::financialsLocked) lines, quantities, prices, shipping, discount
  *   and totals are locked: sending them unchanged is fine, any difference is refused. Money goes back through a refund.
  * - On an unpaid order the lines (quantity int >= 1, price >= 0; a line left out is deleted) and the shipping cost may
@@ -43,6 +43,26 @@ final class OrderFinancialEdit
         $shipping = array_key_exists('shipping_amount', $input) ? self::cents($input['shipping_amount']) : null;
 
         return $lines === null && $shipping === null ? null : ['lines' => $lines, 'shipping' => $shipping];
+    }
+
+    /**
+     * Admins may correct the payment status of an order paid outside Stripe (bank transfer, cash). For an order paid
+     * through Stripe the captured states follow Stripe and the refunds flow: an edit cannot take them back, and
+     * "refunded" or "partially_refunded" are only ever written by RefundService.
+     *
+     * @throws OrderEditRefused
+     */
+    public static function assertPaymentStatusEditable(Order $order, string $to): void
+    {
+        if (! $order->hasStripePaymentIntent() && ! $order->hasStripeCheckoutSession()) {
+            return;
+        }
+
+        $claimsRefund = in_array($to, ['refunded', 'partially_refunded'], true);
+
+        if ($order->hasCapturedPayment() || $claimsRefund) {
+            throw OrderEditRefused::paymentStatus();
+        }
     }
 
     /**
