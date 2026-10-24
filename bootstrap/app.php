@@ -28,14 +28,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Traefik (and the container's own nginx) sit in the Docker private ranges. Trust only those, and never
-        // X-Forwarded-Host: the Host header Traefik passes on is the real one.
+        // Traefik (and the container's own nginx) sit in the Docker private ranges. Trust only those, and only for
+        // the client IP and scheme: Host, Prefix and Port are deliberately not trusted.
         $middleware->trustProxies(
             at: ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', 'fc00::/7'],
-            headers: Request::HEADER_X_FORWARDED_FOR
-                | Request::HEADER_X_FORWARDED_PROTO
-                | Request::HEADER_X_FORWARDED_PORT
-                | Request::HEADER_X_FORWARDED_PREFIX,
+            headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO,
         );
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
