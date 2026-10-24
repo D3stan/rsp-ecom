@@ -4,19 +4,20 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\CaptureGuestSessionId;
 use App\Http\Middleware\DetectLanguage;
-use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ShareTranslations;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -63,62 +64,64 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Handle all HTTP exceptions (including abort(403), abort(500), etc.)
         $exceptions->render(function (HttpException $e, $request) {
-            if (!$request->expectsJson()) {
+            if (! $request->expectsJson()) {
                 $statusCode = $e->getStatusCode();
-                
+
                 $isTesting = app()->environment('testing');
                 $isDebugEnv = config('app.debug') && app()->environment('local', 'development');
-                $shouldShowCustomPage = !$isTesting && !$isDebugEnv;
-                
+                $shouldShowCustomPage = ! $isTesting && ! $isDebugEnv;
+
                 if ($shouldShowCustomPage) {
                     switch ($statusCode) {
                         case 403:
-                            return \Inertia\Inertia::render('Errors/Forbidden')
+                            return Inertia::render('Errors/Forbidden')
                                 ->toResponse($request)
                                 ->setStatusCode(403);
                         case 500:
-                            return \Inertia\Inertia::render('Errors/ServerError')
+                            return Inertia::render('Errors/ServerError')
                                 ->toResponse($request)
                                 ->setStatusCode(500);
                         case 404:
-                            return \Inertia\Inertia::render('Errors/NotFound')
+                            return Inertia::render('Errors/NotFound')
                                 ->toResponse($request)
                                 ->setStatusCode(404);
                         default:
                             // For other HTTP errors >= 500, show server error page
                             if ($statusCode >= 500) {
-                                return \Inertia\Inertia::render('Errors/ServerError')
+                                return Inertia::render('Errors/ServerError')
                                     ->toResponse($request)
                                     ->setStatusCode($statusCode);
                             }
                     }
                 }
             }
-            
+
             // Return null to let Laravel handle it normally (debug page in development)
             return null;
         });
 
         // Handle general exceptions (non-HTTP exceptions)
-        $exceptions->render(function (\Throwable $e, $request) {
-            // Don't intercept ValidationException - let Laravel handle it
-            if ($e instanceof ValidationException) {
+        $exceptions->render(function (Throwable $e, $request) {
+            // Laravel turns these into a redirect or a plain HTTP response itself (guest to login, 419, 405, 429, ...)
+            if ($e instanceof ValidationException
+                || $e instanceof AuthenticationException
+                || $e instanceof HttpExceptionInterface) {
                 return null;
             }
-            
-            if (!$request->expectsJson()) {
+
+            if (! $request->expectsJson()) {
                 $isTestRoute = str_contains($request->path(), 'test-');
                 $isTesting = app()->environment('testing');
                 $isDebugEnv = config('app.debug') && app()->environment('local', 'development');
-                $shouldShowCustomPage = !$isTesting && !$isDebugEnv;
+                $shouldShowCustomPage = ! $isTesting && ! $isDebugEnv;
 
                 if ($shouldShowCustomPage) {
-                    return \Inertia\Inertia::render('Errors/ServerError')
+                    return Inertia::render('Errors/ServerError')
                         ->toResponse($request)
                         ->setStatusCode(500);
                 }
             }
-            
+
             // Return null to let Laravel handle it normally (debug page in development)
             return null;
         });
