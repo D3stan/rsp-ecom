@@ -382,8 +382,13 @@ class ShippingService
             'request_payload' => array_merge((array) $shipment->request_payload, $paid->raw),
         ]);
 
-        // query builder: Order::updating would wipe the tracking status and polling schedule
-        Order::query()->whereKey($order->id)->toBase()->update(['tracking_number' => $paid->trackingNumber]);
+        // query builder: Order::updating would also wipe the tracking status. The unpaid draft may have been polled and
+        // rejected (polling switched off for years), so the schedule and the polling window start over with the real number.
+        Order::query()->whereKey($order->id)->toBase()->update([
+            'tracking_number' => $paid->trackingNumber,
+            'tracking_next_sync_at' => null,
+            'tracking_started_at' => null,
+        ]);
 
         return true;
     }

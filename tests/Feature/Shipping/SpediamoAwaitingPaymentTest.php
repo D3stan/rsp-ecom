@@ -176,3 +176,21 @@ it('forbids a customer from checking a payment', function () {
         ->post(route('admin.orders.shipments.complete', [$this->order, $shipment]))
         ->assertForbidden();
 });
+
+it('starts the polling schedule over when the draft is paid', function () {
+    $shipment = awaitingShipment($this->order);
+    // what a rejected poll of the unpaid draft leaves behind (ShipmentTrackingService::disablePolling)
+    $this->order->forceFill(['tracking_next_sync_at' => now()->addYears(5), 'tracking_started_at' => now()->subDays(40)])->saveQuietly();
+    Http::fake([
+        'api.spediamo.test/v1/shipments/shp_draft_1' => Http::response(['id' => 'shp_draft_1', 'status' => 'BOOKED', 'trackingNumber' => 'COURIER-77', 'courier' => 'SDA']),
+        'api.spediamo.test/v1/waybills/shp_draft_1/pdf*' => Http::response("%PDF-1.4\n%%EOF", 200, ['Content-Type' => 'application/pdf']),
+    ]);
+
+    $this->actingAs($this->admin)->post(route('admin.orders.shipments.complete', [$this->order, $shipment]))
+        ->assertSessionHas('success');
+
+    $order = $this->order->fresh();
+    expect($order->tracking_number)->toBe('COURIER-77')
+        ->and($order->tracking_next_sync_at)->toBeNull()
+        ->and($order->tracking_started_at)->toBeNull();
+});

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
+use App\Models\Shipment;
 use App\Shipping\Tracking\Enums\TrackingStatus;
 use App\Shipping\Tracking\Jobs\SyncOrderTracking;
 use App\Shipping\Tracking\TrackingManager;
@@ -91,6 +92,7 @@ class SyncShipmentTracking extends Command
             ->where('status', 'shipped')
             ->whereNotNull('tracking_number')
             ->where('tracking_number', '!=', '')
+            ->whereDoesntHave('shipments', fn ($shipments) => $shipments->where('status', Shipment::STATUS_AWAITING_PAYMENT))
             ->where(function ($q) use ($pollable, $defaultPolls) {
                 $q->whereIn('tracking_driver', $pollable);
 
