@@ -58,7 +58,6 @@ class PendingUserVerificationController extends Controller
 
         if (!$request->hasValidSignature()) {
             \Illuminate\Support\Facades\Log::warning('Pending verification link rejected: invalid signature', [
-                'request_url' => $request->fullUrl(),
                 'scheme' => $request->getScheme(),
                 'host' => $request->getHost(),
                 'port' => $request->getPort(),
