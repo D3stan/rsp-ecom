@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Orders\OrderFinancialEdit;
+use App\Domain\Orders\OrderTransitions;
 use App\Exceptions\InvalidOrderTransition;
 use App\Exceptions\OrderEditRefused;
 use App\Exceptions\RefundFailed;
@@ -272,6 +273,11 @@ class OrdersController extends Controller
             $newStatus = $request->input('status', $order->status);
             $newTrackingNumber = $request->input('tracking_number', $order->tracking_number);
 
+            // the carrier call stays outside the transaction; a refusal stops the whole edit before anything is written
+            if ($this->undoesShipment($order, $newStatus, $request->input('reason'))) {
+                $this->voidActiveShipments($order, app(ShippingService::class));
+            }
+
             DB::transaction(function () use ($request, $order, $financial, $newStatus, $newTrackingNumber, $originalStatus, $paymentStatus) {
                 $attributes = [
                     'notes' => $request->input('notes', $order->notes),
@@ -339,6 +345,8 @@ class OrdersController extends Controller
             return back()->withErrors(['order' => $e->getMessage()])->with('error', $e->getMessage());
         } catch (InvalidOrderTransition $e) {
             return $this->refusedTransition($e);
+        } catch (LabelException $e) {
+            return back()->withErrors(['status' => $e->getMessage()])->with('error', $e->getMessage());
         } catch (\Exception $e) {
             Log::error('Failed to update order', [
                 'order_id' => $order->id ?? 'unknown',
@@ -365,9 +373,15 @@ class OrdersController extends Controller
         }
 
         try {
+            if ($this->undoesShipment($order, $request->status, $request->input('reason'))) {
+                $this->voidActiveShipments($order, app(ShippingService::class));
+            }
+
             $order->transitionTo($request->status, $request->user(), $request->input('reason'));
         } catch (InvalidOrderTransition $e) {
             return $this->refusedTransition($e);
+        } catch (LabelException $e) {
+            return back()->withErrors(['status' => $e->getMessage()])->with('error', $e->getMessage());
         }
 
         return back()->with('success', 'Order status updated successfully.');
@@ -770,6 +784,31 @@ class OrdersController extends Controller
     private function refusedTransition(InvalidOrderTransition $e)
     {
         return back()->withErrors(['status' => $e->getMessage()])->with('error', $e->getMessage());
+    }
+
+    /**
+     * Is this status change an undo of a shipment that the lifecycle will accept? Only then may the carrier be called:
+     * a transition that is refused afterwards must not leave a voided label behind.
+     */
+    private function undoesShipment(Order $order, string $to, mixed $reason): bool
+    {
+        return $order->status === 'shipped'
+            && $to === 'processing'
+            && OrderTransitions::allows('shipped', 'processing')
+            && (! OrderTransitions::requiresReason('shipped', 'processing') || trim((string) $reason) !== '');
+    }
+
+    /**
+     * Void every active label of the order at its carrier. A refusal throws (nothing else has changed yet), and a retry
+     * only has the remaining active shipments left to void.
+     *
+     * @throws LabelException
+     */
+    private function voidActiveShipments(Order $order, ShippingService $shipping): void
+    {
+        foreach ($order->shipments()->whereIn('status', Shipment::ACTIVE_STATUSES)->get() as $shipment) {
+            $shipping->cancelShipment($shipment);
+        }
     }
 
     /**

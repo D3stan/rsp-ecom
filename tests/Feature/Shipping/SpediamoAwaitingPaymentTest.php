@@ -194,3 +194,48 @@ it('starts the polling schedule over when the draft is paid', function () {
         ->and($order->tracking_next_sync_at)->toBeNull()
         ->and($order->tracking_started_at)->toBeNull();
 });
+
+it('voids the draft at the carrier when the order is moved back to processing from the status form', function () {
+    $shipment = awaitingShipment($this->order);
+    Http::fake(['api.spediamo.test/v1/shipments/shp_draft_1' => Http::response('', 204)]);
+
+    $this->actingAs($this->admin)->patch(route('admin.orders.update-status', $this->order), ['status' => 'processing', 'reason' => 'Wrong parcel size'])
+        ->assertSessionHas('success');
+
+    Http::assertSent(fn (HttpRequest $request) => $request->method() === 'DELETE' && str_contains($request->url(), '/v1/shipments/shp_draft_1'));
+    expect($shipment->fresh()->status)->toBe(Shipment::STATUS_CANCELLED)
+        ->and($this->order->fresh()->status)->toBe('processing');
+});
+
+it('keeps the order shipped and the shipment active when the carrier refuses to void it', function () {
+    $shipment = awaitingShipment($this->order);
+    Http::fake(['api.spediamo.test/v1/shipments/shp_draft_1' => Http::response(['message' => 'Already collected'], 409)]);
+
+    $this->actingAs($this->admin)->patch(route('admin.orders.update-status', $this->order), ['status' => 'processing', 'reason' => 'Wrong parcel size'])
+        ->assertSessionHas('error');
+
+    expect($shipment->fresh()->status)->toBe(Shipment::STATUS_AWAITING_PAYMENT)
+        ->and($this->order->fresh()->status)->toBe('shipped');
+});
+
+it('does not call the carrier when the undo is refused for a missing reason', function () {
+    awaitingShipment($this->order);
+    Http::fake();
+
+    $this->actingAs($this->admin)->patch(route('admin.orders.update-status', $this->order), ['status' => 'processing'])
+        ->assertSessionHas('error');
+
+    Http::assertNothingSent();
+    expect($this->order->fresh()->status)->toBe('shipped');
+});
+
+it('voids the draft when the undo comes through the edit form', function () {
+    $shipment = awaitingShipment($this->order);
+    Http::fake(['api.spediamo.test/v1/shipments/shp_draft_1' => Http::response('', 204)]);
+
+    $this->actingAs($this->admin)->put(route('admin.orders.update', $this->order), ['status' => 'processing', 'reason' => 'Wrong parcel size'])
+        ->assertSessionHas('success');
+
+    Http::assertSent(fn (HttpRequest $request) => $request->method() === 'DELETE');
+    expect($shipment->fresh()->status)->toBe(Shipment::STATUS_CANCELLED);
+});
