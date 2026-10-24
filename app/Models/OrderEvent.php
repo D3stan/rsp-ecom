@@ -15,6 +15,8 @@ class OrderEvent extends Model
 
     public const TYPE_STATUS_CHANGED = 'status_changed';
 
+    public const TYPE_PAYMENT_STATUS_CHANGED = 'payment_status_changed';
+
     public const TYPE_REFUND = 'refund';
 
     public const TYPE_REFUND_FAILED = 'refund_failed';

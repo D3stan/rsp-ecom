@@ -947,6 +947,7 @@
     "admin.orders.timeline.refund": "Erstattung",
     "admin.orders.timeline.refund_failed": "Erstattung fehlgeschlagen",
     "admin.orders.timeline.note": "Notiz",
+    "admin.orders.timeline.payment_status_changed": "Zahlung: {from} → {to}",
     "admin.orders.timeline.by_system": "System",
     "admin.orders.timeline.by_system_source": "System ({source})",
     "admin.orders.timeline.no_history": "Für diese Bestellung wurde kein Statusverlauf erfasst (sie ist älter als das Änderungsprotokoll).",

@@ -288,6 +288,8 @@ class OrdersController extends Controller
                     $attributes['tracking_driver'] = $driverInput !== '' ? $driverInput : null;
                 }
 
+                $paymentFrom = $order->payment_status;
+
                 $order->fill($attributes);
 
                 if ($financial !== null) {
@@ -299,6 +301,16 @@ class OrdersController extends Controller
                     $order->transitionTo($newStatus, $request->user(), $request->input('reason'));
                 } else {
                     $order->save();
+                }
+
+                if ($paymentStatus !== null) {
+                    $order->events()->create([
+                        'actor_id' => $request->user()?->getKey(),
+                        'type' => OrderEvent::TYPE_PAYMENT_STATUS_CHANGED,
+                        'from_status' => $paymentFrom,
+                        'to_status' => $paymentStatus,
+                        'payload' => array_filter(['reason' => trim((string) $request->input('reason')) ?: null]) ?: null,
+                    ]);
                 }
 
                 foreach (['billing_address' => $order->billingAddress, 'shipping_address' => $order->shippingAddress] as $field => $address) {

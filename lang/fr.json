@@ -947,6 +947,7 @@
     "admin.orders.timeline.refund": "Remboursement",
     "admin.orders.timeline.refund_failed": "Échec du remboursement",
     "admin.orders.timeline.note": "Note",
+    "admin.orders.timeline.payment_status_changed": "Paiement : {from} → {to}",
     "admin.orders.timeline.by_system": "Système",
     "admin.orders.timeline.by_system_source": "Système ({source})",
     "admin.orders.timeline.no_history": "Aucun historique de statut n'a été enregistré pour cette commande (elle est antérieure au journal des modifications).",

@@ -72,6 +72,11 @@ export default function OrderTimeline({ createdAt, status, events, formatDate }:
                 return `${t('admin.orders.timeline.refund_failed')}${amountOf(event)}`;
             case 'refund_unconfirmed':
                 return `${t('admin.orders.timeline.refund_unconfirmed')}${amountOf(event)}`;
+            case 'payment_status_changed':
+                return t('admin.orders.timeline.payment_status_changed', {
+                    from: t(`admin.orders.payment_status.${event.from_status}`),
+                    to: t(`admin.orders.payment_status.${event.to_status}`),
+                });
             default:
                 return t('admin.orders.timeline.note');
         }

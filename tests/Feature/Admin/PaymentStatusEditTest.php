@@ -91,3 +91,32 @@ it('locks lines and totals once the order has shipped, even when the payment sta
 
     expect($item->fresh()->quantity)->toBe(2);
 })->with(['shipped', 'delivered']);
+
+it('records who changed the payment status, from what and to what', function () {
+    $order = paymentEditOrder('pending');
+
+    $this->actingAs($this->admin)->put(route('admin.orders.update', $order), [
+        'payment_status' => 'succeeded',
+        'payment_status_was' => 'pending',
+        'reason' => 'bank transfer received',
+    ])->assertSessionHas('success');
+
+    $event = $order->events()->where('type', 'payment_status_changed')->sole();
+
+    expect($event->actor_id)->toBe($this->admin->id)
+        ->and($event->from_status)->toBe('pending')
+        ->and($event->to_status)->toBe('succeeded')
+        ->and($event->payload['reason'])->toBe('bank transfer received');
+});
+
+it('records nothing when the payment status was left alone', function () {
+    $order = paymentEditOrder('pending');
+
+    $this->actingAs($this->admin)->put(route('admin.orders.update', $order), [
+        'payment_status' => 'pending',
+        'payment_status_was' => 'pending',
+        'notes' => 'just a note',
+    ])->assertSessionHas('success');
+
+    expect($order->events()->where('type', 'payment_status_changed')->exists())->toBeFalse();
+});

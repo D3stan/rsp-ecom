@@ -947,6 +947,7 @@
     "admin.orders.timeline.refund": "Reembolso",
     "admin.orders.timeline.refund_failed": "Reembolso fallido",
     "admin.orders.timeline.note": "Nota",
+    "admin.orders.timeline.payment_status_changed": "Pago: {from} → {to}",
     "admin.orders.timeline.by_system": "Sistema",
     "admin.orders.timeline.by_system_source": "Sistema ({source})",
     "admin.orders.timeline.no_history": "No se registró historial de estados para este pedido (es anterior al registro de cambios).",

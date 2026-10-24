@@ -947,6 +947,7 @@
     "admin.orders.timeline.refund": "Refund",
     "admin.orders.timeline.refund_failed": "Refund failed",
     "admin.orders.timeline.note": "Note",
+    "admin.orders.timeline.payment_status_changed": "Payment: {from} → {to}",
     "admin.orders.timeline.by_system": "System",
     "admin.orders.timeline.by_system_source": "System ({source})",
     "admin.orders.timeline.no_history": "No status history was recorded for this order (it predates the audit trail).",

@@ -947,6 +947,7 @@
     "admin.orders.timeline.refund": "Rimborso",
     "admin.orders.timeline.refund_failed": "Rimborso non riuscito",
     "admin.orders.timeline.note": "Nota",
+    "admin.orders.timeline.payment_status_changed": "Pagamento: {from} → {to}",
     "admin.orders.timeline.by_system": "Sistema",
     "admin.orders.timeline.by_system_source": "Sistema ({source})",
     "admin.orders.timeline.no_history": "Per questo ordine non è stata registrata alcuna cronologia degli stati (è precedente al registro delle modifiche).",
