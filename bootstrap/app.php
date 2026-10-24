@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ShareTranslations;
+use App\Http\Middleware\TrustAppUrlScheme;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -34,6 +35,9 @@ return Application::configure(basePath: dirname(__DIR__))
             at: ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', 'fc00::/7'],
             headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO,
         );
+
+        // The scheme comes from APP_URL, whatever the peer address or proxy headers say
+        $middleware->prepend(TrustAppUrlScheme::class);
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
