@@ -21,6 +21,7 @@ use App\Shipping\Tracking\Contracts\PassiveProvider;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\ShipmentTrackingService;
 use App\Shipping\Tracking\TrackingManager;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -180,10 +181,36 @@ class ShippingService
     }
 
     /**
-     * Labels on: create the shipment and the label PDF at the carrier, then record it and ship. The network call
-     * happens first and outside the transaction, so a refusal or an outage never leaves a half-shipped order.
+     * Labels on. The carrier call spends money and cannot be rolled back, so the same check that protects the database
+     * write (lockAndGuard) also runs before it, under a per-order lock: a double click or a second admin gets a refusal
+     * instead of a second purchase.
      */
     private function shipWithLabel(Order $order, ShipInput $input, User $actor): ShipOutcome
+    {
+        $lock = Cache::lock("ship-order:{$order->id}", 120);
+
+        if (! $lock->get()) {
+            throw new LabelProviderUnavailable('A label purchase for this order is already in progress. Wait a moment, then check the order.');
+        }
+
+        try {
+            $order->refresh();
+
+            if (! $order->canShip()) {
+                throw new InvalidOrderTransition("Order {$order->order_number} cannot ship now: it must be processing and paid.");
+            }
+
+            return $this->purchaseLabelAndShip($order, $input, $actor);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * Create the shipment and the label PDF at the carrier, then record it and ship. The network call happens first
+     * and outside the transaction, so a refusal or an outage never leaves a half-shipped order.
+     */
+    private function purchaseLabelAndShip(Order $order, ShipInput $input, User $actor): ShipOutcome
     {
         $driverName = $input->labelDriver ?? (string) settings('shipping.label_driver', '');
         $provider = $this->labels->driver($driverName);
