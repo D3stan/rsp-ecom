@@ -131,6 +131,8 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
     const { t, locale } = useTranslation();
     const [processing, setProcessing] = useState(false);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
+    // The status the form showed when it was opened; the order prop refreshes after a refused save, this must not
+    const [paymentStatusWas] = useState(order.payment_status);
     const [formData, setFormData] = useState<FormData>({
         status: order.status,
         payment_status: order.payment_status,
@@ -294,7 +296,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
         const updateData = {
             status: formData.status,
             payment_status: formData.payment_status,
-            payment_status_was: order.payment_status,
+            payment_status_was: paymentStatusWas,
             notes: formData.notes,
             tracking_number: formData.tracking_number,
             // only sent when carriers are configured, so nothing changes for installations without any
