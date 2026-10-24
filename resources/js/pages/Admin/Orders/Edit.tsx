@@ -294,6 +294,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
         const updateData = {
             status: formData.status,
             payment_status: formData.payment_status,
+            payment_status_was: order.payment_status,
             notes: formData.notes,
             tracking_number: formData.tracking_number,
             // only sent when carriers are configured, so nothing changes for installations without any

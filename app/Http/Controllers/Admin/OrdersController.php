@@ -238,6 +238,7 @@ class OrdersController extends Controller
                 'status' => 'sometimes|string|in:pending,processing,shipped,delivered,cancelled',
                 'reason' => 'sometimes|nullable|string|max:500',
                 'payment_status' => ['sometimes', 'string', Rule::in(Order::PAYMENT_STATUSES)],
+                'payment_status_was' => ['sometimes', 'string', Rule::in(Order::PAYMENT_STATUSES)],
                 'notes' => 'sometimes|nullable|string|max:1000',
                 'tracking_number' => 'sometimes|nullable|string|max:100',
                 'tracking_carrier' => ['sometimes', 'nullable', 'string', 'max:50', Rule::in(app(TrackingManager::class)->carrierCodes())],
@@ -251,6 +252,8 @@ class OrdersController extends Controller
                 'billing_address' => 'sometimes|nullable|string', // JSON string
                 'shipping_address' => 'sometimes|nullable|string', // JSON string
             ]);
+
+            $paymentStatus = $this->editedPaymentStatus($request, $order);
 
             // Shipping goes through the ship form only (ShippingService); keeping "shipped" on a shipped order is fine
             if ($request->input('status') === 'shipped' && $order->status !== 'shipped') {
@@ -269,15 +272,15 @@ class OrdersController extends Controller
             $newStatus = $request->input('status', $order->status);
             $newTrackingNumber = $request->input('tracking_number', $order->tracking_number);
 
-            DB::transaction(function () use ($request, $order, $financial, $newStatus, $newTrackingNumber, $originalStatus) {
+            DB::transaction(function () use ($request, $order, $financial, $newStatus, $newTrackingNumber, $originalStatus, $paymentStatus) {
                 $attributes = [
                     'notes' => $request->input('notes', $order->notes),
                     'tracking_number' => $newTrackingNumber,
                     'tracking_carrier' => $request->input('tracking_carrier', $order->tracking_carrier),
                 ];
 
-                if ($request->has('payment_status')) {
-                    $attributes['payment_status'] = $request->input('payment_status');
+                if ($paymentStatus !== null) {
+                    $attributes['payment_status'] = $paymentStatus;
                 }
 
                 if ($request->has('tracking_driver')) {
@@ -755,6 +758,32 @@ class OrdersController extends Controller
     private function refusedTransition(InvalidOrderTransition $e)
     {
         return back()->withErrors(['status' => $e->getMessage()])->with('error', $e->getMessage());
+    }
+
+    /**
+     * The payment status the admin changed on the form, or null when the form left it as it showed it. A value that moved
+     * since the form was loaded (webhook, refund) is never overwritten.
+     *
+     * @throws OrderEditRefused
+     */
+    private function editedPaymentStatus(Request $request, Order $order): ?string
+    {
+        if (! $request->has('payment_status')) {
+            return null;
+        }
+
+        $wanted = (string) $request->input('payment_status');
+        $shown = (string) $request->input('payment_status_was', $order->payment_status);
+
+        if ($wanted === $shown) {
+            return null;
+        }
+
+        if ($order->payment_status !== $shown) {
+            throw OrderEditRefused::paymentStatusMoved((string) $order->order_number, (string) $order->payment_status);
+        }
+
+        return $wanted;
     }
 
     /**

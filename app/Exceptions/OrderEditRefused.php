@@ -15,6 +15,11 @@ class OrderEditRefused extends DomainException
         return new self('The payment status cannot be edited: it follows Stripe and refunds.');
     }
 
+    public static function paymentStatusMoved(string $orderNumber, string $current): self
+    {
+        return new self("The payment status of order {$orderNumber} changed to \"{$current}\" while you were editing it. Reload the page and try again.");
+    }
+
     public static function financialsLocked(string $orderNumber): self
     {
         return new self("Order {$orderNumber} is paid or its payment is in progress: its items, prices, quantities and totals can no longer be edited. Use a refund to return money.");
