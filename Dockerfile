@@ -19,6 +19,12 @@ COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
 COPY --from=vendor /var/www/html/vendor ./vendor
+# Browser source maps are uploaded to Sentry only when these are set (vite.config.ts); the token lives in this build
+# stage only, never in the final image.
+ARG SENTRY_AUTH_TOKEN=
+ARG SENTRY_ORG=
+ARG SENTRY_PROJECT=
+ARG SENTRY_URL=
 RUN npm run build
 
 

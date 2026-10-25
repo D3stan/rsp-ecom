@@ -5,6 +5,12 @@ x-app-common: &app-common
   build:
     context: .
     dockerfile: Dockerfile
+    # Dokploy's Environment tab feeds compose's variable substitution; all optional (source map upload is skipped without a token)
+    args:
+      SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:-}
+      SENTRY_ORG: ${SENTRY_ORG:-}
+      SENTRY_PROJECT: ${SENTRY_PROJECT:-}
+      SENTRY_URL: ${SENTRY_URL:-}
   restart: unless-stopped
   # Dokploy writes the variables from its Environment tab into this .env file.
   env_file:

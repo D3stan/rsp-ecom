@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
+use Whitecube\LaravelCookieConsent\CookiesManager;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -54,6 +55,14 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'csrf_token' => $request->hasSession() ? csrf_token() : '',
+            'sentry' => [
+                'dsn' => config('sentry.frontend_dsn'),
+                'environment' => config('sentry.environment') ?? app()->environment(),
+                'release' => config('sentry.release'),
+                // A fresh manager (not the Cookies facade, which keeps the instance built at boot, before the
+                // consent cookie was decrypted) so the visitor's current choice is what is read.
+                'replay' => app(CookiesManager::class)->hasConsentFor('sentry_replay'),
+            ],
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

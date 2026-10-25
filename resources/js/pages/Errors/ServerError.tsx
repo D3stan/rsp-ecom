@@ -2,10 +2,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import useTranslation from '@/hooks/useTranslation';
 import PublicLayout from '@/layouts/public-layout';
+import { isFeedbackAvailable, openFeedbackForm } from '@/lib/sentry';
 import { Head, Link } from '@inertiajs/react';
 import { AlertTriangle, ArrowLeft, Home, RefreshCw } from 'lucide-react';
 
-export default function ServerError() {
+export default function ServerError({ requestId }: { requestId?: string | null }) {
     const { t } = useTranslation();
 
     const refreshPage = () => {
@@ -69,6 +70,34 @@ export default function ServerError() {
                                 <Link href="/contact" className="text-sm font-medium text-black transition-colors hover:text-gray-700">
                                     {t('error_pages.500.contact_support')}
                                 </Link>
+                                {isFeedbackAvailable() && (
+                                    <div className="mt-4">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                                openFeedbackForm(
+                                                    {
+                                                        title: t('error_pages.500.report_title'),
+                                                        messageLabel: t('error_pages.500.report_message_label'),
+                                                        submit: t('error_pages.500.report_submit'),
+                                                        cancel: t('error_pages.500.report_cancel'),
+                                                        success: t('error_pages.500.report_success'),
+                                                    },
+                                                    requestId,
+                                                )
+                                            }
+                                            className="text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                        >
+                                            {t('error_pages.500.report_button')}
+                                        </Button>
+                                    </div>
+                                )}
+                                {requestId && (
+                                    <p className="mt-4 text-xs text-gray-500">
+                                        {t('error_pages.500.reference')}: <span className="font-mono select-all">{requestId}</span>
+                                    </p>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

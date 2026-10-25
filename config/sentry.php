@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\SentryEventFilter;
+
 /**
  * Sentry Laravel SDK configuration file.
  *
@@ -18,7 +20,15 @@ return [
 
     // The release version of your application
     // Example with dynamic git hash: trim(exec('git --git-dir ' . base_path('.git') . ' log --pretty="%h" -n1 HEAD'))
-    'release' => env('SENTRY_RELEASE'),
+    // Falls back to the release written by the asset build (vite.config.ts), so the browser source maps uploaded for
+    // that build and the server events carry the same release.
+    'release' => env('SENTRY_RELEASE') ?: (is_file($releaseFile = public_path('build/release.txt')) ? trim((string) file_get_contents($releaseFile)) : null),
+
+    // The browser SDK is handed this DSN through Inertia's shared props; a DSN is public by design.
+    'frontend_dsn' => env('SENTRY_FRONTEND_DSN', env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN'))),
+
+    // Sends each distinct failure once per window (see the class)
+    'before_send' => [SentryEventFilter::class, 'beforeSend'],
 
     // When left empty or `null` the Laravel environment will be used (usually discovered from `APP_ENV` in your `.env`)
     'environment' => env('SENTRY_ENVIRONMENT'),

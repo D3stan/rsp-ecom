@@ -2,13 +2,16 @@ import React from 'react';
 import '../css/app.css';
 
 import { createInertiaApp } from '@inertiajs/react';
+import * as Sentry from '@sentry/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
+import ErrorFallback from './components/error-fallback';
 import FlashToaster from './components/flash-toaster';
 import { ToastContainer } from './components/Toast';
 import { ToastProvider } from './contexts/ToastContext';
 import { TranslationProvider } from './contexts/TranslationContext';
 import { initializeTheme } from './hooks/use-appearance';
+import { initSentry, type SentryConfig } from './lib/sentry';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -21,7 +24,7 @@ function AppWrapper({ children, pageProps }: { children: React.ReactNode; pagePr
     return (
         <TranslationProvider initialTranslations={translations} initialLocale={locale} supportedLocales={supportedLocales}>
             <ToastProvider>
-                {children}
+                <Sentry.ErrorBoundary fallback={<ErrorFallback />}>{children}</Sentry.ErrorBoundary>
                 <ToastContainer />
             </ToastProvider>
         </TranslationProvider>
@@ -32,6 +35,11 @@ createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
     setup({ el, App, props }) {
+        initSentry(
+            props.initialPage.props.sentry as SentryConfig | undefined,
+            props.initialPage.props.auth as { user?: { id: number; role?: string } | null },
+        );
+
         const root = createRoot(el);
 
         // Renders the page (this app has no persistent layouts) next to the FlashToaster: inside Inertia's page

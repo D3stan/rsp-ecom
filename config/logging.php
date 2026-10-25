@@ -123,6 +123,13 @@ return [
             'handler' => NullHandler::class,
         ],
 
+        // Turns Log::error() and above into Sentry issues. Add it to LOG_STACK (e.g. stderr,daily,sentry).
+        'sentry' => [
+            'driver' => 'sentry',
+            'level' => 'error',
+            'bubble' => true,
+        ],
+
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
