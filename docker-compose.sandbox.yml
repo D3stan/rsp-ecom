@@ -1,5 +1,5 @@
 # Big Sandbox Docker Compose
-# Fully isolated from production: dedicated DB, Redis, Mailpit email capture,
+# Fully isolated from production: dedicated DB, Mailpit email capture,
 # and separate volume namespaces.
 
 x-app-common: &app-common
@@ -26,8 +26,6 @@ services:
       - default
     depends_on:
       db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
 
   queue:
@@ -88,25 +86,11 @@ services:
     networks:
       - default
 
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    volumes:
-      - sandbox-redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - default
-
 volumes:
   sandbox-storage-app:
   sandbox-storage-logs:
   sandbox-mailpit-data:
   sandbox-db-data:
-  sandbox-redis-data:
 
 networks:
   dokploy-network:

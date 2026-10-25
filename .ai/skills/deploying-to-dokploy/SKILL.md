@@ -17,9 +17,9 @@ Dokploy runs two compose stacks of this repo. Find each one by name with `projec
 | | Production | Sandbox |
 |---|---|---|
 | Compose file | `docker-compose.yml` | `docker-compose.sandbox.yml` |
-| Services | `app`, `queue`, `scheduler` | those three plus `mailpit`, `db` (MariaDB), `redis` |
+| Services | `app`, `queue`, `scheduler` | those three plus `mailpit`, `db` (MariaDB) |
 | Database | external Dokploy database | in-stack `rsp_sandbox` |
-| Volumes | `storage-app`, `storage-logs` | `sandbox-*` (storage, logs, db, redis, mailpit) |
+| Volumes | `storage-app`, `storage-logs` | `sandbox-*` (storage, logs, db, mailpit) |
 | Mail | Brevo SMTP | Mailpit: `MAIL_HOST=mailpit`, `MAIL_PORT=1025` |
 | Stripe | live keys | test keys only |
 
