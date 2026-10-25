@@ -1,8 +1,8 @@
+import { MarkdownEditor } from '@/components/admin/MarkdownEditor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/useTranslation';
 import { Plus, Trash2, GripVertical, Star, X } from 'lucide-react';
 import { useState } from 'react';
@@ -199,11 +199,10 @@ export function VariantManager({ variants, baseSku, onVariantsChange, validation
                                     {/* Description */}
                                     <div className="md:col-span-2">
                                         <Label>{t('admin.products.variants.description')}</Label>
-                                        <Textarea
+                                        <MarkdownEditor
                                             value={variant.description}
-                                            onChange={(e) => updateVariant(index, { description: e.target.value })}
+                                            onChange={(description) => updateVariant(index, { description })}
                                             placeholder={t('admin.products.variants.description_placeholder')}
-                                            rows={3}
                                         />
                                     </div>
 
