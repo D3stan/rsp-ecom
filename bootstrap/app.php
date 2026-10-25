@@ -18,6 +18,7 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Sentry\Laravel\Integration;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -61,6 +62,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->preventRequestForgery(except: ['webhooks/tracking/*', 'stripe/webhook', 'newsletter/unsubscribe/*', 'restock/unsubscribe/*']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        Integration::handles($exceptions);
 
         $exceptions->render(function (PostTooLargeException $e, $request) {
             $message = 'Upload troppo grande: riduci il peso totale delle immagini e riprova.';
