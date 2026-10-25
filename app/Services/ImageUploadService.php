@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class ImageUploadService
 {
@@ -112,7 +113,7 @@ class ImageUploadService
      */
     public function uploadDescriptionImage(UploadedFile $image): string
     {
-        $extension = self::DESCRIPTION_EXTENSIONS[$image->getMimeType()] ?? throw new \InvalidArgumentException('Unsupported description image type');
+        $extension = self::DESCRIPTION_EXTENSIONS[$image->getMimeType()] ?? throw new InvalidArgumentException('Unsupported description image type');
 
         $disk = $this->descriptionDisk();
         $filename = now()->timestamp.'_'.Str::random(8).'.'.$extension;
