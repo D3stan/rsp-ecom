@@ -12,7 +12,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { ChevronDown, Package, Settings, Star } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { route } from 'ziggy-js';
 
 interface Category {
@@ -225,11 +225,19 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
 
         router.post(route('admin.products.update', product.id), formData, {
             forceFormData: true,
+            preserveScroll: 'errors',
             onError: (errors: Record<string, string>) => {
                 console.error('Server errors:', errors);
                 // router.post does not feed useForm: replace (not merge) its errors so stale ones disappear
                 clearErrors();
                 setError(errors);
+                // Opening the card and scrolling to the field: after a failed save the admin must see the message
+                if (errors.seo_title || errors.seo_description) {
+                    setIsAdvancedOpen(true);
+                    requestAnimationFrame(() =>
+                        document.getElementById(errors.seo_title ? 'seo_title' : 'seo_description')?.scrollIntoView({ block: 'center' }),
+                    );
+                }
                 // Display error to user
                 if (errors.error) {
                     alert(t('admin.products.error_prefix', { message: errors.error }));
@@ -238,9 +246,14 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
                 } else if (Object.keys(errors).some((key) => key.endsWith('.stock_quantity_original'))) {
                     // The page was loaded before the stock-delta form existed: the server asks for a reload
                     alert(Object.entries(errors).find(([key]) => key.endsWith('.stock_quantity_original'))?.[1]);
-                } else if (!errors.seo_title && !errors.seo_description) {
-                    // SEO errors are shown under their field; anything else: the first server message, never "check the console"
-                    alert(Object.values(errors)[0] || t('admin.products.error_occurred'));
+                } else {
+                    // SEO errors are shown under their field; any other error (variants.N.*, images) is shown nowhere else, so alert the first one
+                    const firstOtherMessage = Object.entries(errors).find(([key]) => key !== 'seo_title' && key !== 'seo_description')?.[1];
+                    if (firstOtherMessage) {
+                        alert(firstOtherMessage);
+                    } else if (!errors.seo_title && !errors.seo_description) {
+                        alert(t('admin.products.error_occurred'));
+                    }
                 }
             },
         });
@@ -268,13 +281,6 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formErrors = errors as Record<string, any>;
-
-    // A server error on an SEO field must be visible: open the card that holds them
-    useEffect(() => {
-        if (formErrors.seo_title || formErrors.seo_description) {
-            setIsAdvancedOpen(true);
-        }
-    }, [formErrors.seo_title, formErrors.seo_description]);
 
     return (
         <AdminLayout
@@ -483,7 +489,9 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
                                             <p
                                                 className={`mt-1 text-xs ${((data.seo_description as string) || '').length > 500 ? 'text-red-500' : ((data.seo_description as string) || '').length > 160 ? 'text-amber-600' : 'text-gray-500'}`}
                                             >
-                                                {t('admin.products.seo_description_counter', { count: ((data.seo_description as string) || '').length })}
+                                                {t('admin.products.seo_description_counter', {
+                                                    count: ((data.seo_description as string) || '').length,
+                                                })}
                                             </p>
                                         </div>
                                     </div>

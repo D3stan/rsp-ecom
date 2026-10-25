@@ -12,7 +12,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { ChevronDown, Package, Settings, Star } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { route } from 'ziggy-js';
 
 type ProductFormData = {
@@ -89,13 +89,6 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
         ],
     });
 
-    // A server error on an SEO field must be visible: open the card that holds them
-    useEffect(() => {
-        if (errors.seo_title || errors.seo_description) {
-            setIsAdvancedOpen(true);
-        }
-    }, [errors.seo_title, errors.seo_description]);
-
     const [validationErrors, setValidationErrors] = useState<Record<string, boolean>>({});
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -166,10 +159,18 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
 
         router.post(route('admin.products.store'), formData, {
             forceFormData: true,
+            preserveScroll: 'errors',
             onError: (serverErrors) => {
                 // router.post does not feed useForm: replace (not merge) its errors so stale ones disappear
                 clearErrors();
                 setError(serverErrors as Record<keyof ProductFormData, string>);
+                // Opening the card and scrolling to the field: after a failed save the admin must see the message
+                if (serverErrors.seo_title || serverErrors.seo_description) {
+                    setIsAdvancedOpen(true);
+                    requestAnimationFrame(() =>
+                        document.getElementById(serverErrors.seo_title ? 'seo_title' : 'seo_description')?.scrollIntoView({ block: 'center' }),
+                    );
+                }
             },
         });
     };
