@@ -89,7 +89,7 @@ class OrderFactory extends Factory
     private function getPaymentStatusForOrder(string $orderStatus): string
     {
         return match ($orderStatus) {
-            'pending' => $this->faker->randomElement(['pending', 'failed']),
+            'pending' => 'failed', // seeded orders have no Stripe session, so nothing would ever expire a `pending` payment
             'processing', 'shipped', 'delivered' => 'paid',
             'cancelled' => $this->faker->randomElement(['refunded', 'failed']),
             default => 'pending',
