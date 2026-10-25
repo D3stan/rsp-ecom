@@ -1,6 +1,7 @@
 import Header from '@/components/header';
 import { ProductRatingSummary } from '@/components/product-rating-summary';
 import ProductSafety from '@/components/product/ProductSafety';
+import RichText from '@/components/product/RichText';
 import ProductReviews from '@/components/reviews/ProductReviews';
 import type { DisplayReview } from '@/components/reviews/review-gallery';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,8 @@ interface ProductVariant {
     stock_quantity: number;
     images: string[];
     description: string;
+    description_html: string;
+    description_text: string;
     is_default: boolean;
 }
 
@@ -164,7 +167,7 @@ export default function Product() {
             if (navigator.share) {
                 await navigator.share({
                     title: product.name,
-                    text: selectedVariant.description || product.name,
+                    text: selectedVariant.description_text || product.name,
                     url: shareUrl,
                 });
                 return;
@@ -389,10 +392,10 @@ export default function Product() {
                                 </div>
                             </div>
 
-                            {/* Short Description */}
-                            {selectedVariant.description && (
+                            {/* Description (markdown rendered by the server) */}
+                            {selectedVariant.description_html && (
                                 <div className="border-t border-gray-200 pt-6">
-                                    <p className="leading-relaxed text-gray-700">{selectedVariant.description}</p>
+                                    <RichText html={selectedVariant.description_html} collapsible />
                                 </div>
                             )}
                         </div>

@@ -1778,6 +1778,8 @@
     "faq.head_title": "FAQ - Häufig gestellte Fragen",
     "cart.empty_cart_hint": "Fügen Sie Artikel hinzu, um zu beginnen",
     "product.breadcrumb_label": "Brotkrümelnavigation",
+    "product.read_more": "Mehr lesen",
+    "product.read_less": "Weniger anzeigen",
     "contact.head_title": "Kontakt - Your Store",
     "contact.form.first_name_placeholder": "Max",
     "contact.form.last_name_placeholder": "Mustermann",

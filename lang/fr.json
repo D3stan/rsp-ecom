@@ -1778,6 +1778,8 @@
     "faq.head_title": "FAQ - Questions fréquentes",
     "cart.empty_cart_hint": "Ajoutez des articles pour commencer",
     "product.breadcrumb_label": "Fil d'Ariane",
+    "product.read_more": "Lire la suite",
+    "product.read_less": "Afficher moins",
     "contact.head_title": "Contactez-nous - Your Store",
     "contact.form.first_name_placeholder": "Jean",
     "contact.form.last_name_placeholder": "Dupont",

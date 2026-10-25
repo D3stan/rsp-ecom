@@ -1778,6 +1778,8 @@
     "faq.head_title": "FAQ - Preguntas frecuentes",
     "cart.empty_cart_hint": "Añada artículos para empezar",
     "product.breadcrumb_label": "Ruta de navegación",
+    "product.read_more": "Leer más",
+    "product.read_less": "Mostrar menos",
     "contact.head_title": "Contáctenos - Your Store",
     "contact.form.first_name_placeholder": "Juan",
     "contact.form.last_name_placeholder": "Pérez",
