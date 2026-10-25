@@ -54,7 +54,7 @@ it('rejects files that are not images', function () {
         ->assertJsonValidationErrors('image');
 });
 
-it('never stores a script disguised as a png', function () {
+it('rejects a non-image renamed to png', function () {
     $admin = User::factory()->create(['role' => 'admin']);
     $path = tempnam(sys_get_temp_dir(), 'desc');
     $this->tempFiles[] = $path;
