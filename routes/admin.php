@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\NewsletterCampaignsController;
 use App\Http\Controllers\Admin\NewsletterSubscribersController;
 use App\Http\Controllers\Admin\OrdersController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductDescriptionController;
 use App\Http\Controllers\Admin\ReviewMediaController;
 use App\Http\Controllers\Admin\ReviewsController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -41,6 +42,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('shipping/preferred-carriers/toggle', [ShippingQuotesController::class, 'togglePreferredCarrier'])->name('shipping.preferred-carriers.toggle');
 
     // Products Management
+    // Markdown description editor helpers (declared before the resource so `products/...` never reads as a product id)
+    Route::post('products/markdown-preview', [ProductDescriptionController::class, 'preview'])->middleware('throttle:120,1')->name('products.markdown-preview');
+    Route::post('products/description-images', [ProductDescriptionController::class, 'image'])->middleware('throttle:30,1')->name('products.description-images');
     Route::resource('products', ProductController::class);
     Route::patch('products/{product}/quick-stock', [ProductController::class, 'quickStock'])->name('products.quick-stock');
     Route::delete('products/{product}/images/{filename}', [ProductController::class, 'removeImage'])->name('products.remove-image');
