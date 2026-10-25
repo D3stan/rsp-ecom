@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Services\MarkdownRenderer;
 use App\Models\Category;
 use App\Support\CatalogPagination;
 use Illuminate\Http\Request;
@@ -219,7 +220,7 @@ class ProductsController extends Controller
     /**
      * Display the specified product.
      */
-    public function show(string $slug): Response
+    public function show(string $slug, MarkdownRenderer $markdown): Response
     {
         $product = Product::with(['category', 'approvedReviews.user', 'approvedReviews.approvedMedia', 'size', 'activeVariants', 'defaultVariant'])
             ->withAvg('approvedReviews', 'rating')
@@ -230,7 +231,8 @@ class ProductsController extends Controller
 
         // Set SEO meta tags for product page
         $pageTitle = $product->seo_title ?: $product->name;
-        $metaDescription = $product->seo_description ?: strip_tags($product->description);
+        $metaDescription = $product->seo_description
+            ?: $markdown->toPlainText($product->defaultVariant?->description ?: $product->description);
 
         SEOMeta::setTitle($pageTitle . ' – ' . settings('store.name'));
         SEOMeta::setDescription(Str::limit($metaDescription, 160));
@@ -334,6 +336,8 @@ class ProductsController extends Controller
                 'stock_quantity' => $v->stock_quantity,
                 'images' => $v->image_urls,
                 'description' => $v->description,
+                'description_html' => $markdown->toHtml($v->description),
+                'description_text' => $markdown->toPlainText($v->description),
                 'is_default' => $v->is_default,
             ]),
             'shipping' => [

@@ -11,7 +11,7 @@
         {!! \Artesaos\SEOTools\Facades\SEOMeta::generate() !!}
         {!! \Artesaos\SEOTools\Facades\OpenGraph::generate() !!}
         {!! \Artesaos\SEOTools\Facades\TwitterCard::generate() !!}
-        {!! \Artesaos\SEOTools\Facades\JsonLd::generate() !!}
+        <script type="application/ld+json">{!! json_encode(array_merge(['@@context' => 'https://schema.org'], \Artesaos\SEOTools\Facades\JsonLd::convertToArray()), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
 
         {{-- Include WebSite JSON-LD for sitelinks search box (homepage only) --}}
         @if(isset($page['props']['websiteJsonLd']))

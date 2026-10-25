@@ -8,6 +8,7 @@ use App\Models\ProductVariant;
 use App\Models\Category;
 use App\Models\Size;
 use App\Services\FileUploadConfigService;
+use App\Services\MarkdownRenderer;
 use App\Services\StockService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
@@ -147,7 +148,7 @@ class ProductController extends Controller
                 'variants.*.sku_suffix' => 'nullable|string|max:50',
                 'variants.*.price' => 'required|numeric|min:0',
                 'variants.*.stock_quantity' => 'required|integer|min:0',
-                'variants.*.description' => 'nullable|string',
+                'variants.*.description' => 'nullable|string|max:'.MarkdownRenderer::MAX_LENGTH,
                 'variants.*.is_default' => 'boolean',
                 'variants.*.sort_order' => 'integer',
             ];
@@ -407,7 +408,7 @@ class ProductController extends Controller
                 'variants.*.stock_quantity' => 'required|integer|min:0',
                 // The stock the form loaded: the save applies (typed - loaded) to the current stock (concurrent sales)
                 'variants.*.stock_quantity_original' => 'required_with:variants.*.id|nullable|integer|min:0',
-                'variants.*.description' => 'nullable|string',
+                'variants.*.description' => 'nullable|string|max:'.MarkdownRenderer::MAX_LENGTH,
                 'variants.*.is_default' => 'boolean',
                 'variants.*.sort_order' => 'integer',
                 'variants.*.existing_images' => 'nullable|array',
