@@ -10,6 +10,8 @@ use League\CommonMark\Extension\CommonMark\Node\Inline\Image;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Link;
 use League\CommonMark\Extension\ExternalLink\ExternalLinkExtension;
 use League\CommonMark\MarkdownConverter;
+use League\CommonMark\Node\Block\Paragraph;
+use League\CommonMark\Node\Node;
 
 /**
  * Turns admin-written markdown (variant descriptions) into safe HTML and plain text. This is the only class that knows
@@ -92,7 +94,9 @@ class MarkdownRenderer
                 if ($this->isDescriptionImage($node->getUrl(), $imageBase)) {
                     $node->data->set('attributes/loading', 'lazy');
                 } else {
+                    $parent = $node->parent();
                     $node->detach();
+                    $this->dropEmptyAncestors($parent);
                 }
             }
         }
@@ -108,12 +112,23 @@ class MarkdownRenderer
 
     private function isAllowedLink(string $url): bool
     {
-        $parts = parse_url($url);
-
-        if ($parts === false) {
-            return false;
+        // Not parse_url(): it reads `javascript:1/alert(1)` as a host with no scheme
+        if (preg_match('/^([a-z][a-z0-9+.\-]*):/i', $url, $match)) {
+            return in_array(strtolower($match[1]), self::ALLOWED_LINK_SCHEMES, true);
         }
 
-        return ! isset($parts['scheme']) || in_array(strtolower($parts['scheme']), self::ALLOWED_LINK_SCHEMES, true);
+        return true;
+    }
+
+    /**
+     * After a dropped image, remove the links and paragraphs that were left with nothing inside.
+     */
+    private function dropEmptyAncestors(?Node $node): void
+    {
+        while (($node instanceof Link || $node instanceof Paragraph) && ! $node->hasChildren()) {
+            $parent = $node->parent();
+            $node->detach();
+            $node = $parent;
+        }
     }
 }

@@ -27,7 +27,7 @@ it('removes links with unsafe schemes but keeps their text', function (string $u
     $html = markdownRenderer()->toHtml("[click me]({$url})");
 
     expect($html)->not->toContain('<a')->not->toContain($url)->toContain('click me');
-})->with(['javascript:alert(1)', 'ftp://example.org/a', 'data:text/html;base64,AAAA']);
+})->with(['javascript:alert(1)', 'ftp://example.org/a', 'data:text/html;base64,AAAA', 'javascript:1/alert(1)', '&#106;avascript:alert(1)']);
 
 it('keeps http, mailto and relative links and opens external ones safely', function () {
     $html = markdownRenderer()->toHtml('[a](https://example.org/x) [b](mailto:info@example.org) [c](/products)');
@@ -66,4 +66,52 @@ it('produces plain text without markup or markdown syntax', function () {
     $text = markdownRenderer()->toPlainText("**Bold** and [a link](https://x.test)\n\n- one\n- two\n\nFish & chips");
 
     expect($text)->toBe('Bold and a link one two Fish & chips');
+});
+
+it('removes reference-style links with unsafe schemes', function () {
+    $html = markdownRenderer()->toHtml("[x][r]\n\n[r]: javascript:alert(1)");
+
+    expect($html)->not->toContain('<a')->not->toContain('href');
+});
+
+it('handles autolinks: unsafe schemes are removed, safe ones kept', function () {
+    expect(markdownRenderer()->toHtml('<javascript:alert(1)>'))->not->toContain('<a')
+        ->and(markdownRenderer()->toHtml('<https://x.test>'))->toContain('href="https://x.test"')->toContain('noopener');
+});
+
+it('drops images with javascript or data urls', function (string $url) {
+    expect(markdownRenderer()->toHtml("![x]({$url})"))->not->toContain('<img');
+})->with(['javascript:alert(1)', 'data:image/png;base64,AAAA']);
+
+it('leaves no empty elements behind when an image is dropped', function () {
+    expect(markdownRenderer()->toHtml('![x](https://evil.test/a.png)'))->toBe('');
+
+    $html = markdownRenderer()->toHtml('[![x](https://evil.test/a.png)](https://ok.test)');
+
+    expect($html)->not->toContain('<img')->not->toContain('<a')->not->toContain('<p></p>');
+});
+
+it('escapes quotes in image alt text and link titles', function () {
+    $base = app(ImageUploadService::class)->descriptionImageBaseUrl();
+
+    $image = markdownRenderer()->toHtml("![x\" onerror=\"alert(1)]({$base}a.png)");
+    $link = markdownRenderer()->toHtml('[x](https://x.test "t\" onclick=\"alert(1)")');
+
+    expect($image)->not->toContain('" onerror=')
+        ->and($link)->not->toContain('" onclick=');
+});
+
+it('strips html blocks', function () {
+    expect(markdownRenderer()->toHtml("<div onclick=\"x()\">hi</div>\n\ntext"))->not->toContain('<div');
+});
+
+it('demotes headings nested in blockquotes and list items', function () {
+    $html = markdownRenderer()->toHtml("> # Quote\n\n- # Item\n- ## Item2");
+
+    expect($html)->not->toContain('<h1')->not->toContain('<h2');
+});
+
+it('returns escaped html entities as literal characters in plain text', function () {
+    // Callers must escape the plain text for their own output context (meta tags, JSON-LD)
+    expect(markdownRenderer()->toPlainText('&lt;b&gt;'))->toBe('<b>');
 });
