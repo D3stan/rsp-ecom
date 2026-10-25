@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\ReviewMedia;
-use Illuminate\Http\Request;
+use Artesaos\SEOTools\Facades\OpenGraph;
+use Artesaos\SEOTools\Facades\SEOMeta;
+use Artesaos\SEOTools\Facades\TwitterCard;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-use Artesaos\SEOTools\Facades\SEOMeta;
-use Artesaos\SEOTools\Facades\OpenGraph;
-use Artesaos\SEOTools\Facades\TwitterCard;
 use Spatie\SchemaOrg\Schema;
 
 class HomeController extends Controller
@@ -24,25 +24,25 @@ class HomeController extends Controller
         // Set SEO for homepage based on current locale
         $appName = settings('store.name');
         $locale = app()->getLocale();
-        
+
         // Language-specific SEO content
         $seoContent = $this->getSeoContentByLocale($locale);
-        
-        SEOMeta::setTitle($appName . ' - ' . $seoContent['title']);
+
+        SEOMeta::setTitle($appName.' - '.$seoContent['title']);
         SEOMeta::setDescription($seoContent['description']);
         SEOMeta::setKeywords($seoContent['keywords']);
         SEOMeta::setCanonical(url('/'));
-        
+
         OpenGraph::setType('website');
         OpenGraph::setUrl(url('/'));
-        OpenGraph::setTitle($appName . ' - ' . $seoContent['title']);
+        OpenGraph::setTitle($appName.' - '.$seoContent['title']);
         OpenGraph::setDescription($seoContent['description']);
         OpenGraph::setSiteName($appName);
-        
+
         TwitterCard::setType('summary_large_image');
-        TwitterCard::setTitle($appName . ' - ' . $seoContent['twitter_title']);
+        TwitterCard::setTitle($appName.' - '.$seoContent['twitter_title']);
         TwitterCard::setDescription($seoContent['twitter_description']);
-        
+
         // Add default social image if available
         $socialImagePath = 'images/rsplogo.png';
         $socialImageUrl = asset($socialImagePath);
@@ -58,7 +58,7 @@ class HomeController extends Controller
             ->description($seoContent['schema_description'])
             ->potentialAction(
                 Schema::searchAction()
-                    ->target(url('/products') . '?search={search_term_string}')
+                    ->target(url('/products').'?search={search_term_string}')
                     ->queryInput('required name=search_term_string')
             )
             ->toScript();
@@ -73,7 +73,7 @@ class HomeController extends Controller
             ->map(function (Product $product) {
                 // Use the product's accessor which prioritizes default variant images
                 $imageUrl = $product->main_image_url;
-                
+
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -106,6 +106,7 @@ class HomeController extends Controller
                 return [
                     'id' => $category->id,
                     'name' => str_replace([' ', '&'], ['_', '_'], strtolower($category->name)),
+                    'label' => $category->name,
                     'slug' => $category->slug,
                     'count' => $category->products_count,
                     'icon' => $this->getCategoryIcon($category->slug),
@@ -124,9 +125,9 @@ class HomeController extends Controller
      * Featured customer photos for the home "Rider gallery": approved + featured photos of approved reviews on
      * active products, newest first, capped at 12. Hidden on the frontend when empty.
      *
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>
      */
-    private function riderGallery(): \Illuminate\Support\Collection
+    private function riderGallery(): Collection
     {
         return ReviewMedia::query()
             ->where('status', ReviewMedia::STATUS_APPROVED)
@@ -186,7 +187,7 @@ class HomeController extends Controller
     {
         $iconMap = [
             'electronics' => 'Smartphone',
-            'clothing' => 'Shirt', 
+            'clothing' => 'Shirt',
             'home-garden' => 'Home',
             'sports-outdoors' => 'Activity',
             'books-media' => 'Book',
@@ -208,7 +209,7 @@ class HomeController extends Controller
      */
     private function imageExists(?string $imageUrl): bool
     {
-        if (!$imageUrl) {
+        if (! $imageUrl) {
             return false;
         }
 
@@ -220,11 +221,13 @@ class HomeController extends Controller
         // For storage URLs, check if the file exists
         if (str_starts_with($imageUrl, '/storage/')) {
             $filePath = str_replace('/storage/', '', $imageUrl);
+
             return \Storage::disk('public')->exists($filePath);
         }
 
         // For other paths, check if the public file exists
         $publicPath = public_path($imageUrl);
+
         return file_exists($publicPath);
     }
 
