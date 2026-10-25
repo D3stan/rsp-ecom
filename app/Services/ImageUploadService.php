@@ -9,6 +9,9 @@ use InvalidArgumentException;
 
 class ImageUploadService
 {
+    /** Same disk as variant images: the S3 adapter is not installed. */
+    private const DESCRIPTION_DISK = 'public';
+
     /** Shared folder for photos embedded in variant descriptions (the product may not exist yet when they are uploaded). */
     private const DESCRIPTION_DIRECTORY = 'products/descriptions';
 
@@ -108,32 +111,33 @@ class ImageUploadService
     }
 
     /**
-     * Upload a photo used inside a variant description. The extension comes from the detected file content through a
-     * fixed allowlist, never from the client name; anything else is refused.
+     * Upload a photo used inside a variant description, always to the public disk (like variant images). The extension
+     * comes from the detected file content through a fixed allowlist, never from the client name; anything else is
+     * refused. Returns the root-relative URL path, so the stored markdown survives a change of domain or scheme.
      */
     public function uploadDescriptionImage(UploadedFile $image): string
     {
         $extension = self::DESCRIPTION_EXTENSIONS[$image->getMimeType()] ?? throw new InvalidArgumentException('Unsupported description image type');
 
-        $disk = $this->descriptionDisk();
         $filename = now()->timestamp.'_'.Str::random(8).'.'.$extension;
 
-        $image->storeAs(self::DESCRIPTION_DIRECTORY, $filename, $disk);
+        $image->storeAs(self::DESCRIPTION_DIRECTORY, $filename, self::DESCRIPTION_DISK);
 
-        return Storage::disk($disk)->url(self::DESCRIPTION_DIRECTORY.'/'.$filename);
+        return $this->urlPath(self::DESCRIPTION_DIRECTORY.'/'.$filename);
     }
 
     /**
-     * URL prefix every description photo starts with; the markdown renderer keeps only images under it.
+     * Root-relative path prefix (starts with a single `/`) every description photo starts with; the markdown renderer
+     * keeps only images under it, which also rejects absolute and protocol-relative URLs.
      */
     public function descriptionImageBaseUrl(): string
     {
-        return Storage::disk($this->descriptionDisk())->url(self::DESCRIPTION_DIRECTORY.'/');
+        return $this->urlPath(self::DESCRIPTION_DIRECTORY.'/');
     }
 
-    private function descriptionDisk(): string
+    private function urlPath(string $path): string
     {
-        return config('filesystems.default') === 's3' ? 's3' : 'public';
+        return parse_url(Storage::disk(self::DESCRIPTION_DISK)->url($path), PHP_URL_PATH);
     }
 
     /**

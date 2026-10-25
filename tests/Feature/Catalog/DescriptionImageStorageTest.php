@@ -29,7 +29,9 @@ it('stores a description image under the description folder and returns a URL be
 
     $url = $service->uploadDescriptionImage(UploadedFile::fake()->image('photo.jpg'));
 
-    expect($url)->toStartWith($service->descriptionImageBaseUrl());
+    expect($url)->toStartWith('/storage/products/descriptions/')
+        ->and($url)->toStartWith($service->descriptionImageBaseUrl())
+        ->and(parse_url($url, PHP_URL_HOST))->toBeNull();
     $files = Storage::disk('public')->files('products/descriptions');
     expect($files)->toHaveCount(1)
         ->and($url)->toEndWith(basename($files[0]));

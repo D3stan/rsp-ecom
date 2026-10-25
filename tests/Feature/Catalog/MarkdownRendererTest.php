@@ -50,6 +50,12 @@ it('keeps images from the description storage and drops every other image', func
         ->and($dropped)->not->toContain('<img');
 });
 
+it('keeps root-relative description images and drops absolute and protocol-relative ones', function () {
+    expect(markdownRenderer()->toHtml('![x](/storage/products/descriptions/a.png)'))->toContain('src="/storage/products/descriptions/a.png"')
+        ->and(markdownRenderer()->toHtml('![x](https://anything.test/storage/products/descriptions/a.png)'))->not->toContain('<img')
+        ->and(markdownRenderer()->toHtml('![x](//evil.test/storage/products/descriptions/a.png)'))->not->toContain('<img');
+});
+
 it('drops images that use path traversal to leave the description folder', function (string $suffix) {
     $base = app(ImageUploadService::class)->descriptionImageBaseUrl();
 
