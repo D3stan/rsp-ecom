@@ -1,8 +1,11 @@
 <?php
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 function seedJob(int $availableMinutesAgo, ?int $reservedAt = null): void
 {
@@ -20,7 +23,7 @@ function seedFailedJobs(int $count): void
 {
     for ($i = 0; $i < $count; $i++) {
         DB::table('failed_jobs')->insert([
-            'uuid' => (string) Illuminate\Support\Str::uuid(),
+            'uuid' => (string) Str::uuid(),
             'connection' => 'database',
             'queue' => 'default',
             'payload' => '{}',
@@ -100,8 +103,20 @@ it('skips the check for the sync queue', function () {
     $this->artisan('ops:check-queue')->expectsOutputToContain('nothing to check')->assertSuccessful();
 });
 
+it('also alerts on Telegram, once an hour while the problem lasts', function () {
+    config(['services.telegram.token' => 'secret-token', 'services.telegram.chat_id' => '4242']);
+    Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
+    seedJob(11);
+
+    $this->artisan('ops:check-queue')->assertFailed();
+    $this->artisan('ops:check-queue')->assertFailed();
+
+    Http::assertSentCount(1);
+    Http::assertSent(fn ($request) => str_contains($request['text'], 'queue worker'));
+});
+
 it('is scheduled every five minutes', function () {
-    $event = collect(app(Illuminate\Console\Scheduling\Schedule::class)->events())
+    $event = collect(app(Schedule::class)->events())
         ->first(fn ($e) => str_contains($e->command, 'ops:check-queue'));
 
     expect($event)->not->toBeNull()->and($event->expression)->toBe('*/5 * * * *');

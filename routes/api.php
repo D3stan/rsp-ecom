@@ -1,8 +1,14 @@
 <?php
 
 use App\Http\Controllers\Auth\VerificationStatusController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
+
+// Deep health check for the external uptime monitor (the framework's /up only proves the app boots)
+Route::get('health', HealthController::class)
+    ->middleware('throttle:60,1')
+    ->name('api.health');
 
 Route::prefix('verification')->group(function () {
     // API endpoint to check verification status (for auto-reload)

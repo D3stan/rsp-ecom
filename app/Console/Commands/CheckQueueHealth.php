@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Ops\TelegramNotifier;
 use App\Settings\SystemInfo;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -24,7 +25,7 @@ class CheckQueueHealth extends Command
      */
     protected $description = 'Log a critical alert when the queue is not being processed or failed jobs pile up';
 
-    public function handle(): int
+    public function handle(TelegramNotifier $telegram): int
     {
         $maxAge = (int) ($this->option('max-age') ?? config('mail.queue_alerts.max_job_age_minutes', 10));
         $failedThreshold = (int) ($this->option('failed-threshold') ?? config('mail.queue_alerts.failed_jobs_threshold', 10));
@@ -61,6 +62,9 @@ class CheckQueueHealth extends Command
         }
 
         Log::critical('Queue health check failed: '.implode(' | ', $problems));
+
+        // The check runs every five minutes: remind hourly while the problem lasts, not every run
+        $telegram->sendOnce('queue-health', '⚠️ Queue health check failed: '.implode(' | ', $problems), 60);
 
         return self::FAILURE;
     }
