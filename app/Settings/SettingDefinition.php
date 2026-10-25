@@ -4,9 +4,6 @@ namespace App\Settings;
 
 use InvalidArgumentException;
 
-/**
- * One setting as declared in config/settings.php. Immutable.
- */
 final readonly class SettingDefinition
 {
     public const ACCESS_ADMIN = 'admin';
@@ -128,18 +125,11 @@ final readonly class SettingDefinition
         return "settings.{$this->key}.help";
     }
 
-    /**
-     * Value as stored: JSON. Always the same representation for the same value.
-     */
     public function encode(mixed $value): string
     {
         return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR);
     }
 
-    /**
-     * The typed value for a stored row, or the default when the row is unreadable for this type.
-     * Accepts JSON (current format) and the legacy plain-string representations ('1', '22', 'text').
-     */
     public function decode(?string $raw): mixed
     {
         if ($raw === null) {

@@ -10,17 +10,8 @@ use App\Services\Newsletter\MarketingConsent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
-/**
- * Eligibility for the consented review-request email.
- *
- * An order qualifies when it was delivered at least `reviews.request_delay_days` ago, belongs to a registered
- * customer (reviews need an account), is neither cancelled nor refunded, has at least one product the customer has
- * not reviewed yet, and the customer's address has marketing consent. The structural conditions are a query so the
- * command can stream orders; consent and "has an unreviewed product" are per-order checks.
- */
 class ReviewRequests
 {
-    /** Payment states that mean money was (partly) returned: no review request then. */
     private const REFUNDED_PAYMENT_STATUSES = ['refunded', 'partially_refunded'];
 
     public function __construct(private readonly MarketingConsent $consent) {}
@@ -86,10 +77,6 @@ class ReviewRequests
             ->keyBy('id');
     }
 
-    /**
-     * Whether a review request may actually be sent for this order right now (consent + an unreviewed product).
-     * The structural conditions are assumed already met (eligibleOrdersQuery).
-     */
     public function maySend(Order $order): bool
     {
         $email = $order->getCustomerEmail();

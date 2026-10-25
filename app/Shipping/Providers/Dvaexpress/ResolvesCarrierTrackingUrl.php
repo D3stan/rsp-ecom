@@ -4,9 +4,6 @@ namespace App\Shipping\Providers\Dvaexpress;
 
 trait ResolvesCarrierTrackingUrl
 {
-    /**
-     * Build the public carrier tracking URL using configured URL template.
-     */
     public function carrierTrackingUrl(string $trackingNumber, ?string $carrierCode = null): ?string
     {
         $number = trim($trackingNumber);

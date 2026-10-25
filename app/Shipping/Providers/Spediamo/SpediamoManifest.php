@@ -8,9 +8,6 @@ use App\Shipping\Labels\Contracts\LabelProvider;
 use App\Shipping\Rates\Contracts\RateProvider;
 use App\Shipping\Tracking\Contracts\TrackingProvider;
 
-/**
- * Self-contained manifest for the Spediamo shipping platform adapter.
- */
 final class SpediamoManifest implements ShippingProviderManifest
 {
     public static function name(): string

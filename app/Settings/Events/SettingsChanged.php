@@ -2,9 +2,6 @@
 
 namespace App\Settings\Events;
 
-/**
- * Dispatched after settings were written (or reset) and the cache version was bumped.
- */
 class SettingsChanged
 {
     /**

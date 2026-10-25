@@ -3,12 +3,13 @@
 namespace Database\Factories;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Size;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\OrderItem>
+ * @extends Factory<OrderItem>
  */
 class OrderItemFactory extends Factory
 {
@@ -43,7 +44,7 @@ class OrderItemFactory extends Factory
         return $this->state(function (array $attributes) use ($product) {
             $quantity = $attributes['quantity'] ?? $this->faker->numberBetween(1, 3);
             $unitPrice = $product->price;
-            
+
             return [
                 'product_id' => $product->id,
                 'product_name' => $product->name,
@@ -61,7 +62,7 @@ class OrderItemFactory extends Factory
     {
         return $this->state(function (array $attributes) use ($quantity) {
             $unitPrice = $attributes['price'] ?? $this->faker->randomFloat(2, 10, 200);
-            
+
             return [
                 'quantity' => $quantity,
                 'total' => $unitPrice * $quantity,
@@ -87,7 +88,7 @@ class OrderItemFactory extends Factory
         return $this->state(function (array $attributes) {
             $quantity = $this->faker->numberBetween(5, 15);
             $unitPrice = $attributes['price'] ?? $this->faker->randomFloat(2, 10, 200);
-            
+
             return [
                 'quantity' => $quantity,
                 'total' => $unitPrice * $quantity,
@@ -102,7 +103,7 @@ class OrderItemFactory extends Factory
     {
         return $this->state(function (array $attributes) use ($price) {
             $quantity = $attributes['quantity'] ?? $this->faker->numberBetween(1, 3);
-            
+
             return [
                 'price' => $price,
                 'total' => $price * $quantity,

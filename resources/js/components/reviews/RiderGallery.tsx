@@ -17,7 +17,6 @@ interface RiderGalleryProps {
     photos: RiderGalleryPhoto[];
 }
 
-/** Home-page strip of featured customer photos, each linking to its product. Renders nothing when empty. */
 export default function RiderGallery({ photos }: RiderGalleryProps) {
     const { t } = useTranslation();
 

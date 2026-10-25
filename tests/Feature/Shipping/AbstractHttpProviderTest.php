@@ -6,6 +6,7 @@ use App\Shipping\Tracking\DTO\TrackingResult;
 use App\Shipping\Tracking\Enums\TrackingStatus;
 use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;
 use App\Shipping\Tracking\Exceptions\TrackingRejected;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
@@ -47,7 +48,7 @@ function trkHttpProvider(array $config = []): AbstractHttpProvider
             return new TrackingResult($this->mapStatus($json['status'] ?? null));
         }
 
-        public function at(string $date, string $tz): \Carbon\CarbonImmutable
+        public function at(string $date, string $tz): CarbonImmutable
         {
             return $this->toUtc($date, $tz);
         }

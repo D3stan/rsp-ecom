@@ -12,16 +12,13 @@ use App\Support\Money;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\URL;
 
-/**
- * "You left something in your cart": the lines of an expired checkout, a signed link that rebuilds the cart
- * (valid AbandonedCheckoutReminders::RECOVERY_LINK_DAYS) and a one-click unsubscribe.
- */
 class AbandonedCheckoutReminder extends Mailable
 {
     use HasLogo, Queueable, SerializesModels;
@@ -104,7 +101,7 @@ class AbandonedCheckoutReminder extends Mailable
     }
 
     /**
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

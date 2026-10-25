@@ -5,7 +5,9 @@ use App\Models\Order;
 use App\Models\OrderEmail;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Inertia\Testing\AssertableInertia;
 
 /*
  * G2 (F-06): the ship form (ShippingService::ship) is the only way into "shipped". It takes the carrier and the
@@ -218,8 +220,8 @@ it('resolves real courier waybill immediately on manual ship form when tracking 
         ],
     ]);
 
-    \Illuminate\Support\Facades\Http::fake([
-        'https://api.spediamo.test/v1/shipments/tracking?code=A422-098-162-296' => \Illuminate\Support\Facades\Http::response([
+    Http::fake([
+        'https://api.spediamo.test/v1/shipments/tracking?code=A422-098-162-296' => Http::response([
             'code' => 'A422-098-162-296',
             'trackingNumber' => '288364I031083',
             'courier' => 'SDA',
@@ -260,7 +262,7 @@ it('passes sender_configured true to ship form when sender postal code and city 
 
     $this->actingAs($this->admin)->get(route('admin.orders.show-ship', $this->order))
         ->assertOk()
-        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Admin/Orders/Ship')
             ->where('sender_configured', true)
         );
@@ -276,10 +278,8 @@ it('passes sender_configured false to ship form when sender postal code or city 
 
     $this->actingAs($this->admin)->get(route('admin.orders.show-ship', $this->order))
         ->assertOk()
-        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Admin/Orders/Ship')
             ->where('sender_configured', false)
         );
 });
-
-

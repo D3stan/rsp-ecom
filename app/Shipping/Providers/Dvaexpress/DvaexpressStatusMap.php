@@ -9,19 +9,16 @@ final class DvaexpressStatusMap
 {
     /** @var array<string, TrackingStatus> */
     private const DEFAULTS = [
-        // Delivered
         '000' => TrackingStatus::Delivered,
         'DELIVERED' => TrackingStatus::Delivered,
         'CONSEGNATA' => TrackingStatus::Delivered,
         'CONSEGNATO' => TrackingStatus::Delivered,
 
-        // Out for delivery
         'OUT' => TrackingStatus::OutForDelivery,
         'IN CONSEGNA' => TrackingStatus::OutForDelivery,
         'MESSA IN CONSEGNA' => TrackingStatus::OutForDelivery,
         'OUT_FOR_DELIVERY' => TrackingStatus::OutForDelivery,
 
-        // In transit
         'RIT' => TrackingStatus::InTransit,
         'RITIRATA' => TrackingStatus::InTransit,
         'PPP' => TrackingStatus::InTransit,
@@ -34,13 +31,11 @@ final class DvaexpressStatusMap
         'PARTENZA' => TrackingStatus::InTransit,
         'ARRIVO' => TrackingStatus::InTransit,
 
-        // Info received
         'INFO' => TrackingStatus::InfoReceived,
         'CREATA' => TrackingStatus::InfoReceived,
         'PRENOTATA' => TrackingStatus::InfoReceived,
         'ORDINE CREATO' => TrackingStatus::InfoReceived,
 
-        // Exception
         'GIAC' => TrackingStatus::Exception,
         'GIACENZA' => TrackingStatus::Exception,
         'ASSENTE' => TrackingStatus::Exception,
@@ -51,7 +46,6 @@ final class DvaexpressStatusMap
         'ECCEZIONE' => TrackingStatus::Exception,
         'RIFIUTATA' => TrackingStatus::Exception,
 
-        // Returned
         'RESO' => TrackingStatus::Returned,
         'RITORNO AL MITTENTE' => TrackingStatus::Returned,
         'RESTITUITA' => TrackingStatus::Returned,

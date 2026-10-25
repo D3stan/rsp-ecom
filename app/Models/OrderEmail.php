@@ -5,10 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * Idempotency key + audit trail for a transactional email sent for an order.
- * Unique per (order_id, type, fingerprint).
- */
 class OrderEmail extends Model
 {
     public const TYPE_CONFIRMATION = 'order_confirmation';
@@ -21,16 +17,12 @@ class OrderEmail extends Model
 
     public const TYPE_REFUNDED = 'order_refunded';
 
-    /** Consented marketing email inviting the customer to review the products they bought (one per order). */
     public const TYPE_REVIEW_REQUEST = 'review_request';
 
-    /** Internal alert to the shop owner (the recipient is the admin address, not the customer). */
     public const TYPE_ADMIN_NEW_ORDER = 'admin_new_order';
 
-    /** Internal alert to the shop owner: a paid order sold units that were not in stock. */
     public const TYPE_ADMIN_OVERSOLD = 'admin_oversold_order';
 
-    /** Fingerprint for types that can only ever be sent once per order. */
     public const FINGERPRINT_DEFAULT = 'default';
 
     protected $fillable = [
@@ -64,10 +56,6 @@ class OrderEmail extends Model
         return $this->sent_at === null && $this->failed_at !== null;
     }
 
-    /**
-     * Mark a failed attempt. $final = true sets failed_at (no more retries); otherwise only
-     * the last error is recorded and the job will retry.
-     */
     public function recordFailure(string $error, bool $final): void
     {
         $this->forceFill([
@@ -85,19 +73,11 @@ class OrderEmail extends Model
         ])->save();
     }
 
-    /**
-     * Whether this type is addressed to the shop owner instead of the customer.
-     */
     public static function isInternal(string $type): bool
     {
         return in_array($type, [self::TYPE_ADMIN_NEW_ORDER, self::TYPE_ADMIN_OVERSOLD], true);
     }
 
-    /**
-     * Fingerprint for the "refunded" email: one mail per refund (refunds.id), so two partial refunds of the same
-     * amount each get their mail while a retry of the same refund does not. Without a refund id (legacy callers):
-     * one mail per distinct amount.
-     */
     public static function refundedFingerprint(float $amount, ?int $refundId = null): string
     {
         $key = $refundId !== null ? 'refunded|refund:'.$refundId : 'refunded|'.self::formatAmount($amount);
@@ -105,21 +85,11 @@ class OrderEmail extends Model
         return substr(sha1($key), 0, 40);
     }
 
-    /**
-     * Canonical decimal string of a money amount (what the job carries and the fingerprint hashes).
-     */
     public static function formatAmount(float $amount): string
     {
         return number_format($amount, 2, '.', '');
     }
 
-    /**
-     * Fingerprint for the "shipped" email: status + tracking number (+ carrier), so the mail is
-     * re-sent only when the tracking number or the carrier actually changes.
-     *
-     * Without a carrier the hash is exactly the pre-carrier one, so rows already stored for
-     * orders shipped before the carrier existed keep matching and never trigger a duplicate.
-     */
     public static function shippedFingerprint(?string $trackingNumber, ?string $carrier = null): string
     {
         $carrier = mb_strtolower(trim((string) $carrier));

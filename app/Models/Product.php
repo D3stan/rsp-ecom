@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 class Product extends Model
 {
     use HasFactory, RegeneratesSitemap;
+
     protected $fillable = [
         'name',
         'slug',
@@ -44,8 +45,6 @@ class Product extends Model
 
     protected static function booted(): void
     {
-        // The FK cascade would delete the reviews without model events: delete them one by one so Review
-        // removes their photo files from the public disk.
         static::deleting(function (Product $product) {
             $product->reviews()->get()->each->delete();
         });
@@ -53,8 +52,7 @@ class Product extends Model
 
     public function getImageUrlAttribute(): string
     {
-        // First, check if the default variant has images
-        if ($this->defaultVariant && !empty($this->defaultVariant->images)) {
+        if ($this->defaultVariant && ! empty($this->defaultVariant->images)) {
             $variantImages = $this->defaultVariant->images;
             $firstImage = is_array($variantImages) ? ($variantImages[0] ?? null) : null;
             if ($firstImage) {
@@ -62,16 +60,13 @@ class Product extends Model
             }
         }
 
-        // Fallback to product-level images
         if ($this->images && count($this->images) > 0) {
-            return asset('storage/products/' . $this->id . '/' . $this->images[0]);
+            return asset('storage/products/'.$this->id.'/'.$this->images[0]);
         }
 
-        // Return a default placeholder image if no images are set
         return asset('images/product.png');
     }
 
-    // Relationships
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
@@ -82,7 +77,6 @@ class Product extends Model
         return $this->belongsTo(Size::class);
     }
 
-    // For compatibility with frontend, return single size as array
     public function sizes()
     {
         return $this->size ? [$this->size] : [];
@@ -131,14 +125,12 @@ class Product extends Model
             ->where('is_default', true);
     }
 
-    // Image handling methods
     public function getImageUrl(string $filename): string
     {
-        // If it's already a full URL, return as is
         if (filter_var($filename, FILTER_VALIDATE_URL)) {
             return $filename;
         }
-        
+
         return Storage::url("products/{$this->id}/{$filename}");
     }
 
@@ -153,7 +145,7 @@ class Product extends Model
             \Log::error('Failed to add image to product', [
                 'product_id' => $this->id,
                 'filename' => $filename,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -161,20 +153,17 @@ class Product extends Model
 
     public function removeImage(string $filename): void
     {
-        $images = collect($this->images ?? [])->filter(fn($image) => $image !== $filename)->values()->toArray();
+        $images = collect($this->images ?? [])->filter(fn ($image) => $image !== $filename)->values()->toArray();
         $this->update(['images' => $images]);
-        
-        // Delete the actual file
+
         Storage::delete("products/{$this->id}/{$filename}");
     }
 
     public function clearImages(): void
     {
-        if (!empty($this->images)) {
+        if (! empty($this->images)) {
             foreach ($this->images as $image) {
-                // Handle both local files and URLs
                 if (filter_var($image, FILTER_VALIDATE_URL)) {
-                    // For cloud storage, you might need a different deletion method
                     continue;
                 } else {
                     Storage::delete("products/{$this->id}/{$image}");
@@ -184,7 +173,6 @@ class Product extends Model
         $this->update(['images' => []]);
     }
 
-    // Scopes
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
@@ -200,24 +188,17 @@ class Product extends Model
         return $query->where('stock_quantity', '>', 0);
     }
 
-    /**
-     * The one definition of "low stock": 0 < stock <= inventory.low_stock_threshold.
-     */
     public function scopeLowStock($query)
     {
         return $query->where('stock_quantity', '>', 0)
             ->where('stock_quantity', '<=', (int) settings('inventory.low_stock_threshold', 10));
     }
 
-    /**
-     * Stock above the low-stock threshold (in stock and not low).
-     */
     public function scopeWellStocked($query)
     {
         return $query->where('stock_quantity', '>', max(0, (int) settings('inventory.low_stock_threshold', 10)));
     }
 
-    // Additional helper methods
     public function getAverageRatingAttribute(): float
     {
         return $this->approvedReviews()->avg('rating') ?? 0;
@@ -252,11 +233,6 @@ class Product extends Model
         return $this->increment('stock_quantity', $quantity);
     }
 
-    /**
-     * Keep the legacy mirror products.stock_quantity equal to the stock of the default variant (the single source of
-     * truth is product_variants.stock_quantity). The one place that writes the mirror after variant stock moved
-     * (orders, cancellations, admin quick adjustments). Returns the mirrored quantity, null without a default variant.
-     */
     public function syncStockMirror(): ?int
     {
         $stock = $this->defaultVariant()->value('stock_quantity');
@@ -265,7 +241,6 @@ class Product extends Model
             return null;
         }
 
-        // Query update: the mirror is bookkeeping, not an edit of the product (no model events, no sitemap regeneration)
         static::query()->whereKey($this->getKey())->update(['stock_quantity' => (int) $stock]);
 
         $this->setAttribute('stock_quantity', (int) $stock);
@@ -274,52 +249,39 @@ class Product extends Model
         return (int) $stock;
     }
 
-    /**
-     * Get fields that should trigger sitemap regeneration when changed
-     */
     protected function getSitemapImportantFields(): array
     {
         return ['slug', 'status', 'name', 'stock_quantity'];
     }
 
-    /**
-     * Backward compatibility accessors - delegate to default variant
-     */
-
     public function getPriceAttribute($value): ?float
     {
-        // Return the raw database value, not the variant's value
         return $value !== null ? (float) $value : null;
     }
 
     public function getStockQuantityAttribute($value): ?int
     {
-        // Return the raw database value, not the variant's value
         return $value !== null ? (int) $value : null;
     }
 
     public function getImagesAttribute($value): array
     {
-        // The 'array' cast handles the conversion, but we ensure it's always an array
         return is_array($value) ? $value : [];
     }
 
     public function getDescriptionAttribute($value): ?string
     {
-        // Return the raw database value
         return $value;
     }
 
     public function getSkuAttribute($value): ?string
     {
-        // Return the raw database value, not the variant's full_sku
         return $value;
     }
 
     public function getMainImageUrlAttribute(): string
     {
-        // First, check if the default variant has images
-        if ($this->defaultVariant && !empty($this->defaultVariant->images)) {
+        if ($this->defaultVariant && ! empty($this->defaultVariant->images)) {
             $variantImages = $this->defaultVariant->images;
             $firstImage = is_array($variantImages) ? ($variantImages[0] ?? null) : null;
             if ($firstImage) {
@@ -327,10 +289,9 @@ class Product extends Model
             }
         }
 
-        // Fallback to product-level images
         $images = $this->images;
-        if (!empty($images)) {
-            return asset('storage/products/' . $this->id . '/' . $images[0]);
+        if (! empty($images)) {
+            return asset('storage/products/'.$this->id.'/'.$images[0]);
         }
 
         return '/images/product.png';
@@ -338,24 +299,22 @@ class Product extends Model
 
     public function getImageUrlsAttribute(): array
     {
-        // First, check if the default variant has images
-        if ($this->defaultVariant && !empty($this->defaultVariant->images)) {
+        if ($this->defaultVariant && ! empty($this->defaultVariant->images)) {
             return $this->defaultVariant->image_urls;
         }
 
-        // Fallback to product-level images
         $images = $this->images;
         if (empty($images)) {
             return ['/images/product.png'];
         }
+
         return collect($images)->map(function ($image) {
-            return asset('storage/products/' . $this->id . '/' . $image);
+            return asset('storage/products/'.$this->id.'/'.$image);
         })->toArray();
     }
 
     public function getComparePriceAttribute($value): ?float
     {
-        // Return the raw database value
         return $value !== null ? (float) $value : null;
     }
 
@@ -364,11 +323,11 @@ class Product extends Model
         $comparePrice = $this->compare_price;
         $price = $this->price;
 
-        if (!$comparePrice || !$price || $comparePrice <= $price) {
+        if (! $comparePrice || ! $price || $comparePrice <= $price) {
             return null;
         }
 
-        if (!$comparePrice || $comparePrice <= $price) {
+        if (! $comparePrice || $comparePrice <= $price) {
             return null;
         }
 

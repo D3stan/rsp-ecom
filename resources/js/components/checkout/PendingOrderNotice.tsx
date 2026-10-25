@@ -9,23 +9,15 @@ const POLL_EVERY_MS = 3000;
 const POLL_FOR_MS = 60000;
 
 interface PendingOrderNoticeProps {
-    /** Amount paid, already formatted */
     total: string;
-    /** Stripe checkout session id, for support */
     reference: string;
 }
 
-/**
- * Success page of a paid checkout whose order is not there yet (order.id "pending"): says the payment arrived, reloads
- * the order every 3 s for at most 60 s (the page renders the normal confirmation as soon as it exists), then stops
- * and points to the support address.
- */
 export default function PendingOrderNotice({ total, reference }: PendingOrderNoticeProps) {
     const { t } = useTranslation();
     const supportEmail = useSetting('contact.support_email', '');
     const [timedOut, setTimedOut] = useState(false);
 
-    // CheckoutController::success retries the order creation on every reload
     const { stop } = usePoll(POLL_EVERY_MS, { only: ['order', 'restricted', 'isGuest', 'session'] });
 
     useEffect(() => {

@@ -200,7 +200,6 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
             $famigliaUpper = strtoupper(trim($famiglia));
             $nomeVettoreUpper = strtoupper(trim($nomeVettore));
 
-            // Exclude manual quote request services (e.g. DVA / DVALM "QUOTAZIONE" entries with €0.01 dummy fees)
             if (
                 in_array($vettoreUpper, ['DVA', 'DVALM'], true) ||
                 in_array($famigliaUpper, ['DVA', 'DVALM'], true) ||
@@ -279,9 +278,6 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
         return $quotes;
     }
 
-    /**
-     * Inspect current prepaid balance.
-     */
     public function balance(): AccountBalance
     {
         $res = $this->client->postRate('balance', ['call' => 'balance']);

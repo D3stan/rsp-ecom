@@ -41,17 +41,16 @@ export const useWishlist = ({
         if (!response.ok) {
             const text = await response.text();
             console.error(`API Error (${response.status}):`, text);
-            
-            // If we get HTML back, it's likely an authentication issue
+
             if (text.includes('<!DOCTYPE') || text.includes('<html')) {
                 throw new Error('Authentication required. Please login and try again.');
             }
-            
+
             throw new Error(`Failed to ${endpoint} wishlist: ${response.status}`);
         }
 
         const text = await response.text();
-        
+
         try {
             return JSON.parse(text);
         } catch {
@@ -64,15 +63,13 @@ export const useWishlist = ({
         if (isLoading) return;
 
         setIsLoading(true);
-        
+
         try {
             const result = await makeApiCall('toggle', { product_id: productId });
             setInWishlist(result.in_wishlist);
-            
-            // Dispatch wishlist update event for header count
+
             window.dispatchEvent(new CustomEvent('wishlistUpdated'));
-            
-            // Refresh wishlist data on dashboard pages
+
             if (window.location.pathname.includes('dashboard')) {
                 router.reload({ only: ['wishlistItems', 'wishlistCount'] });
             }
@@ -87,14 +84,13 @@ export const useWishlist = ({
         if (isLoading) return;
 
         setIsLoading(true);
-        
+
         try {
             const result = await makeApiCall('add', { product_id: productId });
             setInWishlist(result.in_wishlist);
-            
-            // Dispatch wishlist update event for header count
+
             window.dispatchEvent(new CustomEvent('wishlistUpdated'));
-            
+
             if (window.location.pathname.includes('dashboard')) {
                 router.reload({ only: ['wishlistItems', 'wishlistCount'] });
             }
@@ -109,7 +105,7 @@ export const useWishlist = ({
         if (isLoading) return;
 
         setIsLoading(true);
-        
+
         try {
             const response = await fetch('/wishlist/remove', {
                 method: 'DELETE',
@@ -125,23 +121,22 @@ export const useWishlist = ({
             if (!response.ok) {
                 const text = await response.text();
                 console.error(`API Error (${response.status}):`, text);
-                
+
                 if (text.includes('<!DOCTYPE') || text.includes('<html')) {
                     throw new Error('Authentication required. Please login and try again.');
                 }
-                
+
                 throw new Error(`Failed to remove from wishlist: ${response.status}`);
             }
 
             const text = await response.text();
-            
+
             try {
                 const result = JSON.parse(text);
                 setInWishlist(result.in_wishlist);
-                
-                // Dispatch wishlist update event for header count
+
                 window.dispatchEvent(new CustomEvent('wishlistUpdated'));
-                
+
                 if (window.location.pathname.includes('dashboard')) {
                     router.reload({ only: ['wishlistItems', 'wishlistCount'] });
                 }

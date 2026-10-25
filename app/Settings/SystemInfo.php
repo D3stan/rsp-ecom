@@ -13,11 +13,6 @@ use Illuminate\Support\Facades\Route;
 use ReflectionClass;
 use Throwable;
 
-/**
- * Read-only description of how the shop is wired (the "System" panel of the settings page). Values come from
- * config/env/code and can only be changed there. Never contains secrets: only names, numbers and yes/no flags
- * (Stripe is reported as configured or not, never by key).
- */
 class SystemInfo
 {
     public const QUEUE_HEALTH_CACHE_KEY = 'ops:queue-health';
@@ -85,7 +80,6 @@ class SystemInfo
                 'name' => class_basename($job),
                 'tries' => (int) ($defaults['tries'] ?? 1),
                 'timeout' => (int) ($defaults['timeout'] ?? 0),
-                // the backoff() of these jobs: 1m, 5m, 15m, 1h
                 'backoff' => '60, 300, 900, 3600',
             ];
         }
@@ -99,7 +93,6 @@ class SystemInfo
     private function scheduledTasks(): array
     {
         try {
-            // Scheduled tasks are declared in routes/console.php, which only the console kernel loads
             app(Kernel::class)->all();
 
             return collect(app(Schedule::class)->events())

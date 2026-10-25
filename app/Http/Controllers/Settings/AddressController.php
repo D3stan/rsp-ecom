@@ -14,10 +14,6 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/**
- * The customer's address book (shipping addresses). Entries are separate from the addresses stored on orders, so
- * editing or deleting one never changes an order.
- */
 class AddressController extends Controller
 {
     public function index(Request $request): Response
@@ -40,7 +36,6 @@ class AddressController extends Controller
         }
 
         DB::transaction(function () use ($user, $data) {
-            // the first address is the default; later ones only when asked to be
             $default = ($data['is_default'] ?? false) || ! $this->book($user)->exists();
             unset($data['is_default']);
 
@@ -67,7 +62,6 @@ class AddressController extends Controller
                 $this->book($request->user())->update(['is_default' => false]);
             }
 
-            // Clearing the default flag of the only default would leave the book without one: keep it
             $entry->update($data + ['is_default' => $default || $entry->is_default]);
         });
 
@@ -81,7 +75,6 @@ class AddressController extends Controller
         DB::transaction(function () use ($request, $entry) {
             $entry->delete();
 
-            // The newest remaining address takes over as the default
             if ($entry->is_default) {
                 $this->book($request->user())->latest('id')->first()?->update(['is_default' => true]);
             }

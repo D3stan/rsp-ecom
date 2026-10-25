@@ -19,24 +19,12 @@ use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-/**
- * Polls the order's tracking driver (or the default driver when null) for ONE order and applies the answer.
- *
- * Only the order id is serialized; the order is loaded when the job runs, so an order that was
- * delivered, cancelled or re-tracked in the meantime is simply skipped.
- *
- * Failures: a TrackingProviderUnavailable (or any unexpected error) is rethrown and retried with
- * backoff; when all attempts are used up failed() postpones the next poll. A TrackingRejected
- * means retrying cannot help: polling for that order is switched off (editing its tracking
- * number, carrier, or provider switches it back on).
- */
 class SyncOrderTracking implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
     public int $tries = 5;
 
-    // Must stay below the queue connection's retry_after (default 90s).
     public int $timeout = 60;
 
     public bool $failOnTimeout = true;
@@ -59,7 +47,6 @@ class SyncOrderTracking implements ShouldQueue
     public function middleware(): array
     {
         return [
-            // One poll per order at a time (a manual `tracking:sync --order=` next to the scheduled one).
             (new WithoutOverlapping("tracking-sync:{$this->orderId}"))->releaseAfter(30)->expireAfter(75),
         ];
     }
@@ -89,7 +76,7 @@ class SyncOrderTracking implements ShouldQueue
         }
 
         if ($provider instanceof PassiveProvider) {
-            return; // the driver was switched off since this job was queued
+            return;
         }
 
         $carrier = is_string($order->tracking_carrier) && $order->tracking_carrier !== '' ? $order->tracking_carrier : null;
@@ -130,9 +117,6 @@ class SyncOrderTracking implements ShouldQueue
         $service->apply($order, $provider->name(), $result);
     }
 
-    /**
-     * All attempts used up: postpone the next poll instead of retrying in a tight loop.
-     */
     public function failed(?Throwable $e): void
     {
         Log::error('Tracking sync failed', [

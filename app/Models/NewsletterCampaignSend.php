@@ -5,9 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * One recipient of a campaign. Done once sent_at, failed_at or skipped_at is set.
- */
 class NewsletterCampaignSend extends Model
 {
     public $timestamps = false;

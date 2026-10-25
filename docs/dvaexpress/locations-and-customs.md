@@ -2,7 +2,7 @@
 
 Search TARIC/HS codes and carrier pickup/drop-off points.
 
-[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../dvaexpress-doc.html)
+[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../vendor/dvaexpress-doc.html)
 
 
 ### `POST https://api.easyparcel.it/taric-search/{APIKEY}`

@@ -19,7 +19,6 @@ const renderStars = (rating: number) => {
     ));
 };
 
-// Quick View Modal Component
 interface QuickViewModalProps {
     product: Product;
     isOpen: boolean;
@@ -50,7 +49,6 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
 
     const handleImageError = () => {
         console.log('QuickView Image failed to load:', imageSrc);
-        // Set to reliable placeholder if not already using it
         if (!imageSrc.includes('placeholder')) {
             setImageSrc(defaultImage);
         }
@@ -67,12 +65,11 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {/* Product Image */}
+
                     <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
                         <img src={imageSrc} alt={product.name} onError={handleImageError} className="h-full w-full object-cover" />
                     </div>
 
-                    {/* Product Details */}
                     <div className="space-y-4">
                         {product.badge && (
                             <Badge variant={product.badge === 'Sale' ? 'destructive' : 'secondary'} className="w-fit">
@@ -135,7 +132,7 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                                 {t('products.view_full_details')}
                             </Button>
 
-                            <WishlistButton 
+                            <WishlistButton
                                 productId={product.id}
                                 initialInWishlist={product.inWishlist || false}
                                 showText={true}
@@ -150,7 +147,6 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
     );
 }
 
-// Product Card Component
 interface ProductCardProps {
     product: Product;
     viewMode: 'grid' | 'list';
@@ -163,7 +159,6 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
     const { auth } = usePage<SharedData>().props;
     const { t } = useTranslation();
     const formatCurrency = useMoney();
-    // Use a more reliable fallback strategy
     const defaultImage = '/images/product.png';
     const [imageSrc, setImageSrc] = useState(() => {
         if (!product.image || product.image === '' || product.image === '/images/product.png') {
@@ -175,7 +170,6 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
     const handleAddToCart = async (addQuantity: number = quantity) => {
         if (isAddingToCart) return;
 
-        // If product has multiple variants, navigate to product page for selection
         if (product.variants && product.variants.length > 1) {
             router.visit(`/products/${product.slug}`);
             return;
@@ -193,14 +187,14 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
             const response = await cartService.addToCart(cartData);
 
             if (response.success) {
-                cartService.triggerCartUpdate(); // Trigger cart count refresh
-                cartService.triggerCartAnimation('success'); // Trigger success animation
+                cartService.triggerCartUpdate();
+                cartService.triggerCartAnimation('success');
             } else {
-                cartService.triggerCartAnimation('error'); // Trigger error animation
+                cartService.triggerCartAnimation('error');
             }
         } catch (error) {
             console.error('Error adding to cart:', error);
-            cartService.triggerCartAnimation('error'); // Trigger error animation
+            cartService.triggerCartAnimation('error');
         } finally {
             setIsAddingToCart(false);
         }
@@ -212,7 +206,6 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
 
     const handleImageError = () => {
         console.log('ProductCard Image failed to load:', imageSrc, 'Product:', product.name);
-        // Set to reliable placeholder if not already using it
         if (!imageSrc.includes('placeholder')) {
             setImageSrc(defaultImage);
         }
@@ -296,7 +289,6 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                     </CardContent>
                 </div>
 
-                {/* Quick View Modal */}
                 <QuickViewModal
                     product={product}
                     isOpen={isQuickViewOpen}
@@ -319,8 +311,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                         {product.badge}
                     </Badge>
                 )}
-                
-                {/* Wishlist Button - Only show for authenticated users */}
+
                 {auth.user && (
                     <div className="absolute top-4 right-4 z-10">
                         <WishlistButton
@@ -332,7 +323,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                         />
                     </div>
                 )}
-                
+
                 <div className="relative aspect-square overflow-hidden bg-gray-50">
                     <img
                         src={imageSrc}
@@ -360,7 +351,6 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                 </div>
             </div>
 
-            {/* Separator line above the button */}
             <div className="my-1 border-t border-black" />
             <CardContent className="flex h-full flex-col bg-white px-6 pb-6 pt-3" onClick={handleNavigateToProduct}>
                 <div className="flex-1">
@@ -391,7 +381,6 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                 </Button>
             </CardContent>
 
-            {/* Quick View Modal */}
             <QuickViewModal
                 product={product}
                 isOpen={isQuickViewOpen}

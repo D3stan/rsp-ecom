@@ -19,31 +19,12 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
-/**
- * Label adapter for the Spediamo platform API (docs/spediamo/shipments.md, waybills.md).
- *
- *   POST {base_url}/v1/shipments            create the shipment  -> id, trackingNumber, courier, status
- *   GET  {base_url}/v1/waybills/{id}/pdf    download the label PDF
- *       Authorization: Bearer {token}
- *
- * The API cannot pay a draft: createShipment() returns it flagged awaitingPayment (the owner pays it on Spediamo with
- * their prepaid balance) and confirmPurchase() later reads GET /v1/shipments/{id} to see whether it has been bought.
- * Statuses (Spediamo docs): draft = not bought, booked = bought, ready = scheduled for pickup, current = on its way,
- * on_hold, underpaid, failed. The response of a PAID shipment has not been recorded from the live API yet.
- *
- * It reuses the shared bearer authenticator and the SAME credentials
- * (shipping.tracking.drivers.spediamo via config('shipping.labels.drivers.spediamo')): no duplicate env var.
- * Failures become the label layer's own exceptions: 400/404/422 -> LabelRejected (shown to the admin);
- * 401/403/408/429/5xx, timeouts and a missing token -> LabelProviderUnavailable (retry). Nothing here logs the token,
- * headers or bodies: exception messages carry the HTTP status only.
- */
 class SpediamoLabelProvider implements CancelsShipments, ConfirmsPayment, LabelProvider
 {
     public const NAME = 'spediamo';
 
     private const DEFAULT_BASE_URL = 'https://api.spediamo.it';
 
-    /** Statuses of a shipment that has been bought (anything else, including an unknown status, counts as unpaid). */
     private const PAID_STATUSES = ['BOOKED', 'READY', 'CURRENT', 'ON_HOLD'];
 
     private readonly string $baseUrl;
@@ -211,7 +192,6 @@ class SpediamoLabelProvider implements CancelsShipments, ConfirmsPayment, LabelP
                     }
                 }
             } catch (Throwable) {
-                // Ignore lookup errors so label creation never fails
             }
         }
 
@@ -285,7 +265,6 @@ class SpediamoLabelProvider implements CancelsShipments, ConfirmsPayment, LabelP
         try {
             $data = $response->json();
         } catch (Throwable) {
-            // ignore
         }
 
         if (! is_array($data)) {
@@ -322,9 +301,6 @@ class SpediamoLabelProvider implements CancelsShipments, ConfirmsPayment, LabelP
         return $default !== '' ? $default : self::NAME.': HTTP '.$response->status();
     }
 
-    /**
-     * The carrier's own validation message, when it sends one (safe to show: no secrets).
-     */
     private function carrierMessage(Response $response): ?string
     {
         try {

@@ -1,4 +1,3 @@
-// Cart service for managing cart operations
 
 export interface AddToCartData {
     product_id: number;
@@ -21,17 +20,12 @@ interface CustomWindow extends Window {
 }
 
 class CartService {
-    /**
-     * Get CSRF token from meta tag or Inertia props
-     */
     private getCSRFToken(): string | null {
-        // First try to get from meta tag
         const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         if (metaToken) {
             return metaToken;
         }
 
-        // Fallback to Inertia shared props (if available)
         try {
             const inertiaProps = (window as CustomWindow)?.inertiaProps || {};
             return inertiaProps.csrf_token || null;
@@ -40,9 +34,6 @@ class CartService {
         }
     }
 
-    /**
-     * Refresh CSRF token from server
-     */
     private async refreshCSRFToken(): Promise<string | null> {
         try {
             const response = await fetch('/csrf-token', {
@@ -55,7 +46,6 @@ class CartService {
 
             if (response.ok) {
                 const data = await response.json();
-                // Update the meta tag with the new token
                 const metaTag = document.querySelector('meta[name="csrf-token"]');
                 if (metaTag && data.token) {
                     metaTag.setAttribute('content', data.token);
@@ -68,9 +58,6 @@ class CartService {
         return null;
     }
 
-    /**
-     * Add a product to cart
-     */
     async addToCart(data: AddToCartData): Promise<CartResponse> {
         try {
             const token = this.getCSRFToken();
@@ -86,7 +73,6 @@ class CartService {
                 body: JSON.stringify(data),
             });
 
-            // If we get a CSRF error (419), try to refresh the token and retry
             if (response.status === 419) {
                 const newToken = await this.refreshCSRFToken();
                 if (newToken) {
@@ -133,9 +119,6 @@ class CartService {
         }
     }
 
-    /**
-     * Update cart item quantity
-     */
     async updateCartItem(itemId: number, quantity: number): Promise<CartResponse> {
         try {
             const token = this.getCSRFToken();
@@ -151,7 +134,6 @@ class CartService {
                 body: JSON.stringify({ quantity }),
             });
 
-            // If we get a CSRF error (419), try to refresh the token and retry
             if (response.status === 419) {
                 const newToken = await this.refreshCSRFToken();
                 if (newToken) {
@@ -198,9 +180,6 @@ class CartService {
         }
     }
 
-    /**
-     * Remove item from cart
-     */
     async removeFromCart(itemId: number): Promise<CartResponse> {
         try {
             const token = this.getCSRFToken();
@@ -214,7 +193,6 @@ class CartService {
                 },
             });
 
-            // If we get a CSRF error (419), try to refresh the token and retry
             if (response.status === 419) {
                 const newToken = await this.refreshCSRFToken();
                 if (newToken) {
@@ -259,9 +237,6 @@ class CartService {
         }
     }
 
-    /**
-     * Get current cart count
-     */
     async getCartCount(): Promise<number> {
         try {
             const response = await fetch('/cart/count', {
@@ -283,9 +258,6 @@ class CartService {
         }
     }
 
-    /**
-     * Clear entire cart
-     */
     async clearCart(): Promise<CartResponse> {
         try {
             const token = this.getCSRFToken();
@@ -299,7 +271,6 @@ class CartService {
                 },
             });
 
-            // If we get a CSRF error (419), try to refresh the token and retry
             if (response.status === 419) {
                 const newToken = await this.refreshCSRFToken();
                 if (newToken) {
@@ -344,16 +315,10 @@ class CartService {
         }
     }
 
-    /**
-     * Trigger cart count refresh event
-     */
     triggerCartUpdate(): void {
         window.dispatchEvent(new CustomEvent('cartUpdated'));
     }
 
-    /**
-     * Trigger cart animation event
-     */
     triggerCartAnimation(type: 'success' | 'error' = 'success'): void {
         window.dispatchEvent(
             new CustomEvent('cartAnimation', {

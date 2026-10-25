@@ -2,10 +2,6 @@
 
 namespace App\Shipping\Labels\DTO;
 
-/**
- * What a driver returns after creating a shipment: the carrier's own id, the tracking number and the neutral carrier
- * code (carried through so callers never need the driver). `raw` keeps non-secret response facts for the audit row.
- */
 final readonly class ShipmentResult
 {
     /**
@@ -16,7 +12,6 @@ final readonly class ShipmentResult
         public string $trackingNumber,
         public string $carrierCode,
         public array $raw = [],
-        /** A draft only: the carrier still has to be paid before a label exists (see ConfirmsPayment). */
         public bool $awaitingPayment = false,
     ) {}
 }

@@ -5,11 +5,6 @@ namespace App\Services\Newsletter;
 use Illuminate\Support\Str;
 use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
 
-/**
- * Campaign body: markdown -> email-safe HTML. Same CommonMark engine as Laravel's markdown mails, with raw HTML
- * stripped and unsafe links (javascript:, data:) refused, then the styles inlined (Gmail/Outlook ignore most
- * <style> rules). The admin preview renders through the same mailable, so what the preview shows is what is sent.
- */
 class CampaignRenderer
 {
     private const CSS = <<<'CSS'
@@ -35,13 +30,9 @@ class CampaignRenderer
 
         $inlined = (new CssToInlineStyles)->convert('<div class="campaign-body">'.$html.'</div>', self::CSS);
 
-        // convert() returns a whole document: keep only our wrapper
         return preg_match('/<body[^>]*>(.*)<\/body>/s', $inlined, $m) === 1 ? trim($m[1]) : $inlined;
     }
 
-    /**
-     * Plain-text part: the markdown itself reads well as text.
-     */
     public function text(string $markdown): string
     {
         return trim($markdown);

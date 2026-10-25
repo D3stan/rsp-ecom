@@ -36,7 +36,7 @@ return new class extends Migration
             $table->timestamp('confirmation_email_sent_at')->nullable();
             $table->string('stripe_customer_id')->nullable();
             $table->timestamps();
-            
+
             $table->index('guest_session_id');
         });
     }

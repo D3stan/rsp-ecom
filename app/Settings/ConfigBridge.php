@@ -5,14 +5,6 @@ namespace App\Settings;
 use Illuminate\Contracts\Config\Repository;
 use Throwable;
 
-/**
- * Overlays stored (customised) settings onto config() for the definitions that declare a `config_bridge`, so
- * code that reads config('mail.support_address') & co. follows the admin page without being rewritten.
- *
- * Only customised values are written; when a setting is reset (or its row disappears) the config value that was
- * there before the first overlay is restored. apply() is cheap when nothing changed (one cache read for the
- * version), which is what lets queue workers and long-running processes call it before every job.
- */
 class ConfigBridge
 {
     /** @var array<string, mixed> config path => value before the first overlay */
@@ -28,9 +20,6 @@ class ConfigBridge
         private readonly Repository $config,
     ) {}
 
-    /**
-     * Never throws: with no database / table (artisan during install, package:discover) it simply does nothing.
-     */
     public function apply(bool $force = false): void
     {
         try {
@@ -59,6 +48,7 @@ class ConfigBridge
                                 if (isset($this->overlaid[$path])) {
                                     $this->restore($path);
                                 }
+
                                 continue;
                             }
                         }
@@ -72,7 +62,6 @@ class ConfigBridge
 
             $this->appliedVersion = $version;
         } catch (Throwable) {
-            // config keeps its current values
         }
     }
 

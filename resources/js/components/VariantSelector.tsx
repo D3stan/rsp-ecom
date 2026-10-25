@@ -20,7 +20,6 @@ interface VariantSelectorProps {
 export function VariantSelector({ variants, selectedVariantId, onVariantChange, label }: VariantSelectorProps) {
     const { t } = useTranslation();
 
-    // Don't render if only one variant
     if (variants.length <= 1) {
         return null;
     }

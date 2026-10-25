@@ -8,15 +8,10 @@ interface MarketingConsentCheckboxProps {
     disabled?: boolean;
 }
 
-/** "**bold** plain" => alternating plain / bold parts (translations mark the emphasised words with **). */
 function withBold(text: string) {
     return text.split('**').map((part, index) => (index % 2 === 1 ? <strong key={index}>{part}</strong> : part));
 }
 
-/**
- * Checkout marketing consent (unticked), posted as `marketing_consent`. Also covers the single abandoned-checkout
- * reminder, which the line under the label announces.
- */
 export default function MarketingConsentCheckbox({ checked, onCheckedChange, disabled }: MarketingConsentCheckboxProps) {
     const { t } = useTranslation();
     const enabled = useSetting('newsletter.enabled', false);

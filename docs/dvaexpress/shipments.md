@@ -2,7 +2,7 @@
 
 Quote shipments, create standard orders, or use the combined fast-order flow.
 
-[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../dvaexpress-doc.html)
+[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../vendor/dvaexpress-doc.html)
 
 
 ### `POST https://api.easyparcel.it/quotation/{APIKEY}`

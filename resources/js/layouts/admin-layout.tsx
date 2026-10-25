@@ -9,7 +9,7 @@ export default function AdminLayout({ children, breadcrumbs = [] }: PropsWithChi
     return (
         <AppShell variant="sidebar">
             <AdminSidebar />
-            {/* overflow-x-clip, not -hidden: hidden makes this a scroll container and breaks position: sticky inside pages */}
+
             <AppContent variant="sidebar" className="overflow-x-clip">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
                 {children}

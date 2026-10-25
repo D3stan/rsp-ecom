@@ -8,18 +8,8 @@ use App\Models\OrderItem;
 use App\Support\Money;
 use Carbon\CarbonInterface;
 
-/**
- * Plain, already-formatted order data for email views (so templates stay free of logic).
- *
- * Everything here runs while the mailable's locale is applied, so strings, dates and
- * amounts come out in the recipient's language. Number formatting does not use the
- * intl extension (not guaranteed in the production image).
- */
 trait DescribesOrder
 {
-    /**
-     * Relations the email data needs (a no-op for the ones the queue job already loaded).
-     */
     protected function loadOrderRelations(Order $order): Order
     {
         return $order->loadMissing([
@@ -32,10 +22,6 @@ trait DescribesOrder
         ]);
     }
 
-    /**
-     * Name to greet: the account name for registered customers, else the first name on the
-     * billing (or shipping) address; null when unknown so the view uses the generic greeting.
-     */
     protected function customerName(Order $order): ?string
     {
         $name = trim((string) $order->user?->name);
@@ -51,9 +37,6 @@ trait DescribesOrder
         return $name !== '' ? $name : null;
     }
 
-    /**
-     * "Ciao Mario," / "Ciao," in the current locale.
-     */
     protected function greeting(?string $name): string
     {
         return $name !== null && $name !== ''
@@ -61,10 +44,6 @@ trait DescribesOrder
             : __('emails.common.greeting_generic');
     }
 
-    /**
-     * Where the "view order" button goes: the signed status page for guests (works without an
-     * account or cookies), the order list for registered customers.
-     */
     protected function orderUrl(Order $order): string
     {
         return $order->user_id !== null ? route('orders.index') : $order->publicUrl();
@@ -200,9 +179,6 @@ trait DescribesOrder
         return ['rows' => $rows, 'vat_note' => null];
     }
 
-    /**
-     * "22" / "5,5" (decimal separator of the locale being rendered)
-     */
     protected function formatRate(float $rate): string
     {
         $separator = app()->getLocale() === 'en' ? '.' : ',';
@@ -251,25 +227,16 @@ trait DescribesOrder
         return $min >= $max ? (string) $max : $min.'-'.$max;
     }
 
-    /**
-     * Localised long date ("13 ottobre 2026"). Needs no intl.
-     */
     protected function formatDate(?CarbonInterface $date): string
     {
         return $date ? $date->copy()->locale(app()->getLocale())->isoFormat('LL') : '';
     }
 
-    /**
-     * Currency-aware amount in the locale being rendered (the mailable's locale is already applied). See App\Support\Money.
-     */
     protected function money(float|string|null $amount, ?string $currency): string
     {
         return Money::format($amount, $currency);
     }
 
-    /**
-     * Product code shown under the item name: the variant's full SKU, else the product's own.
-     */
     private function lineSku($product, $variant): ?string
     {
         if (! $product) {
@@ -283,10 +250,6 @@ trait DescribesOrder
         return $product->sku ?: ($product->base_sku ?: null);
     }
 
-    /**
-     * Absolute image URL for an order line (the variant's picture, else the product's), or the
-     * placeholder when there is none or the file is gone, so the email never shows a broken image.
-     */
     private function lineImage($product, $variant): string
     {
         $placeholder = asset('images/product.png');

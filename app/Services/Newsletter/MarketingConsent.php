@@ -12,37 +12,21 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use LogicException;
 use Throwable;
 
-/**
- * Marketing (newsletter) consent: the only place that changes a subscriber's status, and it writes the consent
- * trail (consent_events) for every change.
- *
- * Double opt-in: subscribe() leaves the subscriber `pending`; only confirm() with the emailed token makes them
- * `confirmed`, and only confirmed subscribers may receive marketing email (allows()). Unsubscribing is immediate.
- */
 class MarketingConsent
 {
-    /**
-     * Version of the consent text the person agreed to. It is also the lang key of that text (the sign-up checkbox
-     * label), so the stored proof says exactly what was shown. A new wording gets a new key (consent_v2...).
-     */
     public const CONSENT_TEXT_VERSION = 'newsletter.consent_v1';
 
-    /** How long the double opt-in link stays valid. */
     public const CONFIRM_TOKEN_TTL_DAYS = 7;
 
-    /** A pending subscriber who asks again gets a new confirmation mail at most this often. */
     public const RESEND_AFTER_MINUTES = 10;
 
-    /** Source of the event written when the emailed confirmation link is used. */
     public const SOURCE_CONFIRM_LINK = 'confirm_link';
 
-    /**
-     * Whether marketing email may be sent to this address: true only for a confirmed subscriber.
-     */
     public function allows(string $email): bool
     {
         return NewsletterSubscriber::query()
@@ -59,7 +43,7 @@ class MarketingConsent
      *
      * @param  string  $source  one of NewsletterSubscriber::SOURCES
      *
-     * @throws \Illuminate\Validation\ValidationException invalid email
+     * @throws ValidationException invalid email
      * @throws InvalidArgumentException unknown source
      */
     public function subscribe(
@@ -132,10 +116,6 @@ class MarketingConsent
         return $subscriber;
     }
 
-    /**
-     * New double opt-in token for a pending subscriber. Only its hash is stored and any earlier token stops working;
-     * confirmation_sent_at starts the validity window, so call this right before mailing the link.
-     */
     public function issueConfirmationToken(NewsletterSubscriber $subscriber): string
     {
         if ($subscriber->status !== NewsletterSubscriber::STATUS_PENDING) {
@@ -152,9 +132,6 @@ class MarketingConsent
         return $token;
     }
 
-    /**
-     * The pending subscriber a still-valid token belongs to (read only: showing the confirm button changes nothing).
-     */
     public function pendingForToken(string $token): ?NewsletterSubscriber
     {
         if ($token === '') {
@@ -166,10 +143,6 @@ class MarketingConsent
         return $subscriber !== null && $this->tokenIsUsable($subscriber) ? $subscriber : null;
     }
 
-    /**
-     * Confirm the subscription the token was issued for. Single use; null when the token is unknown, already used
-     * or older than CONFIRM_TOKEN_TTL_DAYS.
-     */
     public function confirm(string $token, ?string $ip = null, ?string $userAgent = null): ?NewsletterSubscriber
     {
         if ($token === '') {
@@ -228,14 +201,9 @@ class MarketingConsent
         });
     }
 
-    /**
-     * GDPR erasure: deletes the subscriber and its consent trail (the IP / user agent history of that address).
-     * Only an anonymised `erased` event remains: no subscriber, no email, no IP.
-     */
     public function erase(NewsletterSubscriber $subscriber, string $source = 'admin'): void
     {
         DB::transaction(function () use ($subscriber, $source) {
-            // Explicit as well as the FK cascade, so it never depends on the driver's foreign key settings
             ConsentEvent::query()->where('subscriber_id', $subscriber->id)->delete();
             NewsletterSubscriber::query()->whereKey($subscriber->id)->delete();
 
@@ -248,9 +216,6 @@ class MarketingConsent
         });
     }
 
-    /**
-     * Sender name of marketing email: the newsletter setting, or the store name while it is empty.
-     */
     public function senderName(): string
     {
         $name = trim((string) settings('newsletter.sender_name', ''));
@@ -258,10 +223,6 @@ class MarketingConsent
         return $name !== '' ? $name : (string) settings('store.name', config('app.name'));
     }
 
-    /**
-     * Queue the double opt-in mail. A failure is logged and clears confirmation_sent_at, so the next request
-     * can send it again straight away instead of waiting out the resend interval.
-     */
     private function sendConfirmation(NewsletterSubscriber $subscriber, string $token): void
     {
         try {

@@ -6,12 +6,6 @@ use App\Shipping\Contracts\ShippingProviderManifest;
 use App\Shipping\Labels\LabelManager;
 use Illuminate\Support\ServiceProvider;
 
-/**
- * Registers label adapters declared in config('shipping.manifests') with LabelManager.
- * Adding or removing a provider requires only its folder in app/Shipping/Providers/ and its manifest
- * entry in config/shipping.php: this service provider never names a concrete carrier, and nothing is
- * resolved at all while label creation is off.
- */
 class LabelServiceProvider extends ServiceProvider
 {
     public function register(): void

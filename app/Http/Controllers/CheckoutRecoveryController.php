@@ -12,18 +12,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-/**
- * Target of the "complete your order" link of the abandoned-checkout reminder (signed, see AbandonedCheckoutReminder).
- * Puts the lines of the checkout back into the cart of whoever opens it, at today's prices and stock: unavailable
- * lines are left out (with a notice) and quantities are capped. The cart is then checked out normally.
- */
 class CheckoutRecoveryController extends Controller
 {
     public function __invoke(Request $request, CheckoutSnapshot $snapshot): RedirectResponse
     {
         $user = $request->user();
 
-        // A registered customer's checkout: only that customer, once logged in
         if ($snapshot->user_id !== null) {
             if ($user === null) {
                 return redirect()->guest(route('login'));
@@ -86,9 +80,6 @@ class CheckoutRecoveryController extends Controller
             : $redirect->with('warning', __('newsletter.recovery.partly_restored', ['items' => implode(', ', array_filter($skipped))]));
     }
 
-    /**
-     * The checkout's coupon, if Stripe still accepts it (same session shape as CartController::applyCoupon).
-     */
     private function reapplyCoupon(CheckoutSnapshot $snapshot): void
     {
         if (! $snapshot->coupon_code || session()->has('applied_coupon')) {

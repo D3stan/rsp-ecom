@@ -17,12 +17,6 @@ use Illuminate\Support\Facades\Log;
 use Stripe\StripeObject;
 use Throwable;
 
-/**
- * Single, idempotent place where a paid Stripe checkout session becomes an Order.
- *
- * Called by the Stripe webhook listener and by the checkout success page, in any order and any
- * number of times: exactly one order exists per Stripe checkout session.
- */
 class OrderCreationService
 {
     /**
@@ -33,9 +27,6 @@ class OrderCreationService
 
     public const FALLBACK_LOCALE = 'it';
 
-    /**
-     * Value of metadata.source on every checkout session this shop creates.
-     */
     public const SESSION_SOURCE = 'rsp-ecom';
 
     /**
@@ -63,23 +54,17 @@ class OrderCreationService
             return null;
         }
 
-        // Only when the customer ticked "save this address" at checkout
         if ($order->wasRecentlyCreated && ($session['metadata']['save_address'] ?? null) === '1') {
             $this->rememberShippingAddress($order);
         }
 
-        // Outside the transaction: the order is committed. EmailService is idempotent, so calling
-        // it again for an already known order is safe and lets a lost confirmation be recovered.
         if ($order->isPaymentCompleted()) {
             $this->requestConfirmationEmail($order);
 
-            // Only on the first payment confirmation (new order, or an unpaid one that just became paid):
-            // replays of the webhook / success page find the order unchanged and alert nobody.
             if ($order->wasRecentlyCreated || $order->wasChanged('payment_status')) {
                 $this->requestNewOrderAlert($order);
             }
 
-            // The shop sold units it did not have: tell the owner (once per order, EmailService dedupes)
             if ($order->has_oversold_items) {
                 $this->requestOversoldAlert($order);
             }
@@ -131,7 +116,6 @@ class OrderCreationService
                 return $order;
             }
 
-            // Only reached while the payment is pending (checked above), so a captured payment is never overwritten
             $order->payment_status = $outcome === 'expired' ? 'cancelled' : 'failed';
 
             $this->transitionOrSave($order, $order->can_be_cancelled ? 'cancelled' : null, ['source' => 'stripe', 'outcome' => $outcome]);
@@ -152,11 +136,9 @@ class OrderCreationService
             try {
                 return DB::transaction(
                     fn () => $this->findOrCreateInTransaction($sessionId, $session),
-                    3 // retried on deadlocks only
+                    3
                 );
             } catch (UniqueConstraintViolationException $e) {
-                // Lost a race against a concurrent creation for the same session (unique index on
-                // stripe_checkout_session_id): use the winner's order.
                 $existing = Order::where('stripe_checkout_session_id', $sessionId)->first();
                 if ($existing) {
                     Log::info('Order already created concurrently for session', [
@@ -167,7 +149,6 @@ class OrderCreationService
                     return $existing;
                 }
 
-                // Some other unique collision (e.g. random order number): try again a few times.
                 if ($attempt >= 3) {
                     throw $e;
                 }
@@ -196,10 +177,6 @@ class OrderCreationService
         return $this->createOrder($sessionId, $session);
     }
 
-    /**
-     * A session is ours when it carries the shop marker or one of the keys the checkout code
-     * has always put in the metadata (older sessions have no marker).
-     */
     protected function belongsToShop(array $session): bool
     {
         $metadata = $this->metadata($session);
@@ -222,9 +199,6 @@ class OrderCreationService
         return Order::where('stripe_checkout_session_id', $sessionId)->lockForUpdate()->first();
     }
 
-    /**
-     * An order created from a not-yet-paid session becomes paid when a later event confirms it.
-     */
     protected function syncPaymentState(Order $order, array $session): Order
     {
         $updates = [];
@@ -240,7 +214,6 @@ class OrderCreationService
         }
 
         if ($updates) {
-            // The payment is recorded even if the status cannot follow
             $order->fill($updates);
             $this->transitionOrSave($order, $becamePaid && $order->status === 'pending' ? 'processing' : null, ['source' => 'stripe']);
         }
@@ -290,7 +263,6 @@ class OrderCreationService
         $userId = $this->resolveUserId($metadata);
         $isGuestOrder = $userId === null;
 
-        // What the customer was charged for, frozen before the Stripe session existed; else the live cart
         $snapshot = $this->consumeSnapshot($metadata, $sessionId);
         $cart = $snapshot ? null : $this->trustedCart($metadata, $sessionId);
         $cartItems = $cart ? $cart->cartItems : collect();
@@ -370,7 +342,6 @@ class OrderCreationService
             $this->createOrderItemsFromSession($order, $session);
         }
 
-        // Only a paid session consumes the cart and the stock; an unpaid one keeps both until payment is confirmed.
         if ($paid) {
             if ($snapshot) {
                 $this->clearCartAfterPayment($metadata, $sessionId, $snapshot);
@@ -417,8 +388,6 @@ class OrderCreationService
             $shipping = round(($details['amount_shipping'] ?? 0) / 100, 2);
         }
 
-        // A difference of a cent or so is rounding noise (sessions created before amounts were rounded
-        // instead of truncated), not a discount: never show the customer a phantom "Discount: -0.01".
         $derivedDiscount = max(0, round($subtotal + $shipping - $total, 2));
         $discount = $stripeDiscount > 0
             ? $stripeDiscount
@@ -460,11 +429,6 @@ class OrderCreationService
         return $cart;
     }
 
-    /**
-     * The cart of a session, unless it was changed after the checkout started (its content hash no
-     * longer matches the one stored in the session metadata): then it is not trusted and not touched.
-     * Sessions without a hash (created before it existed) keep the previous behaviour.
-     */
     protected function trustedCart(array $metadata, ?string $sessionId): ?Cart
     {
         $cart = $this->findCart($metadata);
@@ -489,10 +453,6 @@ class OrderCreationService
         return $cart;
     }
 
-    /**
-     * The snapshot named by metadata.snapshot_id, when it may be used for this session: it exists, and it is either
-     * unbound / bound to this very session. A snapshot of another session is never used (logged, fallback chain).
-     */
     protected function resolveSnapshot(array $metadata, string $sessionId): ?CheckoutSnapshot
     {
         $id = $metadata['snapshot_id'] ?? null;
@@ -523,9 +483,6 @@ class OrderCreationService
         return $snapshot;
     }
 
-    /**
-     * Use the snapshot for a new order: bind it to the session and mark it consumed (same transaction as the order).
-     */
     protected function consumeSnapshot(array $metadata, string $sessionId): ?CheckoutSnapshot
     {
         $snapshot = $this->resolveSnapshot($metadata, $sessionId);
@@ -542,9 +499,6 @@ class OrderCreationService
         return $snapshot;
     }
 
-    /**
-     * A checkout that ended without a payment: its snapshot is used up (bound to the session when it was not yet).
-     */
     protected function retireSnapshot(array $metadata, string $sessionId): void
     {
         $snapshot = CheckoutSnapshot::query()
@@ -596,11 +550,6 @@ class OrderCreationService
         ];
     }
 
-    /**
-     * Remove the cart a paid checkout was started from, unless the customer changed it since: with a snapshot the cart
-     * is only cleared when its content hash still equals the snapshot's (an edited cart is left untouched), without one
-     * the hash stored in the session metadata decides (trustedCart).
-     */
     protected function clearCartAfterPayment(array $metadata, ?string $sessionId, ?CheckoutSnapshot $snapshot = null): void
     {
         $snapshot ??= $sessionId ? $this->resolveSnapshot($metadata, $sessionId) : null;
@@ -634,9 +583,6 @@ class OrderCreationService
         }
     }
 
-    /**
-     * Registered buyer from the session metadata; unknown/deleted users degrade to a guest order.
-     */
     protected function resolveUserId(array $metadata): ?int
     {
         if (empty($metadata['user_id'])) {
@@ -669,14 +615,10 @@ class OrderCreationService
         return ($session['payment_status'] ?? null) === 'paid';
     }
 
-    /**
-     * Fallback when the cart is gone: line items from Stripe, or one item describing the purchase.
-     */
     protected function createOrderItemsFromSession(Order $order, array $session): void
     {
         $lineItems = $this->fetchLineItems($session['id']);
 
-        // The live checkouts charge one lump-sum "Cart Purchase" line; the metadata describes the cart.
         $summary = count($lineItems) === 1 ? ($session['metadata']['description'] ?? null) : null;
 
         foreach ($lineItems as $item) {
@@ -727,10 +669,6 @@ class OrderCreationService
         }
     }
 
-    /**
-     * Parse shipping address from the metadata string
-     * Expected format: "John Doe, 123 Main St, City, State ZIP, Country"
-     */
     protected function parseShippingAddress(string $addressString): array
     {
         $parts = array_map('trim', explode(', ', $addressString));
@@ -764,7 +702,7 @@ class OrderCreationService
         $postalCode = $statePostalParts[1] ?? '';
 
         return Address::create(array_replace([
-            'user_id' => null, // Guest address
+            'user_id' => null,
             'type' => $type,
             'first_name' => $firstName,
             'last_name' => $lastName,
@@ -782,10 +720,6 @@ class OrderCreationService
         )));
     }
 
-    /**
-     * Save the address of a registered customer's new order as their default for the next checkout. Best effort:
-     * the order is already committed.
-     */
     protected function rememberShippingAddress(Order $order): void
     {
         try {
@@ -809,7 +743,6 @@ class OrderCreationService
                 Log::warning('Order confirmation email was not accepted for delivery', ['order_id' => $order->id]);
             }
         } catch (Throwable $e) {
-            // The order is already committed; a mail problem must not fail the payment flow.
             Log::error('Order confirmation email could not be requested', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
@@ -822,7 +755,6 @@ class OrderCreationService
         try {
             app(EmailService::class)->sendNewOrderAlert($order);
         } catch (Throwable $e) {
-            // Internal courtesy mail: never fail order creation because of it.
             Log::error('New order alert could not be requested', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
@@ -835,7 +767,6 @@ class OrderCreationService
         try {
             app(EmailService::class)->sendOversoldAlert($order);
         } catch (Throwable $e) {
-            // Internal courtesy mail: never fail order creation because of it.
             Log::error('Oversold order alert could not be requested', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
@@ -853,9 +784,6 @@ class OrderCreationService
         return is_string($value) && $value !== '' ? $value : null;
     }
 
-    /**
-     * Normalise Stripe objects / stdClass / arrays into plain nested arrays.
-     */
     protected function toArray(array|object $value): array
     {
         if (is_array($value)) {

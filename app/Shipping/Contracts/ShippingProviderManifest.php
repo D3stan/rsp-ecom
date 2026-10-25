@@ -6,37 +6,16 @@ use App\Shipping\Labels\Contracts\LabelProvider;
 use App\Shipping\Rates\Contracts\RateProvider;
 use App\Shipping\Tracking\Contracts\TrackingProvider;
 
-/**
- * Self-contained descriptor for an external shipping provider module (App\Shipping\Providers\<Name>).
- *
- * Adding or removing a provider requires only its folder under app/Shipping/Providers/ and listing
- * its manifest class in config('shipping.manifests').
- */
 interface ShippingProviderManifest
 {
-    /**
-     * Unique driver identifier stored on orders.tracking_driver and shipments.driver.
-     */
     public static function name(): string;
 
-    /**
-     * Name shown to admins (e.g. "DVA Express").
-     */
     public static function displayName(): string;
 
-    /**
-     * Whether this provider implements carrier tracking.
-     */
     public static function hasTracking(): bool;
 
-    /**
-     * Whether this provider implements label creation.
-     */
     public static function hasLabels(): bool;
 
-    /**
-     * Whether this provider implements live rate calculation.
-     */
     public static function hasRates(): bool;
 
     /**

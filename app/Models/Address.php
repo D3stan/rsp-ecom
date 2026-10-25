@@ -11,7 +11,6 @@ class Address extends Model
 {
     use HasFactory;
 
-    /** The fields of an address as typed in the checkout form. */
     public const CHECKOUT_FIELDS = ['first_name', 'last_name', 'company', 'address_line_1', 'address_line_2', 'city', 'state', 'postal_code', 'country', 'phone'];
 
     protected $fillable = [
@@ -34,7 +33,6 @@ class Address extends Model
         'is_default' => 'boolean',
     ];
 
-    // Relationships
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -50,7 +48,6 @@ class Address extends Model
         return $this->hasMany(Order::class, 'shipping_address_id');
     }
 
-    // Scopes
     public function scopeShipping($query)
     {
         return $query->where('type', 'shipping');
@@ -66,23 +63,22 @@ class Address extends Model
         return $query->where('is_default', true);
     }
 
-    // Accessors
     public function getFullNameAttribute(): string
     {
-        return trim($this->first_name . ' ' . $this->last_name);
+        return trim($this->first_name.' '.$this->last_name);
     }
 
     public function getFullAddressAttribute(): string
     {
         $address = $this->address_line_1;
-        
+
         if ($this->address_line_2) {
-            $address .= ', ' . $this->address_line_2;
+            $address .= ', '.$this->address_line_2;
         }
-        
-        $address .= ', ' . $this->city . ', ' . $this->state . ' ' . $this->postal_code;
-        $address .= ', ' . $this->country;
-        
+
+        $address .= ', '.$this->city.', '.$this->state.' '.$this->postal_code;
+        $address .= ', '.$this->country;
+
         return $address;
     }
 }

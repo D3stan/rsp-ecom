@@ -23,7 +23,7 @@ export default function CheckoutCancel({ message }: Props) {
 
             <div className="min-h-screen bg-white">
                 <div className="container mx-auto max-w-2xl px-4 py-8">
-                    {/* Cancel Header */}
+
                     <div className="mb-8 text-center">
                         <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
                             <XCircle className="h-8 w-8 text-gray-600" />
@@ -32,7 +32,6 @@ export default function CheckoutCancel({ message }: Props) {
                         <p className="text-gray-600">{message || t('checkout.cancel.default_message')}</p>
                     </div>
 
-                    {/* Information Card */}
                     <Card className="mb-8 bg-white">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -76,7 +75,6 @@ export default function CheckoutCancel({ message }: Props) {
                         </CardContent>
                     </Card>
 
-                    {/* Action Buttons */}
                     <div className="space-y-4">
                             <Button variant="outline" asChild size="lg" className="w-full">
                                 <Link href={route('checkout')} className="flex items-center gap-2">
@@ -91,7 +89,6 @@ export default function CheckoutCancel({ message }: Props) {
                             </Link>
                         </Button>
 
-                        {/* Guest account creation prompt */}
                         {isGuest && (
                             <div className="border-t pt-4">
                                 <div className="rounded-lg border border-green-200 bg-green-50 p-4">
@@ -110,7 +107,6 @@ export default function CheckoutCancel({ message }: Props) {
                         )}
                     </div>
 
-                    {/* Help Section */}
                     <div className="mt-8 border-t pt-8 text-center">
                         <h3 className="mb-2 font-medium text-gray-900">{t('checkout.cancel.need_help_title')}</h3>
                         <p className="mb-4 text-sm text-gray-600">{t('checkout.cancel.need_help_body')}</p>
@@ -118,11 +114,10 @@ export default function CheckoutCancel({ message }: Props) {
                             <Button variant="outline" size="sm" asChild>
                                 <Link href={route('contact')}>{t('checkout.cancel.contact_support')}</Link>
                             </Button>
-                            {/* You could add a live chat button here */}
+
                         </div>
                     </div>
 
-                    {/* Additional Information */}
                     <div className="mt-8 text-center">
                         <div className="rounded-lg bg-gray-50 p-4">
                             <h4 className="mb-2 font-medium text-gray-900">{t('checkout.cancel.payment_security_title')}</h4>

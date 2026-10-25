@@ -5,9 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * Audit trail row: one setting changed by one admin (values are JSON; masked for sensitive settings).
- */
 class SettingChange extends Model
 {
     public $timestamps = false;

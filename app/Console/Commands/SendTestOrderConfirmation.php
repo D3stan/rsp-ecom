@@ -3,14 +3,14 @@
 namespace App\Console\Commands;
 
 use App\Mail\OrderConfirmation;
-use App\Models\Order;
-use App\Models\User;
-use App\Models\Product;
 use App\Models\Address;
+use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\User;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class SendTestOrderConfirmation extends Command
 {
@@ -38,10 +38,11 @@ class SendTestOrderConfirmation extends Command
     public function handle()
     {
         $email = $this->argument('email');
-        
+
         // Validate email format
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $this->error('Invalid email address format.');
+
             return 1;
         }
 
@@ -50,9 +51,10 @@ class SendTestOrderConfirmation extends Command
         try {
             // Try to get an existing order, or create mock data
             $order = $this->getOrCreateTestOrder();
-            
-            if (!$order) {
+
+            if (! $order) {
                 $this->error('Could not find or create a test order.');
+
                 return 1;
             }
 
@@ -69,18 +71,19 @@ class SendTestOrderConfirmation extends Command
 
             // Preview option
             if ($this->option('preview')) {
-                $this->info("📧 Generating email preview...");
+                $this->info('📧 Generating email preview...');
                 $this->previewEmail($order);
+
                 return 0;
             }
 
             // Debug: Check current mail configuration
-            $this->info("📧 Current mail driver: " . config('mail.default'));
-            $this->info("📧 Mail from address: " . config('mail.from.address'));
-            $this->info("📧 Mail from name: " . config('mail.from.name'));
+            $this->info('📧 Current mail driver: '.config('mail.default'));
+            $this->info('📧 Mail from address: '.config('mail.from.address'));
+            $this->info('📧 Mail from name: '.config('mail.from.name'));
 
             // Send the email
-            $this->info("🚀 Attempting to send email...");
+            $this->info('🚀 Attempting to send email...');
             Mail::to($email)->send(new OrderConfirmation($order));
 
             $this->info("✅ Test order confirmation email sent successfully to: {$email}");
@@ -90,14 +93,15 @@ class SendTestOrderConfirmation extends Command
                 $this->warn("⚠️  Mail driver is set to 'log' - emails are written to storage/logs/laravel.log instead of being sent.");
                 $this->info("💡 To actually send emails, change MAIL_MAILER in your .env file to 'smtp' and configure mail settings.");
             } else {
-                $this->info("📧 Check your inbox for the order confirmation email.");
+                $this->info('📧 Check your inbox for the order confirmation email.');
             }
 
             // Display order details
             $this->displayOrderSummary($order);
 
         } catch (\Exception $e) {
-            $this->error("Failed to send email: " . $e->getMessage());
+            $this->error('Failed to send email: '.$e->getMessage());
+
             return 1;
         }
 
@@ -111,21 +115,24 @@ class SendTestOrderConfirmation extends Command
     {
         // Try to get the most recent order
         $order = Order::with(['orderItems.product', 'shippingAddress', 'billingAddress', 'user'])
-                     ->latest()
-                     ->first();
+            ->latest()
+            ->first();
 
         if ($order) {
             $this->info('Using existing order from database.');
+
             return $order;
         }
 
         // If no orders exist and user wants to create mock data
         if ($this->option('create-mock-data')) {
             $this->info('No orders found. Creating mock test data...');
+
             return $this->createMockOrder();
         }
 
         $this->warn('No orders found in database. Use --create-mock-data flag to create test data.');
+
         return null;
     }
 
@@ -203,7 +210,7 @@ class SendTestOrderConfirmation extends Command
                 'currency' => 'EUR',
                 'payment_status' => 'succeeded',
                 'payment_method' => 'card',
-                'stripe_payment_intent_id' => 'pi_test_' . uniqid(),
+                'stripe_payment_intent_id' => 'pi_test_'.uniqid(),
                 'notes' => 'Test order created by command for email testing',
             ]);
 
@@ -224,7 +231,7 @@ class SendTestOrderConfirmation extends Command
             $order->load(['orderItems.product', 'shippingAddress', 'billingAddress', 'user']);
 
             $this->info('✅ Mock test data created successfully.');
-            
+
             return $order;
         });
     }
@@ -243,10 +250,10 @@ class SendTestOrderConfirmation extends Command
                 ['Payment Status', ucfirst($order->payment_status)],
                 ['Customer', $order->user->name ?? 'Guest'],
                 ['Total Items', $order->orderItems->count()],
-                ['Subtotal', '€' . number_format($order->subtotal, 2)],
-                ['Tax', '€' . number_format($order->tax_amount, 2)],
-                ['Shipping', '€' . number_format($order->shipping_amount, 2)],
-                ['Total', '€' . number_format($order->total_amount, 2)],
+                ['Subtotal', '€'.number_format($order->subtotal, 2)],
+                ['Tax', '€'.number_format($order->tax_amount, 2)],
+                ['Shipping', '€'.number_format($order->shipping_amount, 2)],
+                ['Total', '€'.number_format($order->total_amount, 2)],
                 ['Created', $order->created_at->format('d/m/Y H:i')],
             ]
         );
@@ -256,8 +263,8 @@ class SendTestOrderConfirmation extends Command
             return [
                 $item->product_name,
                 $item->quantity,
-                '€' . number_format($item->price, 2),
-                '€' . number_format($item->total, 2),
+                '€'.number_format($item->price, 2),
+                '€'.number_format($item->total, 2),
             ];
         })->toArray();
 
@@ -286,20 +293,20 @@ class SendTestOrderConfirmation extends Command
         try {
             $mailable = new OrderConfirmation($order);
             $rendered = $mailable->render();
-            
-            $this->info("📧 Email Subject: " . $mailable->envelope()->subject);
-            $this->info("📧 Email Preview (first 500 characters):");
-            $this->line("─────────────────────────────────────────────────────────");
-            $this->line(substr(strip_tags($rendered), 0, 500) . "...");
-            $this->line("─────────────────────────────────────────────────────────");
-            
+
+            $this->info('📧 Email Subject: '.$mailable->envelope()->subject);
+            $this->info('📧 Email Preview (first 500 characters):');
+            $this->line('─────────────────────────────────────────────────────────');
+            $this->line(substr(strip_tags($rendered), 0, 500).'...');
+            $this->line('─────────────────────────────────────────────────────────');
+
             // Save preview to file
-            $previewPath = storage_path('logs/email_preview_' . date('Y-m-d_H-i-s') . '.html');
+            $previewPath = storage_path('logs/email_preview_'.date('Y-m-d_H-i-s').'.html');
             file_put_contents($previewPath, $rendered);
             $this->info("💾 Full HTML preview saved to: {$previewPath}");
-            
+
         } catch (\Exception $e) {
-            $this->error("Failed to preview email: " . $e->getMessage());
+            $this->error('Failed to preview email: '.$e->getMessage());
         }
     }
 }

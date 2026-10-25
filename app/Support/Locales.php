@@ -2,9 +2,6 @@
 
 namespace App\Support;
 
-/**
- * The shop's locales, from a single source (config('app.supported_locales')).
- */
 class Locales
 {
     /**
@@ -20,12 +17,8 @@ class Locales
         return is_string($locale) && in_array($locale, self::supported(), true);
     }
 
-    /**
-     * Locale used when a request / job / user has no (supported) preference.
-     */
     public static function fallback(): string
     {
-        // not app.locale: App::setLocale() rewrites it, so it would return the last locale switched to
         return config('app.default_locale');
     }
 

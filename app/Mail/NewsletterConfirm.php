@@ -8,14 +8,11 @@ use App\Services\Newsletter\MarketingConsent;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-/**
- * Double opt-in mail: the link that turns a pending subscriber into a confirmed one. Not a marketing mail itself
- * (no unsubscribe link needed: ignoring it means not being subscribed). Queued by MarketingConsent::subscribe().
- */
 class NewsletterConfirm extends Mailable
 {
     use HasLogo, Queueable, SerializesModels;
@@ -54,7 +51,7 @@ class NewsletterConfirm extends Mailable
     }
 
     /**
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

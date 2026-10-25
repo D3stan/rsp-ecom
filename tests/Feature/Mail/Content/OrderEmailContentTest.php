@@ -1,5 +1,6 @@
 <?php
 
+use App\Mail\ContactMessage;
 use App\Mail\OrderCancelled;
 use App\Mail\OrderConfirmation;
 use App\Mail\OrderDelivered;
@@ -7,6 +8,7 @@ use App\Mail\OrderShipped;
 use App\Mail\Traits\DescribesOrder;
 use App\Mail\Traits\HasLogo;
 use App\Models\Order;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Tests\Feature\Mail\Content\Support\EmailFixtures as Fx;
@@ -187,7 +189,7 @@ it('links guests to the signed order page and members to their order list', func
         expect($m)->not->toBeEmpty("{$class} has no order link for the guest");
         $url = $m[1];
         expect($url)->toContain('signature=')->toContain('expires=');
-        expect(URL::hasValidSignature(Illuminate\Http\Request::create($url)))->toBeTrue();
+        expect(URL::hasValidSignature(Request::create($url)))->toBeTrue();
 
         $memberHtml = Fx::deliver(new $class($member), 'en')->getHtmlBody();
         expect($memberHtml)->toContain(route('orders.index'))->not->toContain('signature=')->not->toContain('/orders/'.$member->order_number);
@@ -314,7 +316,7 @@ it('puts a readable automatic-message notice in the customer mails but not in th
     expect($notice)->not->toBeEmpty();
     expect($notice[0])->toContain('border:')->toContain('font-size: 14px')->toContain('mailto:help@shop.test')->toContain(route('contact'));
 
-    $contact = Fx::deliver(new App\Mail\ContactMessage([
+    $contact = Fx::deliver(new ContactMessage([
         'firstName' => 'A', 'lastName' => 'B', 'email' => 'visitor@example.test', 'subject' => 'Hi', 'message' => 'Hello', 'phone' => null,
     ]), 'en');
     expect($contact->getHtmlBody())->not->toContain(__('emails.no_reply.title', [], 'en'));

@@ -10,15 +10,12 @@ use App\Services\Newsletter\MarketingConsent;
 use App\Services\Reviews\ReviewRequests;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
 
-/**
- * "How did we do?": a consented invitation to review the delivered products the customer has not reviewed yet, each
- * with a direct link to the review form, plus a one-click unsubscribe (same marketing consent as the newsletter).
- */
 class ReviewRequest extends Mailable
 {
     use HasLogo, SerializesModels;
@@ -70,7 +67,7 @@ class ReviewRequest extends Mailable
     }
 
     /**
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

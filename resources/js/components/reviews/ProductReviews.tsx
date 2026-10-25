@@ -14,7 +14,6 @@ interface ProductReviewsProps {
     distribution: RatingDistribution;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    /** Where "how we verify reviews" links (FAQ or terms). */
     verifyHref: string;
 }
 
@@ -28,10 +27,6 @@ function stars(rating: number, size = 'h-4 w-4') {
     );
 }
 
-/**
- * Product-page reviews block: rating summary with distribution bars, a strip of approved photos that opens a
- * lightbox, and the verified reviews. Expanded by default when there are photos (set by the caller).
- */
 export default function ProductReviews({ reviews, average, count, distribution, open, onOpenChange, verifyHref }: ProductReviewsProps) {
     const { t, locale } = useTranslation();
     const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -51,7 +46,7 @@ export default function ProductReviews({ reviews, average, count, distribution, 
                     <ChevronDown className={`h-5 w-5 text-black transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-2 rounded-lg p-4">
-                    {/* Rating summary + distribution */}
+
                     {formattedAverage !== null && (
                         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
                             <div className="flex flex-col items-center sm:w-40">
@@ -73,7 +68,6 @@ export default function ProductReviews({ reviews, average, count, distribution, 
                         </div>
                     )}
 
-                    {/* Photo strip */}
                     {gallery.length > 0 && (
                         <div className="mb-6">
                             <h3 className="mb-2 text-sm font-medium text-gray-900">{t('product.reviews_block.customer_photos')}</h3>
@@ -102,7 +96,6 @@ export default function ProductReviews({ reviews, average, count, distribution, 
                         </div>
                     )}
 
-                    {/* Transparency line (Omnibus Directive) */}
                     <p className="mb-6 text-sm text-gray-500">
                         {t('product.reviews_block.verify_note')}{' '}
                         <Link href={verifyHref} className="underline hover:text-gray-900">
@@ -110,7 +103,6 @@ export default function ProductReviews({ reviews, average, count, distribution, 
                         </Link>
                     </p>
 
-                    {/* Reviews list */}
                     <div className="space-y-6">
                         {reviews.map((review) => {
                             let galleryOffset = 0;

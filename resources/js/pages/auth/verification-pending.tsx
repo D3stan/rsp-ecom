@@ -23,12 +23,11 @@ export default function VerificationPending({ email, status }: Props) {
     const [statusMessage, setStatusMessage] = useState<string>('');
     const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const isMountedRef = useRef(true);
-    
+
     const { data, setData, post, processing, errors } = useForm({
         email: email || '',
     });
 
-    // Cleanup function to stop polling
     const stopPolling = useCallback(() => {
         if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
@@ -37,14 +36,12 @@ export default function VerificationPending({ email, status }: Props) {
         setIsPolling(false);
     }, []);
 
-    // Polling function to check verification status
     const checkVerificationStatus = useCallback(async () => {
         if (!email || !isMountedRef.current) return;
 
         try {
-            // Get CSRF token from meta tag
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            
+
             const response = await fetch(`/verification/status?email=${encodeURIComponent(email)}`, {
                 method: 'GET',
                 headers: {
@@ -55,38 +52,32 @@ export default function VerificationPending({ email, status }: Props) {
                 },
                 credentials: 'same-origin'
             });
-            
-            // Check if response is HTML (error page) instead of JSON
+
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
                 console.error('Received non-JSON response:', contentType);
-                // Try to get the HTML content for debugging
                 const htmlContent = await response.text();
                 console.error('HTML response:', htmlContent.substring(0, 200));
                 return;
             }
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             const responseData = await response.json();
 
-            // Only update state if component is still mounted
             if (!isMountedRef.current) return;
 
             if (responseData.verified) {
                 setVerificationStatus('verified');
                 setStatusMessage('Email verified successfully! Redirecting...');
                 stopPolling();
-                
-                // If the user is now authenticated, redirect immediately
-                // Otherwise, give a moment for the session to be established
+
                 const redirectDelay = responseData.authenticated ? 1000 : 2000;
-                
+
                 setTimeout(() => {
                     if (isMountedRef.current) {
-                        // Force a full page reload to ensure session is properly established
                         window.location.href = responseData.redirect_url || '/dashboard';
                     }
                 }, redirectDelay);
@@ -99,33 +90,25 @@ export default function VerificationPending({ email, status }: Props) {
                 setStatusMessage(responseData.error);
                 stopPolling();
             }
-            // If still pending, continue polling
         } catch (error) {
             console.error('Error checking verification status:', error);
-            
-            // Only update state if component is still mounted
+
             if (isMountedRef.current) {
-                // On network errors, we'll continue polling but could show a temporary warning
-                // For now, just log the error and continue
             }
         }
     }, [email, stopPolling]);
 
-    // Set up polling when component mounts or email changes
     useEffect(() => {
         if (!email || !isPolling) return;
 
-        // Initial check
         checkVerificationStatus();
 
-        // Set up polling interval
         pollIntervalRef.current = setInterval(() => {
             if (isMountedRef.current && isPolling) {
                 checkVerificationStatus();
             }
-        }, 5000); // Poll every 5 seconds instead of 3
+        }, 5000);
 
-        // Cleanup function
         return () => {
             if (pollIntervalRef.current) {
                 clearInterval(pollIntervalRef.current);
@@ -134,7 +117,6 @@ export default function VerificationPending({ email, status }: Props) {
         };
     }, [email, isPolling, checkVerificationStatus]);
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
             isMountedRef.current = false;
@@ -142,37 +124,33 @@ export default function VerificationPending({ email, status }: Props) {
         };
     }, [stopPolling]);
 
-    // Handle page visibility changes to pause/resume polling
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                // Page is hidden, stop polling to save resources
                 if (pollIntervalRef.current) {
                     clearInterval(pollIntervalRef.current);
                     pollIntervalRef.current = null;
                 }
             } else {
-                // Page is visible again, resume polling if still needed
                 if (isPolling && !pollIntervalRef.current && verificationStatus === 'pending') {
-                    checkVerificationStatus(); // Immediate check
+                    checkVerificationStatus();
                     pollIntervalRef.current = setInterval(checkVerificationStatus, 3000);
                 }
             }
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        
+
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, [isPolling, verificationStatus, checkVerificationStatus]);
 
-    // Timer for rate limiting
     useEffect(() => {
         if (status === 'verification-link-sent') {
             setCanResend(false);
-            setTimeLeft(60); // 60 seconds cooldown
-            
+            setTimeLeft(60);
+
             const timer = setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev === null || prev <= 1) {
@@ -199,7 +177,7 @@ export default function VerificationPending({ email, status }: Props) {
             description={t('auth.pending.description')}
         >
             <Head title={t('auth.pending.head')} />
-            
+
             <Card className="w-full max-w-md mx-auto">
                 <CardHeader className="text-center space-y-4">
                     <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
@@ -311,10 +289,10 @@ export default function VerificationPending({ email, status }: Props) {
                                         disabled={processing || verificationStatus !== 'pending'}
                                     />
                                 </div>
-                                
-                                <Button 
-                                    type="submit" 
-                                    variant="outline" 
+
+                                <Button
+                                    type="submit"
+                                    variant="outline"
                                     className="w-full bg-gray-200 text-black"
                                     disabled={processing || !canResend || verificationStatus !== 'pending'}
                                 >

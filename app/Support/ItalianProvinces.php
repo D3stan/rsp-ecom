@@ -2,10 +2,6 @@
 
 namespace App\Support;
 
-/**
- * The Italian provinces (sigla => name): the state field of an Italian address is one of these codes.
- * public/data/it-cap.json maps a CAP to its comune and province for the checkout autofill (source: ISTAT comuni list).
- */
 class ItalianProvinces
 {
     public const ALL = [

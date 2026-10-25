@@ -11,26 +11,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Stock bookkeeping of paid orders (and manual corrections). product_variants.stock_quantity is the source of truth; the legacy mirror
- * products.stock_quantity follows the default variant through Product::syncStockMirror().
- *
- * A paid order is never rejected for lack of stock (the customer already paid): the shortfall is recorded per line in
- * order_items.oversold_qty and on orders.has_oversold_items, and the shop owner is alerted. Stock never goes below zero
- * through an order.
- *
- * Idempotent through orders.stock_deducted_at / stock_restored_at, claimed with a conditional UPDATE, so replays and
- * concurrent callers deduct and restore exactly once. Policy: an order that is cancelled gets its stock back
- * once; moving it out of "cancelled" later does NOT deduct again (an admin who reopens a cancelled order adjusts
- * the stock by hand, as for any other manual correction).
- *
- * Call inside the caller's transaction when there is one; each method also opens its own (nested) transaction.
- */
 class StockService
 {
-    /**
-     * Take the quantities of a paid order from the stock. Returns true when this call did it (false: already done).
-     */
     public function deductForOrder(Order $order): bool
     {
         return DB::transaction(function () use ($order) {
@@ -80,7 +62,6 @@ class StockService
 
             Order::query()->whereKey($order->id)->update(['has_oversold_items' => $oversold]);
 
-            // Mirror in memory without marking the model dirty or changing wasChanged() of the caller
             $order->setAttribute('stock_deducted_at', $now);
             $order->setAttribute('has_oversold_items', $oversold);
             $order->syncOriginalAttributes(['stock_deducted_at', 'has_oversold_items']);
@@ -93,10 +74,6 @@ class StockService
         });
     }
 
-    /**
-     * Give back what deductForOrder() took (the units actually deducted, not the oversold ones). Only for an order
-     * whose stock was deducted and not yet restored. Returns true when this call did it.
-     */
     public function restoreForOrder(Order $order): bool
     {
         return DB::transaction(function () use ($order) {
@@ -125,7 +102,6 @@ class StockService
                     continue;
                 }
 
-                // units already given back with a refund (restoreItems) are not given back twice
                 $give[$variantId] = ($give[$variantId] ?? 0) + max(0, (int) $item->quantity - (int) $item->oversold_qty - (int) $item->restocked_qty);
             }
 

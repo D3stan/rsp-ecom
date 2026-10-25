@@ -23,8 +23,6 @@ interface LoginProps {
     canResetPassword: boolean;
 }
 
-// Errors from redirects to this page (Google sign-in, guest checkout switched off) are controller flashes, toasted
-// by the FlashToaster (app.tsx)
 export default function Login({ status, canResetPassword }: LoginProps) {
     const { t } = useTranslation();
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({

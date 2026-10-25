@@ -11,20 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-/**
- * Abandoned-checkout reminder (one per checkout, only with the marketing consent ticked at checkout).
- *
- * Flow: the checkout records the consent on its snapshot (rememberContact) -> Stripe's checkout.session.expired
- * webhook (the Stripe session is dead, so no second live payment page can exist) queues the reminder after
- * newsletter.abandoned_checkout_delay_minutes (sessionExpired) -> SendAbandonedCheckoutReminder re-checks everything
- * (shouldRemind) and sends once -> the signed link rebuilds the cart (CheckoutRecoveryController).
- */
 class AbandonedCheckoutReminders
 {
-    /** Validity of the "complete your order" link. */
     public const RECOVERY_LINK_DAYS = 7;
 
-    /** An order paid this long after the reminder counts as converted (admin stats). */
     public const CONVERSION_WINDOW_DAYS = 7;
 
     public function __construct(private readonly MarketingConsent $consent) {}
@@ -34,10 +24,6 @@ class AbandonedCheckoutReminders
         return (bool) settings('newsletter.abandoned_checkout_enabled', false);
     }
 
-    /**
-     * expires_at of a new Stripe checkout session (orders.checkout_expiry_minutes), kept a minute inside Stripe's
-     * accepted window (30 minutes to 24 hours after creation) so request latency can never push it out.
-     */
     public function sessionExpiresAt(): int
     {
         $minutes = (int) settings('orders.checkout_expiry_minutes', 60);
@@ -46,11 +32,6 @@ class AbandonedCheckoutReminders
         return now()->addSeconds($seconds)->timestamp;
     }
 
-    /**
-     * Called by both checkouts right after the snapshot was written. The consent only counts while the checkbox can be
-     * shown (newsletter.enabled); the email is kept only when there is consent. With consent the newsletter double
-     * opt-in starts too. Never breaks the checkout: a failure here is logged.
-     */
     public function rememberContact(CheckoutSnapshot $snapshot, Request $request, string $email, ?User $user = null): void
     {
         try {
@@ -98,11 +79,6 @@ class AbandonedCheckoutReminders
         }
     }
 
-    /**
-     * Whether the reminder may still go out (checked when the job runs). Reasons not to: switched off, no consent or
-     * address, already sent, nothing in it, the customer paid an order since, or the address is unsubscribed or was
-     * erased (no subscriber row: an erased person is never contacted again).
-     */
     public function shouldRemind(CheckoutSnapshot $snapshot): bool
     {
         if (! $this->enabled() || ! $snapshot->marketing_consent || ! $snapshot->email || $snapshot->reminder_sent_at !== null) {
@@ -129,9 +105,6 @@ class AbandonedCheckoutReminders
             : null;
     }
 
-    /**
-     * A paid order of the same customer (account or email) created after $since (and before $until).
-     */
     public function paidOrderSince(CheckoutSnapshot $snapshot, $since, $until = null): bool
     {
         $email = $snapshot->email ? NewsletterSubscriber::normalizeEmail($snapshot->email) : null;

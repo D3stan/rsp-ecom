@@ -9,9 +9,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class OrderItem extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'order_id',
-        'product_id', // Can be null for guest orders where we don't have a proper product reference
+        'product_id',
         'product_variant_id',
         'product_name',
         'size_id',
@@ -22,7 +23,6 @@ class OrderItem extends Model
         'restocked_qty',
     ];
 
-    /** Internal: shown to admins only (Admin\OrdersController::show). */
     protected $hidden = ['oversold_qty', 'restocked_qty'];
 
     protected $casts = [
@@ -33,7 +33,6 @@ class OrderItem extends Model
         'quantity' => 'integer',
     ];
 
-    // Relationships
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
@@ -59,13 +58,11 @@ class OrderItem extends Model
         return $this->belongsTo(ProductVariant::class);
     }
 
-    // Accessors
     public function getCalculatedTotalAttribute(): float
     {
         return $this->quantity * $this->price;
     }
 
-    // Check if the stored total matches calculated total
     public function getIsTotalCorrectAttribute(): bool
     {
         return abs($this->total - $this->calculated_total) < 0.01;

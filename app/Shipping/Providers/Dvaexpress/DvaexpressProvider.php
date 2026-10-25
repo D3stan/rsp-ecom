@@ -50,9 +50,6 @@ class DvaexpressProvider implements TrackingProvider
         return $this->carriers->isEmpty() || $this->carriers->toProvider($carrierCode) !== null;
     }
 
-    /**
-     * Fetch tracking information for a tracking number.
-     */
     public function fetch(string $trackingNumber, ?string $carrierCode = null): TrackingResult
     {
         $trackingNumber = trim($trackingNumber);
@@ -71,19 +68,11 @@ class DvaexpressProvider implements TrackingProvider
         return $this->mapper->map($response);
     }
 
-    /**
-     * TrackingProvider contract method.
-     * Dvaexpress always polls using the courier's real waybill number (ldv), which is stored in
-     * $request->trackingNumber. Any providerCode (such as id_ordine) is ignored for tracking lookup.
-     */
     public function track(TrackingRequest $request): TrackingResult
     {
         return $this->fetch($request->trackingNumber, $request->carrierCode);
     }
 
-    /**
-     * Parse webhook payload if supported.
-     */
     public function parseWebhook(Request $request): TrackingResult
     {
         $secret = (string) ($this->config['webhook_secret'] ?? '');
@@ -101,9 +90,6 @@ class DvaexpressProvider implements TrackingProvider
         return $this->mapper->map($payload);
     }
 
-    /**
-     * Public tracking page URL, or null when not configured.
-     */
     public function trackingUrl(string $trackingNumber, ?string $carrierCode = null): ?string
     {
         return $this->carrierTrackingUrl($trackingNumber, $carrierCode);

@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
 use App\Models\Product;
+use App\Models\Review;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Review>
+ * @extends Factory<Review>
  */
 class ReviewFactory extends Factory
 {
@@ -19,7 +20,7 @@ class ReviewFactory extends Factory
     public function definition(): array
     {
         $rating = $this->getRealisticRating();
-        
+
         return [
             'user_id' => User::factory(),
             'product_id' => Product::factory(),
@@ -86,7 +87,7 @@ class ReviewFactory extends Factory
             'Not as described.',
         ];
 
-        return match($rating) {
+        return match ($rating) {
             5, 4 => $this->faker->randomElement($positiveComments),
             3 => $this->faker->randomElement($neutralComments),
             default => $this->faker->randomElement($negativeComments),

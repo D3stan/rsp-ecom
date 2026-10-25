@@ -68,8 +68,8 @@ return [
     |
     */
     'google_analytics' => [
-        'id' => env('GOOGLE_ANALYTICS_ID', ""),
-        'anonymize_ip' => env('GOOGLE_ANALYTICS_ANONYMIZE_IP', true)
+        'id' => env('GOOGLE_ANALYTICS_ID', ''),
+        'anonymize_ip' => env('GOOGLE_ANALYTICS_ANONYMIZE_IP', true),
     ],
 
 ];

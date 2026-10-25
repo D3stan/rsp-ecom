@@ -9,12 +9,10 @@ interface ReviewPhotoInputProps {
     value: File[];
     onChange: (files: File[]) => void;
     limits: PhotoLimits;
-    /** Server-side errors for `photos` and `photos.N` */
     errors?: string[];
     disabled?: boolean;
 }
 
-/** Up to `limits.max_files` photos with previews and remove buttons (review form). */
 export default function ReviewPhotoInput({ value, onChange, limits, errors = [], disabled = false }: ReviewPhotoInputProps) {
     const { t, locale } = useTranslation();
     const inputId = useId();
@@ -23,7 +21,6 @@ export default function ReviewPhotoInput({ value, onChange, limits, errors = [],
     const [problems, setProblems] = useState<PhotoProblem[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
 
-    // Object URLs for the previews, released when the selection changes or the form unmounts
     useEffect(() => {
         const urls = value.map((file) => URL.createObjectURL(file));
         setPreviews(urls);
@@ -48,7 +45,6 @@ export default function ReviewPhotoInput({ value, onChange, limits, errors = [],
 
     const handlePick = (event: React.ChangeEvent<HTMLInputElement>) => {
         const picked = Array.from(event.target.files ?? []);
-        // Reset, so picking the same file again after removing it still fires a change
         event.target.value = '';
 
         const result = addPhotos(value, picked, limits);

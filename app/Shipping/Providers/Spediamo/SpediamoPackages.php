@@ -2,16 +2,8 @@
 
 namespace App\Shipping\Providers\Spediamo;
 
-/**
- * The one place that decides how parcels are encoded in a Spediamo POST /v1/shipments form body.
- *
- * Verified against the live API (fixtures in tests/Fixtures/spediamo/probes): `packages` is a comma-separated list,
- * one entry per parcel, each "quantity:weight:height:length:width". Weight may have decimals; quantity and the three
- * sizes must be whole numbers, and a size of 0 is rejected. "x", ";", "|" and "*" separators are not understood.
- */
 final class SpediamoPackages
 {
-    /** Carrier minimum when a size is unknown. */
     private const UNKNOWN_SIZE_CM = 10;
 
     /**
@@ -50,7 +42,6 @@ final class SpediamoPackages
     {
         $weight = rtrim(rtrim(number_format($weightKg, 2, '.', ''), '0'), '.');
 
-        // shortcut: whole centimetres rounded up, unknown sizes assumed 10 cm; revisit if quotes need exact box sizes
         return implode(':', [
             $quantity,
             $weight !== '' ? $weight : '0',

@@ -7,10 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\URL;
 
-/**
- * A newsletter subscriber, one per (lowercased) email. Only `confirmed` subscribers may receive marketing email.
- * State changes go through App\Services\Newsletter\MarketingConsent, which also writes the consent trail.
- */
 class NewsletterSubscriber extends Model
 {
     public const STATUS_PENDING = 'pending';
@@ -58,9 +54,6 @@ class NewsletterSubscriber extends Model
         return $this->status === self::STATUS_CONFIRMED;
     }
 
-    /**
-     * Signed, non-expiring unsubscribe link: the page (GET) and the RFC 8058 one-click target (POST).
-     */
     public function unsubscribeUrl(): string
     {
         return URL::signedRoute('newsletter.unsubscribe', ['subscriber' => $this->id]);

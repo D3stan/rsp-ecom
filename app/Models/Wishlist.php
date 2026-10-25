@@ -9,12 +9,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Wishlist extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'user_id',
         'product_id',
     ];
 
-    // Relationships
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -25,7 +25,6 @@ class Wishlist extends Model
         return $this->belongsTo(Product::class);
     }
 
-    // Helper methods
     public static function addToWishlist(User $user, Product $product): bool
     {
         return static::firstOrCreate([

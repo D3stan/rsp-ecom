@@ -6,12 +6,10 @@ import type { GalleryPhoto } from './review-gallery';
 
 interface ReviewLightboxProps {
     photos: GalleryPhoto[];
-    /** Index of the open photo, or null when the lightbox is closed. */
     index: number | null;
     onIndexChange: (index: number | null) => void;
 }
 
-/** Full-size viewer for review photos: a shadcn Dialog with labelled, keyboard-navigable prev/next controls. */
 export default function ReviewLightbox({ photos, index, onIndexChange }: ReviewLightboxProps) {
     const { t } = useTranslation();
     const open = index !== null;

@@ -2,7 +2,7 @@
 
 Shipping document downloads.
 
-[API overview and shared conventions](./README.md) · [Original HTML export](../spediamo-doc.html)
+[API overview and shared conventions](./README.md) · [Original HTML export](../vendor/spediamo-doc.html)
 
 ## Waybill
 

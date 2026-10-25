@@ -41,7 +41,6 @@ class Order extends Model
         'payment_method',
         'stripe_customer_id',
         'tracking_number',
-        // Carrier tracking module (App\Shipping\Tracking)
         'tracking_carrier',
         'tracking_driver',
         'tracking_status',
@@ -50,11 +49,9 @@ class Order extends Model
         'tracking_started_at',
         'shipping_method',
         'estimated_delivery_date',
-        // Guest order fields
         'guest_email',
         'guest_phone',
         'guest_session_id',
-        // Email tracking
         'confirmation_email_sent',
         'confirmation_email_sent_at',
     ];
@@ -77,13 +74,8 @@ class Order extends Model
         'delivered_at' => 'datetime',
     ];
 
-    /**
-     * Stock bookkeeping is internal: it never reaches a customer-facing page through toArray()/toFrontendArray().
-     * The admin order page receives it as its own prop (Admin\OrdersController::show).
-     */
     protected $hidden = ['stock_deducted_at', 'stock_restored_at', 'has_oversold_items'];
 
-    // Boot method to generate order number
     protected static function boot()
     {
         parent::boot();
@@ -104,8 +96,6 @@ class Order extends Model
             }
         });
 
-        // Cancelling an order whose payment never completed also closes the payment. A captured
-        // payment (succeeded) is left alone: returning the money is a separate refund step.
         static::updating(function ($order) {
             if ($order->isDirty('status')
                 && $order->status === 'cancelled'
@@ -115,8 +105,6 @@ class Order extends Model
             }
         });
 
-        // A corrected tracking number, carrier, or provider starts a fresh tracking cycle (old status
-        // and schedule belong to the previous parcel; this also re-enables polling switched off for it).
         static::updating(function ($order) {
             if ($order->isDirty('tracking_carrier')) {
                 $carrier = trim((string) $order->tracking_carrier);
@@ -156,7 +144,6 @@ class Order extends Model
         });
     }
 
-    // Relationships
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -187,32 +174,21 @@ class Order extends Model
         return $this->hasMany(ShipmentTrackingEvent::class);
     }
 
-    /**
-     * Money returned for this order (RefundService).
-     */
     public function refunds(): HasMany
     {
         return $this->hasMany(Refund::class);
     }
 
-    /**
-     * Parcels shipped for this order (ShippingService), oldest first. The order's tracking_number / tracking_carrier
-     * are the current values.
-     */
     public function shipments(): HasMany
     {
         return $this->hasMany(Shipment::class)->orderBy('id');
     }
 
-    /**
-     * Audit trail (status changes, refunds), oldest first.
-     */
     public function events(): HasMany
     {
         return $this->hasMany(OrderEvent::class)->orderBy('created_at')->orderBy('id');
     }
 
-    // Scopes
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
@@ -238,7 +214,6 @@ class Order extends Model
         return $query->where('status', 'cancelled');
     }
 
-    // Payment status scopes
     public function scopePaymentPending($query)
     {
         return $query->where('payment_status', 'pending');
@@ -259,9 +234,6 @@ class Order extends Model
         return $query->where('payment_status', 'failed');
     }
 
-    /**
-     * "Refund due" (computed, never stored): cancelled while money is still captured, fully or in part.
-     */
     public function scopeRefundDue($query)
     {
         return $query->where('status', 'cancelled')->whereIn('payment_status', self::REFUND_DUE_PAYMENT_STATUSES);
@@ -272,7 +244,6 @@ class Order extends Model
         return $this->status === 'cancelled' && in_array($this->payment_status, self::REFUND_DUE_PAYMENT_STATUSES, true);
     }
 
-    // Accessors
     public function getTotalItemsAttribute(): int
     {
         return $this->orderItems->sum('quantity');
@@ -300,14 +271,9 @@ class Order extends Model
     {
         $allowed = OrderTransitions::allowedFrom($this->status);
 
-        // "shipped" also needs a captured payment (canShip()): never offer a move the server refuses
         return array_values(array_filter($allowed, fn (string $to) => $to !== 'shipped' || $this->canShip()));
     }
 
-    /**
-     * May the admin ship this order now? Only a "processing" order whose payment was captured and not refunded in
-     * full. The lifecycle map alone would also let through an unpaid order moved to processing by hand.
-     */
     public function canShip(): bool
     {
         return $this->status === 'processing' && $this->hasShippablePayment();
@@ -341,13 +307,11 @@ class Order extends Model
             $row = static::query()->whereKey($this->getKey())->lockForUpdate()->first(['status', 'payment_status']);
             $stored = $row?->getAttribute('status');
 
-            // Decide on what is stored, not on what this instance remembers
             if ($stored !== null && $stored !== $this->getOriginal('status')) {
                 $this->setAttribute('status', $stored);
                 $this->syncOriginalAttribute('status');
             }
 
-            // Same for the payment (a refund webhook may have changed it meanwhile), unless the caller is changing it
             if ($row !== null && ! $this->isDirty('payment_status') && $row->getAttribute('payment_status') !== $this->getOriginal('payment_status')) {
                 $this->setAttribute('payment_status', $row->getAttribute('payment_status'));
                 $this->syncOriginalAttribute('payment_status');
@@ -418,7 +382,6 @@ class Order extends Model
         });
     }
 
-    // Helper methods
     public function cancel(?User $actor = null, ?string $reason = null): bool
     {
         if (! $this->can_be_cancelled) {
@@ -428,7 +391,7 @@ class Order extends Model
         try {
             $this->transitionTo('cancelled', $actor, $reason);
         } catch (InvalidOrderTransition) {
-            return false; // the stored status moved on meanwhile
+            return false;
         }
 
         return true;
@@ -455,7 +418,6 @@ class Order extends Model
         return true;
     }
 
-    // Generate unique order number
     public static function generateOrderNumber(): string
     {
         do {
@@ -465,7 +427,6 @@ class Order extends Model
         return $orderNumber;
     }
 
-    // Payment helper methods
     public function hasStripePaymentIntent(): bool
     {
         return ! empty($this->stripe_payment_intent_id);
@@ -486,16 +447,12 @@ class Order extends Model
         return in_array($this->payment_status, ['pending', 'processing']);
     }
 
-    /** All valid payment statuses allowed on an order. */
     public const PAYMENT_STATUSES = ['pending', 'processing', 'succeeded', 'failed', 'cancelled', 'refunded', 'partially_refunded'];
 
-    /** Payment states in which money was captured: the order's lines and totals are then locked (refunds only). */
     public const CAPTURED_PAYMENT_STATUSES = ['succeeded', 'partially_refunded', 'refunded'];
 
-    /** Captured money not (fully) returned yet: a cancelled order in one of these owes the customer a refund. */
     public const REFUND_DUE_PAYMENT_STATUSES = ['succeeded', 'partially_refunded'];
 
-    /** Payment states in which the order may ship: paid, and not refunded in full. */
     public const SHIPPABLE_PAYMENT_STATUSES = ['succeeded', 'partially_refunded'];
 
     public function hasCapturedPayment(): bool
@@ -503,12 +460,6 @@ class Order extends Model
         return in_array($this->payment_status, self::CAPTURED_PAYMENT_STATUSES, true);
     }
 
-    /**
-     * Lines, prices and totals can no longer be edited: the money was captured, or a payment is in flight (Stripe
-     * charges the amount it was given, so an edit could only make the order disagree with it). Not the same as
-     * hasCapturedPayment(): an in-flight payment cannot be refunded. A shipped or delivered order is fulfilled:
-     * whatever its payment status says, its lines and totals no longer change.
-     */
     public function financialsLocked(): bool
     {
         return $this->payment_status === 'processing'
@@ -531,7 +482,6 @@ class Order extends Model
         return $this->save();
     }
 
-    // Create order from cart
     public static function createFromCart(Cart $cart, Address $billingAddress, Address $shippingAddress, array $additionalData = []): self
     {
         $subtotal = $cart->subtotal;
@@ -552,7 +502,6 @@ class Order extends Model
             'notes' => $additionalData['notes'] ?? null,
         ]);
 
-        // Create order items from cart items
         foreach ($cart->cartItems as $cartItem) {
             $order->orderItems()->create([
                 'product_id' => $cartItem->product_id,
@@ -566,7 +515,6 @@ class Order extends Model
         return $order;
     }
 
-    // Guest order methods
     public function isGuestOrder(): bool
     {
         return $this->user_id === null && $this->guest_email !== null;
@@ -574,7 +522,6 @@ class Order extends Model
 
     public function getCustomerEmail(): ?string
     {
-        // Orders of a deleted account have no user: guest_email holds the email copied at deletion.
         return $this->user?->email ?? $this->guest_email;
     }
 
@@ -584,7 +531,6 @@ class Order extends Model
             return $this->user->name;
         }
 
-        // Guest orders and orders of a deleted account: the name on the billing address
         if ($this->billingAddress) {
             return trim($this->billingAddress->first_name.' '.$this->billingAddress->last_name);
         }
@@ -592,29 +538,16 @@ class Order extends Model
         return null;
     }
 
-    /**
-     * Signed, expiring link to the order-status page (orders.guest.show). Safe to put in emails:
-     * it works without an account or cookies, and is useless once tampered with or expired.
-     */
     public function publicUrl(): string
     {
         return URL::temporarySignedRoute('orders.guest.show', now()->addDays(static::publicUrlDays()), ['order' => $this->order_number]);
     }
 
-    /**
-     * Validity (days) of the signed order-status link sent in emails: the orders.public_link_days setting.
-     */
     public static function publicUrlDays(): int
     {
         return max(1, (int) settings('orders.public_link_days', 30));
     }
 
-    /**
-     * Public tracking page for the shipment, as given by the order's tracking driver (or the default
-     * driver when null), which falls back to the carrier's URL template in config/shipping.php. Null
-     * when none is known (the number is then shown without a link). Reads carrier and driver through
-     * getAttribute() so it keeps working before and after the columns exist.
-     */
     public function trackingUrl(?string $trackingNumber = null): ?string
     {
         $number = trim((string) ($trackingNumber ?? $this->tracking_number));
@@ -682,9 +615,6 @@ class Order extends Model
         return null;
     }
 
-    /**
-     * Display name of the carrier, when known (config name, else the stored code).
-     */
     public function trackingCarrierName(): ?string
     {
         $carrier = $this->getAttribute('tracking_carrier');
@@ -692,10 +622,6 @@ class Order extends Model
         return is_string($carrier) && $carrier !== '' ? app(TrackingManager::class)->carrierName($carrier) : null;
     }
 
-    /**
-     * Is this viewer proven to be the buyer? Either the logged-in owner, or the browser session
-     * the guest checkout started from. Anyone else only gets the non-personal order summary.
-     */
     public function isOwnedBy(?Authenticatable $user, ?string $sessionId): bool
     {
         if ($user !== null && $this->user_id !== null && (int) $user->getAuthIdentifier() === (int) $this->user_id) {
@@ -708,7 +634,6 @@ class Order extends Model
             && hash_equals((string) $this->guest_session_id, $sessionId);
     }
 
-    // Scopes for guest orders
     public function scopeGuestOrders($query)
     {
         return $query->whereNull('user_id')->whereNotNull('guest_email');
@@ -724,9 +649,6 @@ class Order extends Model
         return $query->where('guest_session_id', $sessionId);
     }
 
-    /**
-     * Mark confirmation email as sent
-     */
     public function markEmailAsSent(): bool
     {
         return $this->update([
@@ -735,9 +657,6 @@ class Order extends Model
         ]);
     }
 
-    /**
-     * Check if confirmation email has been sent
-     */
     public function hasEmailBeenSent(): bool
     {
         return (bool) $this->confirmation_email_sent
@@ -747,27 +666,17 @@ class Order extends Model
                 ->exists();
     }
 
-    /**
-     * Idempotency/audit rows for the transactional emails of this order
-     */
     public function emails(): HasMany
     {
         return $this->hasMany(OrderEmail::class);
     }
 
-    /**
-     * Order fields the customer's own pages may receive (account dashboard, My orders, checkout success).
-     * Everything else on the row stays server-side: internal admin notes, Stripe ids, the guest session id.
-     */
     public const CUSTOMER_FIELDS = [
         'id', 'order_number', 'status', 'payment_status', 'created_at', 'currency',
         'subtotal', 'tax_amount', 'tax_rate', 'shipping_amount', 'discount_amount', 'total_amount',
         'tracking_number', 'tracking_carrier', 'tracking_status', 'tracking_last_synced_at',
     ];
 
-    /**
-     * Whitelisted order data for customer-facing pages (see CUSTOMER_FIELDS). Callers add the items they show.
-     */
     public function toCustomerArray(): array
     {
         return Arr::only($this->attributesToArray(), self::CUSTOMER_FIELDS);
@@ -807,7 +716,6 @@ class Order extends Model
                 ->sortByDesc('occurred_at')
                 ->values()
                 ->map(fn (ShipmentTrackingEvent $event) => [
-                    // provider-neutral status value (e.g. "in_transit"); the UI renders tracking_admin.status.<value>
                     'status' => $event->status,
                     'description' => $event->description,
                     'location' => $event->location,
@@ -823,15 +731,10 @@ class Order extends Model
         ];
     }
 
-    /**
-     * Get order data formatted for frontend (with numeric values as floats).
-     * Includes internal fields (notes, Stripe ids): admin pages only. Customer pages use toCustomerArray().
-     */
     public function toFrontendArray(): array
     {
         $data = $this->toArray();
 
-        // Convert decimal strings to floats for frontend
         $data['subtotal'] = (float) $this->subtotal;
         $data['tax_amount'] = (float) $this->tax_amount;
         $data['tax_rate'] = $this->tax_rate !== null ? (float) $this->tax_rate : null;
@@ -839,10 +742,8 @@ class Order extends Model
         $data['discount_amount'] = (float) $this->discount_amount;
         $data['total_amount'] = (float) $this->total_amount;
 
-        // Include order items with proper formatting
         if ($this->relationLoaded('orderItems')) {
             $data['orderItems'] = $this->orderItems->map(function ($item) {
-                // Get product information, handling cases where product_id might be null
                 $product = $item->product_id ? $item->product : null;
 
                 return [
@@ -864,7 +765,6 @@ class Order extends Model
             $data['orderItems'] = [];
         }
 
-        // Include address relationships
         if ($this->relationLoaded('billingAddress')) {
             $data['billingAddress'] = $this->billingAddress ? $this->billingAddress->toArray() : null;
         }
@@ -873,7 +773,6 @@ class Order extends Model
             $data['shippingAddress'] = $this->shippingAddress ? $this->shippingAddress->toArray() : null;
         }
 
-        // Include user relationship
         if ($this->relationLoaded('user')) {
             $data['user'] = $this->user ? $this->user->toArray() : null;
         }

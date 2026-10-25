@@ -16,23 +16,6 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Tracking adapter for the Spediamo shipping platform API (https://api.spediamo.it, docs/spediamo/).
- * Tracking only, by polling: the API has no webhooks, so this is deliberately NOT a PassiveProvider and
- * does not implement SupportsWebhooks.
- *
- *   GET {base_url}/v1/shipments/tracking?code={trackingNumber}
- *       Authorization: Bearer {token}        If-None-Match: {cached ETag}
- *
- *   200  mapped by SpediamoResponseMapper; the ETag and the parsed result are cached
- *   304  unchanged since the ETag: the cached result (nothing new when it was evicted)
- *   404  not scanned yet: TrackingResult::unknown(), polling continues
- *   401/403, 429, 5xx, timeouts: TrackingProviderUnavailable (retried by the job). 401/403 and a missing
- *        token also log one critical line per hour: nothing works until the token is fixed.
- *
- * Everything lives in this folder and in config/shipping.php. Nothing here logs request headers
- * or bodies, and the token never reaches a log line or an exception message.
- */
 class SpediamoProvider extends AbstractHttpProvider
 {
     use CachesConditionalRequests;
@@ -65,9 +48,6 @@ class SpediamoProvider extends AbstractHttpProvider
         return self::NAME;
     }
 
-    /**
-     * An aggregator: with an empty carrier_map every carrier is accepted, otherwise only mapped codes.
-     */
     public function supports(string $carrierCode): bool
     {
         return $this->carriers->isEmpty() || $this->carriers->toProvider($carrierCode) !== null;
@@ -75,8 +55,6 @@ class SpediamoProvider extends AbstractHttpProvider
 
     public function track(TrackingRequest $request): TrackingResult
     {
-        // Spediamo queries tracking using its platform code or shipment ID (providerCode).
-        // If not explicitly provided, fall back to trackingNumber.
         $code = $request->providerCode !== null && trim($request->providerCode) !== ''
             ? TrackingRequest::normalizeNumber($request->providerCode)
             : TrackingRequest::normalizeNumber($request->trackingNumber);
@@ -106,7 +84,7 @@ class SpediamoProvider extends AbstractHttpProvider
         }
 
         if ($response->status() === 404) {
-            return TrackingResult::unknown(); // shipment not scanned yet
+            return TrackingResult::unknown();
         }
 
         $data = $response->json();
@@ -122,9 +100,6 @@ class SpediamoProvider extends AbstractHttpProvider
         return $result;
     }
 
-    /**
-     * The API publishes no public tracking page: only a template configured in shipping.carriers produces a link.
-     */
     public function trackingUrl(string $trackingNumber, ?string $carrierCode): ?string
     {
         return (new ManualProvider)->trackingUrl($trackingNumber, $carrierCode);
@@ -146,9 +121,6 @@ class SpediamoProvider extends AbstractHttpProvider
         return new SpediamoResponseMapper($this->statuses, $timezone, fn (string $value) => $this->warnUnmapped($value));
     }
 
-    /**
-     * An API status we do not know (the tracking enum is not documented): visible in the log, once per value.
-     */
     private function warnUnmapped(string $value): void
     {
         $value = mb_substr($value, 0, 64);
@@ -161,9 +133,6 @@ class SpediamoProvider extends AbstractHttpProvider
         }
     }
 
-    /**
-     * The token is missing, expired or wrong: every poll fails until someone fixes it, so shout, but once an hour.
-     */
     private function alertCredentials(string $reason): void
     {
         if (Cache::add('tracking:'.self::NAME.':credentials-alert', 1, now()->addHour())) {

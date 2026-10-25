@@ -6,9 +6,6 @@ use App\Shipping\Contracts\Authenticator;
 use App\Shipping\Exceptions\ShippingCredentialsException;
 use Illuminate\Http\Client\PendingRequest;
 
-/**
- * Static API key sent in a custom header, e.g. "X-Api-Key: <key>".
- */
 class ApiKeyHeaderAuthenticator implements Authenticator
 {
     public function __construct(

@@ -14,7 +14,7 @@ export default function AppSidebarLayout({ children, breadcrumbs = [] }: PropsWi
     return (
         <AppShell variant="sidebar">
             {isAdminRoute ? <AdminSidebar /> : <AppSidebar />}
-            {/* overflow-x-clip, not -hidden: hidden makes these scroll containers and breaks position: sticky inside pages */}
+
             <AppContent variant="sidebar" className="w-full max-w-full overflow-x-clip">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
                 <div className="w-full max-w-full overflow-x-clip">

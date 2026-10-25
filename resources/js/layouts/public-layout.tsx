@@ -19,13 +19,11 @@ export default function PublicLayout({ children, transparent = false, currentPag
 
     return (
         <div className="min-h-screen bg-white">
-            {/* Header */}
+
             <Header currentPage={currentPage} transparent={transparent} />
 
-            {/* Main Content */}
             <main className={transparent ? '' : 'pt-0'}>{children}</main>
 
-            {/* Footer */}
             <footer className="bg-black py-12 text-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 gap-8 md:grid-cols-4">

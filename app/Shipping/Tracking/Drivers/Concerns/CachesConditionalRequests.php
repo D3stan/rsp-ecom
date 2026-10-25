@@ -11,26 +11,6 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Throwable;
 
-/**
- * Conditional requests (ETag / If-None-Match) for polling adapters, so an unchanged shipment costs the
- * carrier (and our rate limit) almost nothing.
- *
- * Usage in an adapter that extends AbstractHttpProvider:
- *
- *     $response = $this->send(fn ($http) => $http->withHeaders($this->conditionalHeaders($code))->get(...), [304]);
- *
- *     if ($response->status() === 304) {
- *         return $this->cachedResult($code) ?? TrackingResult::unknown();
- *     }
- *
- *     $result = $this->map($response->json());
- *     $this->rememberResult($code, $response, $result);
- *
- * The ETag and the last parsed TrackingResult are kept in the application's shared cache store, keyed
- * by driver name + tracking number, for at most driver config "etag_ttl_minutes" (default one week,
- * never more than two weeks). The raw carrier payload is not cached, only the normalised result.
- * Requires the using class to provide name() and $config (AbstractHttpProvider does).
- */
 trait CachesConditionalRequests
 {
     /**
@@ -43,9 +23,6 @@ trait CachesConditionalRequests
         return $entry === null ? [] : ['If-None-Match' => $entry['etag']];
     }
 
-    /**
-     * The result parsed from the answer that carried the cached ETag (what a 304 means), or null.
-     */
     protected function cachedResult(string $trackingNumber): ?TrackingResult
     {
         $entry = $this->conditionalEntry($trackingNumber);
@@ -53,10 +30,6 @@ trait CachesConditionalRequests
         return $entry === null ? null : $this->resultFromArray($entry['result']);
     }
 
-    /**
-     * Remember the ETag of a 200 answer together with its parsed result. Answers without an ETag
-     * clear the entry: there is nothing to validate against next time.
-     */
     protected function rememberResult(string $trackingNumber, Response $response, TrackingResult $result): void
     {
         $etag = trim((string) $response->header('ETag'));
@@ -146,7 +119,7 @@ trait CachesConditionalRequests
                 isset($data['estimated_delivery']) ? CarbonImmutable::parse((string) $data['estimated_delivery']) : null,
             );
         } catch (Throwable) {
-            return null; // a damaged cache entry is simply a cache miss
+            return null;
         }
     }
 }

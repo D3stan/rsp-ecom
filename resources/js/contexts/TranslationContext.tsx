@@ -14,27 +14,20 @@ interface TranslationContextType {
 
 const TranslationContext = createContext<TranslationContextType | undefined>(undefined);
 
-// Global cache for translations - persists across component remounts
 const globalTranslationCache: { [locale: string]: Translations } = {};
 
-// Static fallback only: the server shares the real list (config('app.supported_locales')) as the `supportedLocales`
-// Inertia prop, which app.tsx passes to the provider. Keep in sync via tests/Feature/LocalesTest.php.
 export const DEFAULT_SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'it'];
 
-// Detect browser language
 function detectBrowserLanguage(availableLocales: string[]): string | null {
     if (typeof window === 'undefined') return null;
 
-    // Cast navigator to a type that includes the non-standard userLanguage property
     const nav = navigator as Navigator & { userLanguage?: string };
     const browserLang = nav.language || nav.userLanguage;
 
     if (!browserLang) return null;
 
-    // Extract the language code (e.g., 'it-IT' -> 'it')
     const langCode = browserLang.toLowerCase().split('-')[0];
 
-    // Check if the detected language is supported
     return availableLocales.includes(langCode) ? langCode : null;
 }
 
@@ -54,14 +47,12 @@ export function TranslationProvider({
     const availableLocales = supportedLocales.length > 0 ? supportedLocales : DEFAULT_SUPPORTED_LOCALES;
 
     const [locale, setLocale] = useState(() => {
-        // Try to get from localStorage first, then detect from browser, then use initialLocale
         if (typeof window !== 'undefined') {
             const savedLocale = localStorage.getItem('locale');
             if (savedLocale) {
                 return savedLocale;
             }
 
-            // Detect browser language
             const browserLocale = detectBrowserLanguage(availableLocales);
             if (browserLocale) {
                 return browserLocale;
@@ -73,33 +64,26 @@ export function TranslationProvider({
     const [translations, setTranslations] = useState<Translations>(initialTranslations);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Cache initial translations
     useEffect(() => {
         if (Object.keys(initialTranslations).length > 0) {
             globalTranslationCache[initialLocale] = initialTranslations;
-            // If current locale matches initial locale, use initial translations
             if (locale === initialLocale) {
                 setTranslations(initialTranslations);
             }
         }
     }, [initialTranslations, initialLocale, locale]);
 
-    // Load translations when locale changes
     useEffect(() => {
-        // Only load if we don't have translations for the current locale
         if (!globalTranslationCache[locale] && locale !== initialLocale) {
             loadTranslations(locale);
         } else if (locale === initialLocale && Object.keys(translations).length === 0) {
-            // Load initial locale if no translations are set
             loadTranslations(locale);
         } else if (globalTranslationCache[locale] && globalTranslationCache[locale] !== translations) {
-            // Update translations if we have cached ones that are different
             setTranslations(globalTranslationCache[locale]);
         }
     }, [locale, initialLocale, translations]);
 
     const loadTranslations = async (newLocale: string) => {
-        // Check cache first
         if (globalTranslationCache[newLocale]) {
             setTranslations(globalTranslationCache[newLocale]);
             return Promise.resolve();
@@ -113,7 +97,6 @@ export function TranslationProvider({
                 globalTranslationCache[newLocale] = data;
                 setTranslations(data);
             } else {
-                // Fallback to English if locale not found
                 if (newLocale !== 'en' && !globalTranslationCache['en']) {
                     const fallbackResponse = await fetch('/api/translations/en');
                     if (fallbackResponse.ok) {
@@ -127,7 +110,6 @@ export function TranslationProvider({
             }
         } catch (error) {
             console.error('Error loading translations:', error);
-            // Use cached English as fallback
             if (globalTranslationCache['en']) {
                 setTranslations(globalTranslationCache['en']);
             }
@@ -144,7 +126,6 @@ export function TranslationProvider({
             return key;
         };
 
-        // Flat keys (e.g. "settings.ui.save", "emails.*") are stored as one top-level entry, shared with the PHP side
         const direct = translations[key] ?? globalTranslationCache[locale]?.[key];
         if (typeof direct === 'string') {
             return replacements ? direct.replace(/\{\{?(\w+)\}?\}/g, (match, placeholder) => replacements[placeholder]?.toString() || match) : direct;
@@ -157,7 +138,6 @@ export function TranslationProvider({
             if (value && typeof value === 'object' && k in value) {
                 value = (value as Record<string, unknown>)[k];
             } else {
-                // If not found, try to get from cache
                 if (globalTranslationCache[locale]) {
                     const cached = globalTranslationCache[locale];
                     let cachedValue: unknown = cached;
@@ -179,9 +159,7 @@ export function TranslationProvider({
             return getFallback();
         }
 
-        // Handle replacements with both {placeholder} and {{placeholder}} formats
         if (replacements && typeof value === 'string') {
-            // Handle curly braces placeholder
             value = value.replace(/\{\{?(\w+)\}?\}/g, (match, placeholder) => replacements[placeholder]?.toString() || match);
         }
 
@@ -191,19 +169,15 @@ export function TranslationProvider({
     const changeLocale = (newLocale: string) => {
         if (newLocale === locale) return;
 
-        // Update the locale state and localStorage
         setLocale(newLocale);
         if (typeof window !== 'undefined') {
             localStorage.setItem('locale', newLocale);
         }
 
-        // Send request to backend to update session and load translations
         const updateBackendLocale = async () => {
             try {
-                // First, try to load translations (this will use cache if available)
                 await loadTranslations(newLocale);
 
-                // Then update backend session
                 const response = await fetch('/change-language', {
                     method: 'POST',
                     headers: {
@@ -218,7 +192,6 @@ export function TranslationProvider({
                 }
             } catch (error) {
                 console.error('Failed to update locale:', error);
-                // Still try to load translations for frontend
                 await loadTranslations(newLocale);
             }
         };

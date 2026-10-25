@@ -70,10 +70,8 @@ export default function Product() {
     const { t } = useTranslation();
     const formatCurrency = useMoney();
 
-    // Find default variant
     const defaultVariant = product.variants.find((v) => v.is_default) ?? product.variants[0];
 
-    // State
     const [selectedVariantId, setSelectedVariantId] = useState<number>(useInitialVariantId(product.variants, defaultVariant.id));
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
@@ -84,27 +82,21 @@ export default function Product() {
         document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
-    // Get selected variant
     const selectedVariant = product.variants.find((v) => v.id === selectedVariantId)!;
 
-    // Effective maximum for one order line: the variant's stock, capped by orders.max_qty_per_line (0 = unlimited)
     const maxQtyPerLine = useSetting('orders.max_qty_per_line', 0);
     const maxQuantity = maxQtyPerLine > 0 ? Math.min(selectedVariant.stock_quantity, maxQtyPerLine) : selectedVariant.stock_quantity;
 
-    // Reset image index when variant changes
     useEffect(() => {
         setCurrentImageIndex(0);
     }, [selectedVariantId]);
 
-    // Keep the chosen quantity inside the effective maximum when the variant changes
     useEffect(() => {
         setQuantity((prev) => Math.max(1, Math.min(prev, maxQuantity)));
     }, [maxQuantity]);
 
-    // Display images from selected variant
     const displayImages = selectedVariant.images.length > 0 ? selectedVariant.images : ['/images/product.png'];
 
-    // Price is directly from variant
     const currentPrice = selectedVariant.price;
 
     const handleImageChange = (index: number) => {
@@ -186,7 +178,6 @@ export default function Product() {
                 return;
             }
         } catch {
-            // Fallback below
         }
 
         const textArea = document.createElement('textarea');
@@ -211,10 +202,9 @@ export default function Product() {
             <Head title={product.name} />
 
             <div className="min-h-screen bg-white">
-                {/* Header */}
+
                 <Header />
 
-                {/* Breadcrumb */}
                 <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
                     <nav className="flex" aria-label={t('product.breadcrumb_label')}>
                         <ol className="flex items-center space-x-2 text-sm">
@@ -237,15 +227,13 @@ export default function Product() {
                     </nav>
                 </div>
 
-                {/* Main Content */}
                 <div className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${isMobile ? 'pb-24' : 'pb-16'}`}>
                     <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-16">
-                        {/* Image Carousel */}
+
                         <div className="space-y-4">
                             <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100">
                                 <img src={displayImages[currentImageIndex]} alt={product.name} className="h-full w-full object-cover" />
 
-                                {/* Navigation buttons */}
                                 {displayImages.length > 1 && (
                                     <>
                                         <button
@@ -263,10 +251,8 @@ export default function Product() {
                                     </>
                                 )}
 
-                                {/* Badge - removed as not in variant model */}
                             </div>
 
-                            {/* Thumbnail images */}
                             {displayImages.length > 1 && (
                                 <div className="flex space-x-2 overflow-x-auto pb-2">
                                     {displayImages.map((image, index) => (
@@ -292,22 +278,19 @@ export default function Product() {
                             )}
                         </div>
 
-                        {/* Product Info */}
                         <div className="space-y-6">
-                            {/* Product Header */}
+
                             <div>
                                 {product.category && <p className="mb-2 text-sm text-gray-600">{product.category.name}</p>}
                                 <h1 className="mb-4 text-3xl font-bold text-gray-900 lg:text-4xl">{product.name}</h1>
 
                                 <ProductRatingSummary average={product.average_rating} count={product.review_count} onShowReviews={showReviews} />
 
-                                {/* Price */}
                                 <div className="mb-6 flex items-center space-x-3">
                                     <span className="text-3xl font-bold text-gray-900">{formatCurrency(currentPrice)}</span>
                                 </div>
                             </div>
 
-                            {/* Variant Selector */}
                             {product.variants.length > 1 && (
                                 <VariantSelector
                                     variants={product.variants}
@@ -316,7 +299,6 @@ export default function Product() {
                                 />
                             )}
 
-                            {/* Quantity Selector */}
                             <div>
                                 <Label className="mb-3 block text-sm font-medium text-gray-900">{t('product.quantity')}</Label>
                                 <div className="flex items-center space-x-4">
@@ -348,7 +330,6 @@ export default function Product() {
                                 </div>
                             </div>
 
-                            {/* Action Buttons */}
                             <div className="space-y-3">
                                 <Button
                                     onClick={handleAddToCart}
@@ -389,7 +370,6 @@ export default function Product() {
                                 </div>
                             </div>
 
-                            {/* Short Description */}
                             {selectedVariant.description && (
                                 <div className="border-t border-gray-200 pt-6">
                                     <p className="leading-relaxed text-gray-700">{selectedVariant.description}</p>
@@ -400,7 +380,6 @@ export default function Product() {
 
                     <ProductSafety variantId={selectedVariantId} />
 
-                    {/* Reviews */}
                     <ProductReviews
                         reviews={reviews}
                         average={product.average_rating}
@@ -411,7 +390,6 @@ export default function Product() {
                         verifyHref={route('faq')}
                     />
 
-                    {/* Related Products */}
                     {relatedProducts.length > 0 && (
                         <div className={`mt-20 border-t border-gray-200 pt-8 ${isMobile ? 'mb-8' : ''}`}>
                             <h2 className="mb-8 text-2xl font-bold text-gray-900">{t('product.you_may_also_like')}</h2>
@@ -438,7 +416,6 @@ export default function Product() {
                     )}
                 </div>
 
-                {/* Sticky Footer on Mobile */}
                 {isMobile && (
                     <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-200 bg-white p-4 shadow-lg">
                         <div className="flex items-center justify-between space-x-4">

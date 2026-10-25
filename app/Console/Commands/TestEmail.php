@@ -27,19 +27,21 @@ class TestEmail extends Command
     public function handle()
     {
         $email = $this->argument('email');
-        
+
         $this->info('Testing email configuration...');
-        $this->info('Sending test email to: ' . $email);
-        
+        $this->info('Sending test email to: '.$email);
+
         $emailService = app(EmailService::class);
-        
+
         if ($emailService->testEmailConfiguration($email)) {
             $this->info('✅ Test email sent successfully!');
             $this->info('Check your email inbox (and spam folder) for the test message.');
+
             return Command::SUCCESS;
         } else {
             $this->error('❌ Failed to send test email.');
             $this->error('Check your email configuration and logs for more details.');
+
             return Command::FAILURE;
         }
     }

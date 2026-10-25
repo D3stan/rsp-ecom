@@ -10,15 +10,12 @@ use App\Services\Newsletter\MarketingConsent;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
 
-/**
- * One newsletter campaign email. To a subscriber: personal signed unsubscribe link in the footer and the
- * RFC 8058 one-click headers. Without a subscriber (admin test / preview): "[TEST]" subject, placeholder link.
- */
 class NewsletterCampaignMail extends Mailable
 {
     use HasLogo, Queueable, SerializesModels;
@@ -65,7 +62,6 @@ class NewsletterCampaignMail extends Mailable
                 'preheader' => (string) $this->campaign->preheader,
                 'bodyHtml' => $renderer->html($this->campaign->body_markdown),
                 'bodyText' => $renderer->text($this->campaign->body_markdown),
-                // Test sends and previews show where the personal link goes, without a working one
                 'unsubscribeUrl' => $this->unsubscribeUrl ?? '#unsubscribe',
                 'logoUrl' => $this->getLogoUrl(),
             ],
@@ -73,7 +69,7 @@ class NewsletterCampaignMail extends Mailable
     }
 
     /**
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

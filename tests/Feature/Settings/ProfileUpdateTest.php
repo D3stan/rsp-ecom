@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 
 test('profile page is displayed', function () {
     $user = User::factory()->create();
@@ -13,7 +14,7 @@ test('profile page is displayed', function () {
 });
 
 test('profile information can be updated', function () {
-    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+    $this->withoutMiddleware(PreventRequestForgery::class);
     $user = User::factory()->create();
 
     $response = $this
@@ -35,7 +36,7 @@ test('profile information can be updated', function () {
 });
 
 test('email verification status is unchanged when the email address is unchanged', function () {
-    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+    $this->withoutMiddleware(PreventRequestForgery::class);
     $user = User::factory()->create();
 
     $response = $this
@@ -53,7 +54,7 @@ test('email verification status is unchanged when the email address is unchanged
 });
 
 test('user can delete their account', function () {
-    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+    $this->withoutMiddleware(PreventRequestForgery::class);
     $user = User::factory()->create();
 
     $response = $this
@@ -71,7 +72,7 @@ test('user can delete their account', function () {
 });
 
 test('correct password must be provided to delete account', function () {
-    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+    $this->withoutMiddleware(PreventRequestForgery::class);
     $user = User::factory()->create();
 
     $response = $this

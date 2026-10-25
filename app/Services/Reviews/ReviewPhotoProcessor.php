@@ -10,13 +10,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 
-/**
- * Turns a customer upload into a safe review photo.
- *
- * The file is decoded with GD and re-encoded as WebP, so nothing from the original survives: no EXIF/GPS, no
- * embedded payloads. The long edge is capped at 2000 px (with a 600 px thumbnail) and the EXIF orientation is
- * applied first, so phone photos are not stored sideways. Files get a random UUID name under reviews/{review_id}/.
- */
 class ReviewPhotoProcessor
 {
     public const MAX_PHOTOS = 4;
@@ -25,7 +18,6 @@ class ReviewPhotoProcessor
 
     public const THUMB_EDGE = 600;
 
-    /** Decoding cost guard: GD needs ~4 bytes per pixel, so 50 MP is ~200 MB (a 48 MP phone photo still fits). */
     public const MAX_PIXELS = 50_000_000;
 
     public const MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -50,7 +42,6 @@ class ReviewPhotoProcessor
         $path = $file->getRealPath();
         $info = $path ? @getimagesize($path) : false;
 
-        // getimagesize() reads the real header, whatever the file is called or claims to be
         if ($info === false || ! in_array($info['mime'] ?? null, self::MIME_TYPES, true)) {
             throw new InvalidReviewPhoto('Not a JPEG, PNG or WebP image.');
         }
@@ -119,7 +110,6 @@ class ReviewPhotoProcessor
         }
     }
 
-    /** Scale down (never up) so the long edge is at most $edge. */
     private function fit(GdImage $image, int $edge): GdImage
     {
         $width = imagesx($image);
@@ -129,7 +119,6 @@ class ReviewPhotoProcessor
         $targetWidth = max(1, (int) round($width * $scale));
         $targetHeight = max(1, (int) round($height * $scale));
 
-        // Always draw onto a fresh canvas: a copy, even at 1:1, is what guarantees nothing but pixels survives
         $canvas = imagecreatetruecolor($targetWidth, $targetHeight);
         imagealphablending($canvas, false);
         imagesavealpha($canvas, true);
@@ -150,7 +139,6 @@ class ReviewPhotoProcessor
         return is_array($exif) ? (int) ($exif['Orientation'] ?? 1) : 1;
     }
 
-    /** Apply an EXIF orientation (1–8) to the pixels, since the tag itself is dropped. */
     private function orient(GdImage $image, int $orientation): GdImage
     {
         $rotate = fn (GdImage $img, int $degrees): GdImage => imagerotate($img, $degrees, 0) ?: $img;

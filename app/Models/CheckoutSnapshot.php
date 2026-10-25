@@ -8,25 +8,12 @@ use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * The lines and totals a customer was charged for, written (and committed) right before the Stripe checkout session
- * is created. The order is built from this record, so what the customer paid for is what the order says even if the
- * cart was edited meanwhile. See App\Services\OrderCreationService.
- *
- * lines: list of {product_id, product_variant_id, size_id, quantity, price (charged unit price), product_name,
- * variant_name, sku, price_changed (bool), previous_price (when price_changed)}.
- *
- * Abandoned-checkout reminder: email / locale / marketing_consent / consent_ip are written at checkout (the email only
- * with consent), reminder_sent_at once the single reminder went out, recovered_at when its link rebuilt the cart.
- */
 class CheckoutSnapshot extends Model
 {
     use HasUlids, MassPrunable;
 
-    /** An abandoned checkout leaves an unconsumed snapshot behind. */
     public const PRUNE_UNCONSUMED_AFTER_DAYS = 7;
 
-    /** Consumed snapshots only matter for support; the order itself keeps the data. */
     public const PRUNE_CONSUMED_AFTER_DAYS = 90;
 
     protected $fillable = [
@@ -133,9 +120,6 @@ class CheckoutSnapshot extends Model
         ]);
     }
 
-    /**
-     * Never-consumed snapshots (abandoned checkouts) after a week, consumed ones after 90 days.
-     */
     public function prunable(): Builder
     {
         return static::query()

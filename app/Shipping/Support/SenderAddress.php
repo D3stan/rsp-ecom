@@ -2,11 +2,6 @@
 
 namespace App\Shipping\Support;
 
-/**
- * The store's sender address, shared by rates and labels: each shipping.sender_* setting, else its config value
- * (config/shipping.php reads the SHIPPING_SENDER_* env vars, so this also holds with a cached config), else the
- * store identity.
- */
 final class SenderAddress
 {
     /**

@@ -40,7 +40,6 @@ interface Order {
     payment_status: string;
     subtotal: number;
     tax_amount: number;
-    // VAT rate (percent) stored with the order; null on orders from before it was recorded
     tax_rate?: number | null;
     shipping_amount?: number;
     shipping_cost?: number;
@@ -70,7 +69,6 @@ interface Props {
     order: Order;
     session: Session;
     isGuest: boolean;
-    // True when the viewer is not proven to be the buyer: no email/address are sent, only the order summary
     restricted?: boolean;
     user?: User;
 }
@@ -79,10 +77,8 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
     const { t, locale } = useTranslation();
     const { dispatch } = usePolicyValues();
 
-    // Paid, but the order is not created yet (CheckoutController::createFallbackOrderData)
     const isPending = order.id === 'pending';
 
-    // Amounts in the viewer's language and the order's currency
     const formatMoney = (value: number) => {
         const currency = (order.currency || session.currency || 'EUR').toUpperCase();
         try {
@@ -92,7 +88,6 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
         }
     };
 
-    // Order date in the viewer's language (M11: formatting follows the active locale, not a fixed one)
     const formatOrderDate = (iso: string) => {
         try {
             return new Date(iso).toLocaleDateString(locale, {
@@ -109,15 +104,11 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
 
     const shippingAmount = order.shipping_amount ?? order.shipping_cost ?? 0;
     const discountAmount = order.discount_amount ?? 0;
-    // Orders that stored their VAT rate: prices and total include the VAT (tax_amount is the portion of it). Older orders
-    // kept the VAT apart from the subtotal and have no rate.
     const hasVatBreakdown = order.tax_rate !== null && order.tax_rate !== undefined;
     const subtotalAmount = hasVatBreakdown ? order.subtotal || 0 : (order.subtotal || 0) + (order.tax_amount || 0);
     const customerEmail = isGuest ? session.customer_email : user?.email;
-    // Guests (and anyone who is not proven to be the buyer) follow their order through the link in the confirmation email
     const showInboxNotice = isGuest || restricted;
 
-    // Image handling helper
     const getImageSrc = (item: OrderItem) => {
         return item.product.image_url || '/images/product.png';
     };
@@ -140,7 +131,7 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
             <>
                 <div className="min-h-screen bg-white">
                     <div className="container mx-auto max-w-4xl px-4 py-8">
-                        {/* Success Header */}
+
                         <div className="mb-8 text-center">
                             <div className="success-pop mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                                 <CheckCircle className="h-8 w-8 text-green-600" />
@@ -154,9 +145,9 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                         </div>
 
                         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                            {/* Order Details */}
+
                             <div className="space-y-6 lg:col-span-2">
-                                {/* Order Information */}
+
                                 <Card className="bg-white">
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-gray-800">
@@ -198,12 +189,10 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                                 </div>
                                             )}
 
-                                            {/* A guest buyer (proven by the cookie or the signed link): the email is known, so an account is one password away */}
                                             {isGuest && !restricted && !user && session.customer_email && (
                                                 <CreateAccountOffer name={session.customer_name ?? ''} email={session.customer_email} />
                                             )}
 
-                                            {/* Where to follow the order: the link in the confirmation email */}
                                             {showInboxNotice && (
                                                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                                                     <p className="text-sm font-medium text-blue-900">{t('checkout.success.restricted_title')}</p>
@@ -214,7 +203,6 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                     </CardContent>
                                 </Card>
 
-                                {/* Order Items */}
                                 <Card className="bg-white shadow-sm">
                                     <CardHeader className="text-black">
                                         <CardTitle>{t('checkout.success.items_ordered')}</CardTitle>
@@ -256,7 +244,6 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                     </CardContent>
                                 </Card>
 
-                                {/* Next Steps */}
                                 <Card className="bg-white shadow-sm">
                                     <CardHeader>
                                         <CardTitle className="flex items-center gap-2 text-black">
@@ -298,7 +285,6 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                 </Card>
                             </div>
 
-                            {/* Order Summary Sidebar */}
                             <div>
                                 <Card className="sticky top-8">
                                     <CardHeader>
@@ -308,7 +294,7 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        {/* Totals */}
+
                                         <div className="space-y-2">
                                             <div className="flex justify-between">
                                                 <span className="text-sm">{t('checkout.success.subtotal')}</span>
@@ -341,13 +327,11 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
 
                                         <Separator />
 
-                                        {/* Actions */}
                                         <div className="space-y-3">
                                             <Button asChild className="w-full">
                                                 <Link href={route('products')}>{t('checkout.success.continue_shopping')}</Link>
                                             </Button>
 
-                                            {/* Different action based on user type */}
                                             {isGuest ? (
                                                 <Button variant="outline" asChild className="w-full">
                                                     <Link href={route('register')}>{t('checkout.success.create_account')}</Link>
@@ -359,7 +343,6 @@ export default function CheckoutSuccess({ order, session, isGuest, restricted = 
                                             )}
                                         </div>
 
-                                        {/* Support */}
                                         <div className="border-t pt-4">
                                             <p className="text-center text-xs text-gray-300">
                                                 {t('checkout.success.need_help')}{' '}

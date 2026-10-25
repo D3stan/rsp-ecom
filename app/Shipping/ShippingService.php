@@ -28,16 +28,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
-/**
- * The only way an order becomes "shipped" (controllers call nothing else). It records the shipment, stores the current
- * carrier, tracking number, and tracking driver on the order (tracking module, emails), moves the order through the
- * lifecycle and sends the shipped email: one, with the tracking when there is a number. A purchased label is the exception: its email
- * waits for the carrier's first scan (ShipmentTrackingService). Nothing here is carrier specific.
- *
- * Label creation is optional (shipping.labels_enabled, OFF by default). When off, no label provider is ever resolved:
- * ship() takes the manual path (the admin typed the carrier and tracking number). When on and the admin asked for a
- * label, the selected (or default) LabelProvider creates the shipment and the PDF; the tracking number comes from the carrier.
- */
 class ShippingService
 {
     public function __construct(
@@ -47,7 +37,6 @@ class ShippingService
         private readonly TrackingManager $tracking,
     ) {}
 
-    /** Private disk that holds the label PDFs (never public). */
     private const LABEL_DISK = 'local';
 
     /**
@@ -80,10 +69,6 @@ class ShippingService
         return $this->shipManually($order, $input, $actor);
     }
 
-    /**
-     * Manual mode: the admin typed the carrier and tracking number (or ships without one).
-     * shipments.driver is always 'manual'; orders.tracking_driver stores the chosen tracking provider (or null for default).
-     */
     private function shipManually(Order $order, ShipInput $input, User $actor): ShipOutcome
     {
         $trackingNumber = $input->trackingNumber !== null && trim($input->trackingNumber) !== ''
@@ -92,7 +77,6 @@ class ShippingService
         $externalId = null;
         $initialResult = null;
 
-        // Resolve candidate tracking driver to query for real waybill number
         $driverName = $input->trackingDriver;
         if ($driverName === null || trim($driverName) === '') {
             $defaultDriver = $this->tracking->getDefaultDriver();
@@ -173,18 +157,12 @@ class ShippingService
             'tracking_number' => $trackingNumber,
         ]);
 
-        // One email: with the tracking when there is a number; without, only when the admin asked for it
         $emailFailed = ($trackingNumber !== null || $input->notifyCustomer)
             && ! $this->emails->sendOrderShipped($order, $trackingNumber);
 
         return new ShipOutcome($shipment, $emailFailed);
     }
 
-    /**
-     * Labels on. The carrier call spends money and cannot be rolled back, so the same check that protects the database
-     * write (lockAndGuard) also runs before it, under a per-order lock: a double click or a second admin gets a refusal
-     * instead of a second purchase.
-     */
     private function shipWithLabel(Order $order, ShipInput $input, User $actor): ShipOutcome
     {
         $lock = Cache::lock("ship-order:{$order->id}", 120);
@@ -206,10 +184,6 @@ class ShippingService
         }
     }
 
-    /**
-     * Create the shipment and the label PDF at the carrier, then record it and ship. The network call happens first
-     * and outside the transaction, so a refusal or an outage never leaves a half-shipped order.
-     */
     private function purchaseLabelAndShip(Order $order, ShipInput $input, User $actor): ShipOutcome
     {
         $driverName = $input->labelDriver ?? (string) settings('shipping.label_driver', '');
@@ -221,11 +195,8 @@ class ShippingService
 
         $request = $this->builder->build($order, $input->carrierCode, $input->parcels, $input->insuranceAmount, $input->codAmount, $input->quoteToken, $input->pickupDate);
 
-        // 1. Carrier creates the shipment (may throw LabelRejected / LabelProviderUnavailable). A draft that still has to
-        // be paid on the carrier's site has no label yet: it is fetched later by completePurchase().
         $result = $provider->createShipment($request);
 
-        // 2. Fetch the label and store the PDF on the private disk before any DB change, so the label is never lost
         $path = null;
         if (! $result->awaitingPayment) {
             [$result, $path] = $this->fetchAndStoreLabel($provider, $result, $order);
@@ -234,7 +205,6 @@ class ShippingService
         $shipmentDriver = $result->raw['driver'] ?? $provider->name();
         $trackingDriver = $this->resolveTrackingDriverForLabel($input, $shipmentDriver);
 
-        // 3. Record the shipment and move the order to shipped in one transaction
         try {
             $shipment = DB::transaction(function () use ($order, $input, $actor, $result, $path, $shipmentDriver, $trackingDriver) {
                 $this->lockAndGuard($order);
@@ -267,7 +237,6 @@ class ShippingService
                 return $shipment;
             });
         } catch (Throwable $e) {
-            // The label exists at the carrier and on disk: record it so it is not lost, then surface the failure.
             $this->recordOrphanShipment($order, $input, $result, $path, $actor, $shipmentDriver);
             $reference = (string) Str::uuid();
             Log::critical('Label was created but the order could not be shipped', [
@@ -288,7 +257,6 @@ class ShippingService
             'tracking_driver' => $order->tracking_driver,
         ]);
 
-        // No email yet: the customer is told when the carrier first scans the parcel (ShipmentTrackingService)
         return new ShipOutcome($shipment, false);
     }
 
@@ -302,8 +270,6 @@ class ShippingService
     {
         $document = $provider->label($result);
 
-        // When a label provider obtains the carrier's real waybill number during waybill generation,
-        // promote it onto the ShipmentResult so the customer and order receive the real waybill.
         if ($document->trackingNumber !== null && trim($document->trackingNumber) !== '') {
             $result = new ShipmentResult(
                 externalId: $result->externalId,
@@ -319,10 +285,6 @@ class ShippingService
         return [$result, $path];
     }
 
-    /**
-     * Determine the order's tracking_driver when a label is created via API:
-     * explicit input wins; otherwise use the label provider's name if it is a registered pollable tracking driver.
-     */
     private function resolveTrackingDriverForLabel(ShipInput $input, string $shipmentDriver): ?string
     {
         if ($input->trackingDriver !== null && trim($input->trackingDriver) !== '') {
@@ -336,9 +298,6 @@ class ShippingService
         return null;
     }
 
-    /**
-     * Download the label PDF of a shipment (streamed from the private disk by the controller).
-     */
     public function labelContents(Shipment $shipment): ?string
     {
         if (! $shipment->label_path || ! Storage::disk(self::LABEL_DISK)->exists($shipment->label_path)) {
@@ -382,8 +341,6 @@ class ShippingService
             'request_payload' => array_merge((array) $shipment->request_payload, $paid->raw),
         ]);
 
-        // query builder: Order::updating would also wipe the tracking status. The unpaid draft may have been polled and
-        // rejected (polling switched off for years), so the schedule and the polling window start over with the real number.
         Order::query()->whereKey($order->id)->toBase()->update([
             'tracking_number' => $paid->trackingNumber,
             'tracking_next_sync_at' => null,
@@ -421,19 +378,12 @@ class ShippingService
         $shipment->update(['status' => Shipment::STATUS_CANCELLED]);
     }
 
-    /**
-     * The admin changed the tracking number, carrier, or provider of an order (already saved). For a shipped order this
-     * updates the current manual shipment and sends the shipped email with the new number: the first one when none went
-     * out yet, else one tracking update (EmailService dedupes on number + carrier, so saving the same values again sends
-     * nothing). Without a number no email is sent. Returns false when the email could not be queued.
-     */
     public function trackingChanged(Order $order): bool
     {
         if ($order->status !== 'shipped') {
             return true;
         }
 
-        // a purchased label's shipped email waits for the first carrier scan: editing the number must not send it early
         if ($order->shipments()->where('notify_on_pickup', true)->exists()) {
             return true;
         }
@@ -470,7 +420,6 @@ class ShippingService
                     }
                 }
             } catch (Throwable) {
-                // Ignore lookup errors
             }
         }
 

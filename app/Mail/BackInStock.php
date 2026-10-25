@@ -11,10 +11,6 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Support\Facades\URL;
 
-/**
- * "An item you saved is back in stock" (cart or wishlist). Not an order email: it carries a one-click unsubscribe
- * (signed link in the footer + List-Unsubscribe / List-Unsubscribe-Post headers, RFC 8058).
- */
 class BackInStock extends Mailable
 {
     use HasLogo;
@@ -58,7 +54,6 @@ class BackInStock extends Mailable
                     : __('emails.common.greeting_generic'),
                 'intro' => $fromCart ? __('emails.back_in_stock.intro_cart') : __('emails.back_in_stock.intro_wishlist'),
                 'productName' => $product->name,
-                // A product's only "Standard" variant is not worth naming
                 'variantName' => ($variant->name !== 'Standard' || ! $variant->is_default) ? $variant->name : null,
                 'price' => Money::format($variant->price, settings('store.currency', 'EUR')),
                 'image' => $this->imageUrl($variant->main_image_url),
@@ -72,9 +67,6 @@ class BackInStock extends Mailable
         );
     }
 
-    /**
-     * Signed, without expiry: the link has to keep working for as long as the email sits in the inbox.
-     */
     public function unsubscribeUrl(): string
     {
         return URL::signedRoute('restock.unsubscribe', ['user' => $this->notification->user_id]);

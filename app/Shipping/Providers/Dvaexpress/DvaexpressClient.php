@@ -200,7 +200,6 @@ class DvaexpressClient
                 throw $makeUnavailable($message, $httpStatus, null);
             }
 
-            // HTTP 400, 404, 422 or any other result === KO / error code
             throw $makeRejected($message, $httpStatus, null);
         }
 

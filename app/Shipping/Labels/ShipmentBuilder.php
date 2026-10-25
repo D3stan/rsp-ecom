@@ -8,11 +8,6 @@ use App\Shipping\Labels\DTO\Parcel;
 use App\Shipping\Labels\DTO\ShipmentRequest;
 use App\Shipping\Support\SenderAddress;
 
-/**
- * Builds a provider-neutral ShipmentRequest from an order: the sender from the shipping settings (SenderAddress), the recipient from
- * the order's shipping address, and the parcels from the admin's parcel input (prefilled from the order items' box
- * sizes and a default weight). Carrier specific nothing lives here.
- */
 class ShipmentBuilder
 {
     /**

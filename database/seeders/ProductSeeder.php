@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Product;
 use App\Models\Category;
-use Database\Seeders\SeederConfig;
+use App\Models\Product;
 use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder
@@ -15,7 +14,7 @@ class ProductSeeder extends Seeder
     public function run(): void
     {
         $categories = Category::all();
-        
+
         if ($categories->isEmpty()) {
             $this->command->warn('No categories found. Running CategorySeeder first...');
             $this->call(CategorySeeder::class);
@@ -23,12 +22,12 @@ class ProductSeeder extends Seeder
         }
 
         $productsPerCategory = 15 * SeederConfig::VOLUME_MULTIPLIER;
-        
+
         $this->command->info("Creating {$productsPerCategory} products per category...");
-        
+
         foreach ($categories as $category) {
             $this->command->info("Creating products for category: {$category->name}");
-            
+
             Product::factory()
                 ->count($productsPerCategory)
                 ->create([

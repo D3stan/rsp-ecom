@@ -20,7 +20,6 @@ interface Props {
     reviewId: number;
     reviewApproved: boolean;
     media: AdminReviewMedia[];
-    /** Smaller tiles for the reviews list */
     compact?: boolean;
 }
 
@@ -30,10 +29,6 @@ const statusClasses: Record<AdminReviewMedia['status'], string> = {
     rejected: 'bg-red-100 text-red-800',
 };
 
-/**
- * Per-photo moderation (approve / reject / feature on the home page) plus "approve review + all photos".
- * Every action is a PATCH whose result comes back as the controller flash, toasted by the layout.
- */
 export default function ReviewMediaModeration({ reviewId, reviewApproved, media, compact = false }: Props) {
     const { t } = useTranslation();
     const idPrefix = useId();

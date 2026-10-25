@@ -5,9 +5,6 @@ namespace App\Shipping\Tracking\DTO;
 use App\Shipping\Tracking\Enums\TrackingStatus;
 use Carbon\CarbonImmutable;
 
-/**
- * The current picture of one shipment, as returned by an adapter (poll) or carried by a webhook.
- */
 final readonly class TrackingResult
 {
     /**
@@ -26,9 +23,6 @@ final readonly class TrackingResult
         public ?string $trackingUrl = null,
     ) {}
 
-    /**
-     * "Nothing known": what passive drivers answer, and what a carrier that has not scanned the parcel yet means.
-     */
     public static function unknown(): self
     {
         return new self(TrackingStatus::Unknown);

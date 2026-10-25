@@ -5,9 +5,6 @@ namespace App\Shipping\Tracking\DTO;
 use App\Shipping\Tracking\Enums\TrackingStatus;
 use Carbon\CarbonImmutable;
 
-/**
- * One scan/checkpoint of a shipment, already normalised by the adapter.
- */
 final readonly class TrackingEvent
 {
     /**
@@ -24,10 +21,6 @@ final readonly class TrackingEvent
         public ?array $raw = null,
     ) {}
 
-    /**
-     * Stable identity of the event for one provider and shipment: the same event delivered twice
-     * (poll + webhook, carrier retry, overlapping poll windows) always yields the same hash.
-     */
     public function hash(string $provider, string $trackingNumber): string
     {
         $number = mb_strtolower(TrackingRequest::normalizeNumber($trackingNumber));

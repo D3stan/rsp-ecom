@@ -2,15 +2,6 @@
 
 namespace App\Shipping\Support;
 
-/**
- * Translates between our provider-neutral carrier codes (keys of config('shipping.carriers'), stored on
- * orders) and the strings one carrier API uses for the same courier. Comes from a driver's config:
- *
- *     'carrier_map' => ['sda' => 'SDA', 'brt' => 'BARTOLINI'],   // our code => the provider's courier
- *
- * Both directions are case-insensitive and trim whitespace; anything unknown yields null, never a guess.
- * An empty map means "no restriction": supports() may then accept every carrier.
- */
 class CarrierCodeMap
 {
     /** @var array<string, string> lower-cased our code => provider courier string */
@@ -55,7 +46,6 @@ class CarrierCodeMap
         return $this->forward === [];
     }
 
-    /** Our code => the provider's courier string, or null when unmapped. */
     public function toProvider(?string $ourCode): ?string
     {
         return $this->forward[mb_strtolower(trim((string) $ourCode))] ?? null;
@@ -94,9 +84,6 @@ class CarrierCodeMap
         return $this->reverse[$key] ?? null;
     }
 
-    /**
-     * Check whether two carrier codes map to the same courier.
-     */
     public function areSameCourier(?string $codeA, ?string $codeB): bool
     {
         if ($codeA === null || $codeB === null) {

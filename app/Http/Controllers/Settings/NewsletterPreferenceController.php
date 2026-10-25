@@ -10,9 +10,6 @@ use App\Services\Newsletter\MarketingConsent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
-/**
- * Newsletter switch on the profile settings page: on = double opt-in mail, off = unsubscribed immediately.
- */
 class NewsletterPreferenceController extends Controller
 {
     public function update(Request $request, MarketingConsent $consent): RedirectResponse

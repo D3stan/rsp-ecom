@@ -134,7 +134,6 @@ class DvaexpressLabelProvider implements CancelsShipments, LabelProvider
             );
         }
 
-        // Order-fast flow
         $payload = $this->mapper->mapOrderFast($request);
         $response = $this->client->postLabel('order-fast', $payload);
 

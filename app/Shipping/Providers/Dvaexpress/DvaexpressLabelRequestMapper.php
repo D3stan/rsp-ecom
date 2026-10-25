@@ -105,9 +105,6 @@ class DvaexpressLabelRequestMapper
         ];
     }
 
-    /**
-     * Resolve shipment type: N (nazionale), E (estero), I (import).
-     */
     public function resolveShipmentType(string $senderCountry, string $recipientCountry): string
     {
         $sender = strtoupper(trim($senderCountry));

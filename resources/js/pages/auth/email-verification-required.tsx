@@ -8,7 +8,6 @@ import AuthLayout from '@/layouts/auth-layout';
 export default function EmailVerificationRequired() {
     const { t } = useTranslation();
     const handleResendVerification = () => {
-        // This will be handled by the existing email verification notification system
         router.post(route('verification.send'));
     };
 
@@ -18,7 +17,7 @@ export default function EmailVerificationRequired() {
             description={t('auth.required.description')}
         >
             <Head title={t('auth.required.head')} />
-            
+
             <Card className="w-full max-w-md mx-auto">
                 <CardHeader className="text-center space-y-4">
                     <div className="mx-auto w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center">
@@ -43,7 +42,7 @@ export default function EmailVerificationRequired() {
                                 </p>
                             </div>
                         </div>
-                        
+
                         <div className="flex items-start space-x-3">
                             <Clock className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                             <div>
@@ -53,7 +52,7 @@ export default function EmailVerificationRequired() {
                                 </p>
                             </div>
                         </div>
-                        
+
                         <div className="flex items-start space-x-3">
                             <ArrowRight className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                             <div>

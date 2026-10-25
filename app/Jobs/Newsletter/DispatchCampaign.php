@@ -11,14 +11,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Starts a campaign that is `sending`: snapshots the recipients (confirmed subscribers of its locale) into
- * newsletter_campaign_sends once, then queues one SendCampaignEmail per recipient still to do, spread over time
- * at newsletter.send_rate_per_minute.
- *
- * Idempotent: the snapshot is taken only while the campaign has no send rows (unique campaign_id + subscriber_id
- * as well), and SendCampaignEmail skips rows that are already done, so running this again never sends twice.
- */
 class DispatchCampaign implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
@@ -77,7 +69,6 @@ class DispatchCampaign implements ShouldQueue
             ->select('id')
             ->chunkById(500, function ($sends) use ($rate, &$position) {
                 foreach ($sends as $send) {
-                    // The n-th mail waits n / rate minutes: the queue never holds more than one minute's worth
                     SendCampaignEmail::dispatch($send->id)->delay(now()->addMinutes(intdiv($position, $rate)));
                     $position++;
                 }

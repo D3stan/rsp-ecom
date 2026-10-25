@@ -1,3 +1,9 @@
+# Architectural Domain Rules & Agent Guidelines
+
+> **CRITICAL ARCHITECTURAL RULE:**
+> Before reading or modifying code in any domain, you MUST inspect its domain specification via `.ai/rules/index.md`.
+> Domain specifications in `.ai/rules/domains/` are strictly kept `<= 150 lines` to ensure concise, token-efficient invariant coverage. All business rule updates or domain boundary changes must update the relevant domain specification.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

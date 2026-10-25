@@ -4,6 +4,8 @@ use App\Jobs\SendOrderEmail;
 use App\Models\Order;
 use App\Models\OrderEmail;
 use App\Models\User;
+use App\Services\EmailService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Queue;
 use Tests\Feature\Mail\Lifecycle\Support\LifecycleFixtures as Fx;
 
@@ -122,7 +124,7 @@ it('does not break the status change for an order without any recipient', functi
 
 it('does not break the status change when the mail layer fails', function () {
     $order = Fx::paidOrder(['status' => 'shipped']);
-    $this->mock(\App\Services\EmailService::class)
+    $this->mock(EmailService::class)
         ->shouldReceive('sendOrderDelivered')->once()->andThrow(new RuntimeException('queue is down'));
 
     expect($order->update(['status' => 'delivered']))->toBeTrue();
@@ -154,11 +156,11 @@ it('bulk-delivers and bulk-cancels through the real route, one email per eligibl
 });
 
 it('resolves PATCH admin/orders/bulk-status to the bulk action, not to orders/{order}', function () {
-    $route = app('router')->getRoutes()->match(Illuminate\Http\Request::create('/admin/orders/bulk-status', 'PATCH'));
+    $route = app('router')->getRoutes()->match(Request::create('/admin/orders/bulk-status', 'PATCH'));
 
     expect($route->getName())->toBe('admin.orders.bulk-update-status');
 
     $order = Fx::paidOrder(['guest_email' => null]);
-    expect(app('router')->getRoutes()->match(Illuminate\Http\Request::create('/admin/orders/'.$order->id, 'PATCH'))->getName())
+    expect(app('router')->getRoutes()->match(Request::create('/admin/orders/'.$order->id, 'PATCH'))->getName())
         ->toBe('admin.orders.update');
 });

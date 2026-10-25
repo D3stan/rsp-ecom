@@ -2,7 +2,7 @@
 
 Read individual orders, list orders, and obtain tracking information.
 
-[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../dvaexpress-doc.html)
+[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../vendor/dvaexpress-doc.html)
 
 
 ### `POST https://api.easyparcel.it/getorder/{APIKEY}`

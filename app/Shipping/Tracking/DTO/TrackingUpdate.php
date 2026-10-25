@@ -2,9 +2,6 @@
 
 namespace App\Shipping\Tracking\DTO;
 
-/**
- * One shipment's news as pushed by a carrier webhook: which parcel, and what is new.
- */
 final readonly class TrackingUpdate
 {
     public function __construct(

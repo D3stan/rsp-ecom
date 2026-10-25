@@ -11,11 +11,6 @@ use Illuminate\Http\Request;
 
 class VerificationStatusController extends Controller
 {
-    /**
-     * Polled by the "verification pending" page. Only the browser that registered the email (proved by
-     * RegistrationAutoLogin) learns its status, and is logged in once it is verified. Everyone else gets the
-     * same "pending" answer: the endpoint never logs a stranger in and never tells whether an email exists.
-     */
     public function checkStatus(Request $request): JsonResponse
     {
         $email = $request->query('email');
@@ -31,7 +26,6 @@ class VerificationStatusController extends Controller
         $user = User::where('email', $email)->first();
 
         if ($user && $user->hasVerifiedEmail()) {
-            // One use: a verification older than the window sends the browser to the login page instead
             $authenticated = RegistrationAutoLogin::consume($request, $user);
 
             if (! $authenticated) {

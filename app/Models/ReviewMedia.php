@@ -7,10 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
-/**
- * A customer photo on a review (see App\Services\Reviews\ReviewPhotoProcessor). Only `approved` photos of approved
- * reviews may reach a storefront prop, whatever reviews.auto_approve says about the text.
- */
 class ReviewMedia extends Model
 {
     public const STATUS_PENDING = 'pending';
@@ -56,7 +52,6 @@ class ReviewMedia extends Model
         $this->update(['status' => self::STATUS_APPROVED]);
     }
 
-    /** A rejected photo can't stay on the home page. */
     public function reject(): void
     {
         $this->update(['status' => self::STATUS_REJECTED, 'featured' => false]);

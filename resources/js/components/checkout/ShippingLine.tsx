@@ -3,13 +3,11 @@ import { useTranslation } from '@/hooks/useTranslation';
 
 interface ShippingLineProps {
     shippingCost: number;
-    /** From the server (App\Support\Shipping): null = no free-shipping threshold, 0 = reached, > 0 = still missing */
     freeShippingRemaining?: number | null;
     className?: string;
     amountClassName?: string;
 }
 
-/** The shipping row of an order summary, with the free-shipping state ("Free shipping" / "Add €X more…"). */
 export default function ShippingLine({ shippingCost, freeShippingRemaining, className, amountClassName }: ShippingLineProps) {
     const { t } = useTranslation();
     const formatCurrency = useMoney();

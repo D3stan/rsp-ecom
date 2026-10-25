@@ -54,7 +54,7 @@ return new class extends Migration
                             'product_id' => $product->id,
                             'variant_id' => $variant->id,
                         ]);
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         Log::error('Failed to migrate product', [
                             'product_id' => $product->id,
                             'error' => $e->getMessage(),

@@ -6,10 +6,6 @@ use App\Shipping\Tracking\Enums\TrackingStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * One normalised checkpoint of an order's shipment, written by ShipmentTrackingService.
- * Unique per (order_id, provider, event_hash).
- */
 class ShipmentTrackingEvent extends Model
 {
     protected $fillable = [

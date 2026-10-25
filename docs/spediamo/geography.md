@@ -2,7 +2,7 @@
 
 Countries, provinces, towns, holidays, and courier surcharges.
 
-[API overview and shared conventions](./README.md) · [Original HTML export](../spediamo-doc.html)
+[API overview and shared conventions](./README.md) · [Original HTML export](../vendor/spediamo-doc.html)
 
 ## Geo
 

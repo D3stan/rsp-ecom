@@ -21,41 +21,17 @@ use Stripe\StripeClient;
 use Stripe\StripeObject;
 use Throwable;
 
-/**
- * Returns money to the customer through Stripe and keeps the order in step (refunds table, payment_status, audit trail,
- * optional restock, refund email). Also records refunds made directly in the Stripe dashboard and refunds that fail
- * after the fact (charge.refunded, charge.refund.updated).
- *
- * refund():
- *   1. under a lock on the order: checks, then a pending refunds row that reserves the amount (a concurrent second
- *      refund sees less refundable);
- *   2. Stripe refunds.create with idempotency key "refund:{id}" (a retried call never refunds twice);
- *   3. the outcome:
- *      - confirmed (Stripe status succeeded or pending): row succeeded, payment_status refunded / partially_refunded,
- *        order_events "refund", restock, email;
- *      - definitive failure (Stripe 4xx, or status failed/canceled): row failed with the message, "refund_failed",
- *        no email, the amount is free again, RefundFailed;
- *      - unknown (timeout, connection error, rate limit, 5xx: Stripe may have refunded): row stays pending with the
- *        amount reserved, "refund_unconfirmed", RefundUnconfirmed. The webhook or retry() (same key) settles it.
- *
- * A Stripe refund in status "pending" counts as done everywhere (refund(), retry(), webhooks); if Stripe later reports
- * it failed or canceled, failAfterTheFact() takes it back.
- */
 class RefundService
 {
-    /** Stripe refund statuses that mean the money is (being) returned. */
     private const CONFIRMED = ['succeeded', 'pending'];
 
-    /** Stripe refund statuses that mean no money was returned. */
     private const DECLINED = ['failed', 'canceled'];
 
-    /** Money captured for the order (its total), in cents; 0 while nothing was captured. */
     public function capturedCents(Order $order): int
     {
         return $order->hasCapturedPayment() ? self::cents($order->total_amount) : 0;
     }
 
-    /** What can still be refunded: captured minus succeeded and pending refunds (never negative). */
     public function refundableCents(Order $order): int
     {
         $reserved = (int) Refund::query()
@@ -111,7 +87,6 @@ class RefundService
         $client = StripeService::getClient();
 
         if (! $client) {
-            // Nothing was sent: a definitive failure
             $this->markFailed($refund, $order, $actor, 'Stripe is not configured.');
 
             throw new RefundFailed($refund->fresh(), 'Stripe is not configured.');
@@ -216,9 +191,6 @@ class RefundService
         return $order ? ($this->applyStripeRefund($order, $stripeRefund) ? 1 : 0) : 0;
     }
 
-    /**
-     * Call Stripe for a pending refund (first attempt or retry: always the same idempotency key) and apply the answer.
-     */
     private function send(StripeClient $client, Refund $refund, Order $order, ?User $actor): void
     {
         try {
@@ -269,7 +241,7 @@ class RefundService
     private function applyStripeRefund(Order $order, array $stripeRefund): bool
     {
         if (! in_array($stripeRefund['status'] ?? null, self::CONFIRMED, true) || empty($stripeRefund['id'])) {
-            return false; // failed/canceled at Stripe: nothing was returned
+            return false;
         }
 
         if (Refund::query()->where('stripe_refund_id', $stripeRefund['id'])->exists()) {
@@ -286,10 +258,6 @@ class RefundService
         return $this->recordDashboardRefund($order, $stripeRefund);
     }
 
-    /**
-     * Pending (or wrongly failed) refund -> succeeded, once: whoever claims the row (refund(), retry() or a webhook)
-     * updates the payment status, restocks, writes the event and sends the email.
-     */
     private function complete(Refund $refund, Order $order, string $stripeRefundId, ?User $actor): bool
     {
         $claimed = DB::transaction(function () use ($refund, $order, $stripeRefundId, $actor) {
@@ -356,7 +324,7 @@ class RefundService
                 return $refund;
             });
         } catch (UniqueConstraintViolationException) {
-            return false; // a concurrent delivery of the same event recorded it
+            return false;
         }
 
         $this->email($order, $refund);
@@ -436,7 +404,6 @@ class RefundService
         Log::warning('Stripe refund failed', ['order_id' => $order->id, 'refund_id' => $refund->id, 'error' => $message]);
     }
 
-    /** The row stays pending (amount reserved); only the unknown outcome is recorded. */
     private function markUnconfirmed(Refund $refund, Order $order, ?User $actor, string $message): void
     {
         $message = Str::limit($message, 1000);
@@ -455,10 +422,6 @@ class RefundService
         ]);
     }
 
-    /**
-     * A failure Stripe answered with certainty: a 4xx (invalid request, card, authentication, permission). Connection
-     * errors, rate limits, idempotency conflicts, 5xx and anything unknown may hide a refund that went through.
-     */
     private function isDefinitiveFailure(Throwable $e): bool
     {
         if ($e instanceof ApiConnectionException || $e instanceof RateLimitException || $e instanceof IdempotencyException) {
@@ -474,9 +437,6 @@ class RefundService
         return false;
     }
 
-    /**
-     * payment_status from the succeeded refunds: none -> succeeded, all captured money -> refunded, else partially.
-     */
     private function syncPaymentStatus(Order $order): void
     {
         $locked = Order::query()->lockForUpdate()->find($order->id);
@@ -512,7 +472,6 @@ class RefundService
         ]);
     }
 
-    /** The refund email, deduplicated per refund (OrderEmail fingerprint); a mail problem never undoes a refund. */
     private function email(Order $order, Refund $refund): void
     {
         try {

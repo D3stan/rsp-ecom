@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\UserNotificationKind;
 use App\Jobs\SendUserNotification;
 use App\Notifications\AccountMailMessages;
+use Database\Factories\UserFactory;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -17,8 +18,8 @@ use Laravel\Cashier\Billable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, Billable;
+    /** @use HasFactory<UserFactory> */
+    use Billable, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -70,17 +71,11 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $appends = ['has_password'];
 
-    /**
-     * Determine if the user has a password set.
-     *
-     * @return bool
-     */
     public function getHasPasswordAttribute(): bool
     {
-        return !is_null($this->password);
+        return ! is_null($this->password);
     }
 
-    // Relationships
     public function addresses(): HasMany
     {
         return $this->hasMany(Address::class);
@@ -111,7 +106,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Review::class);
     }
 
-    // Scopes
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
@@ -127,9 +121,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return $query->where('role', 'admin');
     }
 
-    /**
-     * Brand the framework's password-reset and verification emails (localised, with plain-text part).
-     */
     protected static function booted(): void
     {
         ResetPassword::toMailUsing(function (object $notifiable, string $token) {
@@ -143,9 +134,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
         VerifyEmail::toMailUsing(fn (object $notifiable, string $url) => AccountMailMessages::verifyEmail($notifiable, $url));
 
-        // Orders outlive the account (the FK sets orders.user_id to NULL). Copy who bought onto them first,
-        // so the shop still knows whom to contact; the name stays on the order's billing address.
-        // Address-book entries no order uses go with the account; addresses on orders are kept.
         static::deleting(function (User $user) {
             $user->orders()->whereNull('guest_email')->update(['guest_email' => $user->email]);
 
@@ -158,30 +146,20 @@ class User extends Authenticatable implements MustVerifyEmail
                 ->whereDoesntHave('shippingOrders')
                 ->delete();
 
-            // The reviews go with the account anyway (FK cascade), but the cascade skips model events: deleting
-            // them one by one lets Review remove the customer's photo files from the public disk.
             $user->reviews()->get()->each->delete();
         });
     }
 
-    /**
-     * Queue the password-reset mail instead of sending it inside the request.
-     * The locale is captured now: the worker has no request.
-     */
     public function sendPasswordResetNotification($token): void
     {
         SendUserNotification::dispatch($this->id, UserNotificationKind::PasswordReset, (string) $token, app()->getLocale());
     }
 
-    /**
-     * Queue the email-verification mail instead of sending it inside the request.
-     */
     public function sendEmailVerificationNotification(): void
     {
         SendUserNotification::dispatch($this->id, UserNotificationKind::VerifyEmail, null, app()->getLocale());
     }
 
-    // Helper methods
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
@@ -200,13 +178,8 @@ class User extends Authenticatable implements MustVerifyEmail
             ->first();
     }
 
-    /** Address-book size limit: the oldest non-default entry makes room for a new one. */
     public const MAX_SAVED_ADDRESSES = 10;
 
-    /**
-     * Save an address in the address book and make it the default (the one the customer just shipped to). An address
-     * the book already has is left alone: the customer's own choice of default stays.
-     */
     public function rememberShippingAddress(Address $address): void
     {
         $fields = $address->only(Address::CHECKOUT_FIELDS);
@@ -227,11 +200,6 @@ class User extends Authenticatable implements MustVerifyEmail
         });
     }
 
-    /**
-     * Orders placed as a guest with this (verified) email belong to the account now: they show up in the order
-     * history, and when the address book is still empty the latest one's address becomes the default.
-     * Idempotent; returns how many orders were attached.
-     */
     public function claimGuestOrders(): int
     {
         if (! $this->hasVerifiedEmail()) {

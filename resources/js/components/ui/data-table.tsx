@@ -56,7 +56,7 @@ export function DataTable<T extends Record<string, unknown>>({
 
     return (
         <Card className="p-0">
-            {/* Search Bar */}
+
             {onSearchChange && (
                 <div className="p-4 border-b">
                     <Input
@@ -68,7 +68,6 @@ export function DataTable<T extends Record<string, unknown>>({
                 </div>
             )}
 
-            {/* Table */}
             <div className="overflow-x-auto">
                 <table className="w-full">
                     <thead className="border-b bg-muted/50">
@@ -117,7 +116,6 @@ export function DataTable<T extends Record<string, unknown>>({
                 </table>
             </div>
 
-            {/* Pagination */}
             {pagination && pagination.last_page > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t">
                     <div className="text-sm text-muted-foreground">

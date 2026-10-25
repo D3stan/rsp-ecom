@@ -6,13 +6,10 @@ use App\Mail\Traits\DescribesOrder;
 use App\Mail\Traits\HasLogo;
 use App\Models\Order;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
-/**
- * Confirms to the customer that an order was delivered (no review request: that would be marketing).
- * Rendered by SendOrderEmail (never queued itself).
- */
 class OrderDelivered extends Mailable
 {
     use DescribesOrder, HasLogo;
@@ -38,7 +35,7 @@ class OrderDelivered extends Mailable
     }
 
     /**
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

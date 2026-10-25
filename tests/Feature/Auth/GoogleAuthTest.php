@@ -231,7 +231,7 @@ class GoogleAuthTest extends TestCase
         $user->refresh();
         $this->assertNull($user->google_id);
         $this->assertNull($user->avatar);
-        
+
         // Test that has_password accessor works correctly
         $this->assertTrue($user->has_password);
     }
@@ -251,7 +251,7 @@ class GoogleAuthTest extends TestCase
 
         $user->refresh();
         $this->assertNotNull($user->google_id);
-        
+
         // Test that has_password accessor works correctly
         $this->assertFalse($user->has_password);
     }
@@ -261,7 +261,7 @@ class GoogleAuthTest extends TestCase
         // Test that guest users cannot access the unlink route
         // This should be handled by the auth middleware
         $response = $this->post(route('auth.google.unlink'));
-        
+
         // In Laravel, auth middleware redirects guests to login
         // But if there's a configuration issue, it might return 500
         // Let's just verify that guests are not allowed

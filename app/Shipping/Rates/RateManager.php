@@ -106,7 +106,6 @@ class RateManager extends Manager
                 try {
                     $balances[$name] = $provider->balance()->toArray();
                 } catch (Throwable) {
-                    // Ignore balance errors gracefully
                 }
             }
         }

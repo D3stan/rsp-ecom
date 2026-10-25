@@ -13,22 +13,12 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
-/**
- * OAuth2 "client credentials" skeleton for APIs that issue short-lived access tokens.
- *
- * The token is requested with grant_type=client_credentials, cached (encrypted, in the shared cache
- * store) until shortly before it expires, and discarded after a 401 so the failed call is repeated
- * once with a fresh token. Secrets and tokens never appear in messages or logs.
- */
 class CachedClientCredentialsAuthenticator implements RefreshesCredentials
 {
-    /** Tokens are renewed this many seconds before the issuer says they expire. */
     private const EXPIRY_MARGIN_SECONDS = 60;
 
-    /** Used when the issuer sends no expires_in. */
     private const DEFAULT_TTL_SECONDS = 3600;
 
-    /** No token is cached longer than this, whatever the issuer claims. */
     private const MAX_TTL_SECONDS = 86400;
 
     public function __construct(

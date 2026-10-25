@@ -10,13 +10,6 @@ use App\Shipping\Labels\DTO\ShipmentResult;
 use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
 use App\Shipping\Labels\Exceptions\LabelRejected;
 
-/**
- * Deterministic stand-in for a real label carrier, for tests and local demos. Refused in production (LabelManager).
- * No network: it mints a tracking number from the reference and returns a tiny valid PDF. Two parcel weights have a
- * special meaning so the failure paths can be exercised:
- *   weight >= 100   -> LabelRejected ("parcel too heavy")
- *   0 < weight < 0.01 -> LabelProviderUnavailable
- */
 class FakeLabelProvider implements CancelsShipments, LabelProvider
 {
     public const NAME = 'fake';
@@ -60,7 +53,6 @@ class FakeLabelProvider implements CancelsShipments, LabelProvider
     {
         $id = $externalId instanceof ShipmentResult ? $externalId->externalId : $externalId;
 
-        // A minimal, valid single-page PDF.
         $pdf = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
             ."2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
             ."3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 100]>>endobj\n"

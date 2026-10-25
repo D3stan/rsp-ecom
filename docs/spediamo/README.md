@@ -2,7 +2,7 @@
 
 - **Base URL:** `https://api.spediamo.it`
 - **API version:** `1.0`
-- **Source:** [Swagger HTML export](../spediamo-doc.html)
+- **Source:** [Swagger HTML export](../vendor/spediamo-doc.html)
 - **Authentication:** operations expose the `Authorization` header, described in the export as an authorization token.
 - **Request bodies:** none are represented in the exported operation parameters; inputs are path, query, or header parameters.
 - **Response examples:** summarized to top-level field names and types. Nested details are omitted to keep each page compact; consult the linked HTML export when needed.

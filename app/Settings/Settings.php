@@ -14,14 +14,6 @@ use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Throwable;
 
-/**
- * Typed access to the admin settings declared in config/settings.php (docs/admin-settings.md).
- *
- * Precedence: stored row > definition default. Rows are JSON. The whole table (registry keys only, so legacy
- * secret rows never reach the cache) is cached as one array under `settings:v{version}`; every write bumps
- * `settings:version`, which invalidates every process at once. Missing rows are never cached as defaults. A cache
- * or database failure degrades to defaults and never throws.
- */
 class Settings
 {
     public const VERSION_KEY = 'settings:version';
@@ -33,7 +25,6 @@ class Settings
 
     private ?string $memoVersion = null;
 
-    /** When the cache version was last read (microtime): bounds version lookups to one per recheck window. */
     private ?float $versionCheckedAt = null;
 
     public function __construct(private readonly SettingsRegistry $registry) {}
@@ -42,8 +33,6 @@ class Settings
     {
         return $this->registry;
     }
-
-    // ------------------------------------------------------------------ reading
 
     public function get(string $key): mixed
     {
@@ -87,10 +76,6 @@ class Settings
         return $all;
     }
 
-    /**
-     * 'customised' when a stored value differs from the default, else 'default' (a row that merely repeats
-     * the default, e.g. one inserted by the seeder, is not a customisation).
-     */
     public function source(string $key): string
     {
         return $this->sourceOf($this->registry->get($key), $this->rows());
@@ -130,9 +115,6 @@ class Settings
         return $values;
     }
 
-    /**
-     * The registry key a legacy key stands for (null for keys that are not part of the catalogue).
-     */
     public function resolveKey(string $key): ?string
     {
         return $this->registry->resolve($key);
@@ -164,8 +146,6 @@ class Settings
         return $values;
     }
 
-    // ------------------------------------------------------------------ writing
-
     public function set(string $key, mixed $value, ?User $by = null): void
     {
         $this->setMany([$key => $value], $by);
@@ -191,9 +171,6 @@ class Settings
         return $this->write($clean, $by);
     }
 
-    /**
-     * Drop the stored value so the default applies again.
-     */
     public function reset(string $key, ?User $by = null): void
     {
         $this->writableDefinition($key);
@@ -265,7 +242,6 @@ class Settings
             if ($definition->memberOf !== null && (array_key_exists($key, $values) || array_key_exists($definition->memberOf, $values))) {
                 $value = $current($key);
                 $members = self::members($current($definition->memberOf));
-                // a list value: every item must be a member
                 $outside = is_array($value)
                     ? array_filter($value, fn ($item) => ! in_array($item, $members, true)) !== []
                     : ! in_array($value, $members, true);
@@ -348,11 +324,6 @@ class Settings
         return $changed;
     }
 
-    // ------------------------------------------------------------------ cache
-
-    /**
-     * Invalidate the cached table everywhere (bumps the shared version) and in this process.
-     */
     public function flush(): void
     {
         $this->memo = null;
@@ -362,22 +333,14 @@ class Settings
         try {
             $this->store()->forever(self::VERSION_KEY, $this->newVersion());
         } catch (Throwable) {
-            // no cache available: nothing is cached either
         }
     }
 
-    /**
-     * Forget when the version was last checked, so the next read looks at the shared version again
-     * (called at the start of every queued job / scheduler tick / worker loop).
-     */
     public function refresh(): void
     {
         $this->versionCheckedAt = null;
     }
 
-    /**
-     * Current cache version, or null when the cache store cannot be reached.
-     */
     public function version(): ?string
     {
         try {
@@ -420,8 +383,6 @@ class Settings
      */
     private function loadRows(): ?array
     {
-        // Within the recheck window the in-process copy is trusted, so a page that reads dozens of
-        // settings does not ask the (possibly database-backed) cache for the version every time.
         $recheck = (float) config('settings.cache.recheck_seconds', 5);
 
         if ($this->memo !== null && $this->versionCheckedAt !== null && $recheck > 0
@@ -461,7 +422,6 @@ class Settings
             try {
                 $this->store()->put(self::ROWS_KEY_PREFIX.$version, $rows, (int) config('settings.cache.ttl', 86400));
             } catch (Throwable) {
-                // served from the database next time
             }
 
             $this->memo = $rows;
@@ -507,8 +467,6 @@ class Settings
 
         return $definition;
     }
-
-    // ------------------------------------------------------------------ admin payload
 
     /**
      * Everything the admin page needs for one group (labels and help already translated).

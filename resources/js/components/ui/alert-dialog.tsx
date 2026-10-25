@@ -4,12 +4,6 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-/**
- * Confirmation dialog for destructive actions (shadcn AlertDialog API), built on the Radix dialog already in use:
- * role="alertdialog", no close button and no dismissal by clicking outside, so the admin answers it explicitly.
- * AlertDialogAction does not close the dialog by itself: the caller closes it once the action went through (or keeps it
- * open, e.g. while a required field is empty).
- */
 function AlertDialog(props: React.ComponentProps<typeof DialogPrimitive.Root>) {
     return <DialogPrimitive.Root data-slot="alert-dialog" {...props} />;
 }

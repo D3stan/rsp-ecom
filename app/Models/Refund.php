@@ -5,10 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * Money returned for an order, in integer cents (App\Services\RefundService). A pending row reserves its amount while
- * Stripe is called; succeeded and pending rows count against what is still refundable.
- */
 class Refund extends Model
 {
     public const STATUS_PENDING = 'pending';

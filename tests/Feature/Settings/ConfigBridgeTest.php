@@ -4,6 +4,7 @@ use App\Settings\ConfigBridge;
 use App\Settings\Settings;
 use App\Settings\SettingsRegistry;
 use Artesaos\SEOTools\Facades\SEOMeta;
+use Illuminate\Contracts\Queue\Job;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Queue\Events\Looping;
 use Illuminate\Support\Facades\DB;
@@ -73,7 +74,7 @@ it('re-applies on JobProcessing and Looping when another process changed a value
     $write('two@shop.test');
     expect(config('mail.support_address'))->toBe('one@shop.test');
 
-    Event::dispatch(new JobProcessing('database', Mockery::mock(Illuminate\Contracts\Queue\Job::class, ['payload' => []])));
+    Event::dispatch(new JobProcessing('database', Mockery::mock(Job::class, ['payload' => []])));
     expect(config('mail.support_address'))->toBe('two@shop.test');
 
     $write('three@shop.test');

@@ -5,10 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * One entry of an order's audit trail (append-only). actor_id is null for changes made by the system (webhooks,
- * tracking sync). payload holds the context: reason, meta (source, provider, ...), refund amounts.
- */
 class OrderEvent extends Model
 {
     public const UPDATED_AT = null;
@@ -21,7 +17,6 @@ class OrderEvent extends Model
 
     public const TYPE_REFUND_FAILED = 'refund_failed';
 
-    /** Stripe did not answer clearly (timeout, 5xx): the refund stays pending until it is confirmed. */
     public const TYPE_REFUND_UNCONFIRMED = 'refund_unconfirmed';
 
     public const TYPE_NOTE = 'note';

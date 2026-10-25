@@ -11,12 +11,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Cart extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'user_id',
         'session_id',
     ];
 
-    // Relationships
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -27,7 +27,6 @@ class Cart extends Model
         return $this->hasMany(CartItem::class);
     }
 
-    // Cart calculations
     public function getSubtotalAttribute(): float
     {
         return $this->cartItems->sum(function ($item) {
@@ -40,30 +39,18 @@ class Cart extends Model
         return $this->cartItems->sum('quantity');
     }
 
-    /**
-     * Shipping before the free-shipping rule: the sum of the package sizes' shipping_cost.
-     */
     public function getBaseShippingCostAttribute(): float
     {
-        // Calculate shipping based on cart items' sizes
         return (float) $this->cartItems->sum(function ($item) {
-            // Use the size from the cart item, not from the product
             return $item->size ? $item->size->shipping_cost : 0;
         });
     }
 
-    /**
-     * Shipping charged when $discount comes off the items: free once the items after the discount reach the
-     * free-shipping threshold (App\Support\Shipping). Callers that know the coupon use this.
-     */
     public function shippingCostFor(float $discount = 0.0): float
     {
         return Shipping::costFor((float) $this->subtotal - $discount, $this->base_shipping_cost);
     }
 
-    /**
-     * Shipping with no coupon applied (see shippingCostFor).
-     */
     public function getShippingCostAttribute(): float
     {
         return $this->shippingCostFor();
@@ -74,10 +61,6 @@ class Cart extends Model
         return $this->subtotal + $this->shipping_cost;
     }
 
-    /**
-     * Fingerprint of what is being bought (variant, size, quantity, price), independent of item order.
-     * Stored in the Stripe session metadata when checkout starts and compared when the order is created.
-     */
     public function contentHash(): string
     {
         $lines = $this->cartItems->map(fn ($item) => implode('|', [
@@ -113,13 +96,13 @@ class Cart extends Model
         return $changed;
     }
 
-    // Helper methods
     public function addItem(Product $product, int $quantity = 1): CartItem
     {
         $existingItem = $this->cartItems()->where('product_id', $product->id)->first();
 
         if ($existingItem) {
             $existingItem->increment('quantity', $quantity);
+
             return $existingItem;
         }
 
@@ -151,7 +134,6 @@ class Cart extends Model
         return $this->cartItems()->delete() > 0;
     }
 
-    // Static methods for guest carts
     public static function findBySession(string $sessionId): ?self
     {
         return static::where('session_id', $sessionId)->first();

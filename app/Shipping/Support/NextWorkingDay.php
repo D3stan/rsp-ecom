@@ -4,11 +4,6 @@ namespace App\Shipping\Support;
 
 use Carbon\CarbonImmutable;
 
-/**
- * Italian working days for pickups: Monday to Friday except national holidays (incl. Easter Monday).
- * shortcut: carrier-specific closures (e.g. 24 and 31 December at one carrier) are not modelled; the carrier rejects those
- * dates and the admin sees its message. Upgrade: read the carrier's own settings endpoint (earliest pickup date + holidays) where it has one.
- */
 final class NextWorkingDay
 {
     private const FIXED = ['01-01', '01-06', '04-25', '05-01', '06-02', '08-15', '11-01', '12-08', '12-25', '12-26'];
@@ -24,7 +19,6 @@ final class NextWorkingDay
         return $day;
     }
 
-    /** What a pickup request may ask for: a working day after today. */
     public static function isFutureWorkingDay(string $date): bool
     {
         $day = CarbonImmutable::parse($date);
@@ -39,7 +33,6 @@ final class NextWorkingDay
             && $day->toDateString() !== self::easterMonday($day->year)->toDateString();
     }
 
-    /** Anonymous Gregorian algorithm (no ext-calendar needed). */
     private static function easterMonday(int $year): CarbonImmutable
     {
         $a = $year % 19;

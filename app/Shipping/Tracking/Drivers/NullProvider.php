@@ -7,9 +7,6 @@ use App\Shipping\Tracking\Contracts\TrackingProvider;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\DTO\TrackingResult;
 
-/**
- * Tracking switched off: no links, no polling, no webhooks.
- */
 class NullProvider implements PassiveProvider, TrackingProvider
 {
     public function name(): string

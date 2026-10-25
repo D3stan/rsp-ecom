@@ -9,16 +9,10 @@ import { LoaderCircle } from 'lucide-react';
 import { type FormEventHandler, useState } from 'react';
 
 interface NewsletterSignupProps {
-    /** dark: storefront footer (black background); light: on a white page */
     variant?: 'dark' | 'light';
     className?: string;
 }
 
-/**
- * Newsletter sign-up form (double opt-in). Hidden while the newsletter.enabled setting is off.
- * The text above the field is the consent text whose version the server records (newsletter.consent_v1).
- * The server answers the same way for every address, so the confirmation message is always the same.
- */
 export default function NewsletterSignup({ variant = 'dark', className }: NewsletterSignupProps) {
     const { t } = useTranslation();
     const enabled = useSetting('newsletter.enabled', false);
@@ -74,7 +68,7 @@ export default function NewsletterSignup({ variant = 'dark', className }: Newsle
                         aria-invalid={errors.email ? true : undefined}
                         className={cn(dark && 'border-gray-700 bg-gray-900 text-white placeholder:text-gray-500')}
                     />
-                    {/* Honeypot: hidden from people and assistive technology, filled in by bots */}
+
                     <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
                         <label htmlFor="newsletter-website">{t('newsletter.signup.honeypot_label')}</label>
                         <input

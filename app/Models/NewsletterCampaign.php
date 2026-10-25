@@ -7,10 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/**
- * A newsletter: draft -> (scheduled ->) sending -> sent, or cancelled. Sending is done by
- * App\Jobs\Newsletter\DispatchCampaign (recipient snapshot) and SendCampaignEmail (one per recipient).
- */
 class NewsletterCampaign extends Model
 {
     public const STATUS_DRAFT = 'draft';
@@ -54,15 +50,11 @@ class NewsletterCampaign extends Model
         return $this->hasMany(NewsletterCampaignSend::class, 'campaign_id');
     }
 
-    /** Content can still change: nothing has been sent yet. */
     public function isEditable(): bool
     {
         return in_array($this->status, [self::STATUS_DRAFT, self::STATUS_SCHEDULED], true);
     }
 
-    /**
-     * Mark a sending campaign as sent once every recipient is done (sent, failed or skipped).
-     */
     public function finishIfDone(): void
     {
         $pending = $this->sends()

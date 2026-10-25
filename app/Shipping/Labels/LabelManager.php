@@ -9,16 +9,6 @@ use Closure;
 use Illuminate\Support\Manager;
 use Illuminate\Support\Str;
 
-/**
- * Entry point of the modular label layer. Resolves a LabelProvider by name. Unlike the tracking manager there is no
- * default/manual provider: label creation is optional and ShippingService resolves a provider only when the
- * shipping.labels_enabled setting is on, so with labels off no provider is ever built.
- *
- * Adapters register themselves with one extend() line from a service provider:
- *
- *     $this->callAfterResolving(LabelManager::class, fn (LabelManager $manager) =>
- *         $manager->extend('example', fn () => new ExampleLabelProvider($manager->driverConfig('example'))));
- */
 class LabelManager extends Manager
 {
     public function getDefaultDriver(): string

@@ -2,10 +2,6 @@
 
 namespace App\Settings;
 
-/**
- * Value types a setting can have. Each knows how to coerce loose input (form strings, legacy rows) into the
- * typed PHP value and which validation rules describe it.
- */
 enum SettingType: string
 {
     case String = 'string';
@@ -30,10 +26,6 @@ enum SettingType: string
         return in_array($this, [self::List, self::Countries, self::Json], true);
     }
 
-    /**
-     * Best-effort conversion to the type's PHP value. A value that cannot be converted is returned unchanged,
-     * so validation (or the caller's shape check) rejects it instead of it being silently altered.
-     */
     public function coerce(mixed $value): mixed
     {
         return match ($this) {
@@ -48,9 +40,6 @@ enum SettingType: string
         };
     }
 
-    /**
-     * Does a coerced value have the PHP shape of this type?
-     */
     public function accepts(mixed $value): bool
     {
         return match ($this) {

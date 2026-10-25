@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Size;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class CategoriesAndSizesController extends Controller
 {
@@ -24,6 +24,7 @@ class CategoriesAndSizesController extends Controller
             ->get()
             ->map(function ($size) {
                 $size->volume = $size->volume; // Ensure volume accessor is called
+
                 return $size;
             });
 
@@ -67,9 +68,9 @@ class CategoriesAndSizesController extends Controller
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
-        
+
         // Auto-generate sort_order if not provided
-        if (!isset($validated['sort_order'])) {
+        if (! isset($validated['sort_order'])) {
             $validated['sort_order'] = (Category::max('sort_order') ?? 0) + 1;
         }
 
@@ -127,7 +128,7 @@ class CategoriesAndSizesController extends Controller
     public function updateSize(Request $request, Size $size)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:sizes,name,' . $size->id,
+            'name' => 'required|string|max:255|unique:sizes,name,'.$size->id,
             'length' => 'required|numeric|min:0.1',
             'width' => 'required|numeric|min:0.1',
             'height' => 'required|numeric|min:0.1',

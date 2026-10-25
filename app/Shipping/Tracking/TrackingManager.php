@@ -17,23 +17,8 @@ use Illuminate\Support\Manager;
 use Illuminate\Support\Str;
 use Throwable;
 
-/**
- * Entry point of the carrier tracking module. Resolves the active TrackingProvider
- * (config('shipping.tracking.driver'), env SHIPPING_TRACKING_DRIVER, default "manual").
- *
- * Built-in drivers: manual (links only, default), null (disabled), fake (tests/demos, refused in
- * production). Adapters register themselves with extend() from a service provider:
- *
- *     $this->callAfterResolving(TrackingManager::class, fn (TrackingManager $manager) =>
- *         $manager->extend('example', fn ($app) => new ExampleCarrierProvider(
- *             $manager->driverConfig('example'),
- *         )));
- *
- * Unknown method calls are forwarded to the active driver (Laravel's Manager behaviour).
- */
 class TrackingManager extends Manager
 {
-    /** The shape of a code in the shipping.carriers setting. */
     public const CARRIER_CODE_PATTERN = '/^[a-z0-9_-]{1,32}$/';
 
     public function getDefaultDriver(): string
@@ -158,10 +143,6 @@ class TrackingManager extends Manager
         return $instance;
     }
 
-    /**
-     * Does the given driver (or the default driver when null) actually contact a carrier so polling makes sense?
-     * Never throws: a broken configuration simply means "no".
-     */
     public function canPoll(?string $driver = null): bool
     {
         try {
@@ -175,10 +156,6 @@ class TrackingManager extends Manager
         }
     }
 
-    /**
-     * Should the scheduler / sync command run? True when the default driver is pollable OR when any
-     * shipped order in the database is assigned to a pollable tracking_driver.
-     */
     public function canPollAny(): bool
     {
         if ($this->canPoll()) {
@@ -202,11 +179,6 @@ class TrackingManager extends Manager
         }
     }
 
-    /**
-     * Public tracking page for a shipment: the specified (or default) driver's answer, else the manual
-     * templates (not when tracking is disabled with the null driver). Never throws and never calls the
-     * network: a misconfigured driver must not break the emails that render this link.
-     */
     public function trackingUrl(string $trackingNumber, ?string $carrierCode, ?string $driver = null): ?string
     {
         try {
@@ -247,9 +219,6 @@ class TrackingManager extends Manager
         return $carriers;
     }
 
-    /**
-     * Display name of a carrier code: the configured name, else the code itself.
-     */
     public function carrierName(string $carrierCode): string
     {
         $name = ((array) $this->config->get('shipping.carriers', []))[$carrierCode]['name'] ?? null;
@@ -257,10 +226,6 @@ class TrackingManager extends Manager
         return is_string($name) && $name !== '' ? $name : $carrierCode;
     }
 
-    /**
-     * Add a carrier to the shipping.carriers setting when it is not there yet, so a label bought for a courier the
-     * admin never listed still ships under a named carrier.
-     */
     public function registerCarrier(string $code, ?string $name, ?User $by = null): void
     {
         if (in_array($code, $this->carrierCodes(), true) || preg_match(self::CARRIER_CODE_PATTERN, $code) !== 1) {

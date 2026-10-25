@@ -4,16 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Wishlist;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class WishlistController extends Controller
 {
-    /**
-     * Add a product to the user's wishlist.
-     */
     public function store(Request $request): JsonResponse
     {
         $request->validate([
@@ -23,7 +20,6 @@ class WishlistController extends Controller
         $user = Auth::user();
         $product = Product::findOrFail($request->product_id);
 
-        // Check if product is already in wishlist
         if ($user->hasInWishlist($product)) {
             return response()->json([
                 'message' => 'Product is already in your wishlist',
@@ -31,7 +27,6 @@ class WishlistController extends Controller
             ], 200);
         }
 
-        // Add to wishlist
         $added = $user->addToWishlist($product);
 
         if ($added) {
@@ -46,25 +41,21 @@ class WishlistController extends Controller
         ], 500);
     }
 
-    /**
-     * Remove a product from the user's wishlist.
-     */
     public function destroy(Request $request, $wishlistId): RedirectResponse|JsonResponse
     {
         $user = Auth::user();
-        
-        // Find the wishlist item and ensure it belongs to the authenticated user
+
         $wishlistItem = Wishlist::where('id', $wishlistId)
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$wishlistItem) {
+        if (! $wishlistItem) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Wishlist item not found',
                 ], 404);
             }
-            
+
             return redirect()->back()->withErrors(['error' => 'Wishlist item not found']);
         }
 
@@ -80,9 +71,6 @@ class WishlistController extends Controller
         return redirect()->back()->with('success', 'Product removed from wishlist successfully');
     }
 
-    /**
-     * Remove a product from wishlist by product ID.
-     */
     public function destroyByProduct(Request $request): JsonResponse
     {
         $request->validate([
@@ -107,9 +95,6 @@ class WishlistController extends Controller
         ], 200);
     }
 
-    /**
-     * Check if a product is in the user's wishlist.
-     */
     public function check(Request $request): JsonResponse
     {
         $request->validate([
@@ -126,9 +111,6 @@ class WishlistController extends Controller
         ], 200);
     }
 
-    /**
-     * Get the count of items in the user's wishlist.
-     */
     public function count(): JsonResponse
     {
         $user = Auth::user();
@@ -139,9 +121,6 @@ class WishlistController extends Controller
         ], 200);
     }
 
-    /**
-     * Toggle a product in the user's wishlist.
-     */
     public function toggle(Request $request): JsonResponse
     {
         $request->validate([
@@ -153,12 +132,14 @@ class WishlistController extends Controller
 
         if ($user->hasInWishlist($product)) {
             $user->removeFromWishlist($product);
+
             return response()->json([
                 'message' => 'Product removed from wishlist',
                 'in_wishlist' => false,
             ], 200);
         } else {
             $user->addToWishlist($product);
+
             return response()->json([
                 'message' => 'Product added to wishlist',
                 'in_wishlist' => true,

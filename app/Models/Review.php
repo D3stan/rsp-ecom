@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 class Review extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'user_id',
         'product_id',
@@ -25,7 +26,6 @@ class Review extends Model
         'is_approved' => 'boolean',
     ];
 
-    // Relationships
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -36,19 +36,16 @@ class Review extends Model
         return $this->belongsTo(Product::class);
     }
 
-    /** Customer photos, in upload order (all statuses: moderation only). */
     public function media(): HasMany
     {
         return $this->hasMany(ReviewMedia::class)->orderBy('sort_order')->orderBy('id');
     }
 
-    /** The photos the storefront may show. */
     public function approvedMedia(): HasMany
     {
         return $this->media()->where('status', ReviewMedia::STATUS_APPROVED);
     }
 
-    // Scopes
     public function scopeApproved($query)
     {
         return $query->where('is_approved', true);
@@ -64,19 +61,16 @@ class Review extends Model
         return $query->where('rating', $rating);
     }
 
-    // Accessors
     public function getStarsAttribute(): string
     {
-        return str_repeat('★', $this->rating) . str_repeat('☆', 5 - $this->rating);
+        return str_repeat('★', $this->rating).str_repeat('☆', 5 - $this->rating);
     }
 
-    // Helper methods
     public function approve(): bool
     {
         return $this->update(['is_approved' => true]);
     }
 
-    /** Rejecting a review rejects its photos too (and takes them off the home page). */
     public function reject(): bool
     {
         return DB::transaction(function () {
@@ -86,7 +80,6 @@ class Review extends Model
         });
     }
 
-    /** Approve the text and every photo still waiting; photos an admin rejected stay rejected. */
     public function approveWithMedia(): bool
     {
         return DB::transaction(function () {
@@ -104,7 +97,6 @@ class Review extends Model
         ReviewMedia::whereIn('review_id', $reviewIds)->update(['status' => ReviewMedia::STATUS_REJECTED, 'featured' => false]);
     }
 
-    // Validation for rating (1-5 stars)
     public static function boot()
     {
         parent::boot();
@@ -115,8 +107,6 @@ class Review extends Model
             }
         });
 
-        // The DB cascade removes the review_media rows; the files go once the delete is committed. A user or
-        // product delete reaches here too: their deleting hooks delete the reviews one by one.
         static::deleted(function (Review $review) {
             $directory = "reviews/{$review->id}";
             DB::afterCommit(fn () => Storage::disk(ReviewMedia::DISK)->deleteDirectory($directory));

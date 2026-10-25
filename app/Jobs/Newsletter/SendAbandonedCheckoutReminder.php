@@ -14,12 +14,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
 
-/**
- * The one abandoned-checkout reminder of a checkout snapshot. Everything is re-checked when it runs
- * (AbandonedCheckoutReminders::shouldRemind), and reminder_sent_at is claimed with a conditional UPDATE before the
- * mail is handed over: a double webhook delivery or a replayed job can never send a second one (at most once:
- * a mail server failure is logged, not retried).
- */
 class SendAbandonedCheckoutReminder implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;

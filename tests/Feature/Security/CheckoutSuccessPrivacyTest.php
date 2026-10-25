@@ -4,6 +4,7 @@ namespace Tests\Feature\Security;
 
 use App\Models\Order;
 use App\Models\User;
+use App\Services\OrderCreationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -167,9 +168,9 @@ class CheckoutSuccessPrivacyTest extends TestCase
         $cart = $this->makeCart(guestSessionId: Str::random(40));
         $this->stripeReturns($this->guestSessionPayload($cart));
 
-        $failing = \Mockery::mock(\App\Services\OrderCreationService::class);
+        $failing = \Mockery::mock(OrderCreationService::class);
         $failing->shouldReceive('createFromStripeSession')->andThrow(new \RuntimeException('db down'));
-        $this->app->instance(\App\Services\OrderCreationService::class, $failing);
+        $this->app->instance(OrderCreationService::class, $failing);
         $this->stripeHttp->responses['/line_items'] = ['object' => 'list', 'data' => [], 'has_more' => false];
 
         $response = $this->get('/checkout/success?session_id=cs_test_123');

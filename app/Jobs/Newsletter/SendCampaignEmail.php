@@ -18,21 +18,12 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Throwable;
 
-/**
- * Sends a campaign to one recipient (one newsletter_campaign_sends row).
- *
- * Right before sending it re-checks that the campaign is still sending (not cancelled) and the subscriber is still
- * confirmed (otherwise the row is marked skipped). Same duplicate protection as SendOrderEmail: done rows are
- * skipped, WithoutOverlapping stops two workers on the same row, and sent_at is written once the mail is accepted.
- * The shared `newsletter-send` limiter caps the rate across all campaigns.
- */
 class SendCampaignEmail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
     public const RATE_LIMITER = 'newsletter-send';
 
-    /** Rate-limit releases are not failures: retry for a day, but give up after 3 real exceptions. */
     public int $maxExceptions = 3;
 
     public int $timeout = 60;
@@ -81,7 +72,7 @@ class SendCampaignEmail implements ShouldQueue
         $campaign = $send->campaign;
 
         if (! $campaign || $campaign->status !== NewsletterCampaign::STATUS_SENDING) {
-            return; // cancelled: the row stays as it is
+            return;
         }
 
         $subscriber = $send->subscriber;

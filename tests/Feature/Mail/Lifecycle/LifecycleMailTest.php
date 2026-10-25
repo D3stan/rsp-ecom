@@ -6,9 +6,11 @@ use App\Mail\OrderCancelled;
 use App\Mail\OrderDelivered;
 use App\Mail\OrderRefunded;
 use App\Mail\PaidOrderMissingAlert;
+use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderEmail;
 use App\Models\Setting;
+use App\Models\User;
 use App\Services\EmailService;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
@@ -88,8 +90,8 @@ it('only promises a refund in the cancellation mail when money was captured', fu
 it('greets by billing name for guests and falls back to a neutral greeting without a name', function () {
     $named = Fx::paidOrder();
     $anonymous = Fx::paidOrder([
-        'billing_address_id' => App\Models\Address::factory()->billing()->create(['first_name' => '', 'last_name' => '']),
-        'shipping_address_id' => App\Models\Address::factory()->shipping()->create(['first_name' => '', 'last_name' => '']),
+        'billing_address_id' => Address::factory()->billing()->create(['first_name' => '', 'last_name' => '']),
+        'shipping_address_id' => Address::factory()->shipping()->create(['first_name' => '', 'last_name' => '']),
     ]);
 
     Mail::to('c@example.test')->locale('en')->send(new OrderDelivered($named->fresh()));
@@ -136,7 +138,7 @@ it('renders the lifecycle mails in the order language for every supported locale
 
 it('uses the account email for registered customers', function () {
     Mail::fake();
-    $user = App\Models\User::factory()->create(['email' => 'account@example.test', 'name' => 'Anna Verdi']);
+    $user = User::factory()->create(['email' => 'account@example.test', 'name' => 'Anna Verdi']);
     $order = Fx::paidOrder(['user_id' => $user->id, 'guest_email' => null, 'status' => 'shipped']);
 
     $order->update(['status' => 'delivered']);

@@ -7,20 +7,8 @@ use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;
 use App\Shipping\Tracking\Exceptions\TrackingRejected;
 use Illuminate\Http\Request;
 
-/**
- * Optional capability: the carrier pushes updates to POST /webhooks/tracking/{driver}.
- *
- * The route only answers for drivers that implement this interface. The controller adds the
- * generic safeguards (rate limit, size limit, fail closed in production when
- * shipping.tracking.drivers.<name>.webhook_secret is empty); the adapter owns the carrier-specific
- * authentication and payload format.
- */
 interface SupportsWebhooks
 {
-    /**
-     * Authenticate the request (HMAC of the raw body, shared token, ...). Must compare in constant time
-     * and return false, never throw, when a secret is missing or anything is off.
-     */
     public function verifySignature(Request $request): bool;
 
     /**

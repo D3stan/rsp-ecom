@@ -2,9 +2,6 @@
 
 namespace App\Shipping\Labels\DTO;
 
-/**
- * Everything a label driver needs to create a shipment. Built from an order by App\Shipping\Labels\ShipmentBuilder.
- */
 final readonly class ShipmentRequest
 {
     /**
@@ -20,7 +17,6 @@ final readonly class ShipmentRequest
         public ?float $codAmount = null,
         public string $notes = '',
         public ?string $quoteToken = null,
-        /** Y-m-d, the day the carrier collects the parcel; null lets the provider pick its default. */
         public ?string $pickupDate = null,
     ) {}
 }

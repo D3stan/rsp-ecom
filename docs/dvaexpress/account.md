@@ -2,7 +2,7 @@
 
 Inspect API-key details, manage network customers, and work with prepaid balances.
 
-[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../dvaexpress-doc.html)
+[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../vendor/dvaexpress-doc.html)
 
 
 ### `POST https://api.easyparcel.it/apikeyinfo/{APIKEY}`

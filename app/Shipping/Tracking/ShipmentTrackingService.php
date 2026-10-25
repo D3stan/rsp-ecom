@@ -18,33 +18,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
-/**
- * Applies carrier answers (from polling or webhooks) to orders. Provider independent.
- *
- * Rules, all enforced here so adapters stay dumb:
- *  - idempotent: events are deduplicated on (order, provider, event hash); applying the same answer
- *    twice, or poll + webhook for the same scan, changes nothing the second time;
- *  - only `shipped` orders are touched: cancelled/delivered (e.g. set by the admin) are never modified;
- *  - the tracking status never moves backwards (see TrackingStatus::canReplace);
- *  - Delivered moves a shipped order to `delivered` through a normal model save, so the
- *    OrderObserver sends the delivered email (once, via order_emails) exactly as for an admin action.
- *    This depends only on TrackingStatus::Delivered and shipping.tracking.auto_deliver (default on):
- *    with the flag off the events and tracking_status are still stored, but the order stays `shipped`
- *    and no email is sent (the admin marks it delivered);
- *  - Exception / Returned are recorded and logged, but never change the order or send mail.
- */
 class ShipmentTrackingService
 {
-    /** Parked "next sync" of orders that must not be polled any more (cleared when the tracking data is edited). */
     public const POLLING_DISABLED_YEARS = 5;
 
-    /** Events dated further than this in the future are carrier clock/timezone errors and are dropped. */
     private const FUTURE_TOLERANCE_HOURS = 24;
 
     public function apply(Order $order, string $provider, TrackingResult $result): void
     {
         DB::transaction(function () use ($order, $provider, $result) {
-            // Fresh, locked row: a poll and a webhook for the same parcel are serialised here.
             $locked = Order::query()->lockForUpdate()->find($order->id);
 
             if (! $locked || ! $this->isTrackable($locked)) {
@@ -69,7 +51,6 @@ class ShipmentTrackingService
             $this->advance($locked, $provider, $result->status, $stored);
         });
 
-        // Callers keep using their instance: hand them the state that was just written.
         $fresh = Order::query()->find($order->id);
 
         if ($fresh) {
@@ -127,9 +108,6 @@ class ShipmentTrackingService
             ->values();
     }
 
-    /**
-     * When the next poll of this order is due: the normal interval, or the slow one once the shipment is old.
-     */
     public function nextSyncAt(Order $order): CarbonInterface
     {
         $poll = (array) config('shipping.tracking.poll', []);
@@ -140,9 +118,6 @@ class ShipmentTrackingService
         return now()->addMinutes(max(1, $minutes));
     }
 
-    /**
-     * Is the order still inside the polling window (max_age_days after its first poll)?
-     */
     public function withinPollingWindow(Order $order): bool
     {
         $max = (int) config('shipping.tracking.poll.max_age_days', 45);
@@ -150,17 +125,11 @@ class ShipmentTrackingService
         return $order->tracking_started_at === null || $order->tracking_started_at->gt(now()->subDays($max));
     }
 
-    /**
-     * Postpone the next poll after a failure (without touching the tracking status).
-     */
     public function rescheduleAfterFailure(Order $order): void
     {
         $this->writeSchedule($order->id, ['tracking_next_sync_at' => $this->nextSyncAt($order)]);
     }
 
-    /**
-     * Stop polling this order. Editing its tracking number or carrier starts a new cycle.
-     */
     public function disablePolling(Order $order): void
     {
         $this->writeSchedule($order->id, ['tracking_next_sync_at' => now()->addYears(self::POLLING_DISABLED_YEARS)]);
@@ -210,7 +179,6 @@ class ShipmentTrackingService
             return 0;
         }
 
-        // insertOrIgnore: portable, never aborts the surrounding transaction on a duplicate.
         return ShipmentTrackingEvent::query()->insertOrIgnore(array_values($rows));
     }
 
@@ -238,8 +206,6 @@ class ShipmentTrackingService
         $delivered = false;
 
         if ($moves && $new === TrackingStatus::Delivered && $this->autoDeliver() && $order->status === 'shipped') {
-            // Same path as the admin action (saves the tracking fields too), so the OrderObserver sends the delivered email.
-            // A refused move must not fail the carrier webhook/poll: the tracking data is still saved below.
             try {
                 $order->transitionTo('delivered', null, null, ['source' => 'tracking', 'provider' => $provider]);
                 $delivered = true;
@@ -252,7 +218,6 @@ class ShipmentTrackingService
             $order->save();
         }
 
-        // Checked on the resulting status (not only on a move) so a shipped email that could not be queued is retried
         if (in_array($this->resultingStatus($order), [TrackingStatus::InTransit, TrackingStatus::OutForDelivery, TrackingStatus::Delivered], true)) {
             $this->sendDeferredShippedEmail($order);
         }
@@ -265,7 +230,6 @@ class ShipmentTrackingService
         ]);
     }
 
-    /** Label purchases hold the shipped email back until the carrier has the parcel. */
     private function sendDeferredShippedEmail(Order $order): void
     {
         $shipment = $order->shipments()->where('notify_on_pickup', true)->reorder()->latest('id')->first();
@@ -274,7 +238,6 @@ class ShipmentTrackingService
             return;
         }
 
-        // a parcel first seen as delivered gets the delivered email only
         if ($this->resultingStatus($order) === TrackingStatus::Delivered || app(EmailService::class)->sendOrderShipped($order, $order->tracking_number)) {
             $shipment->update(['notify_on_pickup' => false]);
 
@@ -313,15 +276,6 @@ class ShipmentTrackingService
         return $json;
     }
 
-    /**
-     * When a carrier aggregator reports the real courier waybill number
-     * (distinct from its platform shipment code), promote it onto order.tracking_number and
-     * shipment.tracking_number, while preserving the platform code in shipment.external_id
-     * so future API polls continue to succeed.
-     *
-     * Updating via query builder avoids firing Order::updating, which would otherwise wipe out
-     * tracking_status, tracking_last_synced_at, and the polling schedule.
-     */
     private function promoteCarrierTrackingNumber(Order $locked, string $provider, TrackingResult $result, string $currentNumber): string
     {
         $newNumber = $result->carrierTrackingNumber !== null ? trim($result->carrierTrackingNumber) : '';
@@ -330,8 +284,6 @@ class ShipmentTrackingService
             return $currentNumber;
         }
 
-        // 1. Update the latest active shipment: save current platform code to external_id if empty,
-        // and update shipment.tracking_number to match order.tracking_number so trackingUrl fallback matches.
         $shipment = $locked->shipments()->whereIn('status', Shipment::ACTIVE_STATUSES)->reorder()->latest('id')->first();
         if ($shipment) {
             $shipmentUpdates = ['tracking_number' => $newNumber];
@@ -341,10 +293,8 @@ class ShipmentTrackingService
             Shipment::query()->whereKey($shipment->id)->toBase()->update($shipmentUpdates);
         }
 
-        // 2. Promote order.tracking_number using query builder to avoid firing Order::updating
         Order::query()->whereKey($locked->id)->toBase()->update(['tracking_number' => $newNumber]);
 
-        // Keep in-memory model in sync without marking tracking_number dirty on subsequent advance() save.
         $locked->tracking_number = $newNumber;
         $locked->syncOriginalAttribute('tracking_number');
 
@@ -363,7 +313,6 @@ class ShipmentTrackingService
      */
     private function writeSchedule(int $orderId, array $values): void
     {
-        // Query builder on purpose: no model events, no updated_at bump for scheduling bookkeeping.
         Order::query()->whereKey($orderId)->toBase()->update($values);
     }
 }

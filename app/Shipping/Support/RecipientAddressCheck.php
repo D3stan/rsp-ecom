@@ -4,9 +4,6 @@ namespace App\Shipping\Support;
 
 use App\Shipping\Rates\DTO\RateAddress;
 
-/**
- * Cheap checks on the order's recipient before (and next to) the carriers' own validation. Provider "store".
- */
 final class RecipientAddressCheck
 {
     public const PROVIDER = 'store';

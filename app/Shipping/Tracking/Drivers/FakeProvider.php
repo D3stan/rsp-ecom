@@ -16,33 +16,12 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Throwable;
 
-/**
- * Deterministic stand-in for a real carrier, for tests and local demos. Refused in production.
- *
- * Without a script the answer depends on the end of the tracking number:
- *   ...DELIVERED   InfoReceived -> InTransit -> Delivered
- *   ...OUTFORDEL   InfoReceived -> InTransit -> OutForDelivery
- *   ...TRANSIT     InfoReceived -> InTransit
- *   ...EXCEPTION   InfoReceived -> InTransit -> Exception
- *   ...UNAVAILABLE throws TrackingProviderUnavailable
- *   ...REJECTED    throws TrackingRejected
- *   anything else  InfoReceived
- * Event ids are fixed per number, so the same answer applied twice is deduplicated.
- *
- * Tests can also script exact answers with script(); every call is recorded in $requests.
- *
- * Webhook payload (signed with HMAC-SHA256 of the raw body, header X-Fake-Signature, secret
- * shipping.tracking.drivers.fake.webhook_secret):
- *   {"updates":[{"tracking_number":"..","carrier":"..","status":"in_transit",
- *                "events":[{"id":"..","status":"..","description":"..","location":"..","occurred_at":"ISO-8601"}]}]}
- */
 class FakeProvider implements SupportsWebhooks, TrackingProvider
 {
     use VerifiesHmacSignature;
 
     public const SIGNATURE_HEADER = 'X-Fake-Signature';
 
-    /** Carrier codes this fake refuses to track (to exercise supports()). */
     public array $unsupported = [];
 
     /** @var list<TrackingRequest> every track() call, in order */
@@ -56,9 +35,6 @@ class FakeProvider implements SupportsWebhooks, TrackingProvider
      */
     public function __construct(private readonly array $config = []) {}
 
-    /**
-     * Script the answers for a tracking number: one per call, the last one repeats.
-     */
     public function script(string $trackingNumber, TrackingResult|Throwable ...$outcomes): static
     {
         $this->scripts[$this->key($trackingNumber)] = array_values($outcomes);

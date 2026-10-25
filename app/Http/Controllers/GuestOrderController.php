@@ -8,15 +8,10 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Order-status page reached through the signed link in the customer emails (Order::publicUrl()).
- * No account or cookie is needed: the signature is the proof. Anything else gets the same friendly page.
- */
 class GuestOrderController extends Controller
 {
     public function show(Request $request, string $order): Response
     {
-        // The URL carries a signature: keep it out of search engines, referrers and caches
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
 
         if (! $request->hasValidSignature()) {
@@ -27,7 +22,6 @@ class GuestOrderController extends Controller
             ->with(['orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant', 'shippingAddress', 'trackingEvents'])
             ->first();
 
-        // Same answer as a bad signature, so the page never confirms whether an order number exists
         if (! $model) {
             return $this->invalid($request);
         }
@@ -41,7 +35,6 @@ class GuestOrderController extends Controller
                 'payment_status' => $model->payment_status,
                 'created_at' => $model->created_at?->toISOString(),
                 'tracking_number' => $model->tracking_number,
-                // customer-facing shipment tracking: link, carrier name, status, last update and a safe event list
                 'tracking_status' => $model->tracking_status,
                 'tracking_last_synced_at' => $model->tracking_last_synced_at?->toISOString(),
                 ...$model->customerTrackingArray(),
@@ -55,7 +48,6 @@ class GuestOrderController extends Controller
                 'items' => $model->orderItems->map(fn ($item) => [
                     'id' => $item->id,
                     'name' => $item->product_name ?: $item->product?->name,
-                    // The chosen variant (null when it has since been deleted)
                     'variant_name' => $item->productVariant?->name,
                     'size' => $item->size?->name,
                     'quantity' => $item->quantity,

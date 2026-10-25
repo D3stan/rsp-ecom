@@ -9,22 +9,6 @@ use Carbon\CarbonImmutable;
 use Closure;
 use Throwable;
 
-/**
- * Pure translation of one `GET /v1/shipments/tracking` answer into a TrackingResult. No I/O.
- *
- * Fields used (docs/spediamo/shipments.md): top level `status`, `expectedDeliveryDate`, `deliveryDate`
- * (YYYY-MM-DD), `courier`, `trackingNumber`, `code`, and `tracking[]` items
- * `{date, time{hour,minute,second}, description, longDescription, site, status}`.
- *
- * Event times are wall-clock times in the configured timezone (default Europe/Rome) and are converted to
- * UTC; a wall-clock time skipped by the spring DST jump moves forward by the missing hour, an ambiguous
- * autumn time resolves to its second (winter-time) occurrence (PHP's rule). Events have no id, so externalId stays null
- * and the module dedupes on content.
- *
- * The result status is Delivered when the mapped top-level (or latest event) status is Delivered OR the
- * top-level `deliveryDate` is not empty; otherwise it is the most advanced mapped status (the top-level
- * one wins ties, then the latest event).
- */
 final class SpediamoResponseMapper
 {
     /**
@@ -124,10 +108,6 @@ final class SpediamoResponseMapper
         }
     }
 
-    /**
-     * Normalizes a date that may arrive as a string ("2026-10-21"),
-     * an indexed array ([2026, 10, 21]), or a Jackson/Java object (['year' => 2026, ...]).
-     */
     private function parseDateString(mixed $date): ?string
     {
         if (is_string($date) || is_numeric($date)) {
@@ -170,7 +150,6 @@ final class SpediamoResponseMapper
             return TrackingStatus::Delivered;
         }
 
-        // Candidates in priority order: top level, then events newest first; the first one wins a tie.
         $best = $top;
 
         foreach (array_reverse($events) as $event) {

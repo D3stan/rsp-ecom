@@ -2,6 +2,9 @@
 
 use App\Jobs\SendOrderEmail;
 use App\Jobs\SendWelcomeEmail;
+use App\Mail\OrderConfirmation;
+use App\Mail\OrderShipped;
+use App\Mail\TestEmail;
 use App\Mail\WelcomeEmail;
 use App\Models\Order;
 use App\Models\OrderEmail;
@@ -10,12 +13,15 @@ use App\Models\User;
 use App\Notifications\PendingUserEmailVerification;
 use App\Providers\AppServiceProvider;
 use App\Services\EmailService;
+use App\Settings\Settings;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 
@@ -154,7 +160,7 @@ it('the verification notification is queued after commit and skips deleted recor
 it('the verification notification still delivers on the sync queue', function () {
     $pending = PendingUserVerification::factory()->create(['email' => 'new@example.test']);
 
-    \Illuminate\Support\Facades\Notification::route('mail', $pending->email)
+    Notification::route('mail', $pending->email)
         ->notify(new PendingUserEmailVerification($pending));
 
     expect(app('mailer')->getSymfonyTransport()->messages())->toHaveCount(1);
@@ -164,10 +170,10 @@ it('the verification notification still delivers on the sync queue', function ()
 
 it('mailables carry no explicit from, so the configured no-reply address is used', function () {
     foreach ([
-        new \App\Mail\OrderConfirmation(pendingOrder()),
-        new \App\Mail\OrderShipped(pendingOrder(), 'T'),
-        new \App\Mail\WelcomeEmail(User::factory()->create()),
-        new \App\Mail\TestEmail,
+        new OrderConfirmation(pendingOrder()),
+        new OrderShipped(pendingOrder(), 'T'),
+        new WelcomeEmail(User::factory()->create()),
+        new TestEmail,
     ] as $mailable) {
         expect($mailable->envelope()->from)->toBeNull();
     }
@@ -212,7 +218,7 @@ it('logs a critical warning at boot when production uses the log mailer', functi
 
 it('stays quiet outside production and with a safe production config', function () {
     // The check reads the effective support address from the settings (config() is overlaid after this provider boots)
-    app(\App\Settings\Settings::class)->set('contact.support_email', 'help@shop.test');
+    app(Settings::class)->set('contact.support_email', 'help@shop.test');
 
     Log::shouldReceive('critical')->never();
 
@@ -245,7 +251,7 @@ it('backfills order_emails from the legacy confirmation flags', function () {
     // the unique key blocks a second row for the same order/type/fingerprint
     expect(fn () => DB::table('order_emails')->insert([
         'order_id' => $sent->id, 'type' => 'order_confirmation', 'fingerprint' => 'default',
-    ]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+    ]))->toThrow(UniqueConstraintViolationException::class);
 
     // down + up are reversible
     $migration->down();

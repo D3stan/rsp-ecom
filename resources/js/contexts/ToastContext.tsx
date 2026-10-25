@@ -38,14 +38,12 @@ export function ToastProvider({ children }: ToastProviderProps) {
 
         setToasts((prev) => [...prev, newToast]);
 
-        // Auto remove toast after duration
         const duration = toast.duration || 5000;
         setTimeout(() => {
             removeToast(id);
         }, duration);
     };
 
-    // Mark as leaving first so the exit animation can play, then unmount
     const removeToast = (id: string) => {
         setToasts((prev) => prev.map((toast) => (toast.id === id ? { ...toast, leaving: true } : toast)));
         setTimeout(() => {

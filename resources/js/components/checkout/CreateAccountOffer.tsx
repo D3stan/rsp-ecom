@@ -11,10 +11,6 @@ interface CreateAccountOfferProps {
     email: string;
 }
 
-/**
- * On the success page of a guest buyer: one password turns this order's email into an account (the normal
- * registration, with the email verification). Orders placed with that email join the account once it is verified.
- */
 export default function CreateAccountOffer({ name, email }: CreateAccountOfferProps) {
     const { t } = useTranslation();
     const { data, setData, post, processing, errors, reset } = useForm({ name, email, password: '', password_confirmation: '' });
@@ -54,7 +50,7 @@ export default function CreateAccountOffer({ name, email }: CreateAccountOfferPr
                     />
                 </div>
             </div>
-            {/* the email is registered already, or not valid for a new account */}
+
             <InputError message={errors.email} className="mt-2" />
             <Button type="submit" className="mt-3 bg-black text-white hover:bg-gray-800" disabled={processing}>
                 {t('auth.register.submit')}

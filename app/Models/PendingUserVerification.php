@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class PendingUserVerification extends Model
@@ -25,25 +24,16 @@ class PendingUserVerification extends Model
         'password' => 'hashed',
     ];
 
-    /**
-     * Generate a new verification token
-     */
     public static function generateToken(): string
     {
         return Str::random(64);
     }
 
-    /**
-     * Check if the token has expired
-     */
     public function isExpired(): bool
     {
         return $this->token_expires_at->isPast();
     }
 
-    /**
-     * Create a verified user from pending verification
-     */
     public function createVerifiedUser(): User
     {
         $user = User::create([
@@ -55,15 +45,11 @@ class PendingUserVerification extends Model
             'is_active' => true,
         ]);
 
-        // Delete the pending verification record
         $this->delete();
 
         return $user;
     }
 
-    /**
-     * Regenerate the verification token
-     */
     public function regenerateToken(): void
     {
         $this->update([

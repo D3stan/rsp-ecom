@@ -1,19 +1,12 @@
-/**
- * Client-side checks for the review photo picker. The server enforces the same limits (and sniffs the content);
- * these only spare the customer a failed upload.
- */
 
 export interface PhotoLimits {
     max_files: number;
-    /** bytes, per photo */
     max_file_size: number;
-    /** bytes, the whole multipart request */
     max_request_size: number;
 }
 
 export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-/** Room left in the request for the rating, the comment and the multipart overhead. */
 const REQUEST_HEADROOM = 64 * 1024;
 
 export type PhotoProblem =
@@ -22,7 +15,6 @@ export type PhotoProblem =
     | { key: 'too_large'; name: string }
     | { key: 'total_too_large' };
 
-/** Add the picked files to the current selection, dropping (and reporting) the ones the server would refuse. */
 export function addPhotos(current: File[], incoming: File[], limits: PhotoLimits): { files: File[]; problems: PhotoProblem[] } {
     const files = [...current];
     const problems: PhotoProblem[] = [];

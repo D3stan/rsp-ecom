@@ -9,10 +9,6 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
-/**
- * Critical internal alert: Stripe reported a successful payment but no order could be created.
- * Not tied to an order, so it carries plain scalars and is queued as a mailable of its own.
- */
 class PaidOrderMissingAlert extends Mailable implements ShouldQueue
 {
     use HasLogo, Queueable;

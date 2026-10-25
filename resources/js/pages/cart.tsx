@@ -29,7 +29,6 @@ interface CartItem {
         name: string;
         price: number;
         image: string | null;
-        /** Stock of the variant */
         max_quantity: number;
     } | null;
     quantity: number;
@@ -64,12 +63,10 @@ export default function Cart() {
     const formatCurrency = useMoney();
     const { addToast } = useToast();
 
-    // Admin settings (Settings > Orders): minimum order amount (products only, 0 = off) and guest checkout switch
     const minAmount = useSetting('orders.min_amount', 0);
     const guestCheckoutEnabled = useSetting('orders.guest_checkout_enabled', true);
     const maxQtyPerLine = useSetting('orders.max_qty_per_line', 0);
 
-    // Highest quantity a line can reach: its variant's stock, capped by orders.max_qty_per_line (0 = unlimited)
     const lineMax = (item: CartItem): number => {
         const stock = item.variant ? item.variant.max_quantity : Infinity;
         return maxQtyPerLine > 0 ? Math.min(stock, maxQtyPerLine) : stock;
@@ -104,8 +101,7 @@ export default function Cart() {
                 {
                     preserveScroll: true,
                     onSuccess: () => {
-                        // Cart will be refreshed automatically by Inertia
-                        cartService.triggerCartUpdate(); // Update header cart count
+                        cartService.triggerCartUpdate();
                     },
                     onError: (errors) => {
                         console.error('Failed to update cart:', errors);
@@ -127,8 +123,7 @@ export default function Cart() {
             await router.delete(`/cart/items/${itemId}`, {
                 preserveScroll: true,
                 onSuccess: () => {
-                    // Cart will be refreshed automatically by Inertia
-                    cartService.triggerCartUpdate(); // Update header cart count
+                    cartService.triggerCartUpdate();
                 },
                 onError: (errors) => {
                     console.error('Failed to remove item:', errors);
@@ -149,14 +144,10 @@ export default function Cart() {
         }
 
         if (needsSignIn) {
-            // Guest checkout is switched off: the customer has to sign in first. The checkout details page requires
-            // a login, so the server remembers it as the intended URL and returns there after sign-in.
             router.get(route('checkout.details'));
         } else if (auth?.user) {
-            // User is authenticated, proceed to checkout details page
             router.get('/checkout');
         } else {
-            // User is not authenticated, redirect to guest checkout details page
             router.get('/guest/checkout');
         }
     };
@@ -186,7 +177,6 @@ export default function Cart() {
                     description: data.message,
                 });
                 setCouponInput('');
-                // Reload page to show updated totals
                 router.reload();
             } else {
                 addToast({
@@ -225,7 +215,6 @@ export default function Cart() {
                     title: t('cart.coupon_removed'),
                     description: data.message,
                 });
-                // Reload page to show updated totals
                 router.reload();
             }
         } catch (error) {
@@ -247,7 +236,7 @@ export default function Cart() {
                     <Header />
 
                     <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-                        {/* Empty Cart State */}
+
                         <div className="text-center">
                             <div className="mb-6 flex justify-center">
                                 <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gray-100">
@@ -279,7 +268,7 @@ export default function Cart() {
                 <Header />
 
                 <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-                    {/* Cart Header */}
+
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-gray-900">{t('cart.title')}</h1>
                         <p className="mt-2 text-gray-600">
@@ -291,7 +280,7 @@ export default function Cart() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                        {/* Cart Items */}
+
                         <div className="space-y-4 lg:col-span-2">
                             {cartItems.map((item) => (
                                 <div
@@ -300,9 +289,9 @@ export default function Cart() {
                                         removingId === item.id ? 'cart-item-removing' : ''
                                     }`}
                                 >
-                                    {/* Top Section: Image and Product Details */}
+
                                     <div className="mb-4 flex items-start space-x-4">
-                                        {/* Product Image - Left Side */}
+
                                         <Link href={`/products/${item.product.slug}`} className="flex-shrink-0">
                                             <div className="h-20 w-20 overflow-hidden rounded-lg bg-gray-100 sm:h-24 sm:w-24">
                                                 <img
@@ -314,7 +303,6 @@ export default function Cart() {
                                             </div>
                                         </Link>
 
-                                        {/* Product Details - Right Side */}
                                         <div className="min-w-0 flex-1">
                                             <Link href={`/products/${item.product.slug}`} className="block transition-colors hover:text-blue-600">
                                                 <h3 className="mb-2 line-clamp-2 text-lg font-semibold text-gray-900">{item.product.name}</h3>
@@ -330,7 +318,6 @@ export default function Cart() {
                                                 {item.variant?.name && <p className="text-sm text-gray-600">{item.variant.name}</p>}
                                             </div>
 
-                                            {/* Quantity Controls */}
                                             <div className="mt-3 flex items-center space-x-2">
                                                 <Label className="text-sm font-medium text-gray-700">{t('cart.quantity')}:</Label>
                                                 <div className="flex items-center rounded-lg border border-gray-300 text-black">
@@ -358,7 +345,6 @@ export default function Cart() {
                                         </div>
                                     </div>
 
-                                    {/* Bottom Section: Price and Delete Button */}
                                     <div className="flex items-center justify-between border-t border-gray-100 pt-4">
                                         <div>
                                             <p className="text-lg font-semibold text-gray-900">{formatCurrency(item.total)}</p>
@@ -379,10 +365,9 @@ export default function Cart() {
                             ))}
                         </div>
 
-                        {/* Cart Summary */}
                         <div className="lg:col-span-1">
                             <div className="space-y-6 rounded-lg bg-gray-50 p-6">
-                                {/* Coupon Section */}
+
                                 {couponCode ? (
                                     <div className="rounded-lg bg-green-50 p-3">
                                         <div className="flex items-center justify-between">
@@ -426,7 +411,6 @@ export default function Cart() {
                                     </div>
                                 )}
 
-                                {/* Order Summary */}
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-gray-700">
                                         <span>{t('cart.subtotal')}</span>
@@ -457,9 +441,8 @@ export default function Cart() {
                                     </div>
                                 )}
 
-                                {/* Checkout Buttons */}
                                 <div className="space-y-3">
-                                    {/* Main Checkout Button - Hidden on mobile, shown on desktop */}
+
                                     <Button
                                         onClick={proceedToCheckout}
                                         disabled={belowMinimum}
@@ -470,7 +453,6 @@ export default function Cart() {
                                         {needsSignIn ? t('cart.sign_in_to_continue') : t('cart.proceed_to_checkout')}
                                     </Button>
 
-                                    {/* Alternative options for non-authenticated users - Hidden on mobile */}
                                     {!auth?.user && !needsSignIn && (
                                         <div className="hidden text-center md:block">
                                             <p className="mb-2 text-sm text-gray-600">{t('cart.already_have_account')}</p>
@@ -481,7 +463,6 @@ export default function Cart() {
                                     )}
                                 </div>
 
-                                {/* Continue Shopping - Hidden on mobile */}
                                 <Button variant="outline" asChild className="hidden w-full md:flex">
                                     <Link href="/products">{t('cart.continue_shopping')}</Link>
                                 </Button>
@@ -490,7 +471,6 @@ export default function Cart() {
                     </div>
                 </div>
 
-                {/* Mobile Sticky Footer */}
                 {isMobile && (
                     <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-200 bg-white p-4">
                         <div className="flex items-center justify-between space-x-4">

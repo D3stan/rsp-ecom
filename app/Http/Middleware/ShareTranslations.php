@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Support\Locales;
 use Closure;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -13,7 +14,7 @@ class ShareTranslations extends Middleware
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -27,8 +28,8 @@ class ShareTranslations extends Middleware
             $translations = $this->getTranslations($locale);
 
             // Share translations with all Inertia responses
-            \Inertia\Inertia::share('translations', $translations);
-            \Inertia\Inertia::share('locale', $locale);
+            Inertia::share('translations', $translations);
+            Inertia::share('locale', $locale);
         }
 
         return $response;

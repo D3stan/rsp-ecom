@@ -2,16 +2,6 @@
 
 namespace App\Domain\Orders;
 
-/**
- * The order lifecycle: which status an order may move to from the one it is in. Every status change goes through
- * Order::transitionTo(), which enforces this map.
- *
- *   pending    -> processing, cancelled
- *   processing -> shipped, cancelled
- *   shipped    -> delivered, processing ("undo ship": needs a reason)
- *   delivered  -> (none; refunds after delivery do not change the status)
- *   cancelled  -> (none)
- */
 final class OrderTransitions
 {
     /** @var array<string, list<string>> */

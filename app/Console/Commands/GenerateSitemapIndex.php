@@ -2,18 +2,19 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\SitemapIndex;
 use Spatie\Sitemap\Tags\Url;
-use Carbon\Carbon;
 
 class GenerateSitemapIndex extends Command
 {
     protected $signature = 'generate:sitemap-index {--force : Force regeneration even if files exist}';
+
     protected $description = 'Generate sitemap index with separate sitemaps for different content types';
 
     public function handle(): int
@@ -51,10 +52,10 @@ class GenerateSitemapIndex extends Command
         $sitemapIndex->writeToFile($sitemapIndexPath);
 
         $this->info("Sitemap index generated with {$productCount} products across multiple sitemaps!");
-        $this->info('Sitemap index saved to: ' . $sitemapIndexPath);
+        $this->info('Sitemap index saved to: '.$sitemapIndexPath);
 
         // Update robots.txt
-        $this->updateRobotsTxt($baseUrl . '/sitemap.xml');
+        $this->updateRobotsTxt($baseUrl.'/sitemap.xml');
 
         return self::SUCCESS;
     }
@@ -62,7 +63,7 @@ class GenerateSitemapIndex extends Command
     private function generateMainSitemap(): void
     {
         $this->info('Generating main sitemap...');
-        
+
         $sitemap = Sitemap::create();
 
         // Add homepage
@@ -77,31 +78,31 @@ class GenerateSitemapIndex extends Command
         $staticPages = [
             '/products' => [
                 'frequency' => Url::CHANGE_FREQUENCY_HOURLY,
-                'priority' => 0.9
+                'priority' => 0.9,
             ],
             '/about' => [
                 'frequency' => Url::CHANGE_FREQUENCY_MONTHLY,
-                'priority' => 0.7
+                'priority' => 0.7,
             ],
             '/contact' => [
                 'frequency' => Url::CHANGE_FREQUENCY_MONTHLY,
-                'priority' => 0.6
+                'priority' => 0.6,
             ],
             '/privacy' => [
                 'frequency' => Url::CHANGE_FREQUENCY_YEARLY,
-                'priority' => 0.3
+                'priority' => 0.3,
             ],
             '/terms' => [
                 'frequency' => Url::CHANGE_FREQUENCY_YEARLY,
-                'priority' => 0.3
+                'priority' => 0.3,
             ],
             '/shipping-returns' => [
                 'frequency' => Url::CHANGE_FREQUENCY_MONTHLY,
-                'priority' => 0.5
+                'priority' => 0.5,
             ],
             '/faq' => [
                 'frequency' => Url::CHANGE_FREQUENCY_MONTHLY,
-                'priority' => 0.5
+                'priority' => 0.5,
             ],
         ];
 
@@ -120,7 +121,7 @@ class GenerateSitemapIndex extends Command
     private function generateCategoriesSitemap(): void
     {
         $this->info('Generating categories sitemap...');
-        
+
         $sitemap = Sitemap::create();
 
         Category::where('is_active', true)
@@ -148,7 +149,7 @@ class GenerateSitemapIndex extends Command
     private function generateProductsSitemap(int $page, int $limit): void
     {
         $this->info("Generating products sitemap {$page}...");
-        
+
         $sitemap = Sitemap::create();
         $offset = ($page - 1) * $limit;
 
@@ -175,9 +176,10 @@ class GenerateSitemapIndex extends Command
         $this->info('Updating robots.txt...');
         $robotsTxtPath = public_path('robots.txt');
 
-        if (!File::exists($robotsTxtPath)) {
+        if (! File::exists($robotsTxtPath)) {
             $this->warn('robots.txt not found. Creating a new one.');
             File::put($robotsTxtPath, "User-agent: *\nSitemap: {$sitemapUrl}");
+
             return;
         }
 
@@ -190,13 +192,13 @@ class GenerateSitemapIndex extends Command
             $content = preg_replace('/Sitemap: .*/', $sitemapLine, $content);
         } else {
             // Add new sitemap entry
-            $content = rtrim($content) . "\n\n{$sitemapLine}";
+            $content = rtrim($content)."\n\n{$sitemapLine}";
         }
-        
+
         // Replace the placeholder comment if it exists
         $content = str_replace('# Sitemap location will be dynamically generated', '', $content);
 
-        File::put($robotsTxtPath, trim($content) . "\n");
+        File::put($robotsTxtPath, trim($content)."\n");
         $this->info('robots.txt updated successfully.');
     }
 }

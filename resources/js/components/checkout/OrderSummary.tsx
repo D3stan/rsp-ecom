@@ -2,7 +2,6 @@ import ShippingLine from '@/components/checkout/ShippingLine';
 import { formatRate, useMoney } from '@/hooks/use-money';
 import { useTranslation } from '@/hooks/useTranslation';
 
-/** One line of the checkout details props (CheckoutController::summaryLines). */
 export interface SummaryLine {
     id: number;
     name: string;
@@ -22,11 +21,9 @@ interface OrderSummaryProps {
     freeShippingRemaining?: number | null;
     total: number;
     taxAmount: number;
-    /** VAT rate (percent) the VAT portion is computed at; null when no VAT breakdown applies */
     taxRate: number | null;
 }
 
-/** What is being bought and what it costs: the lines, then subtotal, discount, shipping, total and the VAT included. */
 export default function OrderSummary({
     lines,
     subtotal,

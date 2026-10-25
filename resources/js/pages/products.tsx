@@ -80,7 +80,6 @@ interface ProductsPageProps extends SharedData {
     pagination: PaginationData;
 }
 
-/** Whole-unit amounts in the shop currency (setting store.currency) and the visitor's language: "25 €", "$25". */
 function useWholeMoney(): (amount: number) => string {
     const { locale } = useTranslation();
     const currency = useSetting('store.currency', 'EUR');
@@ -93,7 +92,6 @@ export default function Products() {
     const { t } = useTranslation();
     const formatWhole = useWholeMoney();
 
-    // Predefined price ranges with translations
     const PRICE_RANGES = [
         { label: t('products.price_ranges.all_prices'), min: null, max: null },
         { label: t('products.price_ranges.under_25', { min: formatWhole(0), max: formatWhole(25) }), min: 0, max: 25 },
@@ -104,7 +102,6 @@ export default function Products() {
         { label: t('products.price_ranges.over_500', { min: formatWhole(500) }), min: 500, max: null },
     ];
 
-    // Local state for filters
     const [searchTerm, setSearchTerm] = useState(filters.search);
     const [selectedCategory, setSelectedCategory] = useState(filters.category || 'all');
     const [priceMin, setPriceMin] = useState(filters.min_price ? parseInt(filters.min_price) : priceRange.min);
@@ -113,9 +110,6 @@ export default function Products() {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-    // The single way to apply filters: the current state plus the change being applied (its value is not in the
-    // state yet), so search, category, price and sort always travel together. The bounds are primitives so that a
-    // new priceRange object on every visit does not re-trigger the search debounce below.
     const priceRangeMin = priceRange?.min;
     const priceRangeMax = priceRange?.max;
     const applyFilters = useCallback(
@@ -140,7 +134,6 @@ export default function Products() {
         [searchTerm, selectedCategory, priceMin, priceMax, sortBy, priceRangeMin, priceRangeMax],
     );
 
-    // Only debounce search, don't auto-apply other filters
     useEffect(() => {
         const timer = setTimeout(() => {
             if (searchTerm !== filters.search) {
@@ -178,12 +171,10 @@ export default function Products() {
                 preserveState: true,
                 preserveScroll: true,
                 onSuccess: () => {
-                    // Scroll to the products section after page change
                     const productsSection = document.querySelector('[data-products-section]');
                     if (productsSection) {
                         productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     } else {
-                        // Fallback: scroll to top
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }
                 },
@@ -196,16 +187,14 @@ export default function Products() {
             <Head title={t('products.title')} />
 
             <div className="min-h-screen bg-gray-50">
-                {/* Header */}
+
                 <Header />
 
-                {/* Main Content */}
                 <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                    {/* Page Header */}
+
                     <div className="mb-10">
                         <h1 className="mb-6 text-4xl font-bold text-gray-900">{t('products.all_products')}</h1>
 
-                        {/* Search Bar */}
                         <div className="flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
                             <div className="max-w-2xl flex-1">
                                 <div className="relative">
@@ -220,9 +209,8 @@ export default function Products() {
                                 </div>
                             </div>
 
-                            {/* Controls */}
                             <div className="flex items-center space-x-4">
-                                {/* Mobile Filter Button */}
+
                                 <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                                     <SheetTrigger asChild>
                                         <Button variant="outline" size="lg" className="lg:hidden">
@@ -253,7 +241,6 @@ export default function Products() {
                                     </SheetContent>
                                 </Sheet>
 
-                                {/* Sort Dropdown */}
                                 <Select
                                     value={sortBy}
                                     onValueChange={(value) => {
@@ -286,7 +273,6 @@ export default function Products() {
                                     </SelectContent>
                                 </Select>
 
-                                {/* View Mode Toggle */}
                                 <div className="hidden rounded-md border border-gray-300 md:flex">
                                     <Button
                                         variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -310,7 +296,7 @@ export default function Products() {
                     </div>
 
                     <div className="flex gap-8">
-                        {/* Desktop Filters Sidebar */}
+
                         <div className="hidden w-72 flex-shrink-0 lg:block">
                             <div className="filters-modal-content sticky top-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                                 <FilterSection
@@ -329,9 +315,8 @@ export default function Products() {
                             </div>
                         </div>
 
-                        {/* Products Grid */}
                         <div className="flex-1" data-products-section>
-                            {/* Results Summary */}
+
                             <div className="mb-8 flex items-center justify-between">
                                 <p className="text-lg font-medium text-gray-700">
                                     {t('products.showing_results', {
@@ -342,7 +327,6 @@ export default function Products() {
                                 </p>
                             </div>
 
-                            {/* Products Grid/List */}
                             {products.data.length > 0 ? (
                                 <>
                                     <div
@@ -353,10 +337,9 @@ export default function Products() {
                                         ))}
                                     </div>
 
-                                    {/* Pagination */}
                                     {pagination.last_page > 1 && (
                                         <div className="mt-12">
-                                            {/* Mobile Pagination */}
+
                                             <div className="flex items-center justify-between sm:hidden">
                                                 <Button
                                                     variant="outline"
@@ -383,7 +366,6 @@ export default function Products() {
                                                 </Button>
                                             </div>
 
-                                            {/* Desktop Pagination */}
                                             <div className="hidden justify-center sm:flex">
                                                 <div className="flex items-center space-x-1">
                                                     <Button
@@ -396,13 +378,11 @@ export default function Products() {
                                                         {t('products.previous')}
                                                     </Button>
 
-                                                    {/* Dynamic Page Numbers with ellipsis */}
                                                     {(() => {
                                                         const current = pagination.current_page;
                                                         const total = pagination.last_page;
                                                         const pages = [];
 
-                                                        // Always show first page
                                                         if (current > 3) {
                                                             pages.push(
                                                                 <Button key={1} variant="outline" size="sm" onClick={() => handlePageChange(1)}>
@@ -418,7 +398,6 @@ export default function Products() {
                                                             }
                                                         }
 
-                                                        // Show pages around current
                                                         for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
                                                             pages.push(
                                                                 <Button
@@ -432,7 +411,6 @@ export default function Products() {
                                                             );
                                                         }
 
-                                                        // Always show last page
                                                         if (current < total - 2) {
                                                             if (current < total - 3) {
                                                                 pages.push(
@@ -489,7 +467,6 @@ export default function Products() {
     );
 }
 
-// Filter Section Component
 interface FilterSectionProps {
     categories: Category[];
     priceRange: { min: number; max: number };
@@ -532,14 +509,13 @@ function FilterSection({
                 </Button>
             </div>
 
-            {/* Categories */}
             <div className="space-y-3">
                 <Label className="block text-sm font-semibold text-gray-900">{t('products.category')}</Label>
                 <Select
                     value={selectedCategory}
                     onValueChange={(value) => {
                         setSelectedCategory(value);
-                        closeModal?.(); // mobile sheet
+                        closeModal?.();
                         applyFilters({ category: value });
                     }}
                 >
@@ -566,7 +542,6 @@ function FilterSection({
                 </Select>
             </div>
 
-            {/* Price Range */}
             <div className="space-y-4">
                 <Label className="block text-sm font-semibold text-gray-900">{t('products.price_range')}</Label>
                 <div className="space-y-3">
@@ -596,7 +571,6 @@ function FilterSection({
                     ))}
                 </div>
 
-                {/* Custom Range Inputs */}
                 <div className="mt-4 space-y-3 border-t border-gray-200 pt-4">
                     <Label className="block text-sm font-semibold text-gray-900">{t('products.custom_range')}</Label>
                     <div className="grid grid-cols-2 gap-3">

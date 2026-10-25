@@ -7,9 +7,6 @@ use App\Shipping\Labels\Contracts\LabelProvider;
 use App\Shipping\Rates\Contracts\RateProvider;
 use App\Shipping\Tracking\Contracts\TrackingProvider;
 
-/**
- * Self-contained manifest for the DVA Express shipping provider module.
- */
 final class DvaexpressManifest implements ShippingProviderManifest
 {
     public static function name(): string

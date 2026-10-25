@@ -18,7 +18,6 @@ interface AddressesProps {
 
 export default function Addresses({ addresses, provinces, max }: AddressesProps) {
     const { t } = useTranslation();
-    // 'new', the id of the entry being edited, or null
     const [editing, setEditing] = useState<'new' | number | null>(null);
     const [deleting, setDeleting] = useState<AddressEntry | null>(null);
 

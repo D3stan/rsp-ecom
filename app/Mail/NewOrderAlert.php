@@ -6,13 +6,10 @@ use App\Mail\Traits\DescribesOrder;
 use App\Mail\Traits\HasLogo;
 use App\Models\Order;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
-/**
- * Internal alert to the shop owner for a new paid order. Not customer-facing: no no-reply notice.
- * Rendered by SendOrderEmail (never queued itself).
- */
 class NewOrderAlert extends Mailable
 {
     use DescribesOrder, HasLogo;
@@ -56,7 +53,7 @@ class NewOrderAlert extends Mailable
     }
 
     /**
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

@@ -12,21 +12,21 @@ class EnsureCheckoutAccess
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
         // Ensure user is authenticated
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login')->with('message', 'Please log in to access checkout.');
         }
 
         // For checkout pages, ensure user has items in cart
-        if ($request->is('checkout') && !$request->is('checkout/success') && !$request->is('checkout/cancel')) {
+        if ($request->is('checkout') && ! $request->is('checkout/success') && ! $request->is('checkout/cancel')) {
             $user = Auth::user();
             $cart = $user->getCurrentCart();
-            
-            if (!$cart || $cart->cartItems()->count() === 0) {
+
+            if (! $cart || $cart->cartItems()->count() === 0) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
         }

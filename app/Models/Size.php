@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Size extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'name',
         'length',
@@ -27,13 +28,11 @@ class Size extends Model
         'shipping_cost' => 'decimal:2',
     ];
 
-    // Relationships
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
     }
 
-    // Calculate volume for shipping purposes
     public function getVolumeAttribute(): float
     {
         return $this->length * $this->width * $this->height;

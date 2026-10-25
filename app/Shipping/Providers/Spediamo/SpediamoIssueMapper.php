@@ -6,7 +6,6 @@ use App\Shipping\Support\ShippingIssue;
 
 final class SpediamoIssueMapper
 {
-    /** Spediamo request field => our recipient field (the order's address form uses the same names). */
     private const RECIPIENT = [
         'recipientPostalCode' => 'recipient.postal_code',
         'recipientTown' => 'recipient.city',
@@ -29,7 +28,7 @@ final class SpediamoIssueMapper
 
         foreach ($errors as $error) {
             if (! is_array($error)) {
-                continue; // scalar errors have no field: the exception message is all there is
+                continue;
             }
 
             $raw = (string) ($error['field'] ?? '');

@@ -6,6 +6,7 @@ use App\Mail\Traits\DescribesOrder;
 use App\Mail\Traits\HasLogo;
 use App\Models\Order;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
@@ -17,18 +18,12 @@ class OrderShipped extends Mailable
 
     public $trackingNumber;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(Order $order, $trackingNumber = null)
     {
         $this->order = $order;
         $this->trackingNumber = $trackingNumber;
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -36,9 +31,6 @@ class OrderShipped extends Mailable
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         $trackingNumber = $this->trackingNumber !== null && trim((string) $this->trackingNumber) !== ''
@@ -51,7 +43,6 @@ class OrderShipped extends Mailable
             with: $this->orderContext($this->order) + [
                 'trackingNumber' => $trackingNumber,
                 'carrierName' => $trackingNumber ? $this->order->trackingCarrierName() : null,
-                // A link only when the carrier's tracking page is known; otherwise the number is shown alone
                 'trackingUrl' => $trackingNumber ? $this->order->trackingUrl($trackingNumber) : null,
                 'delivery' => $this->deliveryEstimate(),
                 'logoUrl' => $this->getLogoUrl(),
@@ -62,7 +53,7 @@ class OrderShipped extends Mailable
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

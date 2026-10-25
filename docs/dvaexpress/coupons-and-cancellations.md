@@ -2,7 +2,7 @@
 
 Validate shipment coupons and request eligible order cancellations.
 
-[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../dvaexpress-doc.html)
+[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../vendor/dvaexpress-doc.html)
 
 
 ### `POST https://api.easyparcel.it/checkcoupon/{APIKEY}`

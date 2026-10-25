@@ -8,48 +8,48 @@ use App\Models\ReviewMedia;
 use App\Services\FileUploadConfigService;
 use App\Services\Reviews\InvalidReviewPhoto;
 use App\Services\Reviews\ReviewPhotoProcessor;
+use Artesaos\SEOTools\Facades\SEOMeta;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
-use Artesaos\SEOTools\Facades\SEOMeta;
 
 class ReviewController extends Controller
 {
     public function index()
     {
-        SEOMeta::setTitle('My Reviews – ' . settings('store.name'));
+        SEOMeta::setTitle('My Reviews – '.settings('store.name'));
         SEOMeta::setDescription('View and manage your product reviews.');
-        
+
         $user = Auth::user();
-        
+
         $reviews = $user->reviews()
             ->with(['product:id,name,slug,price,images'])
             ->orderBy('created_at', 'desc')
             ->paginate(12);
-            
+
         return Inertia::render('Reviews/Index', [
             'reviews' => $reviews,
         ]);
     }
-    
+
     public function create(Product $product)
     {
         // Set noindex for review form
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('Write Review for ' . $product->name . ' – ' . settings('store.name'));
-        
+        SEOMeta::setTitle('Write Review for '.$product->name.' – '.settings('store.name'));
+
         $user = Auth::user();
-        
+
         // Check if user has already reviewed this product
         $existingReview = $user->reviews()->where('product_id', $product->id)->first();
-        
+
         if ($existingReview) {
             return redirect()->route('orders.index')->with('error', 'You have already reviewed this product.');
         }
-        
+
         // Check if user has ordered this product
         $hasOrdered = $user->orders()
             ->whereHas('orderItems', function ($query) use ($product) {
@@ -57,11 +57,11 @@ class ReviewController extends Controller
             })
             ->where('status', 'delivered')
             ->exists();
-            
-        if (!$hasOrdered) {
+
+        if (! $hasOrdered) {
             return redirect()->route('orders.index')->with('error', 'You can only review products you have purchased.');
         }
-        
+
         return Inertia::render('Reviews/Create', [
             'product' => [
                 'id' => $product->id,
@@ -77,7 +77,7 @@ class ReviewController extends Controller
             ],
         ]);
     }
-    
+
     public function store(Request $request, ReviewPhotoProcessor $photoProcessor)
     {
         $maxPhotoKb = max(100, (int) ceil(FileUploadConfigService::getMaxFileUploadSize() / 1024));
@@ -96,16 +96,16 @@ class ReviewController extends Controller
             'photos.*.mimetypes' => __('reviews.photos.invalid'),
             'photos.*.max' => __('reviews.photos.too_large'),
         ]);
-        
+
         $user = Auth::user();
-        
+
         // Check if user has already reviewed this product
         $existingReview = $user->reviews()->where('product_id', $request->product_id)->first();
-        
+
         if ($existingReview) {
             return redirect()->route('orders.index')->with('error', 'You have already reviewed this product.');
         }
-        
+
         // Check if user has ordered this product
         $hasOrdered = $user->orders()
             ->whereHas('orderItems', function ($query) use ($request) {
@@ -113,11 +113,11 @@ class ReviewController extends Controller
             })
             ->where('status', 'delivered')
             ->exists();
-            
-        if (!$hasOrdered) {
+
+        if (! $hasOrdered) {
             return redirect()->route('orders.index')->with('error', 'You can only review products you have purchased.');
         }
-        
+
         // Decode and re-encode every photo before anything is saved: an unreadable file is a validation error
         $photos = [];
         foreach (array_values($request->file('photos', [])) as $index => $file) {

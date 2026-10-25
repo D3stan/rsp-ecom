@@ -52,7 +52,6 @@ interface ContactInformation {
     email: string;
 }
 
-/** Validated fields in page order: server error key (CheckoutController::checkoutRules) => input id */
 const FIELDS: ReadonlyArray<readonly [string, string]> = [
     ['email', 'email'],
     ['shipping_address.first_name', 'first_name'],
@@ -76,7 +75,6 @@ interface CheckoutDetailsProps extends SharedData {
     subtotal: number;
     shippingCost: number;
     taxAmount: number;
-    // VAT rate (percent) the VAT portion is computed at; null when no VAT breakdown applies
     taxRate: number | null;
     discountAmount?: number;
     couponCode?: string;
@@ -84,20 +82,15 @@ interface CheckoutDetailsProps extends SharedData {
     total: number;
     totalItems: number;
     freeShippingRemaining?: number | null;
-    // The address book of a signed-in customer, default first; the default prefills the form
     savedAddresses?: SavedAddress[];
-    // Italian provinces (code => name) for the state dropdown
     provinces: Record<string, string>;
 }
 
-/** Digits, spaces and phone punctuation, 6-15 digits (mirrors App\Support\AddressRules) */
 const isPhoneValid = (value: string): boolean => {
     const digits = value.replace(/\D/g, '').length;
 
     return /^\+?[\d\s().\/-]+$/.test(value) && digits >= 6 && digits <= 15;
 };
-
-
 
 export default function CheckoutDetails() {
     const pageProps = usePage<CheckoutDetailsProps>().props;
@@ -105,7 +98,6 @@ export default function CheckoutDetails() {
     const { t, isLoading, locale } = useTranslation();
     const formatCurrency = useMoney();
 
-    // Admin settings (Settings > Orders / Shipping)
     const orderNotesMax = useSetting('orders.order_notes_max', 500);
     const minAmount = useSetting('orders.min_amount', 0);
     const destinations = useSetting('shipping.destinations', ['IT']);
@@ -121,22 +113,18 @@ export default function CheckoutDetails() {
     const isMobile = useIsMobile();
     const { addToast } = useToast();
 
-    // Collapsible states
     const [isContactOpen, setIsContactOpen] = useState(true);
     const [isShippingOpen, setIsShippingOpen] = useState(true);
     const [isDiscountOpen, setIsDiscountOpen] = useState(false);
     const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
-    // Form states
     const [contactInfo, setContactInfo] = useState<ContactInformation>({
         email: auth?.user?.email || '',
     });
 
-    /** The form for a saved address (or an empty one, with the account name when signed in). */
     const addressForm = (saved?: SavedAddress): ShippingAddress => {
         const text = (key: string) => (typeof saved?.[key] === 'string' ? (saved[key] as string) : '');
-        // a saved country the shop no longer ships to must be picked again
         const country = text('country') && destinations.includes(text('country')) ? text('country') : defaultCountry;
 
         return {
@@ -157,7 +145,6 @@ export default function CheckoutDetails() {
     const [selectedAddress, setSelectedAddress] = useState<string>(defaultAddress ? String(defaultAddress.id) : 'new');
     const [saveAddress, setSaveAddress] = useState(true);
     const [shippingAddress, setShippingAddress] = useState<ShippingAddress>(() => addressForm(defaultAddress));
-    // City / province filled in by the CAP lookup: a later lookup may replace them, what the customer typed is never touched
     const autofilled = useRef({ city: false, state: false });
 
     const [couponCode, setCouponCode] = useState(initialCouponCode || '');
@@ -165,7 +152,6 @@ export default function CheckoutDetails() {
     const [marketingConsent, setMarketingConsent] = useState(false);
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
-    // Back from Stripe with the browser's back button: the page comes out of the back/forward cache still "processing"
     useEffect(() => {
         const onPageShow = (event: PageTransitionEvent) => {
             if (event.persisted) setIsProcessing(false);
@@ -175,7 +161,6 @@ export default function CheckoutDetails() {
         return () => window.removeEventListener('pageshow', onPageShow);
     }, []);
 
-    // Field errors, keyed like the server's (e.g. "shipping_address.postal_code"): client checks and server validation
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     const clearError = (key: string) => {
@@ -187,10 +172,8 @@ export default function CheckoutDetails() {
         });
     };
 
-    /** aria wiring of an input whose error (if any) is rendered as <InputError id="{id}-error"> */
     const invalidProps = (key: string, id: string) => (errors[key] ? { 'aria-invalid': true as const, 'aria-describedby': `${id}-error` } : {});
 
-    /** Show the errors in place: open the sections that hold them and focus the first invalid field. */
     const showFieldErrors = (fieldErrors: Record<string, string>) => {
         setErrors(fieldErrors);
         const keys = Object.keys(fieldErrors);
@@ -200,7 +183,6 @@ export default function CheckoutDetails() {
 
         const first = FIELDS.find(([key]) => key in fieldErrors);
         if (first) {
-            // after the sections have opened
             setTimeout(() => document.getElementById(first[1])?.focus(), 0);
         }
     };
@@ -228,7 +210,6 @@ export default function CheckoutDetails() {
         return found;
     };
 
-    /** Server validation: field errors in place, anything else (e.g. the minimum amount) as a toast. */
     const handleServerErrors = (serverErrors: Record<string, string>) => {
         const fieldKeys = new Set(FIELDS.map(([key]) => key));
         const fieldErrors = Object.fromEntries(Object.entries(serverErrors).filter(([key]) => fieldKeys.has(key)));
@@ -252,7 +233,6 @@ export default function CheckoutDetails() {
         setShippingAddress((prev) => ({
             ...prev,
             [field]: value,
-            // the state of another country is not a province code
             ...(field === 'country' && value === 'IT' ? { state: provinceCode(provinces, prev.state) } : {}),
         }));
     };
@@ -266,7 +246,7 @@ export default function CheckoutDetails() {
             if (!hit) return;
 
             setShippingAddress((prev) => {
-                if (prev.postal_code.trim() !== value.trim()) return prev; // the CAP changed meanwhile
+                if (prev.postal_code.trim() !== value.trim()) return prev;
 
                 const next = { ...prev };
                 if (hit.city && (!prev.city || autofilled.current.city)) {
@@ -314,7 +294,6 @@ export default function CheckoutDetails() {
                 {
                     preserveScroll: true,
                     onSuccess: () => {
-                        // the confirmation is the controller flash, toasted by the FlashToaster (app.tsx)
                         setCouponCode('');
                     },
                     onError: (errors) => {
@@ -345,9 +324,6 @@ export default function CheckoutDetails() {
         router.get('/cart');
     };
 
-    // On success the backend sends the browser to Stripe (Inertia::location, a full redirect), so a page response
-    // here means it redirected back: the customer may try again, and its flash error is toasted by the FlashToaster;
-    // without one, say it here.
     const onCheckoutResponse = (page: Page<{ url?: string; flash?: SharedData['flash'] }>) => {
         if (page.props?.url) {
             window.location.href = page.props.url;
@@ -367,7 +343,6 @@ export default function CheckoutDetails() {
     const proceedToPayment = (event?: FormEvent) => {
         event?.preventDefault();
 
-        // Already on the way to Stripe: one click, one checkout session
         if (isProcessing) return;
 
         if (belowMinimum) {
@@ -379,7 +354,6 @@ export default function CheckoutDetails() {
             return;
         }
 
-        // Required fields and the email format, shown under each field
         const clientErrors = validate();
         if (Object.keys(clientErrors).length > 0) {
             showFieldErrors(clientErrors);
@@ -389,7 +363,6 @@ export default function CheckoutDetails() {
         setErrors({});
         setIsProcessing(true);
 
-        // Prepare checkout data with proper typing
         const checkoutData = {
             email: contactInfo.email,
             shipping_address: shippingAddress,
@@ -400,20 +373,14 @@ export default function CheckoutDetails() {
         };
 
         if (auth?.user) {
-            // User is authenticated, proceed to cart checkout using Cashier
             router.post('/checkout/cart', checkoutData, {
                 onSuccess: onCheckoutResponse,
                 onError: handleServerErrors,
-                // No onFinish reset: the Stripe redirect (Inertia::location) fires only onFinish, and the button must
-                // stay disabled while the browser leaves for Stripe
             });
         } else {
-            // User is not authenticated, redirect to guest cart checkout
             router.post('/guest/checkout/cart', checkoutData, {
                 onSuccess: onCheckoutResponse,
                 onError: handleServerErrors,
-                // No onFinish reset: the Stripe redirect (Inertia::location) fires only onFinish, and the button must
-                // stay disabled while the browser leaves for Stripe
             });
         }
     };
@@ -449,7 +416,7 @@ export default function CheckoutDetails() {
                 <Header />
 
                 <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-                    {/* Checkout Header */}
+
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-gray-900">{t('checkout.title')}</h1>
                         <p className="mt-2 text-gray-600">
@@ -457,7 +424,6 @@ export default function CheckoutDetails() {
                         </p>
                     </div>
 
-                    {/* Order summary, mobile and tablet: collapsed at the top */}
                     <Card className="mb-6 border-2 border-gray-700 bg-white shadow-md lg:hidden">
                         <Collapsible open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
                             <CollapsibleTrigger className="w-full">
@@ -488,7 +454,7 @@ export default function CheckoutDetails() {
 
                     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-8">
                     <form id="checkout-form" noValidate onSubmit={proceedToPayment} className="space-y-6">
-                        {/* Contact Information */}
+
                         <Card className="border-2 border-gray-700 bg-white shadow-md">
                             <Collapsible open={isContactOpen} onOpenChange={setIsContactOpen}>
                                 <CollapsibleTrigger className="w-full">
@@ -528,7 +494,6 @@ export default function CheckoutDetails() {
                             </Collapsible>
                         </Card>
 
-                        {/* Shipping Information */}
                         <Card className="border-2 border-gray-700 bg-white shadow-md">
                             <Collapsible open={isShippingOpen} onOpenChange={setIsShippingOpen}>
                                 <CollapsibleTrigger className="w-full">
@@ -772,7 +737,6 @@ export default function CheckoutDetails() {
                             </Collapsible>
                         </Card>
 
-                        {/* Discount Code */}
                         <Card className="border-2 border-gray-700 bg-white shadow-md">
                             <Collapsible open={isDiscountOpen} onOpenChange={setIsDiscountOpen}>
                                 <CollapsibleTrigger className="w-full">
@@ -825,7 +789,6 @@ export default function CheckoutDetails() {
                             </Collapsible>
                         </Card>
 
-                        {/* Order Notes */}
                         <Card className="border-2 border-gray-700 bg-white shadow-md">
                             <Collapsible open={isNotesOpen} onOpenChange={setIsNotesOpen}>
                                 <CollapsibleTrigger className="w-full">
@@ -872,7 +835,6 @@ export default function CheckoutDetails() {
 
                         <MarketingConsentCheckbox checked={marketingConsent} onCheckedChange={setMarketingConsent} disabled={isProcessing} />
 
-                        {/* Action Buttons - Hidden on mobile, only show on desktop */}
                         <div className="grid hidden grid-cols-1 gap-4 pt-6 md:grid md:grid-cols-2">
                             <Button
                                 type="button"
@@ -896,7 +858,6 @@ export default function CheckoutDetails() {
                         </div>
                     </form>
 
-                    {/* Order summary, desktop: right column, sticky */}
                     <aside className="hidden lg:sticky lg:top-8 lg:block">
                         <Card className="border-2 border-gray-700 bg-white shadow-md">
                             <CardHeader>
@@ -920,7 +881,6 @@ export default function CheckoutDetails() {
                     </div>
                 </div>
 
-                {/* Mobile Sticky Footer */}
                 {isMobile && (
                     <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-gray-300 bg-white p-4 shadow-lg">
                         <div className="grid grid-cols-2 gap-4">

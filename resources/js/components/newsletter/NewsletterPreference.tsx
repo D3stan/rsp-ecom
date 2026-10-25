@@ -6,14 +6,9 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 
 export interface NewsletterPreferenceProps {
-    /** null while the newsletter is switched off (nothing is rendered) */
     newsletter: { status: 'none' | 'pending' | 'confirmed' | 'unsubscribed' } | null;
 }
 
-/**
- * Newsletter switch of the profile settings page. On: double opt-in mail (pending until confirmed).
- * Off: unsubscribed immediately.
- */
 export default function NewsletterPreference({ newsletter }: NewsletterPreferenceProps) {
     const { t } = useTranslation();
     const [processing, setProcessing] = useState(false);

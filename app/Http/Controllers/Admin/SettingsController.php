@@ -16,9 +16,6 @@ use Inertia\Response;
 use InvalidArgumentException;
 use Throwable;
 
-/**
- * Admin -> Settings. Everything is generated from the catalogue in config/settings.php (docs/admin-settings.md).
- */
 class SettingsController extends Controller
 {
     public function __construct(private readonly Settings $settings) {}

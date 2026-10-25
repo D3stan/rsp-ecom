@@ -6,10 +6,6 @@ use App\Shipping\Contracts\Authenticator;
 use App\Shipping\Exceptions\ShippingCredentialsException;
 use Illuminate\Http\Client\PendingRequest;
 
-/**
- * Static token sent as "Authorization: Bearer <token>". A blank token is a configuration problem and
- * is reported when a request is made (never when the driver is resolved), without echoing anything.
- */
 class BearerTokenAuthenticator implements Authenticator
 {
     public function __construct(

@@ -7,14 +7,10 @@ use App\Mail\Traits\HasLogo;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
-/**
- * Internal alert to the shop owner: a paid order contains units that were not in stock (the order is kept, the
- * customer has paid; the shop has to obtain the missing units or contact the customer). Not customer-facing.
- * Rendered by SendOrderEmail (never queued itself).
- */
 class OversoldOrderAlert extends Mailable
 {
     use DescribesOrder, HasLogo;
@@ -71,7 +67,7 @@ class OversoldOrderAlert extends Mailable
     }
 
     /**
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

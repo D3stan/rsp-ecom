@@ -4,15 +4,6 @@ namespace App\Shipping\Providers\Spediamo;
 
 use App\Shipping\Tracking\Enums\TrackingStatus;
 
-/**
- * API status string => TrackingStatus, for both the shipment's top-level `status` and each `tracking[].status`.
- *
- * Case-insensitive and trimmed. The built-in table follows the statuses the API documents for shipments
- * (the tracking enum itself is not published, see docs/shipping-tracking-module.md); config
- * shipping.tracking.drivers.spediamo.status_map overrides or extends it without code changes.
- * Blank values are "no information" (Unknown, not reported); anything else that is not listed is
- * Unknown too, and isMapped() lets the caller warn about it.
- */
 final class SpediamoStatusMap
 {
     /** @var array<string, TrackingStatus> */
@@ -53,9 +44,6 @@ final class SpediamoStatusMap
         return $this->map[self::normalize($apiStatus)] ?? TrackingStatus::Unknown;
     }
 
-    /**
-     * Is this value known to the map (or blank, which carries no information and needs no warning)?
-     */
     public function isMapped(?string $apiStatus): bool
     {
         $key = self::normalize($apiStatus);

@@ -16,7 +16,6 @@ final readonly class RateRequest
         public string $contentDescription = 'Merce varia',
         public ?string $coupon = null,
         public ?string $carrierCode = null,
-        /** Y-m-d the carrier collects the parcel; null = the carrier's earliest date. */
         public ?string $pickupDate = null,
     ) {}
 }

@@ -5,55 +5,38 @@ type Engine = 'framer' | 'gsap' | 'vanilla';
 type Mode = 'continuous' | 'scroll';
 
 export interface RingMaskedImageProps {
-  /** Image source and alt text */
   src: string;
   alt?: string;
-  /** Optional srcset for responsive images (Fix 4) */
   srcSet?: string;
   sizes?: string;
 
-  /** Engine selection (default: 'framer') */
   engine?: Engine;
 
-  /** Animation mode (default: 'continuous') */
   mode?: Mode;
 
-  /** Ring geometry as PERCENT of the image's shorter side (0–100) */
-  innerRadiusPct: number;   // e.g., 36
-  outerRadiusPct: number;   // e.g., 42 (must be > innerRadiusPct)
+  innerRadiusPct: number;
+  outerRadiusPct: number;
 
-  /** Slice size (in degrees). For continuous rotate, this is the visible wedge size. */
-  sliceDegrees?: number;    // default: 60
+  sliceDegrees?: number;
 
-  /** Opacity mapping for mask luminance (tunable) */
-  baseOpacity?: number;     // default: 0.35    (outside the slice)
-  ringOpacity?: number;     // default: 1.0     (inside the slice)
+  baseOpacity?: number;
+  ringOpacity?: number;
 
-  /** Rotation speed and direction for continuous mode */
-  secondsPerTurn?: number;  // default: 2
-  clockwise?: boolean;      // default: true
+  secondsPerTurn?: number;
+  clockwise?: boolean;
 
-  /** Scroll behavior (linear to viewport) */
-  // 1 turn per viewport height: a full 360° rotation as the user scrolls one screen height.
-  turnsPerViewport?: number; // default: 1
+  turnsPerViewport?: number;
 
-  /** Intro sequence control (first visit w/ TTL) */
-  introEnabled?: boolean;    // default: true
-  introTTLSeconds?: number;  // default: 86400 (1 day)
-  sessionKey?: string;       // default: 'ringIntroSeen'
+  introEnabled?: boolean;
+  introTTLSeconds?: number;
+  sessionKey?: string;
 
-  /** Accessibility */
-  respectReducedMotion?: boolean; // default: true
+  respectReducedMotion?: boolean;
 
-  /** Styling */
-  className?: string;        // wrapper container classes
-  /** Force a square aspect (legacy). Default false */
+  className?: string;
   keepSquare?: boolean;
-  /** Performance strategy: auto (default), css (force CSS keyframe), js (force rAF attribute). */
   performanceMode?: 'auto' | 'css' | 'js';
-  /** Disable mobile responsive sizing constraints for full-screen usage */
   disableResponsiveConstraints?: boolean;
-  /** SVG preserveAspectRatio setting (default: 'xMidYMid slice') */
   preserveAspectRatio?: string;
 }
 
@@ -82,15 +65,12 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
   disableResponsiveConstraints = false,
   preserveAspectRatio = 'xMidYMid slice',
 }) => {
-  // Generate unique ID for this instance
   const maskId = useRef(`ringMask-${Math.random().toString(36).substr(2, 9)}`);
-  
-  // Refs for animation targets
+
   const containerRef = useRef<HTMLDivElement>(null);
   const sliceGroupRef = useRef<SVGGElement>(null);
   const circleRef = useRef<SVGCircleElement>(null);
 
-  // iOS/WebKit detection for Fix 2
   const isIOSWebKit = useMemo(() => {
     if (typeof navigator === 'undefined') return false;
     return (
@@ -99,48 +79,41 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     );
   }, []);
 
-  // Validate props
   const validatedInnerRadius = Math.max(0, Math.min(50, innerRadiusPct));
   const validatedOuterRadius = Math.max(validatedInnerRadius + 1, Math.min(50, outerRadiusPct));
   const validatedSliceDegrees = Math.max(1, sliceDegrees);
 
-  // Calculate ring geometry (memoised)
   const { radiusPx, strokeWidth, circumference, sliceLength, initialDashArray } = useMemo(() => {
     const radius = (validatedInnerRadius + validatedOuterRadius) / 2;
     let width = validatedOuterRadius - validatedInnerRadius;
-    
-    // Fix 6: Slightly reduce stroke width on mobile for performance
+
     if (typeof window !== 'undefined' && window.innerWidth <= 768) {
       width = width * 0.95;
     }
-    
+
     const circ = 2 * Math.PI * radius;
-    
-    // Fix 6: Slightly increase slice degrees to hide cap artifacts
+
     let adjustedSliceDegrees = validatedSliceDegrees;
     if (typeof window !== 'undefined' && window.innerWidth <= 480) {
       adjustedSliceDegrees = validatedSliceDegrees + 3;
     }
-    
+
     const sliceLen = circ * (adjustedSliceDegrees / 360);
     return {
       radiusPx: radius,
       strokeWidth: width,
       circumference: circ,
       sliceLength: sliceLen,
-      initialDashArray: `${sliceLen} ${Math.max(circ - sliceLen, 0.0001)}` // ensure non-zero gap
+      initialDashArray: `${sliceLen} ${Math.max(circ - sliceLen, 0.0001)}`
     };
   }, [validatedInnerRadius, validatedOuterRadius, validatedSliceDegrees]);
 
-  // State for dash array animation (used in fill step) – start with initial value immediately
   const [dashArray, setDashArray] = useState(initialDashArray);
 
-  // Sync when geometry changes
   useEffect(() => {
     setDashArray(initialDashArray);
   }, [initialDashArray]);
 
-  // Session logic for intro
   const [shouldRunIntro, setShouldRunIntro] = useState(false);
 
   useEffect(() => {
@@ -159,7 +132,7 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
       const { timestamp } = JSON.parse(stored);
       const now = Date.now();
       const expired = (now - timestamp) >= (introTTLSeconds * 1000);
-      
+
       setShouldRunIntro(expired);
     } catch {
       setShouldRunIntro(true);
@@ -170,12 +143,10 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     try {
       sessionStorage.setItem(sessionKey, JSON.stringify({ timestamp: Date.now() }));
     } catch {
-      // Silently handle storage errors
     }
     setShouldRunIntro(false);
   }, [sessionKey]);
 
-  // Engine-specific hooks
   useFramerEngine({
     enabled: engine === 'framer',
     sliceGroupRef,
@@ -195,12 +166,10 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     isIOSWebKit,
   });
 
-  // GSAP engine initialization (not a hook call inside callback)
   useEffect(() => {
     if (engine === 'gsap') {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       import('./engines/useGsapEngine').then(({ useGsapEngine }) => {
-        // This is just calling the function, not the hook
         const gsapConfig = {
           enabled: true,
           sliceGroupRef,
@@ -218,10 +187,8 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
           setDashArray,
           isIOSWebKit,
         };
-        
-        // Call the GSAP initialization function
+
         console.log('GSAP config prepared:', gsapConfig);
-        // Note: This will be refactored to not use hook pattern
       }).catch(() => {
         console.warn('GSAP engine not available');
       });
@@ -240,11 +207,10 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     markIntroComplete,
   ]);
 
-  // Vanilla JS animation (fallback)
   useEffect(() => {
     if (engine === 'vanilla' && sliceGroupRef.current) {
       console.log('RingMaskedImage: Using vanilla JS animation');
-      
+
       const sliceGroup = sliceGroupRef.current;
       const startTime = performance.now();
       const rotationSpeed = (clockwise ? 360 : -360) / (secondsPerTurn * 1000);
@@ -253,12 +219,11 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
       const animate = (currentTime: number) => {
         const elapsed = currentTime - startTime;
         const rotation = (elapsed * rotationSpeed) % 360;
-        
-        // Fix 3: Use CSS transform instead of SVG attribute transform
+
         sliceGroup.style.transform = `rotate(${rotation}deg)`;
         sliceGroup.style.transformOrigin = '50% 50%';
         sliceGroup.style.transformBox = 'fill-box';
-        
+
         animationFrame = requestAnimationFrame(animate);
       };
 
@@ -273,10 +238,8 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     }
   }, [engine, secondsPerTurn, clockwise]);
 
-  // Calculate dash offset so the slice begins at 12 o'clock (0° in SVG is 3 o'clock)
   const dashOffset = useMemo(() => circumference * 0.25, [circumference]);
 
-  // Debug geometry once
   useEffect(() => {
     console.log('RingMaskedImage geometry:', { engine, mode, radiusPx, strokeWidth, sliceLength, circumference, dashArray });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -286,8 +249,7 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     <div
       ref={containerRef}
       className={`relative ${keepSquare ? 'aspect-square' : 'h-full w-full'} ${className}`}
-      style={disableResponsiveConstraints ? undefined : { 
-        // Fix 4: Constrain component size for mobile performance (unless disabled)
+      style={disableResponsiveConstraints ? undefined : {
         width: 'clamp(220px, 60vmin, 420px)',
         maxWidth: '100%',
         margin: '0 auto'
@@ -301,26 +263,23 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
       >
         <defs>
           <mask id={maskId.current} maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" style={{ maskType: 'alpha' as React.CSSProperties['maskType'] }}>
-            {/* Base layer - dims the entire image */}
+
             <rect
               width="100"
               height="100"
               fill="white"
               fillOpacity={baseOpacity}
             />
-            
-            {/* Ring slice with ultra-smooth painterly gradient blend */}
+
             <g ref={sliceGroupRef} className="sliceGroup">
-              {/* Create many thin overlapping segments for ultra-smooth gradient */}
+
               {Array.from({ length: 40 }, (_, i) => {
-                const progress = i / 39; // 0 to 1
-                // Enhanced sine wave with smoother transitions
+                const progress = i / 39;
                 const segmentOpacity = Math.pow(Math.sin(progress * Math.PI), 0.8) * ringOpacity;
-                // Make the slice longer by extending the length
-                const extendedSliceLength = sliceLength * 1.6; // 60% longer
+                const extendedSliceLength = sliceLength * 1.6;
                 const segmentLength = extendedSliceLength / 40;
-                const segmentOffset = dashOffset + (segmentLength * i * 0.9); // Slight overlap
-                
+                const segmentOffset = dashOffset + (segmentLength * i * 0.9);
+
                 return (
                   <circle
                     key={i}
@@ -336,8 +295,7 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
                   />
                 );
               })}
-              
-              {/* Enhanced soft outer glow layers for ultra-realistic LED */}
+
               <circle
                 cx="50"
                 cy="50"
@@ -367,7 +325,6 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
           </mask>
         </defs>
 
-        {/* Image with mask applied */}
         <g mask={`url(#${maskId.current})`}>
           <image
             href={src}

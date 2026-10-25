@@ -3,7 +3,7 @@
 - **Provider API:** EasyParcel
 - **Base URL:** `https://api.easyparcel.it`
 - **Documented API version:** `1.1.20`
-- **Source:** [sanitized EasyParcel HTML export](../dvaexpress-doc.html), captured from [https://docs.easyparcel.it/](https://docs.easyparcel.it/)
+- **Source:** [sanitized EasyParcel HTML export](../vendor/dvaexpress-doc.html), captured from [https://docs.easyparcel.it/](https://docs.easyparcel.it/)
 - **Authentication:** the normal endpoint form is `POST /{operation}/{APIKEY}` with `Content-Type: application/json`. TARIC and cancellation requests may alternatively send the key in `X-API-KEY`.
 - **Request bodies:** JSON. Most requests declare the operation with a `call` field; the endpoint pages list the exact fields and requiredness.
 - **Response convention:** successful and error payloads commonly expose `result`, `errorcode`, `errormessage`, `timestamp`, and `version`; see [Errors](./errors.md) for the provider's error catalogue.
@@ -28,7 +28,7 @@ Download a new HTML snapshot outside the application API, then run:
 ```sh
 python3 scripts/generate_dvaexpress_docs.py \
   --source /path/to/easyparcel.html \
-  --snapshot docs/dvaexpress-doc.html \
+  --snapshot docs/vendor/dvaexpress-doc.html \
   --output docs/dvaexpress
 ```
 

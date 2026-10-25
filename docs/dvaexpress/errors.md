@@ -2,7 +2,7 @@
 
 The error catalogue published with the EasyParcel API reference.
 
-[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../dvaexpress-doc.html)
+[API overview and shared conventions](./README.md) · [Original sanitized HTML export](../vendor/dvaexpress-doc.html)
 
 
 ## Error catalogue

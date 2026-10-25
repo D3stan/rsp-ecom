@@ -14,20 +14,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-/**
- * POST /webhooks/tracking/{driver}: carrier pushes. Generic part only; the adapter authenticates
- * and parses its own payload (SupportsWebhooks).
- *
- *   404  unknown driver, or one that does not implement SupportsWebhooks
- *   413  body larger than 1 MB
- *   403  production without webhook_secret, or the adapter rejects the signature (fail closed)
- *   422  payload cannot be parsed (the carrier should not retry)
- *   503  the adapter reports a temporary problem (the carrier should retry)
- *   500  persistence failed (the carrier should retry; applying is idempotent)
- *   200  everything was stored; unknown tracking numbers are not an error
- *
- * Payloads, headers and tracking numbers are never logged.
- */
 class TrackingWebhookController extends Controller
 {
     private const MAX_BODY_BYTES = 1_048_576;

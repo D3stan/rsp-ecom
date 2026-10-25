@@ -8,15 +8,12 @@ use App\Shipping\Tracking\Enums\TrackingStatus;
 use App\Shipping\Tracking\Jobs\SyncOrderTracking;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class SyncShipmentTracking extends Command
 {
-    /**
-     * Minutes an order stays "claimed" after its job was queued: longer than the job's whole retry
-     * schedule (~80 min), so a busy or failing queue does not collect duplicate jobs.
-     */
     private const DISPATCH_LEASE_MINUTES = 90;
 
     /**
@@ -50,8 +47,6 @@ class SyncShipmentTracking extends Command
 
         foreach ($orders as $order) {
             try {
-                // Claim the order first (query builder: no events, no updated_at bump), then queue.
-                // The polling window (max_age_days) starts with the first queued poll.
                 Order::query()->whereKey($order->id)->toBase()->update([
                     'tracking_next_sync_at' => now()->addMinutes(self::DISPATCH_LEASE_MINUTES),
                     'tracking_started_at' => $order->tracking_started_at ?? now(),
@@ -81,7 +76,7 @@ class SyncShipmentTracking extends Command
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Order>
+     * @return Collection<int, Order>
      */
     private function dueOrders(int $limit, ?int $onlyOrder, TrackingManager $manager)
     {

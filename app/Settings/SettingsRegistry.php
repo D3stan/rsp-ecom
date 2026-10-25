@@ -4,9 +4,6 @@ namespace App\Settings;
 
 use InvalidArgumentException;
 
-/**
- * The validated catalogue from config/settings.php: ordered groups and their definitions.
- */
 final class SettingsRegistry
 {
     /** @var array<string, SettingDefinition> */
@@ -104,9 +101,6 @@ final class SettingsRegistry
         return $this->groups[$group]['icon'] ?? null;
     }
 
-    /**
-     * Groups that show derived, read-only data instead of editable fields (the system panel).
-     */
     public function isPanelGroup(string $group): bool
     {
         return (bool) ($this->groups[$group]['readonly_panel'] ?? false);
@@ -136,9 +130,6 @@ final class SettingsRegistry
         return array_filter($this->definitions, fn (SettingDefinition $d) => $d->configBridge !== []);
     }
 
-    /**
-     * The registry key a legacy key stands for (or the key itself when it is already a registry key).
-     */
     public function resolve(string $key): ?string
     {
         if (isset($this->definitions[$key])) {

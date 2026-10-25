@@ -22,7 +22,6 @@ class SpediamoRateProvider implements RateProvider
 
     private const DEFAULT_BASE_URL = 'https://api.spediamo.it';
 
-    /** Fields a draft reports as missing until it is booked, irrelevant for a quote. */
     private const BOOKING_FIELDS = ['requestedPickupDate', 'requestedPickupTime'];
 
     private readonly string $baseUrl;
@@ -97,7 +96,6 @@ class SpediamoRateProvider implements RateProvider
                 try {
                     $this->send(fn (PendingRequest $http) => $http->delete("/v1/shipments/{$shipmentId}"));
                 } catch (Throwable) {
-                    // ignore cleanup errors so quoting never fails because of cleanup
                 }
             }
         }
@@ -294,7 +292,6 @@ class SpediamoRateProvider implements RateProvider
             throw $ex;
         }
 
-        // 401, 403, 429, 5xx, etc.
         $msg = $this->extractErrorMessage($response);
         $ex = new RateProviderUnavailable($msg ?? self::NAME.': HTTP '.$status);
         if (method_exists($ex, 'withHttpStatus')) {
@@ -375,7 +372,6 @@ class SpediamoRateProvider implements RateProvider
         return is_string($message) && trim($message) !== '' ? trim($message) : null;
     }
 
-    /** Spediamo sends dates as {"value": "2026-10-29", "localizedValue": "29/10/2026"}. */
     private function dateValue(mixed $value): ?string
     {
         $date = is_array($value) ? ($value['value'] ?? null) : $value;
