@@ -12,7 +12,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { ChevronDown, Package, Settings, Star } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { route } from 'ziggy-js';
 
 interface Category {
@@ -92,7 +92,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
         }));
     };
 
-    const { data, setData, processing, errors } = useForm({
+    const { data, setData, processing, errors, setError, clearErrors } = useForm({
         name: product.name,
         category_id: product.category_id.toString(),
         size_id: product.size_id.toString(),
@@ -227,6 +227,9 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
             forceFormData: true,
             onError: (errors: Record<string, string>) => {
                 console.error('Server errors:', errors);
+                // router.post does not feed useForm: replace (not merge) its errors so stale ones disappear
+                clearErrors();
+                setError(errors);
                 // Display error to user
                 if (errors.error) {
                     alert(t('admin.products.error_prefix', { message: errors.error }));
@@ -235,8 +238,9 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
                 } else if (Object.keys(errors).some((key) => key.endsWith('.stock_quantity_original'))) {
                     // The page was loaded before the stock-delta form existed: the server asks for a reload
                     alert(Object.entries(errors).find(([key]) => key.endsWith('.stock_quantity_original'))?.[1]);
-                } else {
-                    alert(t('admin.products.error_occurred'));
+                } else if (!errors.seo_title && !errors.seo_description) {
+                    // SEO errors are shown under their field; anything else: the first server message, never "check the console"
+                    alert(Object.values(errors)[0] || t('admin.products.error_occurred'));
                 }
             },
         });
@@ -264,6 +268,13 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formErrors = errors as Record<string, any>;
+
+    // A server error on an SEO field must be visible: open the card that holds them
+    useEffect(() => {
+        if (formErrors.seo_title || formErrors.seo_description) {
+            setIsAdvancedOpen(true);
+        }
+    }, [formErrors.seo_title, formErrors.seo_description]);
 
     return (
         <AdminLayout
@@ -469,6 +480,11 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
                                                 className={formErrors.seo_description ? 'border-red-500' : ''}
                                             />
                                             {formErrors.seo_description && <p className="mt-1 text-sm text-red-500">{formErrors.seo_description}</p>}
+                                            <p
+                                                className={`mt-1 text-xs ${((data.seo_description as string) || '').length > 500 ? 'text-red-500' : ((data.seo_description as string) || '').length > 160 ? 'text-amber-600' : 'text-gray-500'}`}
+                                            >
+                                                {t('admin.products.seo_description_counter', { count: ((data.seo_description as string) || '').length })}
+                                            </p>
                                         </div>
                                     </div>
                                 </CardContent>

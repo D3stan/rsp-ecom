@@ -12,7 +12,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { ChevronDown, Package, Settings, Star } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { route } from 'ziggy-js';
 
 type ProductFormData = {
@@ -65,7 +65,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
     const { t } = useTranslation();
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
-    const { data, setData, processing, errors } = useForm<ProductFormData>({
+    const { data, setData, processing, errors, setError, clearErrors } = useForm<ProductFormData>({
         name: '',
         category_id: '',
         size_id: '',
@@ -88,6 +88,13 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
             },
         ],
     });
+
+    // A server error on an SEO field must be visible: open the card that holds them
+    useEffect(() => {
+        if (errors.seo_title || errors.seo_description) {
+            setIsAdvancedOpen(true);
+        }
+    }, [errors.seo_title, errors.seo_description]);
 
     const [validationErrors, setValidationErrors] = useState<Record<string, boolean>>({});
 
@@ -159,6 +166,11 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
 
         router.post(route('admin.products.store'), formData, {
             forceFormData: true,
+            onError: (serverErrors) => {
+                // router.post does not feed useForm: replace (not merge) its errors so stale ones disappear
+                clearErrors();
+                setError(serverErrors as Record<keyof ProductFormData, string>);
+            },
         });
     };
 
@@ -363,6 +375,11 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                                 className={errors.seo_description ? 'border-red-500' : ''}
                                             />
                                             {errors.seo_description && <p className="mt-1 text-sm text-red-500">{errors.seo_description}</p>}
+                                            <p
+                                                className={`mt-1 text-xs ${data.seo_description.length > 500 ? 'text-red-500' : data.seo_description.length > 160 ? 'text-amber-600' : 'text-gray-500'}`}
+                                            >
+                                                {t('admin.products.seo_description_counter', { count: data.seo_description.length })}
+                                            </p>
                                         </div>
                                     </div>
                                 </CardContent>

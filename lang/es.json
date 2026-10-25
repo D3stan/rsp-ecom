@@ -2223,6 +2223,7 @@
     "admin.products.placeholder_seo_title": "Título optimizado para SEO",
     "admin.products.seo_description": "Descripción SEO",
     "admin.products.placeholder_seo_description": "Descripción optimizada para SEO",
+    "admin.products.seo_description_counter": "{count} caracteres (unos 160 aparecen en Google, máximo 500)",
     "admin.products.creating": "Creando...",
     "admin.products.updating": "Actualizando...",
     "admin.products.update_product": "Actualizar producto",
