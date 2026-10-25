@@ -171,6 +171,12 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                         document.getElementById(serverErrors.seo_title ? 'seo_title' : 'seo_description')?.scrollIntoView({ block: 'center' }),
                     );
                 }
+                // Errors with no inline spot on this page (variants.N.*, variant_images_N.*) would be invisible: alert the first one
+                const shownInline = ['seo_title', 'seo_description', 'error', 'name', 'category_id', 'size_id', 'base_sku', 'safety_information'];
+                const firstHiddenMessage = Object.entries(serverErrors).find(([key]) => !shownInline.includes(key))?.[1];
+                if (firstHiddenMessage) {
+                    alert(firstHiddenMessage);
+                }
             },
         });
     };
