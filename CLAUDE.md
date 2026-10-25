@@ -1,8 +1,10 @@
 # Architectural Domain Rules & Agent Guidelines
 
-> **CRITICAL ARCHITECTURAL RULE:**
-> Before reading or modifying code in any domain, you MUST inspect its domain specification via `.ai/rules/index.md`.
-> Domain specifications in `.ai/rules/domains/` are strictly kept `<= 150 lines` to ensure concise, token-efficient invariant coverage. All business rule updates or domain boundary changes must update the relevant domain specification.
+> **CRITICAL AGENT RULES (MANDATORY):**
+> 1. **Inspect Before Modifying:** Before reading or modifying code in any domain, you MUST inspect its domain specification via `.ai/rules/index.md`.
+> 2. **Update Docs on Code Changes:** Whenever you alter domain business logic, state transitions, invariants, or contracts, you MUST update the corresponding `.ai/rules/domains/<spec>.md` in the same commit.
+> 3. **Strict Line Budget:** Domain specifications must remain strictly `<= 150 lines` (enforced by `DomainSpecSchemaTest.php`). Keep documentation high-density and invariant-focused.
+> 4. **No Narrative Code Comments:** Do not add narrative "what-it-does" code comments or description docblocks. Write clean, self-documenting code and place domain rationale in the domain spec.
 
 ## graphify
 
@@ -63,7 +65,8 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ## Documentation Files
 
-- You must only create documentation files if explicitly requested by the user.
+- You must only create new documentation files if explicitly requested by the user.
+- Updating existing domain specifications in `.ai/rules/domains/` when modifying code is mandatory, not optional.
 
 === boost rules ===
 

@@ -1,12 +1,14 @@
 # Architectural Domain Specification Router
 
-> **CRITICAL AGENT INSTRUCTION:**
-> Before reading or modifying code in any domain, you **MUST** inspect its domain specification via this router index.
+> **CRITICAL AGENT INSTRUCTIONS:**
+> Before reading or modifying code in any domain, you **MUST** follow this protocol:
 > 
 > 1. **Locate your target file path** in the [Path Glob Routing Matrix](#path-glob-routing-matrix) below.
 > 2. **Read the corresponding domain specification** in `.ai/rules/domains/` before planning or writing any code.
 > 3. **Preserve Core Invariants:** Each domain spec defines non-negotiable invariants, state machines, and failure modes. Code changes that violate these invariants are considered breaking regressions.
-> 4. **Maintain the 150-Line Budget:** Domain specifications are kept strictly `<= 150 lines` for token efficiency. Any business rule update must maintain this concise format.
+> 4. **Update Specs on Code Changes:** Whenever code changes alter business logic, state transitions, parameters, or failure handling, you MUST update the corresponding domain specification in `.ai/rules/domains/` in the same commit.
+> 5. **Maintain the 150-Line Budget:** Domain specifications are kept strictly `<= 150 lines` for token efficiency (enforced by `tests/Unit/Architecture/DomainSpecSchemaTest.php`).
+> 6. **Zero Narrative Comments:** Do not write narrative inline comments explaining code mechanics. Write clean, self-documenting code and record domain constraints in the domain specification.
 
 ---
 
