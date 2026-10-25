@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/useTranslation';
+import { cn } from '@/lib/utils';
 import { ImagePlus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { route } from 'ziggy-js';
@@ -30,6 +31,19 @@ export function MarkdownEditor({ value, onChange, placeholder, maxLength = 10000
     const [previewFailed, setPreviewFailed] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [uploadFailed, setUploadFailed] = useState(false);
+
+    // Uploads finish later: insert into the latest value (not the one from when the upload started) and not after unmount
+    const latest = useRef({ value, onChange });
+    useEffect(() => {
+        latest.current = { value, onChange };
+    });
+    const mounted = useRef(true);
+    useEffect(() => {
+        mounted.current = true;
+        return () => {
+            mounted.current = false;
+        };
+    }, []);
 
     useEffect(() => {
         if (tab !== 'preview') {
@@ -64,10 +78,10 @@ export function MarkdownEditor({ value, onChange, placeholder, maxLength = 10000
     }, [tab, value]);
 
     const insertAtCursor = (text: string) => {
-        const textarea = textareaRef.current;
-        const start = textarea?.selectionStart ?? value.length;
-        const end = textarea?.selectionEnd ?? value.length;
-        onChange(value.slice(0, start) + text + value.slice(end));
+        const { value: current, onChange: change } = latest.current;
+        const start = textareaRef.current?.selectionStart ?? current.length;
+        const end = textareaRef.current?.selectionEnd ?? current.length;
+        change(current.slice(0, start) + text + current.slice(end));
     };
 
     const uploadPhoto = async (file: File) => {
@@ -85,12 +99,19 @@ export function MarkdownEditor({ value, onChange, placeholder, maxLength = 10000
                 throw new Error(String(response.status));
             }
             const { url } = await response.json();
+            if (!mounted.current) {
+                return;
+            }
             // The file name is the starting alt text; the admin can edit it between the brackets
             insertAtCursor(`\n![${file.name.replace(/\.[^.]+$/, '')}](${url})\n`);
         } catch {
-            setUploadFailed(true);
+            if (mounted.current) {
+                setUploadFailed(true);
+            }
         } finally {
-            setUploading(false);
+            if (mounted.current) {
+                setUploading(false);
+            }
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
@@ -99,13 +120,17 @@ export function MarkdownEditor({ value, onChange, placeholder, maxLength = 10000
 
     return (
         <Tabs value={tab} onValueChange={(next) => setTab(next as 'write' | 'preview')}>
-            <div className="flex items-center justify-between gap-2">
-                <TabsList>
-                    <TabsTrigger value="write">{t('admin.products.markdown.write')}</TabsTrigger>
-                    <TabsTrigger value="preview">{t('admin.products.markdown.preview')}</TabsTrigger>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <TabsList role="tablist">
+                    <TabsTrigger type="button" role="tab" value="write" aria-selected={tab === 'write'}>
+                        {t('admin.products.markdown.write')}
+                    </TabsTrigger>
+                    <TabsTrigger type="button" role="tab" value="preview" aria-selected={tab === 'preview'}>
+                        {t('admin.products.markdown.preview')}
+                    </TabsTrigger>
                 </TabsList>
                 <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-                    <ImagePlus className="mr-1 h-4 w-4" />
+                    <ImagePlus className="h-4 w-4" />
                     {uploading ? t('admin.products.markdown.uploading') : t('admin.products.markdown.add_photo')}
                 </Button>
                 <input
@@ -128,13 +153,17 @@ export function MarkdownEditor({ value, onChange, placeholder, maxLength = 10000
                 />
                 <div className="mt-1 flex justify-between gap-2 text-xs text-gray-500">
                     <span>{t('admin.products.markdown.hint')}</span>
-                    <span className="shrink-0">{t('admin.products.markdown.counter', { count: [...value].length, max: maxLength })}</span>
+                    <span className={cn('shrink-0', [...value].length > maxLength && 'text-red-500')}>
+                        {t('admin.products.markdown.counter', { count: [...value].length, max: maxLength })}
+                    </span>
                 </div>
             </TabsContent>
 
             <TabsContent value="preview" className="mt-2 min-h-[10rem] rounded-md border border-input p-3">
                 {previewFailed ? (
-                    <p className="text-sm text-red-500">{t('admin.products.markdown.preview_error')}</p>
+                    <p role="alert" className="text-sm text-red-500">
+                        {t('admin.products.markdown.preview_error')}
+                    </p>
                 ) : previewHtml ? (
                     <RichText html={previewHtml} />
                 ) : (
@@ -142,7 +171,11 @@ export function MarkdownEditor({ value, onChange, placeholder, maxLength = 10000
                 )}
             </TabsContent>
 
-            {uploadFailed && <p className="mt-1 text-sm text-red-500">{t('admin.products.markdown.upload_error')}</p>}
+            {uploadFailed && (
+                <p role="alert" className="mt-1 text-sm text-red-500">
+                    {t('admin.products.markdown.upload_error')}
+                </p>
+            )}
         </Tabs>
     );
 }
