@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OpsEventType;
 use App\Services\Newsletter\AbandonedCheckoutReminders;
+use App\Services\Ops\FunnelTracker;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -248,6 +250,8 @@ class CheckoutController extends Controller
             // Charge every line at the current catalogue price of ITS OWN variant (never the default variant's price)
             $cart->refreshPrices();
 
+            app(FunnelTracker::class)->record(OpsEventType::CheckoutStarted, $request);
+
             return Inertia::render('Checkout/Details', array_merge($this->detailsProps($cart), [
                 'savedAddresses' => $user->addresses()->shipping()->orderByDesc('is_default')->orderByDesc('id')->get()
                     ->map(fn ($address) => $address->only(['id', 'is_default', ...\App\Models\Address::CHECKOUT_FIELDS]))->all(),
@@ -283,6 +287,8 @@ class CheckoutController extends Controller
 
             // Charge every line at the current catalogue price of ITS OWN variant (never the default variant's price)
             $cart->refreshPrices();
+
+            app(FunnelTracker::class)->record(OpsEventType::CheckoutStarted, $request);
 
             return Inertia::render('Checkout/Details', $this->detailsProps($cart));
             
@@ -537,7 +543,8 @@ class CheckoutController extends Controller
             }
 
             $this->bindSnapshotToSession($snapshot, (string) $checkoutSession->id);
-            
+            app(FunnelTracker::class)->record(OpsEventType::PaymentStarted, $request);
+
             // For Inertia.js requests, return the URL as props instead of redirecting
             if ($request->header('X-Inertia')) {
                 return Inertia::location($checkoutSession->url);
@@ -669,6 +676,7 @@ class CheckoutController extends Controller
             }
 
             $this->bindSnapshotToSession($snapshot, (string) $checkoutSession->id);
+            app(FunnelTracker::class)->record(OpsEventType::PaymentStarted, $request);
 
             // For Inertia.js requests, return the URL as props instead of redirecting
             if ($request->header('X-Inertia')) {

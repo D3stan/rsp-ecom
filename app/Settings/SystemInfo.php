@@ -2,12 +2,17 @@
 
 namespace App\Settings;
 
+use App\Enums\OpsEventType;
 use App\Jobs\SendOrderEmail;
 use App\Jobs\SendUserNotification;
 use App\Jobs\SendWelcomeEmail;
+use App\Models\AuditLog;
+use App\Models\OpsEvent;
+use App\Services\Ops\TelegramNotifier;
 use Illuminate\Console\Scheduling\Event as ScheduledEvent;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use ReflectionClass;
@@ -21,6 +26,10 @@ use Throwable;
 class SystemInfo
 {
     public const QUEUE_HEALTH_CACHE_KEY = 'ops:queue-health';
+
+    public const INVARIANTS_CACHE_KEY = 'ops:invariants';
+
+    public const RECONCILIATION_CACHE_KEY = 'ops:stripe-reconciliation';
 
     /**
      * @return array{sections: array<int, array<string, mixed>>}
@@ -45,6 +54,13 @@ class SystemInfo
                     $this->item('job_retries', $this->jobRetries(), 'table', 'code'),
                 ]),
                 $this->section('operations', [
+                    $this->item('invariants', $this->lastCheck(self::INVARIANTS_CACHE_KEY), 'status', 'runtime'),
+                    $this->item('stripe_reconciliation', $this->lastCheck(self::RECONCILIATION_CACHE_KEY), 'status', 'runtime'),
+                    $this->item('last_stripe_webhook', $this->lastStripeWebhook(), 'status', 'runtime'),
+                    $this->item('sentry_configured', filled(config('sentry.dsn')), 'bool', 'env'),
+                    $this->item('telegram_configured', app(TelegramNotifier::class)->isConfigured(), 'bool', 'env'),
+                    $this->item('heartbeat_configured', filled(config('ops.heartbeat_url')), 'bool', 'env'),
+                    $this->item('recent_admin_activity', $this->recentAdminActivity(), 'table', 'runtime'),
                     $this->item('scheduled_tasks', $this->scheduledTasks(), 'table', 'code'),
                     $this->item('rate_limits', $this->rateLimits(), 'table', 'code'),
                 ]),
@@ -59,8 +75,18 @@ class SystemInfo
      */
     public function queueHealth(): array
     {
+        return $this->lastCheck(self::QUEUE_HEALTH_CACHE_KEY);
+    }
+
+    /**
+     * ok | problem | unknown, from the last run of the command that stores its verdict under $cacheKey.
+     *
+     * @return array{status: string, checked_at: string|null}
+     */
+    private function lastCheck(string $cacheKey): array
+    {
         try {
-            $last = Cache::get(self::QUEUE_HEALTH_CACHE_KEY);
+            $last = Cache::get($cacheKey);
         } catch (Throwable) {
             $last = null;
         }
@@ -70,6 +96,48 @@ class SystemInfo
         }
 
         return ['status' => (string) $last['status'], 'checked_at' => $last['checked_at'] ?? null];
+    }
+
+    /**
+     * The latest admin actions (App\Services\Ops\AuditLogger), newest first.
+     *
+     * @return array<int, array{when: string, admin: string, action: string, subject: string}>
+     */
+    private function recentAdminActivity(): array
+    {
+        try {
+            return AuditLog::query()
+                ->with('actor:id,name')
+                ->latest('created_at')
+                ->latest('id')
+                ->limit(15)
+                ->get()
+                ->map(fn (AuditLog $entry) => [
+                    'when' => $entry->created_at->format('Y-m-d H:i'),
+                    'admin' => $entry->actor?->name ?? '—',
+                    'action' => $entry->action,
+                    'subject' => (string) $entry->subject_label,
+                ])
+                ->all();
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * @return array{status: string, checked_at: string|null}
+     */
+    private function lastStripeWebhook(): array
+    {
+        try {
+            $last = OpsEvent::query()->where('type', OpsEventType::StripeWebhook->value)->max('created_at');
+        } catch (Throwable) {
+            $last = null;
+        }
+
+        return $last
+            ? ['status' => 'ok', 'checked_at' => Carbon::parse($last)->toIso8601String()]
+            : ['status' => 'unknown', 'checked_at' => null];
     }
 
     /**

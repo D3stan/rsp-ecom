@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\AuditLog;
+use App\Models\CheckoutSnapshot;
+use App\Models\OpsEvent;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -46,6 +49,11 @@ Schedule::command('ops:check-queue')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+// Pinged every five minutes while the scheduler is alive: the external service (healthchecks.io, Better Stack, ...)
+// alerts when the pings stop. Nothing inside the app can notice that the scheduler itself has died.
+Schedule::command('ops:heartbeat')
+    ->everyFiveMinutes();
+
 // Poll carriers for shipment updates. Runs while the default tracking driver or any shipped order's
 // tracking_driver contacts a carrier; when all orders are manual/null it never runs.
 Schedule::command('tracking:sync')
@@ -53,8 +61,25 @@ Schedule::command('tracking:sync')
     ->withoutOverlapping()
     ->when(fn () => app(TrackingManager::class)->canPollAny());
 
+// Silent failures that no exception announces (paid order without a webhook, collapsed funnel step, ...): see InvariantChecker
+Schedule::command('ops:check-invariants')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping();
+
+// The net under the Stripe webhook: compares the last two days of paid Stripe sessions with the orders (needs the Stripe API)
+Schedule::command('ops:reconcile-stripe')
+    ->dailyAt('07:00')
+    ->withoutOverlapping();
+
+// Morning summary on Telegram; its absence is itself the alarm that the scheduler is down
+Schedule::command('ops:daily-digest')
+    ->dailyAt('08:00')
+    ->withoutOverlapping();
+
 // Checkout snapshots: drop abandoned ones after 7 days and consumed ones after 90 days (see CheckoutSnapshot::prunable)
-Schedule::command('model:prune', ['--model' => \App\Models\CheckoutSnapshot::class])
+// Ops events (funnel and webhook markers): drop after 90 days (see OpsEvent::prunable)
+// Audit log: drop after a year (see AuditLog::prunable)
+Schedule::command('model:prune', ['--model' => [CheckoutSnapshot::class, OpsEvent::class, AuditLog::class]])
     ->daily()
     ->withoutOverlapping();
 

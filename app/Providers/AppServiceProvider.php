@@ -6,8 +6,14 @@ use App\Console\Commands\SendTestOrderConfirmation;
 use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\GenerateSitemapIndex;
 use App\Console\Commands\ClearSitemaps;
+use App\Models\Category;
 use App\Models\Order;
+use App\Models\Page;
+use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Review;
+use App\Models\User;
+use App\Observers\AdminAuditObserver;
 use App\Observers\OrderObserver;
 use App\Observers\ProductVariantObserver;
 use App\Shipping\Tracking\Contracts\TrackingProvider;
@@ -80,6 +86,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Stock that comes back (any Eloquent write to a variant) is announced for back-in-stock emails
         ProductVariant::observe(ProductVariantObserver::class);
+
+        // What an admin changes in the catalogue, the customers and the content is kept in the audit trail
+        foreach ([Product::class, Category::class, Page::class, Review::class, User::class] as $audited) {
+            $audited::observe(AdminAuditObserver::class);
+        }
 
         // Configure Cashier
         // Cashier::calculateTaxes(); // Uncomment to enable automatic tax calculation

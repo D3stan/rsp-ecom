@@ -1,14 +1,17 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\CaptureGuestSessionId;
 use App\Http\Middleware\DetectLanguage;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\MonitorAbuse;
 use App\Http\Middleware\ShareTranslations;
 use App\Http\Middleware\TrustAppUrlScheme;
+use App\Services\Ops\TelegramNotifier;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -40,6 +43,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // The scheme comes from APP_URL, whatever the peer address or proxy headers say
         $middleware->prepend(TrustAppUrlScheme::class);
 
+        // Counts 429s and rejected webhooks as abuse signals (watching only)
+        $middleware->append(MonitorAbuse::class);
+
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
@@ -50,6 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             CaptureGuestSessionId::class,
+            AssignRequestId::class,
         ]);
 
         $middleware->alias([
@@ -63,6 +70,11 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         Integration::handles($exceptions);
+
+        // Sentry's free plan has no chat integration: push uncaught exceptions to Telegram ourselves (throttled)
+        $exceptions->report(function (Throwable $e) {
+            app(TelegramNotifier::class)->notifyException($e);
+        });
 
         $exceptions->render(function (PostTooLargeException $e, $request) {
             $message = 'Upload troppo grande: riduci il peso totale delle immagini e riprova.';
@@ -90,7 +102,7 @@ return Application::configure(basePath: dirname(__DIR__))
                                 ->toResponse($request)
                                 ->setStatusCode(403);
                         case 500:
-                            return Inertia::render('Errors/ServerError')
+                            return Inertia::render('Errors/ServerError', ['requestId' => $request->attributes->get('request_id')])
                                 ->toResponse($request)
                                 ->setStatusCode(500);
                         case 404:
@@ -100,7 +112,7 @@ return Application::configure(basePath: dirname(__DIR__))
                         default:
                             // For other HTTP errors >= 500, show server error page
                             if ($statusCode >= 500) {
-                                return Inertia::render('Errors/ServerError')
+                                return Inertia::render('Errors/ServerError', ['requestId' => $request->attributes->get('request_id')])
                                     ->toResponse($request)
                                     ->setStatusCode($statusCode);
                             }
@@ -128,7 +140,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 $shouldShowCustomPage = ! $isTesting && ! $isDebugEnv;
 
                 if ($shouldShowCustomPage) {
-                    return Inertia::render('Errors/ServerError')
+                    return Inertia::render('Errors/ServerError', ['requestId' => $request->attributes->get('request_id')])
                         ->toResponse($request)
                         ->setStatusCode(500);
                 }

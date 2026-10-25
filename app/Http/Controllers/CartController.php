@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OpsEventType;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Size;
+use App\Services\Ops\FunnelTracker;
 use App\Support\CheckoutTotals;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -178,6 +180,8 @@ class CartController extends Controller
                 'size_id' => $variant->product->size_id,
             ]);
         }
+
+        app(FunnelTracker::class)->record(OpsEventType::AddToCart, $request);
 
         if ($request->expectsJson()) {
             return response()->json([
