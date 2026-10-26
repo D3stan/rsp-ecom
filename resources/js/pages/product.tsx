@@ -14,6 +14,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useMoney } from '@/hooks/use-money';
 import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
+import { fallbackToDefaultImage } from '@/lib/utils';
 import { cartService, type AddToCartData } from '@/services/cartService';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
@@ -246,7 +247,12 @@ export default function Product() {
                         {/* Image Carousel */}
                         <div className="space-y-4">
                             <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100">
-                                <img src={displayImages[currentImageIndex]} alt={product.name} className="h-full w-full object-cover" />
+                                <img
+                                    src={displayImages[currentImageIndex]}
+                                    alt={product.name}
+                                    onError={fallbackToDefaultImage}
+                                    className="h-full w-full object-cover"
+                                />
 
                                 {/* Navigation buttons */}
                                 {displayImages.length > 1 && (
@@ -283,6 +289,7 @@ export default function Product() {
                                             <img
                                                 src={image}
                                                 alt={`${product.name} ${index + 1}`}
+                                                onError={fallbackToDefaultImage}
                                                 loading="lazy"
                                                 decoding="async"
                                                 width={80}
@@ -425,6 +432,7 @@ export default function Product() {
                                             <img
                                                 src={relatedProduct.image}
                                                 alt={relatedProduct.name}
+                                                onError={fallbackToDefaultImage}
                                                 loading="lazy"
                                                 decoding="async"
                                                 width={300}

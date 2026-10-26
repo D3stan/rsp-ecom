@@ -45,7 +45,8 @@ class ProductVariant extends Model
 
     public function getImageUrlsAttribute(): array
     {
-        if (empty($this->images)) {
+        // a malformed value (e.g. the JSON string "[]" from a double-encoded column) counts as no images
+        if (! is_array($this->images) || $this->images === []) {
             return ['/images/product.png'];
         }
 
