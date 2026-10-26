@@ -17,8 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -30,10 +28,8 @@ jobs:
           composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
           npm install
 
-      # shortcut: existing PHP is not Pint-clean (~175 files), so only files added in the PR are checked; drop the filter once the backlog is formatted.
-      - name: Check Pint (new PHP files)
-        if: github.event_name == 'pull_request'
-        run: git diff --name-only --diff-filter=A "origin/${{ github.base_ref }}...HEAD" -- '*.php' | xargs -r vendor/bin/pint --test
+      - name: Check PHP Style
+        run: vendor/bin/pint --test
 
       - name: Check Frontend Format
         run: npm run format:check
