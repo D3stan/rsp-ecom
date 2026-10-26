@@ -51,18 +51,18 @@ it('lists the cookies the application really sets on the cookie policy page', fu
     }));
 });
 
-it('describes every listed cookie in the visitor language', function () {
-    $this->withSession(['locale' => 'it'])->get(route('cookies'))
-        ->assertInertia(fn (Assert $page) => $page->where('categories', function ($categories) {
+it('describes every listed cookie in the visitor language', function (string $locale) {
+    $this->withSession(['locale' => $locale])->get(route('cookies'))
+        ->assertInertia(fn (Assert $page) => $page->where('categories', function ($categories) use ($locale) {
             $descriptions = collect($categories)->flatMap(fn ($category) => collect($category['cookies'])->pluck('description'));
 
             expect($descriptions->filter(fn (string $description) => str_contains($description, 'cookieConsent::')))->toBeEmpty()
-                ->and($descriptions)->toContain(__('cookieConsent::cookies.defaults.appearance', [], 'it'), __('cookieConsent::cookies.defaults.consent', [], 'it'))
-                ->and(collect($categories)->pluck('title')->all())->toContain(__('cookieConsent::cookies.categories.essentials.title', [], 'it'));
+                ->and($descriptions)->toContain(__('cookieConsent::cookies.defaults.appearance', [], $locale), __('cookieConsent::cookies.defaults.consent', [], $locale))
+                ->and(collect($categories)->pluck('title')->all())->toContain(__('cookieConsent::cookies.categories.essentials.title', [], $locale));
 
             return true;
         }));
-});
+})->with(['en', 'it', 'de', 'fr', 'es']);
 
 it('links the cookie banner to the cookie policy', function () {
     $this->get(route('home'))->assertSee(route('cookies'), false);

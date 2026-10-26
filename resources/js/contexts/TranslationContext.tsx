@@ -1,4 +1,5 @@
 import { canStorePreferences } from '@/lib/cookie-consent';
+import { router } from '@inertiajs/react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Translations = {
@@ -217,6 +218,9 @@ export function TranslationProvider({
 
                 if (!response.ok) {
                     console.warn('Failed to update backend locale, but frontend translation will still work');
+                } else {
+                    // Server-rendered props (e.g. the cookie policy rows) were built in the old language
+                    router.reload();
                 }
             } catch (error) {
                 console.error('Failed to update locale:', error);

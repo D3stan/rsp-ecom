@@ -2808,9 +2808,9 @@
     "semantic_hash": ""
   },
   "resources/js/contexts/TranslationContext.tsx": {
-    "mtime": 1793006419.259174,
-    "seen": 1793006619.9069161,
-    "ast_hash": "4200c008ca569d1bcbd52c8801008a0f",
+    "mtime": 1793008922.003216,
+    "seen": 1793008958.765122,
+    "ast_hash": "a93c1b9bc2db7d9118c7265cd7488445",
     "semantic_hash": ""
   },
   "resources/js/hooks/use-appearance.tsx": {
@@ -6888,9 +6888,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/CookieConsentTest.php": {
-    "mtime": 1793008676.456891,
-    "seen": 1793008699.361114,
-    "ast_hash": "d258f89d0961abd98338c556b2dba0ce",
+    "mtime": 1793008926.3345978,
+    "seen": 1793008958.7654269,
+    "ast_hash": "2768c7429dbd4311c8467c5776e8f72e",
     "semantic_hash": ""
   },
   "app/Support/CookieDuration.php": {

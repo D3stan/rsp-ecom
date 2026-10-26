@@ -1,17 +1,17 @@
 # Graph Report - rsp-ecom  (2026-10-26)
 
 ## Corpus Check
-- 1129 files · ~912,988 words
+- 1129 files · ~913,019 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 32 file(s) not represented in the graph (top: (none) 20, .css 4, .example 3)
 
 ## Summary
-- 9690 nodes · 23066 edges · 542 communities (370 shown, 172 thin omitted)
+- 9690 nodes · 23067 edges · 542 communities (370 shown, 172 thin omitted)
 - Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 1518 edges (avg confidence: 0.91)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7585e575`
+- Built from commit: `75a0c417`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -498,7 +498,7 @@
 6. `settings()` - 171 edges
 7. `react` - 142 edges
 8. `Product` - 133 edges
-9. `@inertiajs/react` - 112 edges
+9. `@inertiajs/react` - 113 edges
 10. `Card()` - 112 edges
 
 ## Surprising Connections (you probably didn't know these)
