@@ -1,0 +1,419 @@
+/*
+ * Cookie banner (resources/views/vendor/cookie-consent/cookies.blade.php), styled with the shadcn theme tokens from
+ * app.css so it follows the light and dark themes. The class names, and the expand/collapse state classes, are the
+ * ones the package script (vendor/whitecube/laravel-cookie-consent/dist/script.js) toggles: do not rename them.
+ */
+
+#cookies-policy.cookies {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    max-width: 100%;
+    max-height: 100%;
+    overflow: auto;
+    font-size: 1rem;
+    transition:
+        transform 200ms ease-out,
+        opacity 200ms ease-out;
+}
+
+#cookies-policy.cookies--closing {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+#cookies-policy .cookies__alert {
+    width: 24rem;
+    max-width: calc(100vw - 2rem);
+    max-height: calc(100vh - 2rem);
+    margin: 1rem;
+    overflow: hidden;
+    color: var(--card-foreground);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow:
+        0 10px 15px -3px rgb(0 0 0 / 0.1),
+        0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* Collapsing intro, driven by the script through inline heights */
+#cookies-policy .cookies__container {
+    display: block;
+    height: auto;
+    overflow: hidden;
+    visibility: visible;
+    opacity: 1;
+    transition:
+        height 300ms ease-out,
+        opacity 300ms ease-out,
+        visibility 0s 100ms linear;
+}
+
+#cookies-policy .cookies__container--hide {
+    height: 0;
+    visibility: hidden;
+    opacity: 0;
+    transition:
+        height 300ms ease-out,
+        opacity 300ms ease-out,
+        visibility 0s 300ms linear;
+}
+
+#cookies-policy .cookies__wrapper {
+    padding: 1.25rem;
+}
+
+#cookies-policy .cookies__title {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    color: var(--card-foreground);
+}
+
+#cookies-policy .cookies__intro {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--muted-foreground);
+}
+
+#cookies-policy .cookies__intro p {
+    margin: 0.5rem 0 0;
+}
+
+#cookies-policy .cookies__intro p:first-child {
+    margin-top: 0;
+}
+
+#cookies-policy .cookies__intro a {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+#cookies-policy .cookies__intro a:hover {
+    text-decoration-thickness: 2px;
+}
+
+#cookies-policy .cookies__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* Buttons (the shadcn `default` and `outline` variants): same size and weight, so refusing is as easy as accepting */
+#cookies-policy .cookiesBtn {
+    width: 100%;
+}
+
+#cookies-policy .cookiesBtn__link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 2.25rem;
+    margin: 0;
+    padding: 0 1rem;
+    overflow: hidden;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: calc(var(--radius) - 2px);
+    transition:
+        background-color 150ms ease-out,
+        color 150ms ease-out,
+        box-shadow 150ms ease-out;
+}
+
+#cookies-policy .cookiesBtn--accept .cookiesBtn__link,
+#cookies-policy .cookies__save .cookiesBtn__link {
+    color: var(--primary-foreground);
+    background: var(--primary);
+}
+
+#cookies-policy .cookiesBtn--accept .cookiesBtn__link:hover,
+#cookies-policy .cookies__save .cookiesBtn__link:hover {
+    background: color-mix(in oklab, var(--primary) 90%, transparent);
+}
+
+#cookies-policy .cookiesBtn--essentials .cookiesBtn__link {
+    color: var(--foreground);
+    background: var(--background);
+    border-color: var(--input);
+}
+
+#cookies-policy .cookiesBtn--essentials .cookiesBtn__link:hover {
+    color: var(--accent-foreground);
+    background: var(--accent);
+}
+
+#cookies-policy .cookiesBtn__link:focus-visible,
+#cookies-policy .cookies__btn--customize:focus-visible,
+#cookies-policy .cookies__details:focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--foreground) 50%, transparent);
+    outline-offset: 2px;
+}
+
+/* "Customize" toggle */
+#cookies-policy .cookies__btn--customize {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--foreground);
+    text-decoration: none;
+    border-top: 1px solid var(--border);
+    transition: background-color 150ms ease-out;
+}
+
+#cookies-policy .cookies__btn--customize:hover {
+    background: var(--accent);
+}
+
+#cookies-policy .cookies__btn--customize svg {
+    color: var(--muted-foreground);
+    transition: transform 200ms ease-out;
+}
+
+#cookies-policy .cookies__btn--customize svg path {
+    fill: currentcolor;
+}
+
+#cookies-policy.cookies--show .cookies__btn--customize {
+    border-top: none;
+    border-bottom: 1px solid var(--border);
+}
+
+#cookies-policy.cookies--show .cookies__btn svg {
+    transform: rotate(180deg);
+}
+
+/* Customize panel */
+#cookies-policy .cookies__sections {
+    max-height: 450px;
+    overflow-y: auto;
+}
+
+#cookies-policy .cookies__section {
+    padding: 0 1.25rem;
+}
+
+#cookies-policy .cookies__section + .cookies__section {
+    border-top: 1px solid var(--border);
+}
+
+#cookies-policy .cookies__category,
+#cookies-policy .cookies__box {
+    position: relative;
+    display: block;
+    overflow: hidden;
+}
+
+/* The checkbox stays focusable but off screen: the switch is drawn on the label */
+#cookies-policy .cookies__category input {
+    position: absolute;
+    top: 0;
+    right: 105%;
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+
+#cookies-policy .cookies__box {
+    padding: 0.875rem 3rem 0.25rem 0;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+#cookies-policy .cookies__box::before,
+#cookies-policy .cookies__box::after {
+    content: '';
+    position: absolute;
+    top: 1.5rem;
+    display: block;
+    border-radius: 9999px;
+}
+
+/* Switch track */
+#cookies-policy .cookies__box::after {
+    right: 0;
+    z-index: 0;
+    width: 2rem;
+    height: 1.15rem;
+    margin-top: -0.575rem;
+    background: var(--input);
+    transition:
+        background-color 150ms ease-out,
+        opacity 150ms ease-out,
+        box-shadow 150ms ease-out;
+}
+
+/* Switch thumb */
+#cookies-policy .cookies__box::before {
+    right: 1px;
+    z-index: 1;
+    width: 1rem;
+    height: 1rem;
+    margin-top: -0.5rem;
+    background: var(--background);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+    transform: translateX(calc(-1rem + 2px));
+    transition: transform 150ms ease-out;
+}
+
+#cookies-policy .cookies__category input:checked + .cookies__box::after {
+    background: var(--primary);
+}
+
+#cookies-policy .cookies__category input:checked + .cookies__box::before {
+    transform: translateX(0);
+}
+
+#cookies-policy .cookies__category input:disabled + .cookies__box::after {
+    opacity: 0.5;
+}
+
+#cookies-policy .cookies__category input:disabled + .cookies__box {
+    cursor: not-allowed;
+}
+
+#cookies-policy .cookies__category input:focus-visible + .cookies__box::after {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--foreground) 35%, transparent);
+}
+
+#cookies-policy .cookies__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--foreground);
+}
+
+#cookies-policy .cookies__info {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--muted-foreground);
+}
+
+#cookies-policy .cookies__details {
+    display: block;
+    margin: 0.5rem 0 0.875rem;
+    font-size: 0.8125rem;
+    color: var(--foreground);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+#cookies-policy .cookies__details:hover {
+    text-decoration-thickness: 2px;
+}
+
+/* Expandable blocks (customize panel and per-category cookie lists) */
+#cookies-policy .cookies__expandable {
+    display: block;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    opacity: 0;
+    transition:
+        height 300ms ease-out,
+        opacity 300ms ease-out,
+        visibility 0s 300ms linear;
+}
+
+#cookies-policy .cookies__expandable--open {
+    height: auto;
+    visibility: visible;
+    opacity: 1;
+    transition:
+        height 300ms ease-out,
+        opacity 300ms ease-out;
+}
+
+#cookies-policy .cookies__definitions {
+    margin: 0;
+    padding: 0.5rem 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    list-style: none;
+    color: var(--muted-foreground);
+}
+
+#cookies-policy .cookies__cookie + .cookies__cookie {
+    margin-top: 0.75rem;
+}
+
+#cookies-policy .cookies__cookie p {
+    margin: 0;
+}
+
+#cookies-policy .cookies__name {
+    display: inline;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--foreground);
+    word-break: break-all;
+}
+
+#cookies-policy .cookies__duration {
+    display: inline;
+    margin-left: 0.25rem;
+    color: var(--muted-foreground);
+}
+
+#cookies-policy .cookies__duration::before {
+    content: '· ';
+}
+
+#cookies-policy .cookies__description {
+    display: block;
+    padding-top: 0.25rem;
+}
+
+#cookies-policy .cookies__save {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border);
+}
+
+#cookies-policy .cookies__save .cookiesBtn__link {
+    width: auto;
+}
+
+/* Without JavaScript the panel is shown open */
+#cookies-policy.cookies--no-js .cookies__section .cookies__expandable,
+#cookies-policy.cookies--no-js .cookies__expandable:target {
+    height: auto;
+    visibility: visible;
+    opacity: 1;
+}
+
+#cookies-policy.cookies--no-js .cookies__details,
+#cookies-policy.cookies--no-js svg {
+    display: none;
+}
+
+#cookies-policy.cookies--no-js .cookies__sections {
+    max-height: fit-content;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #cookies-policy,
+    #cookies-policy * {
+        transition-duration: 0.01ms !important;
+    }
+}

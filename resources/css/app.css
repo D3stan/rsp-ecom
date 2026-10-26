@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './cookie-consent.css';
 
 @plugin 'tailwindcss-animate';
 

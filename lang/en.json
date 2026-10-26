@@ -2362,7 +2362,6 @@
         "name": "Name",
         "purpose": "Purpose",
         "duration": "Duration",
-        "session": "Browser session",
         "third_parties": "Other services",
         "third_party_sentry": "Error monitoring (Sentry): when something breaks we send the error and a few technical details, with no cookies and no personal data. A masked replay of the moments around an error is recorded only if you accept the analytics cookies.",
         "third_party_fonts": "Fonts are loaded from Bunny Fonts (fonts.bunny.net), which sets no cookies; like any server, it sees your IP address.",

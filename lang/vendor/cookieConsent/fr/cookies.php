@@ -20,6 +20,7 @@ return [
     'day' => 'Jour|Jours',
     'hour' => 'Heure|Heures',
     'minute' => 'Minute|Minutes',
+    'session' => 'Session du navigateur',
 
     'categories' => [
         'essentials' => [

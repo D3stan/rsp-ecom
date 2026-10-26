@@ -5,7 +5,7 @@ import { Head, usePage } from '@inertiajs/react';
 interface CookieRow {
     name: string;
     description: string;
-    duration: string | null;
+    duration: string;
 }
 
 interface CookieCategory {
@@ -52,7 +52,7 @@ export default function Cookies({ categories }: { categories: CookieCategory[] }
                                                 <tr key={cookie.name} className="border-b border-gray-100 align-top">
                                                     <td className="py-2 pr-4 font-mono break-all">{cookie.name}</td>
                                                     <td className="py-2 pr-4">{cookie.description}</td>
-                                                    <td className="py-2">{cookie.duration ?? t('cookies_page.session')}</td>
+                                                    <td className="py-2">{cookie.duration}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

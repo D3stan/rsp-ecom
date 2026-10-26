@@ -372,9 +372,9 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/PageController.php": {
-    "mtime": 1793006328.330846,
-    "seen": 1793006619.906647,
-    "ast_hash": "1c77c3cb4447fa07e76f88856826cbd4",
+    "mtime": 1793006929.184507,
+    "seen": 1793007034.114215,
+    "ast_hash": "57cac2c75785f22bae343ed74288d176",
     "semantic_hash": ""
   },
   "app/Http/Controllers/ProductsController.php": {
@@ -1938,33 +1938,33 @@
     "semantic_hash": ""
   },
   "lang/de.json": {
-    "mtime": 1793006394.7165804,
-    "seen": 1793006619.906834,
-    "ast_hash": "e82fd288c0334a8689b1c1071d97a8a8",
+    "mtime": 1793006940.7573938,
+    "seen": 1793007034.114557,
+    "ast_hash": "21166a9c237922500ae409867e3931e6",
     "semantic_hash": ""
   },
   "lang/en.json": {
-    "mtime": 1793006394.7132366,
-    "seen": 1793006619.9068348,
-    "ast_hash": "dacce09ceb6a4591d6fde07e4ba2d3a6",
+    "mtime": 1793006940.7483912,
+    "seen": 1793007034.114558,
+    "ast_hash": "dc39a639f9683259a9fd12fdfe4127aa",
     "semantic_hash": ""
   },
   "lang/es.json": {
-    "mtime": 1793006394.7181356,
-    "seen": 1793006619.9068348,
-    "ast_hash": "3056e49a1abf6079a6dac5523503a05e",
+    "mtime": 1793006940.76202,
+    "seen": 1793007034.114559,
+    "ast_hash": "90980a6fbfc0664a0221c953e159a883",
     "semantic_hash": ""
   },
   "lang/fr.json": {
-    "mtime": 1793006394.720091,
-    "seen": 1793006619.906836,
-    "ast_hash": "ef9acdc99146c00bda707843945f40ca",
+    "mtime": 1793006940.7675397,
+    "seen": 1793007034.11456,
+    "ast_hash": "def6959181c4d9b9b11965d61f42628b",
     "semantic_hash": ""
   },
   "lang/it.json": {
-    "mtime": 1793006394.7150083,
-    "seen": 1793006619.906836,
-    "ast_hash": "44429a9c6844da5017dad0ae23910522",
+    "mtime": 1793006940.7526746,
+    "seen": 1793007034.114561,
+    "ast_hash": "5941e07cf6d55aae5e9b1202c9c0e882",
     "semantic_hash": ""
   },
   "lang/vendor/cookieConsent/ca/cookies.php": {
@@ -1980,27 +1980,27 @@
     "semantic_hash": ""
   },
   "lang/vendor/cookieConsent/de/cookies.php": {
-    "mtime": 1793006311.677159,
-    "seen": 1793006619.906838,
-    "ast_hash": "2c7918e4d1d9b0562202ae9f227a53a7",
+    "mtime": 1793006940.7536094,
+    "seen": 1793007034.1145642,
+    "ast_hash": "415a3f7da4efd2c00bedcc51653ef78f",
     "semantic_hash": ""
   },
   "lang/vendor/cookieConsent/en/cookies.php": {
-    "mtime": 1793006311.676715,
-    "seen": 1793006619.906838,
-    "ast_hash": "757b208e7fb5ecef7e2c7ef940807d28",
+    "mtime": 1793006940.7441738,
+    "seen": 1793007034.1145651,
+    "ast_hash": "52366576bf4c6359333f1eb5b82274af",
     "semantic_hash": ""
   },
   "lang/vendor/cookieConsent/es/cookies.php": {
-    "mtime": 1793006311.6805027,
-    "seen": 1793006619.9068391,
-    "ast_hash": "146927c90a1cd1aec957d705ad90cded",
+    "mtime": 1793006940.7582211,
+    "seen": 1793007034.1145658,
+    "ast_hash": "f213c8e585aa1609eb1b0cf19e689327",
     "semantic_hash": ""
   },
   "lang/vendor/cookieConsent/fr/cookies.php": {
-    "mtime": 1793006311.6807141,
-    "seen": 1793006619.9068391,
-    "ast_hash": "2ce9f557d9a9b9556bddbe17d9f80ffa",
+    "mtime": 1793006940.762681,
+    "seen": 1793007034.1145668,
+    "ast_hash": "dd79c603d1a168e51815329fa6042319",
     "semantic_hash": ""
   },
   "lang/vendor/cookieConsent/hr/cookies.php": {
@@ -2010,9 +2010,9 @@
     "semantic_hash": ""
   },
   "lang/vendor/cookieConsent/it/cookies.php": {
-    "mtime": 1793006311.6769254,
-    "seen": 1793006619.90684,
-    "ast_hash": "26658e0f7e440a7ae43a40bc8a3bc324",
+    "mtime": 1793006940.7489715,
+    "seen": 1793007034.114569,
+    "ast_hash": "f0757e6401c51a722af51f020c80a89f",
     "semantic_hash": ""
   },
   "lang/vendor/cookieConsent/nb/cookies.php": {
@@ -3762,9 +3762,9 @@
     "semantic_hash": ""
   },
   "resources/views/vendor/cookie-consent/cookies.blade.php": {
-    "mtime": 1793006300.2728162,
-    "seen": 1793006619.907003,
-    "ast_hash": "67d235c73729f0a66a6d5901568f332a",
+    "mtime": 1793006929.1839647,
+    "seen": 1793007034.114879,
+    "ast_hash": "84f833775f87a5fbc9496bd2209849a2",
     "semantic_hash": ""
   },
   "resources/views/vendor/cookie-consent/info.blade.php": {
@@ -5352,8 +5352,8 @@
     "semantic_hash": ""
   },
   "public/robots.txt": {
-    "mtime": 1793006605.931416,
-    "seen": 1793006619.907249,
+    "mtime": 1793006963.4321883,
+    "seen": 1793007034.115347,
     "ast_hash": "6e727c612c31b851a4920603c90bd023",
     "semantic_hash": ""
   },
@@ -6882,15 +6882,21 @@
     "semantic_hash": ""
   },
   "resources/js/pages/cookies.tsx": {
-    "mtime": 1793006371.5327954,
-    "seen": 1793006619.906962,
-    "ast_hash": "acec21c82609b8d0e411d333f059a4f0",
+    "mtime": 1793006929.1853235,
+    "seen": 1793007034.114801,
+    "ast_hash": "af0f94b77e7056c786026bdc7bff0ed2",
     "semantic_hash": ""
   },
   "tests/Feature/CookieConsentTest.php": {
-    "mtime": 1793006432.7434597,
-    "seen": 1793006619.907069,
-    "ast_hash": "4b5f6c7f9a78f82710a83b44878869ee",
+    "mtime": 1793006947.4350488,
+    "seen": 1793007034.115006,
+    "ast_hash": "3a42a375b5a07ce748a4386533422463",
+    "semantic_hash": ""
+  },
+  "app/Support/CookieDuration.php": {
+    "mtime": 1793006940.76877,
+    "seen": 1793007034.11443,
+    "ast_hash": "30abad979be319ad82385059c01d8ff2",
     "semantic_hash": ""
   }
 }

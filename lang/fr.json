@@ -2362,7 +2362,6 @@
         "name": "Nom",
         "purpose": "Finalité",
         "duration": "Durée",
-        "session": "Session du navigateur",
         "third_parties": "Autres services",
         "third_party_sentry": "Suivi des erreurs (Sentry) : en cas de problème, nous envoyons l'erreur et quelques détails techniques, sans cookies ni données personnelles. Une relecture aux textes masqués des instants autour d'une erreur n'est enregistrée que si vous acceptez les cookies d'analyse.",
         "third_party_fonts": "Les polices sont chargées depuis Bunny Fonts (fonts.bunny.net), qui ne dépose aucun cookie ; comme tout serveur, il voit votre adresse IP.",

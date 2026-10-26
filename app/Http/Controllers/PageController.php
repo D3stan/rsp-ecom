@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\CarbonInterval;
+use App\Support\CookieDuration;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -79,7 +79,7 @@ class PageController extends Controller
                 'cookies' => array_map(fn ($cookie): array => [
                     'name' => $cookie->name,
                     'description' => __($cookie->description),
-                    'duration' => $cookie->duration > 0 ? CarbonInterval::minutes($cookie->duration)->cascade()->forHumans() : null,
+                    'duration' => CookieDuration::forHumans($cookie->duration),
                 ], $category->getCookies()),
             ], $cookies->getCategories()),
         ]);

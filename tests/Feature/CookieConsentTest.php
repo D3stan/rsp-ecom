@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\CookieDuration;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function consentCookieFor(array $preferences): array
@@ -65,3 +66,13 @@ it('describes every listed cookie in the visitor language', function () {
 it('links the cookie banner to the cookie policy', function () {
     $this->get(route('home'))->assertSee(route('cookies'), false);
 });
+
+it('states cookie lifetimes in whole calendar units', function (int $minutes, string $expected) {
+    expect(CookieDuration::forHumans($minutes))->toBe($expected);
+})->with([
+    'browser session' => [0, 'Browser session'],
+    'two hours' => [120, '2 Hours'],
+    'a week' => [10080, '7 Days'],
+    'a year' => [525600, '1 Year'],
+    'the remember-me cookie' => [576000, '400 Days'],
+]);

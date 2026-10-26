@@ -2362,7 +2362,6 @@
         "name": "Nombre",
         "purpose": "Finalidad",
         "duration": "Duración",
-        "session": "Sesión del navegador",
         "third_parties": "Otros servicios",
         "third_party_sentry": "Monitorización de errores (Sentry): cuando algo falla enviamos el error y algunos datos técnicos, sin cookies ni datos personales. Solo se graba una reproducción con los textos ocultos de los momentos alrededor de un error si aceptas las cookies de análisis.",
         "third_party_fonts": "Las fuentes se cargan desde Bunny Fonts (fonts.bunny.net), que no crea cookies; como cualquier servidor, ve tu dirección IP.",

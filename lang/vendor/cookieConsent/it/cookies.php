@@ -21,6 +21,7 @@ return [
     'day' => 'Giorno|Giorni',
     'hour' => 'Ora|Ore',
     'minute' => 'Minuto|Minuti',
+    'session' => 'Sessione del browser',
 
     'categories' => [
         'essentials' => [

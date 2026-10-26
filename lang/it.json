@@ -2362,7 +2362,6 @@
         "name": "Nome",
         "purpose": "Scopo",
         "duration": "Durata",
-        "session": "Sessione del browser",
         "third_parties": "Altri servizi",
         "third_party_sentry": "Monitoraggio errori (Sentry): quando qualcosa non funziona inviamo l'errore e alcuni dettagli tecnici, senza cookie e senza dati personali. Una registrazione con testi oscurati dei momenti attorno a un errore viene fatta solo se accetti i cookie di analisi.",
         "third_party_fonts": "I font sono caricati da Bunny Fonts (fonts.bunny.net), che non imposta cookie; come ogni server, vede il tuo indirizzo IP.",
