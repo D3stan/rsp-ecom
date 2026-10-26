@@ -171,6 +171,7 @@ return [
         // Lifetime of a Stripe checkout session (Stripe accepts 30 minutes to 24 hours). The abandoned-checkout reminder
         // is only queued once the session has expired, so a customer never holds two live payment pages for one cart.
         ['key' => 'orders.checkout_expiry_minutes', 'type' => 'int', 'default' => 60, 'required' => true, 'min' => 30, 'max' => 1440, 'unit' => 'minutes'],
+        ['key' => 'orders.paid_waiting_alert_days', 'type' => 'int', 'default' => (int) config('ops.invariants.paid_waiting_days'), 'required' => true, 'min' => 1, 'max' => 60, 'unit' => 'days', 'config_bridge' => 'ops.invariants.paid_waiting_days', 'seed' => false],
 
         // -------------------------------------------------------------- inventory
         ['key' => 'inventory.low_stock_threshold', 'type' => 'int', 'default' => 10, 'required' => true, 'min' => 0, 'max' => 1000, 'public' => true],

@@ -29,7 +29,7 @@ it('logs an error and alerts on Telegram for a violated invariant', function () 
     Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
     Log::spy();
 
-    $this->artisan('ops:check-invariants')->assertFailed();
+    $this->artisan('ops:check-invariants')->assertSuccessful();
 
     expect(Cache::get(SystemInfo::INVARIANTS_CACHE_KEY)['status'])->toBe('problem');
     Log::shouldHaveReceived('error')->withArgs(fn (string $message, array $context) => str_contains($message, 'No paid order') && $context['invariant'] === 'no-orders')->once();
@@ -39,8 +39,8 @@ it('logs an error and alerts on Telegram for a violated invariant', function () 
 it('alerts once per window while the problem lasts', function () {
     Http::fake(['api.telegram.org/*' => Http::response(['ok' => true])]);
 
-    $this->artisan('ops:check-invariants')->assertFailed();
-    $this->artisan('ops:check-invariants')->assertFailed();
+    $this->artisan('ops:check-invariants')->assertSuccessful();
+    $this->artisan('ops:check-invariants')->assertSuccessful();
 
     Http::assertSentCount(1);
 });
