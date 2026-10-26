@@ -57,7 +57,8 @@ it('describes every listed cookie in the visitor language', function () {
             $descriptions = collect($categories)->flatMap(fn ($category) => collect($category['cookies'])->pluck('description'));
 
             expect($descriptions->filter(fn (string $description) => str_contains($description, 'cookieConsent::')))->toBeEmpty()
-                ->and($descriptions)->toContain(__('cookieConsent::cookies.defaults.appearance', [], 'it'));
+                ->and($descriptions)->toContain(__('cookieConsent::cookies.defaults.appearance', [], 'it'), __('cookieConsent::cookies.defaults.consent', [], 'it'))
+                ->and(collect($categories)->pluck('title')->all())->toContain(__('cookieConsent::cookies.categories.essentials.title', [], 'it'));
 
             return true;
         }));

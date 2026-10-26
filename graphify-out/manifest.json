@@ -372,9 +372,9 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/PageController.php": {
-    "mtime": 1793008097.697079,
-    "seen": 1793008213.638452,
-    "ast_hash": "5c537a290c5c2a358cc42cf0506da757",
+    "mtime": 1793008672.7681031,
+    "seen": 1793008699.360283,
+    "ast_hash": "b9161c121a0258b556359847441090f6",
     "semantic_hash": ""
   },
   "app/Http/Controllers/ProductsController.php": {
@@ -6888,9 +6888,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/CookieConsentTest.php": {
-    "mtime": 1793006947.4350488,
-    "seen": 1793007034.115006,
-    "ast_hash": "3a42a375b5a07ce748a4386533422463",
+    "mtime": 1793008676.456891,
+    "seen": 1793008699.361114,
+    "ast_hash": "d258f89d0961abd98338c556b2dba0ce",
     "semantic_hash": ""
   },
   "app/Support/CookieDuration.php": {

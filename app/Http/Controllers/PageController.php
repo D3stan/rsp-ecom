@@ -73,11 +73,14 @@ class PageController extends Controller
         return Inertia::render('cookies', [
             'categories' => array_map(fn ($category): array => [
                 'key' => $category->key(),
-                'title' => $category->title,
-                'description' => $category->description,
+                // the package resolves these at boot, before the visitor's locale is known: translate them here
+                'title' => __("cookieConsent::cookies.categories.{$category->key()}.title"),
+                'description' => __("cookieConsent::cookies.categories.{$category->key()}.description"),
                 'cookies' => array_map(fn ($cookie): array => [
                     'name' => $cookie->name,
-                    'description' => __($cookie->description),
+                    'description' => $cookie->name === config('cookieconsent.cookie.name')
+                        ? __('cookieConsent::cookies.defaults.consent')
+                        : __($cookie->description),
                     'duration' => CookieDuration::forHumans($cookie->duration),
                 ], $category->getCookies()),
             ], $cookies->getCategories()),
