@@ -94,7 +94,9 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
 
                         <div className="flex items-center space-x-3">
                             <span className="text-3xl font-bold text-gray-900">{formatCurrency(product.price)}</span>
-                            {product.originalPrice && <span className="text-xl text-gray-500 line-through">{formatCurrency(product.originalPrice)}</span>}
+                            {product.originalPrice && (
+                                <span className="text-xl text-gray-500 line-through">{formatCurrency(product.originalPrice)}</span>
+                            )}
                         </div>
 
                         <div className="flex items-center space-x-4">
@@ -135,7 +137,7 @@ function QuickViewModal({ product, isOpen, onClose, onAddToCart, onNavigateToPro
                                 {t('products.view_full_details')}
                             </Button>
 
-                            <WishlistButton 
+                            <WishlistButton
                                 productId={product.id}
                                 initialInWishlist={product.inWishlist || false}
                                 showText={true}
@@ -255,7 +257,9 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                                 </div>
                                 <div className="flex items-center space-x-3">
                                     <span className="text-3xl font-bold text-gray-900">{formatCurrency(product.price)}</span>
-                                    {product.originalPrice && <span className="text-xl text-gray-500 line-through">{formatCurrency(product.originalPrice)}</span>}
+                                    {product.originalPrice && (
+                                        <span className="text-xl text-gray-500 line-through">{formatCurrency(product.originalPrice)}</span>
+                                    )}
                                 </div>
                             </div>
                             <div className="ml-8 flex flex-col space-y-3">
@@ -319,7 +323,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                         {product.badge}
                     </Badge>
                 )}
-                
+
                 {/* Wishlist Button - Only show for authenticated users */}
                 {auth.user && (
                     <div className="absolute top-4 right-4 z-10">
@@ -328,11 +332,11 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                             initialInWishlist={product.inWishlist || false}
                             size="sm"
                             variant="outline"
-                            className="bg-white/90 hover:bg-white shadow-sm"
+                            className="bg-white/90 shadow-sm hover:bg-white"
                         />
                     </div>
                 )}
-                
+
                 <div className="relative aspect-square overflow-hidden bg-gray-50">
                     <img
                         src={imageSrc}
@@ -362,7 +366,7 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
 
             {/* Separator line above the button */}
             <div className="my-1 border-t border-black" />
-            <CardContent className="flex h-full flex-col bg-white px-6 pb-6 pt-3" onClick={handleNavigateToProduct}>
+            <CardContent className="flex h-full flex-col bg-white px-6 pt-3 pb-6" onClick={handleNavigateToProduct}>
                 <div className="flex-1">
                     {product.category && <p className="mb-2 text-sm font-medium text-gray-600">{product.category.name}</p>}
                     <h3 className="mb-3 line-clamp-3 text-sm leading-tight font-bold text-gray-900 sm:text-lg">{product.name}</h3>
@@ -374,7 +378,9 @@ export default function ProductCard({ product, viewMode }: ProductCardProps) {
                     <div className="mb-4 flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                             <span className="text-xl font-bold text-gray-900">{formatCurrency(product.price)}</span>
-                            {product.originalPrice && <span className="text-base text-gray-500 line-through">{formatCurrency(product.originalPrice)}</span>}
+                            {product.originalPrice && (
+                                <span className="text-base text-gray-500 line-through">{formatCurrency(product.originalPrice)}</span>
+                            )}
                         </div>
                     </div>
                 </div>

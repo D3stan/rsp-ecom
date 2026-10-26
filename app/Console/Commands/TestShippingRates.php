@@ -12,7 +12,6 @@ use Illuminate\Console\Command;
 use Illuminate\Http\Client\Events\RequestSending;
 use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Support\Facades\Event;
-use Throwable;
 
 class TestShippingRates extends Command
 {
@@ -177,7 +176,7 @@ class TestShippingRates extends Command
         $this->line("<fg=cyan>Recipient:</> {$rateRequest->recipient->name}, {$rateRequest->recipient->street}, {$rateRequest->recipient->postalCode} {$rateRequest->recipient->city} ({$rateRequest->recipient->province}) [{$rateRequest->recipient->country}]");
         foreach ($rateRequest->parcels as $idx => $p) {
             $dims = "{$p->lengthCm}x{$p->widthCm}x{$p->heightCm} cm";
-            $this->line("<fg=cyan>Parcel #".($idx + 1).":</> {$p->weightKg} kg ({$dims}) x {$p->quantity}");
+            $this->line('<fg=cyan>Parcel #'.($idx + 1).":</> {$p->weightKg} kg ({$dims}) x {$p->quantity}");
         }
 
         // 4. HTTP eavesdropping for --raw or -v
@@ -206,7 +205,7 @@ class TestShippingRates extends Command
         }
 
         // 5. Execute Rate Quoting
-        $this->info("\n--- Calling Providers (".implode(', ', $drivers).") ---");
+        $this->info("\n--- Calling Providers (".implode(', ', $drivers).') ---');
         $startTime = microtime(true);
         $result = $rateManager->quoteAll($rateRequest, $drivers);
         $duration = round((microtime(true) - $startTime) * 1000, 1);

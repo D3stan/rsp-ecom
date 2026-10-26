@@ -9,13 +9,14 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Size;
 use App\Services\Ops\FunnelTracker;
+use App\Services\PromotionService;
 use App\Support\CheckoutTotals;
+use Artesaos\SEOTools\Facades\SEOMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
-use Artesaos\SEOTools\Facades\SEOMeta;
 
 class CartController extends Controller
 {
@@ -26,11 +27,11 @@ class CartController extends Controller
     {
         // Set noindex for cart page
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('Shopping Cart – ' . settings('store.name'));
-        
+        SEOMeta::setTitle('Shopping Cart – '.settings('store.name'));
+
         $cart = $this->getOrCreateCart();
-        
-        if (!$cart) {
+
+        if (! $cart) {
             return Inertia::render('cart', [
                 'cart' => null,
                 'cartItems' => [],
@@ -56,7 +57,7 @@ class CartController extends Controller
             }
 
             // If cart item doesn't have a size but product does, assign it
-            if (!$item->size_id && $item->product->size_id) {
+            if (! $item->size_id && $item->product->size_id) {
                 $item->size_id = $item->product->size_id;
                 $updated = true;
             }
@@ -136,7 +137,7 @@ class CartController extends Controller
         }
 
         // Check stock
-        if (!$variant->canAddToCart($validated['quantity'])) {
+        if (! $variant->canAddToCart($validated['quantity'])) {
             return response()->json([
                 'error' => 'Not enough stock',
                 'available' => $variant->stock_quantity,
@@ -160,7 +161,7 @@ class CartController extends Controller
         if ($cartItem) {
             // Update quantity
             $newQuantity = $cartItem->quantity + $validated['quantity'];
-            if (!$variant->canAddToCart($newQuantity)) {
+            if (! $variant->canAddToCart($newQuantity)) {
                 return response()->json([
                     'error' => 'Not enough stock for total quantity',
                     'available' => $variant->stock_quantity,
@@ -209,10 +210,10 @@ class CartController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cart item not found.'
+                    'message' => 'Cart item not found.',
                 ], 404);
             }
-            
+
             return back()->withErrors(['message' => 'Cart item not found.']);
         }
 
@@ -226,7 +227,7 @@ class CartController extends Controller
                     'maxQuantity' => $availableStock,
                 ], 400);
             }
-            
+
             return back()->withErrors([
                 'message' => 'Insufficient stock available.',
                 'maxQuantity' => $availableStock,
@@ -265,10 +266,10 @@ class CartController extends Controller
             if (request()->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cart item not found.'
+                    'message' => 'Cart item not found.',
                 ], 404);
             }
-            
+
             return back()->withErrors(['message' => 'Cart item not found.']);
         }
 
@@ -310,7 +311,7 @@ class CartController extends Controller
     public function count()
     {
         $cart = $this->getOrCreateCart();
-        
+
         return response()->json([
             'count' => $cart ? $cart->total_items : 0,
         ]);
@@ -328,10 +329,10 @@ class CartController extends Controller
         $code = $request->input('code');
 
         // Use PromotionService to validate the coupon via Stripe
-        $promotionService = app(\App\Services\PromotionService::class);
+        $promotionService = app(PromotionService::class);
         $validation = $promotionService->validatePromotionCode($code);
 
-        if (!$validation['valid']) {
+        if (! $validation['valid']) {
             // Check if this is an Inertia request
             if ($request->header('X-Inertia')) {
                 return back()->withErrors(['coupon' => $validation['error']]);
@@ -361,7 +362,7 @@ class CartController extends Controller
                 'discount_amount' => $discount['amount'],
                 'discount_percentage' => $discount['percentage'],
                 'description' => $discount['description'],
-            ]
+            ],
         ]);
 
         // Check if this is an Inertia request

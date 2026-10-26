@@ -1,29 +1,29 @@
 <?php
 
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\Api\PromotionController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CheckoutRecoveryController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\WishlistController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\PageController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GuestOrderController;
-use App\Http\Controllers\Api\PromotionController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Newsletter\NewsletterController;
+use App\Http\Controllers\PageController;
+use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\RestockUnsubscribeController;
 use App\Http\Controllers\ReviewController;
-use App\Http\Controllers\Newsletter\NewsletterController;
+use App\Http\Controllers\WishlistController;
 use App\Shipping\Tracking\Http\TrackingWebhookController;
 use App\Support\Locales;
-use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
+use Artesaos\SEOTools\Facades\SEOMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
+use Laravel\Cashier\Http\Controllers\WebhookController as CashierWebhookController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
@@ -122,6 +122,8 @@ Route::post('/contact', [ContactController::class, 'store'])->middleware('thrott
 
 Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
 
+Route::get('/cookies', [PageController::class, 'cookies'])->name('cookies');
+
 Route::get('/shipping-returns', [PageController::class, 'shippingReturns'])->name('shipping-returns');
 
 Route::get('/terms', [PageController::class, 'terms'])->name('terms');
@@ -142,10 +144,10 @@ Route::prefix('api')->group(function () {
 });
 
 Route::get('/api/translations/{locale}', function ($locale) {
-    if (!Locales::isSupported($locale)) {
+    if (! Locales::isSupported($locale)) {
         $locale = Locales::fallback();
     }
-    
+
     // English fills in any key the locale lacks (Locales::translations)
     $translations = Locales::translations($locale);
 
@@ -163,23 +165,23 @@ Route::post('/change-language', function (Request $request) {
         Session::put('locale', $locale);
         App::setLocale($locale);
     }
-    
+
     return back();
 })->name('change-language');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         // Set noindex for user dashboard
-        \Artesaos\SEOTools\Facades\SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        \Artesaos\SEOTools\Facades\SEOMeta::setTitle('Dashboard – ' . settings('store.name'));
-        
+        SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
+        SEOMeta::setTitle('Dashboard – '.settings('store.name'));
+
         // Redirect admin users to admin dashboard
         if (auth()->user()->isAdmin()) {
             return redirect()->route('admin.dashboard');
         }
-        
+
         $user = auth()->user();
-        
+
         // Get recent orders with items and products
         $recentOrders = $user->orders()
             ->with(['orderItems.product', 'orderItems.size', 'orderItems.productVariant', 'trackingEvents'])
@@ -209,17 +211,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'size' => $item->size,
                     ];
                 })->toArray();
-                
+
                 return $orderData;
             });
-        
+
         // Calculate order statistics
         $orderStats = [
             'total' => $user->orders()->count(),
             'pending' => $user->orders()->where('status', 'pending')->count(),
             'completed' => $user->orders()->where('status', 'delivered')->count(),
         ];
-        
+
         // Get wishlist count and items
         $wishlistItems = $user->wishlist()
             ->with('product')
@@ -238,9 +240,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ],
                 ];
             });
-        
+
         $wishlistCount = $user->wishlist()->count();
-        
+
         return Inertia::render('Dashboard/Dashboard', [
             'recentOrders' => $recentOrders,
             'orderStats' => $orderStats,
@@ -251,14 +253,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard/orders', [DashboardController::class, 'orders'])->name('orders.index');
     Route::get('dashboard/wishlist', [DashboardController::class, 'wishlist'])->name('wishlist.index');
     Route::delete('dashboard/wishlist/{wishlist}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
-    
+
     // Wishlist API-like routes for AJAX calls with CSRF protection
     Route::post('wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
     Route::post('wishlist/add', [WishlistController::class, 'store'])->name('wishlist.store');
     Route::delete('wishlist/remove', [WishlistController::class, 'destroyByProduct'])->name('wishlist.remove');
     Route::post('wishlist/check', [WishlistController::class, 'check'])->name('wishlist.check');
     Route::get('wishlist/count', [WishlistController::class, 'count'])->name('wishlist.count');
-    
+
     // Review routes
     Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
     Route::get('reviews/create/{product}', [ReviewController::class, 'create'])->name('reviews.create');
@@ -270,7 +272,7 @@ require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';
 
 Route::get('/robots.txt', function () {
-    $content = "User-agent: *
+    $content = 'User-agent: *
 Disallow: /admin/
 Disallow: /dashboard/
 Disallow: /cart/
@@ -281,8 +283,8 @@ Disallow: /api/
 Allow: /
 
 # Sitemap location
-Sitemap: " . url('/sitemap.xml');
-    
+Sitemap: '.url('/sitemap.xml');
+
     return response($content)
         ->header('Content-Type', 'text/plain');
 })->name('robots');

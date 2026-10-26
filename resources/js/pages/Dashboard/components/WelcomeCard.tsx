@@ -1,13 +1,13 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { type User } from '@/types';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from '@/hooks/useTranslation';
+import { type User } from '@/types';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 
 export const WelcomeCard = ({ user }: { user: User }) => {
     const { t } = useTranslation();
-    
+
     const formatTime = () => {
         const hour = new Date().getHours();
         if (hour < 12) return t('dashboard.good_morning');
@@ -18,38 +18,31 @@ export const WelcomeCard = ({ user }: { user: User }) => {
     const getInitials = (name: string) => {
         return name
             .split(' ')
-            .map(word => word.charAt(0))
+            .map((word) => word.charAt(0))
             .join('')
             .toUpperCase()
             .slice(0, 2);
     };
 
     return (
-        <Card className="border-l-4 border-l-primary w-full overflow-hidden">
+        <Card className="w-full overflow-hidden border-l-4 border-l-primary">
             <CardHeader>
                 <CardTitle className="text-xl break-words">
                     {formatTime()}, {user.name}!
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                     <Avatar className="h-16 w-16 flex-shrink-0">
                         <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback className="text-lg font-semibold">
-                            {getInitials(user.name)}
-                        </AvatarFallback>
+                        <AvatarFallback className="text-lg font-semibold">{getInitials(user.name)}</AvatarFallback>
                     </Avatar>
-                    
-                    <div className="flex-1 space-y-2 min-w-0">
-                        <p className="text-muted-foreground break-words">
-                            {t('dashboard.welcome_description')}
-                        </p>
-                        
+
+                    <div className="min-w-0 flex-1 space-y-2">
+                        <p className="break-words text-muted-foreground">{t('dashboard.welcome_description')}</p>
+
                         <div className="flex flex-wrap gap-2">
-                            <Badge 
-                                variant={user.email_verified_at ? "outline" : "destructive"}
-                                className="flex items-center gap-1 flex-shrink-0"
-                            >
+                            <Badge variant={user.email_verified_at ? 'outline' : 'destructive'} className="flex flex-shrink-0 items-center gap-1">
                                 {user.email_verified_at ? (
                                     <>
                                         <CheckCircle className="h-3 w-3" />
@@ -62,9 +55,9 @@ export const WelcomeCard = ({ user }: { user: User }) => {
                                     </>
                                 )}
                             </Badge>
-                            
+
                             {user.google_id && (
-                                <Badge variant="outline" className="flex items-center gap-1 flex-shrink-0">
+                                <Badge variant="outline" className="flex flex-shrink-0 items-center gap-1">
                                     <svg className="h-3 w-3" viewBox="0 0 24 24">
                                         <path
                                             fill="currentColor"

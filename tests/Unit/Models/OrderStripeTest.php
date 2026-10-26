@@ -2,11 +2,11 @@
 
 namespace Tests\Unit\Models;
 
+use App\Models\Address;
 use App\Models\Order;
 use App\Models\User;
-use App\Models\Address;
-use Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class OrderStripeTest extends TestCase
 {
@@ -33,7 +33,7 @@ class OrderStripeTest extends TestCase
         $user = User::factory()->create();
         $billingAddress = $this->createTestAddress($user, 'billing');
         $shippingAddress = $this->createTestAddress($user, 'shipping');
-        
+
         $order = Order::create([
             'order_number' => 'TEST-001',
             'user_id' => $user->id,
@@ -64,7 +64,7 @@ class OrderStripeTest extends TestCase
         $user = User::factory()->create();
         $billingAddress = $this->createTestAddress($user, 'billing');
         $shippingAddress = $this->createTestAddress($user, 'shipping');
-        
+
         $order = Order::create([
             'order_number' => 'TEST-001',
             'user_id' => $user->id,
@@ -91,7 +91,7 @@ class OrderStripeTest extends TestCase
         $user = User::factory()->create();
         $billingAddress = $this->createTestAddress($user, 'billing');
         $shippingAddress = $this->createTestAddress($user, 'shipping');
-        
+
         // Create orders with different payment statuses
         Order::create([
             'order_number' => 'TEST-001',

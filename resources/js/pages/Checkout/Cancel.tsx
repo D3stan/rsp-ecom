@@ -43,9 +43,7 @@ export default function CheckoutCancel({ message }: Props) {
                         <CardContent>
                             <div className="space-y-4">
                                 <Alert className="border-yellow-200 bg-yellow-50">
-                                    <AlertDescription className="text-gray-700">
-                                        {t('checkout.cancel.reasons_intro')}
-                                    </AlertDescription>
+                                    <AlertDescription className="text-gray-700">{t('checkout.cancel.reasons_intro')}</AlertDescription>
                                 </Alert>
 
                                 <ul className="ml-4 space-y-2 text-sm text-gray-600">
@@ -78,12 +76,12 @@ export default function CheckoutCancel({ message }: Props) {
 
                     {/* Action Buttons */}
                     <div className="space-y-4">
-                            <Button variant="outline" asChild size="lg" className="w-full">
-                                <Link href={route('checkout')} className="flex items-center gap-2">
-                                    <ShoppingCart className="h-4 w-4" />
-                                    {t('checkout.cancel.try_again')}
-                                </Link>
-                            </Button>
+                        <Button variant="outline" asChild size="lg" className="w-full">
+                            <Link href={route('checkout')} className="flex items-center gap-2">
+                                <ShoppingCart className="h-4 w-4" />
+                                {t('checkout.cancel.try_again')}
+                            </Link>
+                        </Button>
 
                         <Button variant="ghost" asChild className="w-full border-2 border-gray-300">
                             <Link href={route('products')} className="text-gray-600">

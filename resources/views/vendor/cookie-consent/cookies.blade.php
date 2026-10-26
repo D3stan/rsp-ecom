@@ -47,9 +47,9 @@
                                 @foreach($category->getCookies() as $cookie)
                                 <li class="cookies__cookie">
                                     <p class="cookies__name">{{ $cookie->name }}</p>
-                                    <p class="cookies__duration">{{ \Carbon\CarbonInterval::minutes($cookie->duration)->cascade() }}</p>
+                                    <p class="cookies__duration">{{ \App\Support\CookieDuration::forHumans($cookie->duration) }}</p>
                                     @if($cookie->description)
-                                        <p class="cookies__description">{{ $cookie->description }}</p>
+                                        <p class="cookies__description">{{ __($cookie->description) }}</p>
                                     @endif
                                 </li>
                                 @endforeach
@@ -67,11 +67,8 @@
     </div>
 </aside>
 
-{{-- STYLES & SCRIPT : feel free to remove them and add your own --}}
+{{-- The banner is styled by resources/css/cookie-consent.css (shadcn theme tokens), bundled with app.css --}}
 
 <script data-cookie-consent>
     {!! file_get_contents(LCC_ROOT . '/dist/script.js') !!}
 </script>
-<style data-cookie-consent>
-    {!! file_get_contents(LCC_ROOT . '/dist/style.css') !!}
-</style>

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Mail;
 class SendTestEmail extends Command
 {
     protected $signature = 'email:send-test {to}';
+
     protected $description = 'Send a test email to a specific address';
 
     public function handle()
@@ -16,7 +17,7 @@ class SendTestEmail extends Command
 
         Mail::raw('Attenzione, Catanzaro sta per essere gemellata con Capannastruzzo, EMERGENZA.', function ($message) use ($to) {
             $message->to($to)
-                    ->subject('EMERGENZA CATANZARO');
+                ->subject('EMERGENZA CATANZARO');
         });
 
         $this->info("Test email sent to {$to}");

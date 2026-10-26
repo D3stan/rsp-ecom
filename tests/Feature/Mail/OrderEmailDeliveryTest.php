@@ -3,8 +3,12 @@
 use App\Jobs\SendOrderEmail;
 use App\Mail\OrderConfirmation;
 use App\Mail\OrderShipped;
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderEmail;
+use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\Size;
 use App\Models\User;
 use App\Services\EmailService;
 use Illuminate\Support\Facades\Mail;
@@ -353,12 +357,12 @@ it('cascades order_emails when the order is deleted', function () {
 it('still sends when an ordered product has been deleted since', function () {
     Queue::fake();
     $order = makeOrder();
-    $size = \App\Models\Size::factory()->create();
-    $product = \App\Models\Product::factory()->create([
-        'category_id' => \App\Models\Category::factory()->create()->id,
+    $size = Size::factory()->create();
+    $product = Product::factory()->create([
+        'category_id' => Category::factory()->create()->id,
         'size_id' => $size->id,
     ]);
-    \App\Models\OrderItem::factory()->create(['order_id' => $order->id, 'product_id' => $product->id, 'size_id' => $size->id]);
+    OrderItem::factory()->create(['order_id' => $order->id, 'product_id' => $product->id, 'size_id' => $size->id]);
     app(EmailService::class)->sendOrderConfirmation($order);
     $product->delete(); // order_items.product_id is set to null by the FK
 

@@ -11,7 +11,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, router, useForm } from '@inertiajs/react';
-import { AlertTriangle, BarChart3, Box, ChevronDown, ChevronUp, Edit, GripVertical, Package, Ruler, Save, Tag, Trash2, TrendingUp, X } from 'lucide-react';
+import {
+    AlertTriangle,
+    BarChart3,
+    Box,
+    ChevronDown,
+    ChevronUp,
+    Edit,
+    GripVertical,
+    Package,
+    Ruler,
+    Save,
+    Tag,
+    Trash2,
+    TrendingUp,
+    X,
+} from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -67,7 +82,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
     const [editingSize, setEditingSize] = useState<number | null>(null);
     const [isStatsOpen, setIsStatsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'categories' | 'sizes'>('categories');
-    
+
     // Delete dialog state
     const [deleteDialog, setDeleteDialog] = useState<{
         open: boolean;
@@ -131,10 +146,12 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
     const scrollToForm = (formType: 'category' | 'size') => {
         // Use setTimeout to ensure the form is rendered first
         setTimeout(() => {
-            if (window.innerWidth >= 768) { // Desktop
+            if (window.innerWidth >= 768) {
+                // Desktop
                 const ref = formType === 'category' ? categoryFormRef : sizeFormRef;
                 ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } else { // Mobile
+            } else {
+                // Mobile
                 const ref = formType === 'category' ? mobileCategoryFormRef : mobileSizeFormRef;
                 ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
@@ -231,11 +248,9 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
     const confirmDelete = () => {
         if (!deleteDialog.item || !deleteDialog.canDelete) return;
-        
-        const endpoint = deleteDialog.type === 'category' 
-            ? `/admin/categories/${deleteDialog.item.id}`
-            : `/admin/sizes/${deleteDialog.item.id}`;
-        
+
+        const endpoint = deleteDialog.type === 'category' ? `/admin/categories/${deleteDialog.item.id}` : `/admin/sizes/${deleteDialog.item.id}`;
+
         router.delete(endpoint);
         closeDeleteDialog();
     };
@@ -310,7 +325,9 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{categoryStats.total_categories}</p>
-                                    <p className="text-xs text-muted-foreground">{t('admin.categories_sizes.active_count', { count: categoryStats.active_categories })}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('admin.categories_sizes.active_count', { count: categoryStats.active_categories })}
+                                    </p>
                                 </div>
                             </Card>
 
@@ -332,7 +349,9 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{sizeStats.total_sizes}</p>
-                                    <p className="text-xs text-muted-foreground">{t('admin.categories_sizes.with_products_count', { count: sizeStats.sizes_with_products })}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('admin.categories_sizes.with_products_count', { count: sizeStats.sizes_with_products })}
+                                    </p>
                                 </div>
                             </Card>
 
@@ -378,7 +397,9 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                             </Badge>
                                                         )}
                                                     </div>
-                                                    <p className="text-sm text-muted-foreground">{t('admin.categories_sizes.products_count', { count: category.products_count })}</p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {t('admin.categories_sizes.products_count', { count: category.products_count })}
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center space-x-2">
@@ -402,7 +423,9 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                         {/* Category Form */}
                         <Card className="p-4" ref={categoryFormRef}>
-                            <h3 className="mb-4 text-lg font-medium">{editingCategory ? t('admin.categories_sizes.edit_category') : t('admin.categories_sizes.add_category')}</h3>
+                            <h3 className="mb-4 text-lg font-medium">
+                                {editingCategory ? t('admin.categories_sizes.edit_category') : t('admin.categories_sizes.add_category')}
+                            </h3>
                             <form onSubmit={handleCategorySubmit} className="space-y-4">
                                 <div>
                                     <Label htmlFor="category-name">{t('admin.categories_sizes.name')}</Label>
@@ -473,7 +496,9 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                             </div>
                                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                                 <span>{t('admin.categories_sizes.products_count', { count: size.products_count })}</span>
-                                                <span>{t('admin.categories_sizes.shipping_amount', { amount: formatCurrency(size.shipping_cost) })}</span>
+                                                <span>
+                                                    {t('admin.categories_sizes.shipping_amount', { amount: formatCurrency(size.shipping_cost) })}
+                                                </span>
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-2">
@@ -496,7 +521,9 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                         {/* Size Form */}
                         <Card className="p-4" ref={sizeFormRef}>
-                            <h3 className="mb-4 text-lg font-medium">{editingSize ? t('admin.categories_sizes.edit_size') : t('admin.categories_sizes.add_size')}</h3>
+                            <h3 className="mb-4 text-lg font-medium">
+                                {editingSize ? t('admin.categories_sizes.edit_size') : t('admin.categories_sizes.add_size')}
+                            </h3>
                             <form onSubmit={handleSizeSubmit} className="space-y-4">
                                 <div>
                                     <Label htmlFor="size-name">{t('admin.categories_sizes.name')}</Label>
@@ -550,10 +577,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                                 <div>
                                     <Label htmlFor="size-box-type">{t('admin.categories_sizes.box_type')}</Label>
-                                    <Select
-                                        value={sizeForm.data.box_type}
-                                        onValueChange={(value) => sizeForm.setData('box_type', value)}
-                                    >
+                                    <Select value={sizeForm.data.box_type} onValueChange={(value) => sizeForm.setData('box_type', value)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder={t('admin.categories_sizes.select_box_type')} />
                                         </SelectTrigger>
@@ -632,7 +656,9 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                         </Badge>
                                                     )}
                                                 </div>
-                                                <p className="text-sm text-muted-foreground">{t('admin.categories_sizes.products_count', { count: category.products_count })}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {t('admin.categories_sizes.products_count', { count: category.products_count })}
+                                                </p>
                                                 {category.description && <p className="mt-1 text-sm text-muted-foreground">{category.description}</p>}
                                             </div>
                                             <div className="flex gap-2">
@@ -655,7 +681,9 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                             {/* Mobile Category Form */}
                             <Card className="p-4" ref={mobileCategoryFormRef}>
-                                <h3 className="mb-4 text-lg font-medium">{editingCategory ? t('admin.categories_sizes.edit_category') : t('admin.categories_sizes.add_category')}</h3>
+                                <h3 className="mb-4 text-lg font-medium">
+                                    {editingCategory ? t('admin.categories_sizes.edit_category') : t('admin.categories_sizes.add_category')}
+                                </h3>
                                 <form onSubmit={handleCategorySubmit} className="space-y-4">
                                     <div>
                                         <Label htmlFor="mobile-category-name">{t('admin.categories_sizes.name')}</Label>
@@ -721,9 +749,17 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                                                     <span className="font-medium">{size.name}</span>
                                                 </div>
                                                 <div className="space-y-1 text-sm text-muted-foreground">
-                                                    <p>{t('admin.categories_sizes.dimensions_cm', { dimensions: formatDimensions(size.length, size.width, size.height) })}</p>
+                                                    <p>
+                                                        {t('admin.categories_sizes.dimensions_cm', {
+                                                            dimensions: formatDimensions(size.length, size.width, size.height),
+                                                        })}
+                                                    </p>
                                                     <p>{t('admin.categories_sizes.products_label_count', { count: size.products_count })}</p>
-                                                    <p>{t('admin.categories_sizes.shipping_label_amount', { amount: formatCurrency(size.shipping_cost) })}</p>
+                                                    <p>
+                                                        {t('admin.categories_sizes.shipping_label_amount', {
+                                                            amount: formatCurrency(size.shipping_cost),
+                                                        })}
+                                                    </p>
                                                     <p>{t('admin.categories_sizes.type_label', { type: getBoxTypeName(size.box_type) })}</p>
                                                 </div>
                                             </div>
@@ -747,7 +783,9 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                             {/* Mobile Size Form */}
                             <Card className="p-4" ref={mobileSizeFormRef}>
-                                <h3 className="mb-4 text-lg font-medium">{editingSize ? t('admin.categories_sizes.edit_size') : t('admin.categories_sizes.add_size')}</h3>
+                                <h3 className="mb-4 text-lg font-medium">
+                                    {editingSize ? t('admin.categories_sizes.edit_size') : t('admin.categories_sizes.add_size')}
+                                </h3>
                                 <form onSubmit={handleSizeSubmit} className="space-y-4">
                                     <div>
                                         <Label htmlFor="mobile-size-name">{t('admin.categories_sizes.name')}</Label>
@@ -801,10 +839,7 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
 
                                     <div>
                                         <Label htmlFor="mobile-size-box-type">{t('admin.categories_sizes.box_type')}</Label>
-                                        <Select
-                                            value={sizeForm.data.box_type}
-                                            onValueChange={(value) => sizeForm.setData('box_type', value)}
-                                        >
+                                        <Select value={sizeForm.data.box_type} onValueChange={(value) => sizeForm.setData('box_type', value)}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder={t('admin.categories_sizes.select_box_type')} />
                                             </SelectTrigger>
@@ -892,29 +927,33 @@ export default function CategoriesAndSizesIndex({ categories, sizes, boxTypes, c
                     </div>
                 </div>
 
-
                 {/* Delete Confirmation Dialog */}
                 <Dialog open={deleteDialog.open} onOpenChange={closeDeleteDialog}>
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                                 <AlertTriangle className="h-5 w-5 text-amber-500" />
-                                {deleteDialog.type === 'category' ? t('admin.categories_sizes.delete_category') : t('admin.categories_sizes.delete_size')}
+                                {deleteDialog.type === 'category'
+                                    ? t('admin.categories_sizes.delete_category')
+                                    : t('admin.categories_sizes.delete_size')}
                             </DialogTitle>
                             <DialogDescription>
-                                {deleteDialog.canDelete ? (
-                                    t('admin.categories_sizes.delete_confirm', { name: deleteDialog.item?.name || '' })
-                                ) : (
-                                    t('admin.categories_sizes.cannot_delete_has_products', { name: deleteDialog.item?.name || '', count: deleteDialog.item?.products_count || 0 })
-                                )}
+                                {deleteDialog.canDelete
+                                    ? t('admin.categories_sizes.delete_confirm', { name: deleteDialog.item?.name || '' })
+                                    : t('admin.categories_sizes.cannot_delete_has_products', {
+                                          name: deleteDialog.item?.name || '',
+                                          count: deleteDialog.item?.products_count || 0,
+                                      })}
                             </DialogDescription>
                         </DialogHeader>
-                        
+
                         {!deleteDialog.canDelete && (
                             <Alert>
                                 <AlertTriangle className="h-4 w-4" />
                                 <AlertDescription>
-                                    {deleteDialog.type === 'category' ? t('admin.categories_sizes.reassign_products_category') : t('admin.categories_sizes.reassign_products_size')}
+                                    {deleteDialog.type === 'category'
+                                        ? t('admin.categories_sizes.reassign_products_category')
+                                        : t('admin.categories_sizes.reassign_products_size')}
                                 </AlertDescription>
                             </Alert>
                         )}

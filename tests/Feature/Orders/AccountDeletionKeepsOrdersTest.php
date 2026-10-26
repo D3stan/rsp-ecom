@@ -6,6 +6,7 @@ use App\Models\OrderEmail;
 use App\Models\OrderItem;
 use App\Models\ShipmentTrackingEvent;
 use App\Models\User;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 
 /**
  * Deleting an account must never delete the orders placed with it: they are the shop's accounting and
@@ -60,7 +61,7 @@ function paidOrderOf(User $user, ?int $addressOwnerId): Order
 
 function deleteAccount(User $user): void
 {
-    test()->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+    test()->withoutMiddleware(PreventRequestForgery::class);
 
     test()->actingAs($user)
         ->delete(route('profile.destroy'), ['password' => 'password'])

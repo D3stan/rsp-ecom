@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('verification_token')->unique();
             $table->timestamp('token_expires_at');
             $table->timestamps();
-            
+
             $table->index(['email', 'verification_token']);
             $table->index(['token_expires_at']);
         });

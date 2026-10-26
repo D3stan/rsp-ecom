@@ -5,6 +5,7 @@ use App\Models\SettingChange;
 use App\Models\User;
 use App\Services\EmailService;
 use App\Settings\Settings;
+use App\Settings\SystemInfo;
 
 beforeEach(function () {
     $this->admin = User::factory()->create(['role' => 'admin']);
@@ -260,7 +261,7 @@ it('shares only the public settings as a typed Inertia prop', function () {
 });
 
 it('describes the system without secrets: scheduler, rate limits, retries, queue status', function () {
-    $panel = app(App\Settings\SystemInfo::class)->panel();
+    $panel = app(SystemInfo::class)->panel();
     $items = collect($panel['sections'])->flatMap(fn ($s) => $s['items'])->keyBy('id');
 
     expect(collect($items['scheduled_tasks']['value'])->pluck('name')->all())->toContain('ops:check-queue')
@@ -271,11 +272,11 @@ it('describes the system without secrets: scheduler, rate limits, retries, queue
 
     Artisan::call('ops:check-queue');
     // the sync queue in tests is "nothing to check": no status is recorded
-    expect(app(App\Settings\SystemInfo::class)->queueHealth()['status'])->toBe('unknown');
+    expect(app(SystemInfo::class)->queueHealth()['status'])->toBe('unknown');
 
     config(['queue.default' => 'database']);
     Artisan::call('ops:check-queue');
-    expect(app(App\Settings\SystemInfo::class)->queueHealth()['status'])->toBe('ok');
+    expect(app(SystemInfo::class)->queueHealth()['status'])->toBe('ok');
 
     expect(json_encode($panel))->not->toMatch('/sk_|pk_|whsec_/');
 });

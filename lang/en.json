@@ -25,6 +25,7 @@
     "shipping_info": "Shipping Info",
     "legal": "Legal",
     "privacy_policy": "Privacy Policy",
+    "cookie_policy": "Cookie Policy",
     "terms_of_service": "Terms of Service",
     "returns": "Returns",
     "shipping_returns_link": "Shipping & Returns",
@@ -383,7 +384,7 @@
         "opt_out": "Opt out of promotional communications",
         "request_copy": "Request a copy of your data",
         "cookies": "Cookies",
-        "cookies_text": "We use cookies to enhance your browsing experience and analyze site traffic. You can control cookie settings through your browser preferences.",
+        "cookies_text": "We only use the cookies and browser storage listed in our Cookie Policy: those needed to run the shop and, if you allow them, a few interface preferences and error session replay. We do not use advertising or tracking cookies.",
         "contact_privacy": "If you have any questions about this Privacy Policy, please contact us:",
         "contact_email": "Email: {email}"
     },
@@ -2354,5 +2355,19 @@
     "checkout.province_select": "Select a province",
     "checkout.province_invalid": "Select one of the listed provinces.",
     "checkout.success.create_account_title": "Create an account to track this order and check out faster next time",
-    "checkout.success.create_account_body": "Choose a password for {email}. We will send you a link to confirm your email; your orders and your address are on your account right after."
+    "checkout.success.create_account_body": "Choose a password for {email}. We will send you a link to confirm your email; your orders and your address are on your account right after.",
+    "cookies_page": {
+        "title": "Cookie Policy",
+        "intro": "This page lists every cookie and similar browser storage item this website uses, what it is for and how long it lasts. Essential items are always on; you choose the others in the cookie banner.",
+        "name": "Name",
+        "purpose": "Purpose",
+        "duration": "Duration",
+        "third_parties": "Other services",
+        "third_party_sentry": "Error monitoring (Sentry): when something breaks we send the error and a few technical details, with no cookies and no personal data. A masked replay of the moments around an error is recorded only if you accept the analytics cookies.",
+        "third_party_fonts": "Fonts are loaded from Bunny Fonts (fonts.bunny.net), which sets no cookies; like any server, it sees your IP address.",
+        "third_party_stripe": "When you pay you are sent to Stripe's secure checkout page, which sets its own cookies under Stripe's privacy policy.",
+        "your_choices": "Your choices",
+        "your_choices_text": "You can change or withdraw your consent at any time. The banner will show again and anything stored under a category you decline is removed.",
+        "change_preferences": "Change cookie preferences"
+    }
 }

@@ -45,13 +45,13 @@ class ReviewsController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('comment', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($userQuery) use ($search) {
-                      $userQuery->where('name', 'like', "%{$search}%")
-                               ->orWhere('email', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('product', function ($productQuery) use ($search) {
-                      $productQuery->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('product', function ($productQuery) use ($search) {
+                        $productQuery->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -95,7 +95,7 @@ class ReviewsController extends Controller
 
         $filters = $request->only(['status', 'rating', 'search', 'date_from', 'date_to']);
         // Set default status to pending if not specified
-        if (!$request->filled('status')) {
+        if (! $request->filled('status')) {
             $filters['status'] = 'pending';
         }
 
@@ -117,7 +117,7 @@ class ReviewsController extends Controller
         $nextReview = Review::where('id', '>', $review->id)
             ->orderBy('id', 'asc')
             ->first();
-        
+
         $previousReview = Review::where('id', '<', $review->id)
             ->orderBy('id', 'desc')
             ->first();
@@ -145,7 +145,7 @@ class ReviewsController extends Controller
             $request->boolean('is_approved') ? $review->approve() : $review->reject();
 
             $action = $request->is_approved ? 'approved' : 'rejected';
-            
+
             Log::info("Review {$action}", [
                 'review_id' => $review->id,
                 'product_id' => $review->product_id,
@@ -159,7 +159,8 @@ class ReviewsController extends Controller
                 'exception' => get_class($e),
                 'error' => $e->getMessage(),
             ]);
-            return back()->with('error', 'Failed to update review: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to update review: '.$e->getMessage());
         }
     }
 
@@ -170,7 +171,7 @@ class ReviewsController extends Controller
     {
         try {
             $review->approve();
-            
+
             Log::info('Review approved', [
                 'review_id' => $review->id,
                 'product_id' => $review->product_id,
@@ -183,6 +184,7 @@ class ReviewsController extends Controller
                 'review_id' => $review->id,
                 'error' => $e->getMessage(),
             ]);
+
             return back()->with('error', 'Failed to approve review.');
         }
     }
@@ -194,7 +196,7 @@ class ReviewsController extends Controller
     {
         try {
             $review->reject();
-            
+
             Log::info('Review rejected', [
                 'review_id' => $review->id,
                 'product_id' => $review->product_id,
@@ -207,6 +209,7 @@ class ReviewsController extends Controller
                 'review_id' => $review->id,
                 'error' => $e->getMessage(),
             ]);
+
             return back()->with('error', 'Failed to reject review.');
         }
     }
@@ -236,7 +239,7 @@ class ReviewsController extends Controller
             ]);
 
             $isApproved = $request->action === 'approve';
-            
+
             DB::transaction(function () use ($request, $isApproved) {
                 Review::whereIn('id', $request->review_ids)->update(['is_approved' => $isApproved]);
 
@@ -247,7 +250,7 @@ class ReviewsController extends Controller
             });
 
             $count = count($request->review_ids);
-            $action = $request->action . 'd';
+            $action = $request->action.'d';
 
             return back()->with('success', "{$count} reviews {$action} successfully.");
         } catch (\Exception $e) {
@@ -257,7 +260,8 @@ class ReviewsController extends Controller
                 'action' => $request->input('action'),
                 'review_count' => count((array) $request->input('review_ids', [])),
             ]);
-            return back()->with('error', 'Failed to update reviews: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to update reviews: '.$e->getMessage());
         }
     }
 
@@ -281,6 +285,7 @@ class ReviewsController extends Controller
                 'review_id' => $review->id,
                 'error' => $e->getMessage(),
             ]);
+
             return back()->with('error', 'Failed to delete review.');
         }
     }

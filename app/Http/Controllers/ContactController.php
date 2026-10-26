@@ -3,30 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Mail\ContactMessage;
+use Artesaos\SEOTools\Facades\OpenGraph;
+use Artesaos\SEOTools\Facades\SEOMeta;
+use Artesaos\SEOTools\Facades\TwitterCard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
-use Artesaos\SEOTools\Facades\SEOMeta;
-use Artesaos\SEOTools\Facades\OpenGraph;
-use Artesaos\SEOTools\Facades\TwitterCard;
 
 class ContactController extends Controller
 {
     public function index()
     {
         // Set SEO for contact page
-        SEOMeta::setTitle('Contact Us – ' . settings('store.name'));
+        SEOMeta::setTitle('Contact Us – '.settings('store.name'));
         SEOMeta::setDescription('Get in touch with our customer service team. We\'re here to help with any questions about our products or services.');
         SEOMeta::setCanonical(route('contact'));
 
         OpenGraph::setType('website');
         OpenGraph::setUrl(route('contact'));
-        OpenGraph::setTitle('Contact Us – ' . settings('store.name'));
+        OpenGraph::setTitle('Contact Us – '.settings('store.name'));
         OpenGraph::setDescription('Get in touch with our customer service team. We\'re here to help with any questions about our products or services.');
 
         TwitterCard::setType('summary');
-        TwitterCard::setTitle('Contact Us – ' . settings('store.name'));
+        TwitterCard::setTitle('Contact Us – '.settings('store.name'));
         TwitterCard::setDescription('Get in touch with our customer service team. We\'re here to help with any questions.');
 
         return Inertia::render('contact');
@@ -55,18 +55,18 @@ class ContactController extends Controller
         }
 
         $validated = $validator->validated();
-        
+
         // Get contact email from environment or fallback
         $contactEmail = config('mail.contact_email', config('mail.from.address'));
-        
+
         try {
             // Queued: the visitor does not wait for SMTP; an exception here means the queue backend is unreachable
             Mail::to($contactEmail)->queue(new ContactMessage($validated));
-            
+
             return back()->with('success', 'Thank you for your message! We\'ll get back to you soon.');
         } catch (\Exception $e) {
             \Log::error('Contact form submission failed', ['exception' => get_class($e), 'error' => $e->getMessage()]);
-            
+
             return back()->with('error', 'Sorry, there was an error sending your message. Please try again later or contact us directly.');
         }
     }

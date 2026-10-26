@@ -20,13 +20,15 @@ use App\Shipping\Contracts\ShippingProviderManifest;
 use App\Shipping\Labels\Contracts\CancelsShipments;
 use App\Shipping\Labels\Contracts\LabelProvider;
 use App\Shipping\Labels\DTO\LabelDocument;
-use App\Shipping\Rates\Contracts\RateProvider;
 use App\Shipping\Labels\DTO\ShipmentRequest;
 use App\Shipping\Labels\DTO\ShipmentResult;
 use App\Shipping\Labels\LabelManager;
+use App\Shipping\Rates\Contracts\RateProvider;
+use App\Shipping\Support\NextWorkingDay;
 use App\Shipping\Tracking\Contracts\TrackingProvider;
 use App\Shipping\Tracking\Drivers\FakeProvider;
 use App\Shipping\Tracking\TrackingManager;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -219,7 +221,7 @@ it('creates and cancels labels across coexisting label providers regardless of g
     $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $orderFake), [
         'tracking_carrier' => 'acme',
         'create_label' => true,
-        'pickup_date' => \App\Shipping\Support\NextWorkingDay::after(\Carbon\CarbonImmutable::now())->toDateString(),
+        'pickup_date' => NextWorkingDay::after(CarbonImmutable::now())->toDateString(),
         'label_driver' => 'fake',
         'parcels' => [['weight' => 1.0]],
     ])->assertSessionHas('success');
@@ -227,7 +229,7 @@ it('creates and cancels labels across coexisting label providers regardless of g
     $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $orderAlpha), [
         'tracking_carrier' => 'acme',
         'create_label' => true,
-        'pickup_date' => \App\Shipping\Support\NextWorkingDay::after(\Carbon\CarbonImmutable::now())->toDateString(),
+        'pickup_date' => NextWorkingDay::after(CarbonImmutable::now())->toDateString(),
         'label_driver' => 'alpha_labels',
         'parcels' => [['weight' => 2.0]],
     ])->assertSessionHas('success');

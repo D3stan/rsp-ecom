@@ -3,6 +3,7 @@
 use App\Models\Cart;
 use App\Models\PendingUserVerification;
 use App\Models\User;
+use App\Services\CartMerger;
 use App\Settings\Settings;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event;
@@ -255,7 +256,7 @@ it('does not move a guest line whose variant is out of stock, and never shrinks 
 it('still signs the customer in when the merge fails', function () {
     guestCartAdd($this, $this->productX, $this->variantX, 1);
     $user = User::factory()->create();
-    $this->mock(\App\Services\CartMerger::class)
+    $this->mock(CartMerger::class)
         ->shouldReceive('merge')->once()->andThrow(new RuntimeException('boom'));
 
     $this->post('/login', ['email' => $user->email, 'password' => 'password'])->assertRedirect();

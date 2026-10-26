@@ -30,12 +30,14 @@ class CleanupExpiredPendingVerifications extends Command
 
         if ($expiredCount === 0) {
             $this->info('No expired pending verifications found.');
+
             return;
         }
 
-        if (!$this->option('force')) {
-            if (!$this->confirm("Found {$expiredCount} expired pending verification(s). Do you want to delete them?")) {
+        if (! $this->option('force')) {
+            if (! $this->confirm("Found {$expiredCount} expired pending verification(s). Do you want to delete them?")) {
                 $this->info('Cleanup cancelled.');
+
                 return;
             }
         }

@@ -11,11 +11,13 @@ use App\Shipping\Auth\CachedClientCredentialsAuthenticator;
 use App\Shipping\Contracts\Authenticator;
 use App\Shipping\Tracking\Drivers\AbstractHttpProvider;
 use App\Shipping\Tracking\Drivers\Concerns\CachesConditionalRequests;
+use App\Shipping\Tracking\DTO\TrackingEvent;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\DTO\TrackingResult;
 use App\Shipping\Tracking\Enums\TrackingStatus;
 use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;
 use App\Shipping\Tracking\Exceptions\TrackingRejected;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
@@ -65,8 +67,8 @@ function trkHookProvider(?Authenticator $auth = null, array $config = []): Abstr
             }
 
             $result = new TrackingResult($this->mapStatus($response->json('status')), [
-                new \App\Shipping\Tracking\DTO\TrackingEvent(TrackingStatus::Delivered, 'Done', 'Hub', \Carbon\CarbonImmutable::parse('2026-07-01 10:00:00'), 'e1'),
-            ], \Carbon\CarbonImmutable::parse('2026-07-02 00:00:00'));
+                new TrackingEvent(TrackingStatus::Delivered, 'Done', 'Hub', CarbonImmutable::parse('2026-07-01 10:00:00'), 'e1'),
+            ], CarbonImmutable::parse('2026-07-02 00:00:00'));
             $this->rememberResult($code, $response, $result);
 
             return $result;

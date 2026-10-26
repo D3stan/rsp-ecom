@@ -8,6 +8,7 @@ use App\Models\NewsletterCampaignSend;
 use App\Models\NewsletterSubscriber;
 use App\Models\User;
 use App\Services\Newsletter\MarketingConsent;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -283,7 +284,7 @@ it('sends a scheduled campaign from the scheduler tick once it is due', function
 
     // The scheduler runs the command every minute (schedule:run starts it in a separate process, which cannot
     // see the in-memory test database, so the tick is the command itself)
-    $event = collect(app(Illuminate\Console\Scheduling\Schedule::class)->events())
+    $event = collect(app(Schedule::class)->events())
         ->first(fn ($event) => str_contains((string) $event->command, 'newsletter:dispatch-scheduled'));
     expect($event)->not->toBeNull()
         ->and($event->expression)->toBe('* * * * *');

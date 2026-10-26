@@ -21,6 +21,7 @@ return [
     'day' => 'Giorno|Giorni',
     'hour' => 'Ora|Ore',
     'minute' => 'Minuto|Minuti',
+    'session' => 'Sessione del browser',
 
     'categories' => [
         'essentials' => [
@@ -41,6 +42,11 @@ return [
         'consent' => 'Utilizzato per memorizzare le preferenze di consenso ai cookie dell\'utente.',
         'session' => 'Utilizzato per identificare la sessione di navigazione dell\'utente.',
         'csrf' => 'Utilizzato per proteggere sia l\'utente che il nostro sito web dagli attacchi di tipo cross-site request forgery.',
+        'remember' => 'Ti mantiene connesso su questo dispositivo. Viene impostato solo se selezioni "Ricordami" al login.',
+        'sentry_replay' => 'Registra una riproduzione con testi oscurati dei momenti che precedono un errore, così possiamo correggere problemi di cui altrimenti non sapremmo nulla. Resta nel browser finché non chiudi la scheda, non è un cookie.',
+        'appearance' => 'Ricorda la tua scelta tra tema chiaro e scuro.',
+        'sidebar_state' => 'Ricorda se la barra laterale è aperta o chiusa nel tuo account e nell\'area di amministrazione.',
+        'locale' => 'Ricorda la lingua che hai scelto. Resta nella memoria del browser, non è un cookie.',
         '_ga' => 'Cookie principale utilizzato da Google Analytics, consente al servizio di distinguere un visitatore dall\'altro.',
         '_ga_ID' => 'Utilizzato da Google Analytics per mantenere lo stato della sessione.',
         '_gid' => 'Utilizzato da Google Analytics per identificare l\'utente.',

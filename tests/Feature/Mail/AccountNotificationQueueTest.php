@@ -6,12 +6,16 @@ use App\Mail\ContactMessage;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
+use Symfony\Component\Mime\Email;
 
-function lastSentMail(): Symfony\Component\Mime\Email
+function lastSentMail(): Email
 {
     $messages = app('mail.manager')->mailer()->getSymfonyTransport()->messages();
 
@@ -26,7 +30,7 @@ function sentMailLinks(): string
 }
 
 beforeEach(function () {
-    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+    $this->withoutMiddleware(PreventRequestForgery::class);
 });
 
 it('queues the contact message once instead of sending it in the request', function () {
@@ -47,7 +51,7 @@ it('queues the contact message once instead of sending it in the request', funct
 it('configures the contact message for retries after commit', function () {
     $mail = new ContactMessage(['firstName' => 'A', 'lastName' => 'B', 'email' => 'a@b.test', 'subject' => 'S', 'message' => 'long enough message']);
 
-    expect($mail)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class)
+    expect($mail)->toBeInstanceOf(ShouldQueue::class)
         ->and($mail->tries)->toBe(5)
         ->and($mail->backoff())->toBe([60, 300, 900, 3600])
         ->and($mail->afterCommit)->toBeTrue();
@@ -198,7 +202,7 @@ it('does not send a verification mail to a user who verified in the meantime', f
 it('logs a masked failure without the token', function () {
     $user = User::factory()->create(['email' => 'mario.rossi@example.test']);
     $logged = [];
-    Illuminate\Support\Facades\Log::shouldReceive('error')->once()->andReturnUsing(function ($message, $context) use (&$logged) {
+    Log::shouldReceive('error')->once()->andReturnUsing(function ($message, $context) use (&$logged) {
         $logged = $context;
     });
 

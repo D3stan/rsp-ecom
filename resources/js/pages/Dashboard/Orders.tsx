@@ -1,28 +1,16 @@
+import OrderStatusTimeline from '@/components/orders/OrderStatusTimeline';
+import OrderTracking from '@/components/orders/OrderTracking';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import OrderStatusTimeline from '@/components/orders/OrderStatusTimeline';
-import OrderTracking from '@/components/orders/OrderTracking';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import AppLayout from '@/layouts/app-layout';
-import useTranslation from '@/hooks/useTranslation';
-import { type Order, type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
-import { 
-    CheckCircle, 
-    Package, 
-    ShoppingBag, 
-    Clock, 
-    Truck, 
-    ArrowLeft,
-    Download,
-    Calendar,
-    CreditCard,
-    Star,
-    MapPin
-} from 'lucide-react';
-import React from 'react';
 import { useMoney } from '@/hooks/use-money';
+import useTranslation from '@/hooks/useTranslation';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem, type Order } from '@/types';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, Calendar, CheckCircle, Clock, CreditCard, Download, MapPin, Package, ShoppingBag, Star, Truck } from 'lucide-react';
+import React from 'react';
 
 interface OrdersPageProps {
     orders: Order[];
@@ -85,7 +73,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
     };
 
     const hasUserReviewedProduct = (productId: number) => {
-        return userReviews.some(review => review.product_id === productId);
+        return userReviews.some((review) => review.product_id === productId);
     };
 
     const canReviewOrder = (order: Order) => {
@@ -94,9 +82,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
 
     const getUnreviewedProducts = (order: Order) => {
         if (!canReviewOrder(order)) return [];
-        return order.order_items?.filter(item => 
-            item.product_id && !hasUserReviewedProduct(item.product_id)
-        ) || [];
+        return order.order_items?.filter((item) => item.product_id && !hasUserReviewedProduct(item.product_id)) || [];
     };
 
     return (
@@ -107,7 +93,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="mb-2 flex items-center gap-2">
                             <Button variant="ghost" size="sm" asChild>
                                 <Link href={route('dashboard')}>
                                     <ArrowLeft className="h-4 w-4" />
@@ -115,15 +101,13 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                             </Button>
                             <h1 className="text-2xl font-bold tracking-tight">{t('orders.title')}</h1>
                         </div>
-                        <p className="text-muted-foreground">
-                            {t('orders.description')}
-                        </p>
+                        <p className="text-muted-foreground">{t('orders.description')}</p>
                     </div>
-                    
+
                     {orders.length > 0 && (
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm">
-                                <Download className="h-4 w-4 mr-2" />
+                                <Download className="mr-2 h-4 w-4" />
                                 {t('orders.export')}
                             </Button>
                         </div>
@@ -134,17 +118,13 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                 {orders.length === 0 ? (
                     <Card>
                         <CardContent className="pt-6">
-                            <div className="text-center py-8">
+                            <div className="py-8 text-center">
                                 <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground" />
                                 <h3 className="mt-2 text-lg font-medium">{t('orders.no_orders_title')}</h3>
-                                <p className="mt-1 text-muted-foreground">
-                                    {t('orders.no_orders_description')}
-                                </p>
+                                <p className="mt-1 text-muted-foreground">{t('orders.no_orders_description')}</p>
                                 <div className="mt-6">
                                     <Button asChild>
-                                        <Link href={route('products')}>
-                                            {t('orders.browse_products')}
-                                        </Link>
+                                        <Link href={route('products')}>{t('orders.browse_products')}</Link>
                                     </Button>
                                 </div>
                             </div>
@@ -175,29 +155,26 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex flex-col gap-2 sm:items-end">
-                                            <Badge 
-                                                variant="outline" 
-                                                className={`${getOrderStatusColor(order.status)} flex items-center gap-1 w-fit`}
-                                            >
+                                            <Badge variant="outline" className={`${getOrderStatusColor(order.status)} flex w-fit items-center gap-1`}>
                                                 {getOrderStatusIcon(order.status)}
                                                 {t(`orders.status.${order.status.toLowerCase()}`)}
                                             </Badge>
-                                            
+
                                             {/* Tracking Number for Shipped Orders */}
                                             {order.status.toLowerCase() === 'shipped' && order.tracking_number && (
-                                                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                                     <MapPin className="h-3 w-3" />
                                                     {t('orders.tracking')}: {order.tracking_number}
                                                 </div>
                                             )}
-                                            
+
                                             {/* Review Button for Completed Orders */}
                                             {canReviewOrder(order) && getUnreviewedProducts(order).length > 0 && (
                                                 <Button size="sm" className="w-fit" asChild>
                                                     <Link href={route('reviews.create', { product: getUnreviewedProducts(order)[0].product_id })}>
-                                                        <Star className="h-4 w-4 mr-2" />
+                                                        <Star className="mr-2 h-4 w-4" />
                                                         {t('orders.write_review')}
                                                     </Link>
                                                 </Button>
@@ -209,7 +186,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                                 <CardContent>
                                     <Accordion type="single" collapsible className="w-full">
                                         <AccordionItem value="details" className="border-none">
-                                            <AccordionTrigger className="hover:no-underline py-2">
+                                            <AccordionTrigger className="py-2 hover:no-underline">
                                                 <span className="text-sm font-medium">{t('orders.view_order_details')}</span>
                                             </AccordionTrigger>
                                             <AccordionContent>
@@ -219,7 +196,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                                                         <h4 className="font-medium">{t('orders.items_ordered')}</h4>
                                                         <div className="space-y-3">
                                                             {order.order_items.map((item) => (
-                                                                <div key={item.id} className="flex gap-3 p-3 border rounded-lg">
+                                                                <div key={item.id} className="flex gap-3 rounded-lg border p-3">
                                                                     <div className="flex-shrink-0">
                                                                         {item.product.image_url ? (
                                                                             <img
@@ -228,30 +205,38 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                                                                                 className="h-16 w-16 rounded-md object-cover"
                                                                             />
                                                                         ) : (
-                                                                            <div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center">
+                                                                            <div className="flex h-16 w-16 items-center justify-center rounded-md bg-muted">
                                                                                 <Package className="h-6 w-6 text-muted-foreground" />
                                                                             </div>
                                                                         )}
                                                                     </div>
-                                                                    
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <h5 className="font-medium truncate">{item.product.name}</h5>
-                                                                        <div className="flex flex-wrap gap-2 mt-1 text-sm text-muted-foreground">
+
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <h5 className="truncate font-medium">{item.product.name}</h5>
+                                                                        <div className="mt-1 flex flex-wrap gap-2 text-sm text-muted-foreground">
                                                                             {item.variant_name && <span>{item.variant_name}</span>}
-                                                                            <span>{t('orders.qty')}: {item.quantity}</span>
+                                                                            <span>
+                                                                                {t('orders.qty')}: {item.quantity}
+                                                                            </span>
                                                                         </div>
-                                                                        <div className="flex items-center justify-between mt-2">
+                                                                        <div className="mt-2 flex items-center justify-between">
                                                                             <div className="font-medium">
                                                                                 {formatCurrency(item.price * item.quantity)}
                                                                             </div>
-                                                                            {canReviewOrder(order) && item.product_id && !hasUserReviewedProduct(item.product_id) && (
-                                                                                <Button size="sm" variant="outline" asChild>
-                                                                                    <Link href={route('reviews.create', { product: item.product_id })}>
-                                                                                        <Star className="h-4 w-4 mr-1" />
-                                                                                        {t('orders.review')}
-                                                                                    </Link>
-                                                                                </Button>
-                                                                            )}
+                                                                            {canReviewOrder(order) &&
+                                                                                item.product_id &&
+                                                                                !hasUserReviewedProduct(item.product_id) && (
+                                                                                    <Button size="sm" variant="outline" asChild>
+                                                                                        <Link
+                                                                                            href={route('reviews.create', {
+                                                                                                product: item.product_id,
+                                                                                            })}
+                                                                                        >
+                                                                                            <Star className="mr-1 h-4 w-4" />
+                                                                                            {t('orders.review')}
+                                                                                        </Link>
+                                                                                    </Button>
+                                                                                )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -262,7 +247,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ orders, userReviews = [] }) => 
                                                     {/* Order Tracking */}
                                                     <div className="space-y-4">
                                                         <h4 className="font-medium">{t('orders.order_status')}</h4>
-                                                        <div className="p-4 border rounded-lg space-y-4">
+                                                        <div className="space-y-4 rounded-lg border p-4">
                                                             <OrderStatusTimeline status={order.status} />
 
                                                             {/* Customer-facing shipment tracking (link, status, events, cancelled/refunded state) */}

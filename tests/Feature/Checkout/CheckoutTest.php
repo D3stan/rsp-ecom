@@ -3,17 +3,16 @@
 namespace Tests\Feature\Checkout;
 
 use App\Models\Cart;
-use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Size;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithoutMiddleware;
 use Inertia\Testing\AssertableInertia as Assert;
 use Stripe\Checkout\Session;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\WithoutMiddleware;
 
 uses(WithoutMiddleware::class);
 
@@ -22,8 +21,11 @@ class CheckoutTest extends TestCase
     use RefreshDatabase, WithoutMiddleware;
 
     protected User $user;
+
     protected Product $product;
+
     protected Size $size;
+
     protected Category $category;
 
     protected function setUp(): void
@@ -133,7 +135,7 @@ class CheckoutTest extends TestCase
 
         // If it redirects, let's see where it goes
         if ($response->status() === 302) {
-            $this->markTestSkipped('Guest checkout redirects - session ID mismatch. Cart session: ' . $cart->session_id . ', Current session: ' . session()->getId());
+            $this->markTestSkipped('Guest checkout redirects - session ID mismatch. Cart session: '.$cart->session_id.', Current session: '.session()->getId());
         }
 
         $response->assertOk();

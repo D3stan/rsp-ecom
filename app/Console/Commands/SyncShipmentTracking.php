@@ -8,6 +8,7 @@ use App\Shipping\Tracking\Enums\TrackingStatus;
 use App\Shipping\Tracking\Jobs\SyncOrderTracking;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -81,7 +82,7 @@ class SyncShipmentTracking extends Command
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Order>
+     * @return Collection<int, Order>
      */
     private function dueOrders(int $limit, ?int $onlyOrder, TrackingManager $manager)
     {

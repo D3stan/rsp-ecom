@@ -3,12 +3,13 @@
 namespace Database\Factories;
 
 use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\Size;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\CartItem>
+ * @extends Factory<CartItem>
  */
 class CartItemFactory extends Factory
 {
@@ -20,7 +21,7 @@ class CartItemFactory extends Factory
     public function definition(): array
     {
         $product = Product::factory()->create();
-        
+
         return [
             'cart_id' => Cart::factory(),
             'product_id' => $product->id,

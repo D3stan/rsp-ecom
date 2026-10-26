@@ -39,15 +39,15 @@ export default function Header({ transparent = false }: HeaderProps) {
 
         const loadWishlistCount = async () => {
             if (!auth?.user) return;
-            
+
             try {
                 const response = await fetch('/wishlist/count', {
                     headers: {
-                        'Accept': 'application/json',
+                        Accept: 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                 });
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     setWishlistCount(data.count || 0);
@@ -67,21 +67,21 @@ export default function Header({ transparent = false }: HeaderProps) {
 
         let ticking = false;
         let lastScrollY = window.scrollY;
-        
+
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
-            
+
             // Only process if scroll has changed significantly to reduce re-renders
             if (Math.abs(currentScrollY - lastScrollY) < 5 && ticking) return;
-            
+
             if (!ticking) {
                 requestAnimationFrame(() => {
                     const scrollPosition = window.scrollY;
                     const heroHeight = window.innerHeight - 64;
                     const newIsScrolled = scrollPosition > heroHeight;
-                    
+
                     // Only update state if it actually changed
-                    setIsScrolled(prev => {
+                    setIsScrolled((prev) => {
                         if (prev !== newIsScrolled) {
                             lastScrollY = scrollPosition;
                             return newIsScrolled;
@@ -113,15 +113,15 @@ export default function Header({ transparent = false }: HeaderProps) {
 
         const handleWishlistUpdate = async () => {
             if (!auth?.user) return;
-            
+
             try {
                 const response = await fetch('/wishlist/count', {
                     headers: {
-                        'Accept': 'application/json',
+                        Accept: 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                 });
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     setWishlistCount(data.count || 0);
@@ -181,7 +181,7 @@ export default function Header({ transparent = false }: HeaderProps) {
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
-            
+
             // Restore scroll position when closing menu
             if (window.innerWidth < 768) {
                 const scrollY = document.body.style.top;
@@ -198,7 +198,7 @@ export default function Header({ transparent = false }: HeaderProps) {
 
     // Memoize theme and style calculations to prevent unnecessary re-renders
     const isDarkTheme = useMemo(() => transparent && !isScrolled, [transparent, isScrolled]);
-    
+
     const headerBg = useMemo(() => {
         return transparent
             ? isScrolled
@@ -209,11 +209,12 @@ export default function Header({ transparent = false }: HeaderProps) {
 
     // Memoize menu classes to prevent animation glitches
     const menuClasses = useMemo(() => {
-        const baseClasses = 'mobile-menu fixed top-0 right-0 z-50 h-screen w-80 max-w-[85vw] bg-white shadow-xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] md:absolute md:top-full md:right-0 md:h-auto md:w-64 md:rounded-lg md:border md:border-gray-200 md:shadow-xl';
-        const transformClasses = isMenuOpen 
-            ? 'transform translate-x-0' 
+        const baseClasses =
+            'mobile-menu fixed top-0 right-0 z-50 h-screen w-80 max-w-[85vw] bg-white shadow-xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] md:absolute md:top-full md:right-0 md:h-auto md:w-64 md:rounded-lg md:border md:border-gray-200 md:shadow-xl';
+        const transformClasses = isMenuOpen
+            ? 'transform translate-x-0'
             : 'transform translate-x-full md:translate-x-0 md:-translate-y-2 md:opacity-0 md:pointer-events-none';
-        
+
         return `${baseClasses} ${transformClasses}`;
     }, [isMenuOpen]);
 
@@ -346,10 +347,7 @@ export default function Header({ transparent = false }: HeaderProps) {
             />
 
             {/* Slide-out Menu */}
-            <div
-                ref={menuRef}
-                className={menuClasses}
-            >
+            <div ref={menuRef} className={menuClasses}>
                 {/* Menu Header */}
                 <div className="flex items-center justify-between border-b border-gray-200 p-4">
                     <h3 className="text-lg font-semibold text-gray-900">{t('nav.menu')}</h3>

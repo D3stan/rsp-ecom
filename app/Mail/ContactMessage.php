@@ -7,16 +7,17 @@ use App\Support\Privacy;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class ContactMessage extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels, HasLogo;
+    use HasLogo, Queueable, SerializesModels;
 
     public int $tries = 5;
 
@@ -65,7 +66,7 @@ class ContactMessage extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
-        $visitorName = trim($this->contactData['firstName'] . ' ' . $this->contactData['lastName']);
+        $visitorName = trim($this->contactData['firstName'].' '.$this->contactData['lastName']);
 
         // Sent From our own domain (SPF/DKIM/DMARC aligned); the visitor is only the display name and Reply-To.
         // Characters that could make the display name look like another address are dropped.
@@ -74,7 +75,7 @@ class ContactMessage extends Mailable implements ShouldQueue
         return new Envelope(
             from: new Address(config('mail.from.address'), $displayName),
             replyTo: [new Address($this->contactData['email'], str_replace(['<', '>', '"'], '', $visitorName))],
-            subject: 'Contact Form: ' . $this->contactData['subject'],
+            subject: 'Contact Form: '.$this->contactData['subject'],
         );
     }
 
@@ -96,7 +97,7 @@ class ContactMessage extends Mailable implements ShouldQueue
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {

@@ -134,7 +134,9 @@ export default function ReviewShow({ review, navigation }: Props) {
                         </Button>
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t('admin.reviews.review_details')}</h1>
-                            <p className="text-sm text-muted-foreground md:text-base">{t('admin.reviews.review_by_user', { name: review.user?.name || t('admin.reviews.guest_user') })}</p>
+                            <p className="text-sm text-muted-foreground md:text-base">
+                                {t('admin.reviews.review_by_user', { name: review.user?.name || t('admin.reviews.guest_user') })}
+                            </p>
                         </div>
                     </div>
                     <div className="flex gap-2">

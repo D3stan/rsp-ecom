@@ -119,11 +119,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
     // Instant filtering - apply filters immediately on change
     useEffect(() => {
         // Pagination remounts the page: without this check the effect would reload it without `page` (back to page 1)
-        if (
-            search === (filters.search || '') &&
-            statusFilter === (filters.status || 'pending') &&
-            ratingFilter === (filters.rating || '')
-        ) {
+        if (search === (filters.search || '') && statusFilter === (filters.status || 'pending') && ratingFilter === (filters.rating || '')) {
             return;
         }
 
@@ -144,7 +140,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the local filter state; filters.* is only compared to skip redundant reloads
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the local filter state; filters.* is only compared to skip redundant reloads
     }, [search, statusFilter, ratingFilter]);
 
     const clearFilters = () => {
@@ -330,7 +326,9 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                 <div>
                                     <p className="text-lg font-bold">{kpis.approved}</p>
                                     <p className="text-xs text-muted-foreground">
-                                        {t('admin.reviews.kpi_percent_of_total', { percent: kpis.total > 0 ? Math.round((kpis.approved / kpis.total) * 100) : 0 })}
+                                        {t('admin.reviews.kpi_percent_of_total', {
+                                            percent: kpis.total > 0 ? Math.round((kpis.approved / kpis.total) * 100) : 0,
+                                        })}
                                     </p>
                                 </div>
                             </Card>
@@ -399,7 +397,9 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                         {/* Filter Dropdowns */}
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.reviews.filter_status_label')}</label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                    {t('admin.reviews.filter_status_label')}
+                                </label>
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
@@ -413,7 +413,9 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                             </div>
 
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.reviews.filter_rating_label')}</label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                    {t('admin.reviews.filter_rating_label')}
+                                </label>
                                 <select
                                     value={ratingFilter}
                                     onChange={(e) => setRatingFilter(e.target.value)}
@@ -522,7 +524,9 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
                                             <td className="p-4">
                                                 <div>
                                                     <p className="font-medium">{review.user?.name || t('admin.reviews.guest_user')}</p>
-                                                    <p className="text-sm text-muted-foreground">{review.user?.email || t('admin.reviews.not_available')}</p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {review.user?.email || t('admin.reviews.not_available')}
+                                                    </p>
                                                 </div>
                                             </td>
                                             <td className="p-4">{renderStars(review.rating)}</td>

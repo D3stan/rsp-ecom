@@ -39,8 +39,9 @@ class CheckPendingVerifications extends Command
     {
         $pendingUser = PendingUserVerification::where('email', $email)->first();
 
-        if (!$pendingUser) {
+        if (! $pendingUser) {
             $this->info("No pending verification found for: {$email}");
+
             return;
         }
 
@@ -72,7 +73,7 @@ class CheckPendingVerifications extends Command
 
         if ($total > 0) {
             $this->newLine();
-            
+
             if ($active > 0) {
                 $this->info('Recent active pending verifications:');
                 $activePending = PendingUserVerification::where('token_expires_at', '>=', now())

@@ -78,21 +78,15 @@ export default function OrderTracking({ order }: { order: TrackedOrder }) {
                             <button
                                 type="button"
                                 onClick={handleCopy}
-                                className="inline-flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                className="inline-flex items-center justify-center rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                                 title={copied ? t('orders.copied') : t('orders.copy_tracking_number')}
                                 aria-label={copied ? t('orders.copied') : t('orders.copy_tracking_number')}
                             >
-                                {copied ? (
-                                    <Check className="h-3.5 w-3.5 text-green-600" />
-                                ) : (
-                                    <Copy className="h-3.5 w-3.5" />
-                                )}
+                                {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
                             </button>
                         </div>
                     )}
-                    {order.tracking_status && (
-                        <Badge variant="secondary">{statusLabel(order.tracking_status)}</Badge>
-                    )}
+                    {order.tracking_status && <Badge variant="secondary">{statusLabel(order.tracking_status)}</Badge>}
                 </div>
                 {order.tracking_url && (
                     <Button variant="outline" size="sm" asChild>

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Shipping\Support;
 
 use App\Models\Order;
+use App\Shipping\Tracking\Drivers\FakeProvider;
 use App\Shipping\Tracking\DTO\TrackingEvent;
 use App\Shipping\Tracking\DTO\TrackingResult;
 use App\Shipping\Tracking\Enums\TrackingStatus;
@@ -47,7 +48,7 @@ class TrackingFixtures
     /**
      * Switch the application to the fake driver and return it for scripting.
      */
-    public static function useFake(): \App\Shipping\Tracking\Drivers\FakeProvider
+    public static function useFake(): FakeProvider
     {
         config(['shipping.tracking.driver' => 'fake']);
 

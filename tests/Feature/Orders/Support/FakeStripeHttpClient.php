@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Orders\Support;
 
+use Stripe\Exception\ApiConnectionException;
 use Stripe\HttpClient\ClientInterface;
 
 /**
@@ -41,7 +42,7 @@ class FakeStripeHttpClient implements ClientInterface
 
             if (str_contains($absUrl, $fragment)) {
                 if (($body['__throw'] ?? null) === 'connection') {
-                    throw new \Stripe\Exception\ApiConnectionException('Request timed out (simulated)');
+                    throw new ApiConnectionException('Request timed out (simulated)');
                 }
 
                 $status = $body['__status'] ?? 200;

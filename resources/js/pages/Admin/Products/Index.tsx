@@ -158,7 +158,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
         }, 300); // 300ms debounce for search
 
         return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the local filter state; filters.* is only compared to skip redundant reloads
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the local filter state; filters.* is only compared to skip redundant reloads
     }, [search, categoryFilter, statusFilter, stockFilter]);
 
     const clearFilters = () => {
@@ -241,7 +241,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                 },
                 onError: (errors) => {
                     console.error('Error deleting product:', errors);
-                }
+                },
             });
         }
     };
@@ -290,7 +290,9 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                 </div>
                                 <div>
                                     <p className="text-lg font-bold">{stats.total_products}</p>
-                                    <p className="text-xs text-muted-foreground">{t('admin.products.stats_active_count', { count: stats.active_products })}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('admin.products.stats_active_count', { count: stats.active_products })}
+                                    </p>
                                 </div>
                             </Card>
 
@@ -336,7 +338,12 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                         {/* Search Bar */}
                         <div className="relative">
                             <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-                            <Input placeholder={t('admin.products.search_placeholder')} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+                            <Input
+                                placeholder={t('admin.products.search_placeholder')}
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-10"
+                            />
                         </div>
 
                         {/* Filter Dropdowns */}
@@ -516,7 +523,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                                 {t('admin.products.flash_discount')}
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuItem 
+                                                            <DropdownMenuItem
                                                                 className="text-red-600"
                                                                 onClick={() => handleDeleteProduct(product.id, product.name)}
                                                             >
@@ -591,7 +598,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                         {t('admin.products.flash_discount')}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem 
+                                                    <DropdownMenuItem
                                                         className="text-red-600"
                                                         onClick={() => handleDeleteProduct(product.id, product.name)}
                                                     >
@@ -670,7 +677,11 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                         <div className="border-t px-4 py-4">
                             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                 <p className="text-center text-sm text-muted-foreground md:text-left">
-                                    {t('admin.products.pagination_showing', { from: productsMeta.from, to: productsMeta.to, total: productsMeta.total })}
+                                    {t('admin.products.pagination_showing', {
+                                        from: productsMeta.from,
+                                        to: productsMeta.to,
+                                        total: productsMeta.total,
+                                    })}
                                 </p>
                                 <div className="flex items-center justify-center space-x-1 md:space-x-2">
                                     {productsLinks.map((link, index) => (

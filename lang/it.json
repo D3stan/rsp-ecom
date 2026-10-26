@@ -25,6 +25,7 @@
     "shipping_info": "Info Spedizioni",
     "legal": "Legale",
     "privacy_policy": "Politica sulla Privacy",
+    "cookie_policy": "Cookie Policy",
     "terms_of_service": "Termini di Servizio",
     "returns": "Resi",
     "shipping_returns_link": "Spedizioni e Resi",
@@ -383,7 +384,7 @@
         "opt_out": "Disattivare le comunicazioni promozionali",
         "request_copy": "Richiedere una copia dei tuoi dati",
         "cookies": "Cookie",
-        "cookies_text": "Utilizziamo i cookie per migliorare la tua esperienza di navigazione e analizzare il traffico del sito. Puoi controllare le impostazioni dei cookie tramite le preferenze del tuo browser.",
+        "cookies_text": "Utilizziamo solo i cookie e la memoria del browser elencati nella nostra Cookie Policy: quelli necessari al funzionamento del negozio e, se li consenti, alcune preferenze di interfaccia e la registrazione della sessione in caso di errore. Non utilizziamo cookie pubblicitari o di tracciamento.",
         "contact_privacy": "Se hai domande su questa Politica sulla Privacy, ti preghiamo di contattarci:",
         "contact_email": "Email: {email}"
     },
@@ -2354,5 +2355,19 @@
     "checkout.province_select": "Seleziona una provincia",
     "checkout.province_invalid": "Seleziona una delle province elencate.",
     "checkout.success.create_account_title": "Crea un account per seguire questo ordine e ordinare più in fretta la prossima volta",
-    "checkout.success.create_account_body": "Scegli una password per {email}. Ti invieremo un link per confermare l'email; subito dopo troverai ordini e indirizzo nel tuo account."
+    "checkout.success.create_account_body": "Scegli una password per {email}. Ti invieremo un link per confermare l'email; subito dopo troverai ordini e indirizzo nel tuo account.",
+    "cookies_page": {
+        "title": "Cookie Policy",
+        "intro": "Questa pagina elenca tutti i cookie e gli elementi simili nella memoria del browser usati da questo sito, a cosa servono e quanto durano. Quelli essenziali sono sempre attivi; gli altri li scegli tu nel banner dei cookie.",
+        "name": "Nome",
+        "purpose": "Scopo",
+        "duration": "Durata",
+        "third_parties": "Altri servizi",
+        "third_party_sentry": "Monitoraggio errori (Sentry): quando qualcosa non funziona inviamo l'errore e alcuni dettagli tecnici, senza cookie e senza dati personali. Una registrazione con testi oscurati dei momenti attorno a un errore viene fatta solo se accetti i cookie di analisi.",
+        "third_party_fonts": "I font sono caricati da Bunny Fonts (fonts.bunny.net), che non imposta cookie; come ogni server, vede il tuo indirizzo IP.",
+        "third_party_stripe": "Quando paghi vieni indirizzato alla pagina di pagamento sicura di Stripe, che imposta i propri cookie secondo l'informativa di Stripe.",
+        "your_choices": "Le tue scelte",
+        "your_choices_text": "Puoi modificare o revocare il consenso in qualsiasi momento. Il banner verrà mostrato di nuovo e quanto salvato in una categoria che rifiuti viene rimosso.",
+        "change_preferences": "Modifica preferenze cookie"
+    }
 }

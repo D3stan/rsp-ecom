@@ -2,11 +2,11 @@ import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
-import useTranslation from '@/hooks/useTranslation';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import useTranslation from '@/hooks/useTranslation';
 import AuthLayout from '@/layouts/auth-layout';
 
 interface ResetPasswordProps {

@@ -187,4 +187,3 @@ it('handles array dates from Jackson/Spring serialized LocalDates without throwi
     expect($res3->events)->toHaveCount(1)
         ->and($res3->events[0]->occurredAt->format('Y-m-d H:i:s'))->toBe('2026-10-21 08:00:00');
 });
-

@@ -25,6 +25,7 @@
     "shipping_info": "Información de Envío",
     "legal": "Legal",
     "privacy_policy": "Política de Privacidad",
+    "cookie_policy": "Política de Cookies",
     "terms_of_service": "Términos de Servicio",
     "returns": "Devoluciones",
     "shipping_returns_link": "Envío y Devoluciones",
@@ -383,7 +384,7 @@
         "opt_out": "Cancelar la suscripción a comunicaciones promocionales",
         "request_copy": "Solicitar una copia de tus datos",
         "cookies": "Cookies",
-        "cookies_text": "Utilizamos cookies para mejorar tu experiencia de navegación y analizar el tráfico del sitio. Puedes controlar la configuración de cookies a través de las preferencias de tu navegador.",
+        "cookies_text": "Solo usamos las cookies y el almacenamiento del navegador que figuran en nuestra Política de Cookies: las necesarias para que funcione la tienda y, si las permites, algunas preferencias de interfaz y la grabación de sesión ante errores. No usamos cookies publicitarias ni de seguimiento.",
         "contact_privacy": "Si tienes preguntas sobre esta Política de Privacidad, contáctanos:",
         "contact_email": "Email: {email}"
     },
@@ -2354,5 +2355,19 @@
     "checkout.province_select": "Selecciona una provincia",
     "checkout.province_invalid": "Selecciona una de las provincias de la lista.",
     "checkout.success.create_account_title": "Crea una cuenta para seguir este pedido y pagar más rápido la próxima vez",
-    "checkout.success.create_account_body": "Elige una contraseña para {email}. Te enviaremos un enlace para confirmar tu correo; después tendrás tus pedidos y tu dirección en tu cuenta."
+    "checkout.success.create_account_body": "Elige una contraseña para {email}. Te enviaremos un enlace para confirmar tu correo; después tendrás tus pedidos y tu dirección en tu cuenta.",
+    "cookies_page": {
+        "title": "Política de Cookies",
+        "intro": "Esta página enumera todas las cookies y elementos similares del almacenamiento del navegador que usa este sitio, para qué sirven y cuánto duran. Los esenciales siempre están activos; los demás los eliges en el banner de cookies.",
+        "name": "Nombre",
+        "purpose": "Finalidad",
+        "duration": "Duración",
+        "third_parties": "Otros servicios",
+        "third_party_sentry": "Monitorización de errores (Sentry): cuando algo falla enviamos el error y algunos datos técnicos, sin cookies ni datos personales. Solo se graba una reproducción con los textos ocultos de los momentos alrededor de un error si aceptas las cookies de análisis.",
+        "third_party_fonts": "Las fuentes se cargan desde Bunny Fonts (fonts.bunny.net), que no crea cookies; como cualquier servidor, ve tu dirección IP.",
+        "third_party_stripe": "Al pagar te enviamos a la página de pago segura de Stripe, que crea sus propias cookies según la política de privacidad de Stripe.",
+        "your_choices": "Tus opciones",
+        "your_choices_text": "Puedes cambiar o retirar tu consentimiento en cualquier momento. El banner volverá a mostrarse y se elimina lo guardado en una categoría que rechaces.",
+        "change_preferences": "Cambiar preferencias de cookies"
+    }
 }

@@ -9,7 +9,10 @@
 
 use App\Mail\OrderDelivered;
 use App\Models\ShipmentTrackingEvent;
+use App\Shipping\Tracking\DTO\TrackingRequest;
+use App\Shipping\Tracking\Enums\TrackingStatus;
 use App\Shipping\Tracking\TrackingManager;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\Feature\Shipping\Support\TrackingFixtures as Fx;
@@ -26,7 +29,7 @@ beforeEach(function () {
 
 function swapFakeApis(bool $delivered): void
 {
-    Http::swap(new Illuminate\Http\Client\Factory); // earlier stubs would win over the new ones
+    Http::swap(new Factory); // earlier stubs would win over the new ones
     Http::fake([
         'spediamo.test/*' => Http::response([
             'status' => $delivered ? 'DELIVERED' : 'CURRENT',
@@ -93,8 +96,8 @@ it('converts the other API date format to UTC through the same pipeline', functi
     config(['shipping.tracking.driver' => 'rehearsal']);
     swapFakeApis(delivered: false);
 
-    $result = app(TrackingManager::class)->driver()->track(new App\Shipping\Tracking\DTO\TrackingRequest('SWAP-3'));
+    $result = app(TrackingManager::class)->driver()->track(new TrackingRequest('SWAP-3'));
 
     expect($result->events[0]->occurredAt->format('Y-m-d H:i'))->toBe('2026-09-01 07:00')
-        ->and($result->status)->toBe(App\Shipping\Tracking\Enums\TrackingStatus::InTransit);
+        ->and($result->status)->toBe(TrackingStatus::InTransit);
 });

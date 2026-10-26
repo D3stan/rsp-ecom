@@ -3,13 +3,14 @@
 namespace Database\Factories;
 
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\Size;
 use Database\Seeders\SeederConfig;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product>
+ * @extends Factory<Product>
  */
 class ProductFactory extends Factory
 {
@@ -23,14 +24,14 @@ class ProductFactory extends Factory
         // Get a random category to determine realistic pricing
         $category = Category::inRandomOrder()->first();
         $priceRange = SeederConfig::getPriceRange($category?->name ?? 'Electronics');
-        
+
         $price = $this->faker->randomFloat(2, $priceRange['min'], $priceRange['max']);
         $hasComparePrice = $this->faker->boolean(30); // 30% chance of having compare price
         $comparePrice = $hasComparePrice ? $price + $this->faker->randomFloat(2, 10, 100) : null;
-        
+
         $name = $this->generateProductName($category?->name ?? 'Electronics');
         $baseSlug = Str::slug($name);
-        $uniqueSlug = $baseSlug . '-' . $this->faker->unique()->numberBetween(1000, 9999);
+        $uniqueSlug = $baseSlug.'-'.$this->faker->unique()->numberBetween(1000, 9999);
 
         return [
             'name' => $name,
@@ -143,13 +144,13 @@ class ProductFactory extends Factory
 
         $types = $productTypes[$categoryName] ?? $productTypes['Electronics'];
         $baseName = $this->faker->randomElement($types);
-        
+
         // Add brand-like prefix sometimes
         if ($this->faker->boolean(40)) {
             $brands = ['Premium', 'Pro', 'Elite', 'Classic', 'Modern', 'Eco', 'Smart', 'Ultra'];
-            $baseName = $this->faker->randomElement($brands) . ' ' . $baseName;
+            $baseName = $this->faker->randomElement($brands).' '.$baseName;
         }
-        
+
         return $baseName;
     }
 
@@ -223,8 +224,8 @@ class ProductFactory extends Factory
 
         $categoryFeatures = $features[$categoryName] ?? $features['Electronics'];
         $selectedFeatures = $this->faker->randomElements($categoryFeatures, $this->faker->numberBetween(2, 4));
-        
-        return implode('. ', $selectedFeatures) . '.';
+
+        return implode('. ', $selectedFeatures).'.';
     }
 
     /**
@@ -232,7 +233,7 @@ class ProductFactory extends Factory
      */
     private function generateSKU(): string
     {
-        return strtoupper($this->faker->lexify('???')) . '-' . $this->faker->numerify('####');
+        return strtoupper($this->faker->lexify('???')).'-'.$this->faker->numerify('####');
     }
 
     /**
@@ -296,6 +297,7 @@ class ProductFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             $price = $attributes['price'];
+
             return [
                 'compare_price' => $price + $this->faker->randomFloat(2, 20, 100),
             ];

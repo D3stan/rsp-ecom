@@ -5,6 +5,7 @@ namespace Tests\Feature\Orders;
 use App\Models\Cart;
 use App\Models\CheckoutSnapshot;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\User;
 use App\Services\OrderCreationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -276,7 +277,7 @@ class CheckoutSnapshotTest extends TestCase
     {
         [, $snapshot, $metadata] = $this->guestCheckout(Str::random(40));
 
-        \App\Models\OrderItem::creating(function () {
+        OrderItem::creating(function () {
             throw new \RuntimeException('boom while creating the items');
         });
 
@@ -285,7 +286,7 @@ class CheckoutSnapshotTest extends TestCase
             $this->fail('expected the failure');
         } catch (\RuntimeException) {
         } finally {
-            \App\Models\OrderItem::flushEventListeners();
+            OrderItem::flushEventListeners();
         }
 
         $this->assertSame(0, Order::count());

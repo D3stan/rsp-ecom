@@ -25,6 +25,7 @@
     "shipping_info": "Info Livraison",
     "legal": "Légal",
     "privacy_policy": "Politique de Confidentialité",
+    "cookie_policy": "Politique de Cookies",
     "terms_of_service": "Conditions de Service",
     "returns": "Retours",
     "shipping_returns_link": "Livraison et Retours",
@@ -383,7 +384,7 @@
         "opt_out": "Vous désabonner des communications promotionnelles",
         "request_copy": "Demander une copie de vos données",
         "cookies": "Cookies",
-        "cookies_text": "Nous utilisons des cookies pour améliorer votre expérience de navigation et analyser le trafic du site. Vous pouvez contrôler les paramètres des cookies via les préférences de votre navigateur.",
+        "cookies_text": "Nous n'utilisons que les cookies et le stockage du navigateur listés dans notre Politique de Cookies : ceux nécessaires au fonctionnement de la boutique et, si vous les autorisez, quelques préférences d'interface et l'enregistrement de session en cas d'erreur. Nous n'utilisons aucun cookie publicitaire ou de suivi.",
         "contact_privacy": "Si vous avez des questions sur cette Politique de Confidentialité, veuillez nous contacter:",
         "contact_email": "Email: {email}"
     },
@@ -2354,5 +2355,19 @@
     "checkout.province_select": "Sélectionnez une province",
     "checkout.province_invalid": "Sélectionnez l'une des provinces proposées.",
     "checkout.success.create_account_title": "Créez un compte pour suivre cette commande et commander plus vite la prochaine fois",
-    "checkout.success.create_account_body": "Choisissez un mot de passe pour {email}. Nous vous enverrons un lien pour confirmer votre e-mail ; vos commandes et votre adresse seront ensuite dans votre compte."
+    "checkout.success.create_account_body": "Choisissez un mot de passe pour {email}. Nous vous enverrons un lien pour confirmer votre e-mail ; vos commandes et votre adresse seront ensuite dans votre compte.",
+    "cookies_page": {
+        "title": "Politique de Cookies",
+        "intro": "Cette page liste tous les cookies et éléments similaires du stockage du navigateur utilisés par ce site, leur utilité et leur durée. Les éléments essentiels sont toujours actifs ; vous choisissez les autres dans le bandeau de cookies.",
+        "name": "Nom",
+        "purpose": "Finalité",
+        "duration": "Durée",
+        "third_parties": "Autres services",
+        "third_party_sentry": "Suivi des erreurs (Sentry) : en cas de problème, nous envoyons l'erreur et quelques détails techniques, sans cookies ni données personnelles. Une relecture aux textes masqués des instants autour d'une erreur n'est enregistrée que si vous acceptez les cookies d'analyse.",
+        "third_party_fonts": "Les polices sont chargées depuis Bunny Fonts (fonts.bunny.net), qui ne dépose aucun cookie ; comme tout serveur, il voit votre adresse IP.",
+        "third_party_stripe": "Lors du paiement, vous êtes redirigé vers la page de paiement sécurisée de Stripe, qui dépose ses propres cookies selon la politique de confidentialité de Stripe.",
+        "your_choices": "Vos choix",
+        "your_choices_text": "Vous pouvez modifier ou retirer votre consentement à tout moment. Le bandeau s'affichera de nouveau et ce qui est stocké dans une catégorie refusée est supprimé.",
+        "change_preferences": "Modifier les préférences de cookies"
+    }
 }

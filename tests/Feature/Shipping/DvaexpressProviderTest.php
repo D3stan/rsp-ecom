@@ -1,16 +1,19 @@
 <?php
 
+use App\Models\Shipment;
 use App\Shipping\Providers\Dvaexpress\DvaexpressProvider;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\DTO\TrackingResult;
 use App\Shipping\Tracking\Enums\TrackingStatus;
 use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;
 use App\Shipping\Tracking\Exceptions\TrackingRejected;
-use Carbon\CarbonImmutable;
+use App\Shipping\Tracking\Jobs\SyncOrderTracking;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Tests\Feature\Shipping\Support\TrackingFixtures;
 
 function dvaexpressTrackingConfig(array $extra = []): array
 {
@@ -122,7 +125,7 @@ it('classifies EasyParcel error codes 101, 102, 104, 120 as TrackingProviderUnav
     Cache::flush();
     Log::spy();
 
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake([
         'https://api.easyparcel.it/tracking/secret-dva-key-12345*' => Http::response([
             'result' => 'KO',
@@ -137,7 +140,7 @@ it('classifies EasyParcel error codes 101, 102, 104, 120 as TrackingProviderUnav
     Log::shouldHaveReceived('critical')->twice();
 
     // Error 102: Invalid credentials -> Unavailable
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake([
         'https://api.easyparcel.it/tracking/secret-dva-key-12345*' => Http::response([
             'result' => 'KO',
@@ -150,7 +153,7 @@ it('classifies EasyParcel error codes 101, 102, 104, 120 as TrackingProviderUnav
         ->toThrow(TrackingProviderUnavailable::class, 'Credenziali non valide');
 
     // Error 104: Service maintenance -> Unavailable
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake([
         'https://api.easyparcel.it/tracking/secret-dva-key-12345*' => Http::response([
             'result' => 'KO',
@@ -179,7 +182,7 @@ it('classifies EasyParcel error codes 105, 110 with flattened errordetails and u
         ->toThrow(TrackingRejected::class, 'Spedizione inesistente o non trovata');
 
     // Error 110: Validation error with nested errordetails -> TrackingRejected with flattened details
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake([
         'https://api.easyparcel.it/tracking/secret-dva-key-12345*' => Http::response([
             'result' => 'KO',
@@ -200,7 +203,7 @@ it('classifies EasyParcel error codes 105, 110 with flattened errordetails and u
         });
 
     // Blank / empty tracking number rejected immediately without network call
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake();
     expect(fn () => $provider->fetch('   '))
         ->toThrow(TrackingRejected::class, 'Tracking number cannot be empty.');
@@ -225,7 +228,7 @@ it('redacts the API key from exception messages when a network or HTTP error occ
     }
 
     // 2. ConnectionException mentioning the API key in the URL
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake(function () use ($secretKey) {
         throw new ConnectionException("Failed to connect to https://api.easyparcel.it/tracking/{$secretKey}: Connection timed out");
     });
@@ -252,7 +255,7 @@ it('polls ldv ignoring providerCode and preserves tracking number without promot
         'shipping.tracking.drivers.dvaexpress' => dvaexpressTrackingConfig(),
     ]);
 
-    $order = \Tests\Feature\Shipping\Support\TrackingFixtures::shippedOrder([
+    $order = TrackingFixtures::shippedOrder([
         'tracking_number' => '288016E049120',
         'tracking_carrier' => 'sda',
         'tracking_driver' => 'dvaexpress',
@@ -264,10 +267,10 @@ it('polls ldv ignoring providerCode and preserves tracking number without promot
         'tracking_carrier' => 'sda',
         'tracking_number' => '288016E049120',
         'external_id' => 'DVA-ORDER-MANUAL-999',
-        'status' => \App\Models\Shipment::STATUS_CREATED,
+        'status' => Shipment::STATUS_CREATED,
     ]);
 
-    app()->call([new \App\Shipping\Tracking\Jobs\SyncOrderTracking($order->id), 'handle']);
+    app()->call([new SyncOrderTracking($order->id), 'handle']);
 
     // Verify EasyParcel received ldv = 288016E049120, NOT DVA-ORDER-MANUAL-999
     Http::assertSent(function ($request) {
@@ -286,4 +289,3 @@ it('polls ldv ignoring providerCode and preserves tracking number without promot
         ->and($freshShipment->external_id)->toBe('DVA-ORDER-MANUAL-999')
         ->and($freshOrder->tracking_status)->toBe('delivered');
 });
-

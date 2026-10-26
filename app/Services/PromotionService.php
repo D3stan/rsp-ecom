@@ -4,8 +4,8 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 use Stripe\Coupon;
-use Stripe\PromotionCode;
 use Stripe\Exception\ApiErrorException;
+use Stripe\PromotionCode;
 
 class PromotionService
 {
@@ -32,7 +32,7 @@ class PromotionService
             $coupon = $promotionCode->coupon;
 
             // Check if coupon is valid
-            if (!$coupon->valid) {
+            if (! $coupon->valid) {
                 return [
                     'valid' => false,
                     'error' => 'Coupon is no longer valid.',
@@ -91,13 +91,13 @@ class PromotionService
             // Fixed amount discount
             $discount['type'] = 'fixed';
             $discount['amount'] = $coupon->amount_off / 100; // Convert from cents
-            $discount['description'] = '$' . number_format($discount['amount'], 2) . ' off';
+            $discount['description'] = '$'.number_format($discount['amount'], 2).' off';
         } elseif ($coupon->percent_off) {
             // Percentage discount
             $discount['type'] = 'percentage';
             $discount['percentage'] = $coupon->percent_off;
             $discount['amount'] = $subtotal * ($coupon->percent_off / 100);
-            $discount['description'] = $coupon->percent_off . '% off';
+            $discount['description'] = $coupon->percent_off.'% off';
         }
 
         return $discount;
@@ -110,17 +110,18 @@ class PromotionService
     {
         $validation = $this->validatePromotionCode($promotionCode);
 
-        if (!$validation['valid']) {
+        if (! $validation['valid']) {
             Log::warning('Invalid promotion code applied to session', [
                 'code' => $promotionCode,
                 'error' => $validation['error'],
             ]);
+
             return false;
         }
 
         // Add promotion code to session
         $sessionParams['discounts'] = [
-            ['promotion_code' => $validation['promotion_code']->id]
+            ['promotion_code' => $validation['promotion_code']->id],
         ];
 
         Log::info('Promotion code applied to checkout session', [
@@ -182,6 +183,7 @@ class PromotionService
                 'error' => $e->getMessage(),
                 'coupon_data' => $couponData,
             ]);
+
             return null;
         }
     }
@@ -234,6 +236,7 @@ class PromotionService
                 'coupon_id' => $couponId,
                 'promotion_data' => $promotionData,
             ]);
+
             return null;
         }
     }
@@ -276,6 +279,7 @@ class PromotionService
             Log::error('Failed to fetch promotion codes', [
                 'error' => $e->getMessage(),
             ]);
+
             return [];
         }
     }
@@ -299,6 +303,7 @@ class PromotionService
                 'error' => $e->getMessage(),
                 'promotion_code_id' => $promotionCodeId,
             ]);
+
             return false;
         }
     }

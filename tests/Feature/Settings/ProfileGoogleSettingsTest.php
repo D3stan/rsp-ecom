@@ -18,8 +18,7 @@ class ProfileGoogleSettingsTest extends TestCase
             ->get(route('profile.edit'));
 
         $response->assertOk();
-        $response->assertInertia(fn ($page) =>
-            $page->component('settings/profile')
+        $response->assertInertia(fn ($page) => $page->component('settings/profile')
         );
     }
 
@@ -31,7 +30,7 @@ class ProfileGoogleSettingsTest extends TestCase
             ->get(route('profile.edit'));
 
         $response->assertOk();
-        
+
         // Check that the user data includes google_id
         $this->assertNotNull($user->google_id);
     }
@@ -46,7 +45,7 @@ class ProfileGoogleSettingsTest extends TestCase
             ->get(route('profile.edit'));
 
         $response->assertOk();
-        
+
         // Check that the user data shows no google_id
         $this->assertNull($user->google_id);
     }
@@ -59,7 +58,7 @@ class ProfileGoogleSettingsTest extends TestCase
             ->get(route('profile.edit'));
 
         $response->assertOk();
-        
+
         // Ensure Google-only users can access their profile
         $this->assertNull($user->password);
         $this->assertNotNull($user->google_id);

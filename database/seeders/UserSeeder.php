@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Database\Seeders\SeederConfig;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -53,9 +52,9 @@ class UserSeeder extends Seeder
 
         // Create regular users
         $regularUsersCount = 50 * SeederConfig::VOLUME_MULTIPLIER;
-        
+
         $this->command->info("Creating {$regularUsersCount} regular users...");
-        
+
         User::factory()
             ->count($regularUsersCount)
             ->create();

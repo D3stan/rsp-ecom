@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class FAQPageTest extends TestCase
@@ -34,8 +33,7 @@ class FAQPageTest extends TestCase
     {
         $response = $this->get('/faq');
 
-        $response->assertInertia(fn ($page) => 
-            $page->component('faq')
+        $response->assertInertia(fn ($page) => $page->component('faq')
         );
     }
 }

@@ -35,18 +35,18 @@ trait RegeneratesSitemap
     public function scheduleRegeneration(): void
     {
         $cacheKey = 'sitemap_regeneration_scheduled';
-        
+
         // Only schedule if not already scheduled in the last 5 minutes
-        if (!Cache::has($cacheKey)) {
+        if (! Cache::has($cacheKey)) {
             Cache::put($cacheKey, true, now()->addMinutes(5));
-            
+
             // Schedule the regeneration to run in the background
             dispatch(function () {
                 try {
                     Artisan::call('generate:sitemap-index');
                 } catch (\Exception $e) {
                     // Log error but don't fail the main operation
-                    logger()->error('Failed to regenerate sitemap: ' . $e->getMessage());
+                    logger()->error('Failed to regenerate sitemap: '.$e->getMessage());
                 }
             })->afterResponse();
         }
@@ -58,13 +58,13 @@ trait RegeneratesSitemap
     public function shouldRegenerateSitemap(): bool
     {
         $importantFields = $this->getSitemapImportantFields();
-        
+
         foreach ($importantFields as $field) {
             if ($this->wasChanged($field)) {
                 return true;
             }
         }
-        
+
         return false;
     }
 

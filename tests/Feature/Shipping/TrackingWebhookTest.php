@@ -5,8 +5,12 @@ use App\Models\Order;
 use App\Models\ShipmentTrackingEvent;
 use App\Shipping\Tracking\Drivers\FakeProvider;
 use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;
+use App\Shipping\Tracking\Jobs\SyncOrderTracking;
+use App\Shipping\Tracking\ShipmentTrackingService;
 use App\Shipping\Tracking\TrackingManager;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Tests\Feature\Shipping\Support\TrackingFixtures as Fx;
 
@@ -59,7 +63,7 @@ it('delivers once when the same delivery arrives by webhook and by poll', functi
     $order = Fx::shippedOrder(['tracking_number' => 'ZZ-DELIVERED']);
 
     trkPost('fake', trkPayload('ZZ-DELIVERED', 'delivered', null, 'fake-zz-delivered-2'))->assertOk();
-    app()->call([new \App\Shipping\Tracking\Jobs\SyncOrderTracking($order->id), 'handle']); // poll afterwards: order no longer shipped
+    app()->call([new SyncOrderTracking($order->id), 'handle']); // poll afterwards: order no longer shipped
 
     expect($order->fresh()->status)->toBe('delivered');
     Queue::assertPushed(SendOrderEmail::class, 1);
@@ -104,7 +108,7 @@ it('fails closed when no secret is configured, even for a correctly signed reque
 it('answers 403 in production when the driver has no webhook_secret, whatever the adapter says', function () {
     $permissive = new class extends FakeProvider
     {
-        public function verifySignature(\Illuminate\Http\Request $request): bool
+        public function verifySignature(Request $request): bool
         {
             return true;
         }
@@ -124,12 +128,12 @@ it('answers 422 for a malformed payload and 503 when the adapter is temporarily 
 
     $flaky = new class extends FakeProvider
     {
-        public function parse(\Illuminate\Http\Request $request): array
+        public function parse(Request $request): array
         {
             throw new TrackingProviderUnavailable('later');
         }
 
-        public function verifySignature(\Illuminate\Http\Request $request): bool
+        public function verifySignature(Request $request): bool
         {
             return true;
         }
@@ -140,14 +144,14 @@ it('answers 422 for a malformed payload and 503 when the adapter is temporarily 
 
 it('answers 5xx when persisting fails so the carrier retries, and logs no payload', function () {
     Fx::shippedOrder();
-    \Illuminate\Support\Facades\Log::spy();
-    $service = Mockery::mock(\App\Shipping\Tracking\ShipmentTrackingService::class)->makePartial();
+    Log::spy();
+    $service = Mockery::mock(ShipmentTrackingService::class)->makePartial();
     $service->shouldReceive('apply')->andThrow(new RuntimeException('db down'));
-    app()->instance(\App\Shipping\Tracking\ShipmentTrackingService::class, $service);
+    app()->instance(ShipmentTrackingService::class, $service);
 
     trkPost('fake', trkPayload('TRK-1001'))->assertStatus(500);
 
-    \Illuminate\Support\Facades\Log::shouldHaveReceived('error')->withArgs(fn ($m, $ctx = []) => ! str_contains(json_encode($ctx), 'TRK-1001') && ! str_contains(json_encode($ctx), WEBHOOK_SECRET))->once();
+    Log::shouldHaveReceived('error')->withArgs(fn ($m, $ctx = []) => ! str_contains(json_encode($ctx), 'TRK-1001') && ! str_contains(json_encode($ctx), WEBHOOK_SECRET))->once();
 });
 
 it('rejects oversized bodies', function () {
@@ -209,7 +213,7 @@ it('isolates webhooks onto orders with tracking_driver null based on the default
             return 'alt';
         }
 
-        public function verifySignature(\Illuminate\Http\Request $request): bool
+        public function verifySignature(Request $request): bool
         {
             return true;
         }

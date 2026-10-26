@@ -25,6 +25,7 @@
     "shipping_info": "Versand-Info",
     "legal": "Rechtliches",
     "privacy_policy": "Datenschutzrichtlinie",
+    "cookie_policy": "Cookie-Richtlinie",
     "terms_of_service": "Nutzungsbedingungen",
     "returns": "Rücksendungen",
     "shipping_returns_link": "Versand & Rücksendungen",
@@ -383,7 +384,7 @@
         "opt_out": "Sich von Werbekommunikation abzumelden",
         "request_copy": "Eine Kopie Ihrer Daten anzufordern",
         "cookies": "Cookies",
-        "cookies_text": "Wir verwenden Cookies, um Ihr Browsing-Erlebnis zu verbessern und den Website-Traffic zu analysieren. Sie können Cookie-Einstellungen über Ihre Browser-Präferenzen steuern.",
+        "cookies_text": "Wir verwenden nur die Cookies und Browser-Speicher, die in unserer Cookie-Richtlinie aufgeführt sind: die für den Betrieb des Shops nötigen und, wenn Sie zustimmen, einige Oberflächeneinstellungen sowie die Sitzungsaufzeichnung bei Fehlern. Wir verwenden keine Werbe- oder Tracking-Cookies.",
         "contact_privacy": "Wenn Sie Fragen zu dieser Datenschutzrichtlinie haben, kontaktieren Sie uns bitte:",
         "contact_email": "E-Mail: {email}"
     },
@@ -2354,5 +2355,19 @@
     "checkout.province_select": "Provinz auswählen",
     "checkout.province_invalid": "Wähle eine der angezeigten Provinzen.",
     "checkout.success.create_account_title": "Erstelle ein Konto, um diese Bestellung zu verfolgen und beim nächsten Mal schneller zu bestellen",
-    "checkout.success.create_account_body": "Wähle ein Passwort für {email}. Wir senden dir einen Link zur Bestätigung deiner E-Mail; danach findest du Bestellungen und Adresse in deinem Konto."
+    "checkout.success.create_account_body": "Wähle ein Passwort für {email}. Wir senden dir einen Link zur Bestätigung deiner E-Mail; danach findest du Bestellungen und Adresse in deinem Konto.",
+    "cookies_page": {
+        "title": "Cookie-Richtlinie",
+        "intro": "Diese Seite listet alle Cookies und ähnlichen Browser-Speicher auf, die diese Website nutzt, wofür sie dienen und wie lange sie gelten. Notwendige Einträge sind immer aktiv; die übrigen wählen Sie im Cookie-Banner.",
+        "name": "Name",
+        "purpose": "Zweck",
+        "duration": "Dauer",
+        "third_parties": "Weitere Dienste",
+        "third_party_sentry": "Fehlerüberwachung (Sentry): Wenn etwas nicht funktioniert, senden wir den Fehler und einige technische Details, ohne Cookies und ohne personenbezogene Daten. Eine maskierte Aufzeichnung der Momente rund um einen Fehler erfolgt nur, wenn Sie die Analyse-Cookies akzeptieren.",
+        "third_party_fonts": "Schriften werden von Bunny Fonts (fonts.bunny.net) geladen, das keine Cookies setzt; wie jeder Server sieht es Ihre IP-Adresse.",
+        "third_party_stripe": "Beim Bezahlen werden Sie auf die sichere Zahlungsseite von Stripe weitergeleitet, die eigene Cookies gemäß der Datenschutzerklärung von Stripe setzt.",
+        "your_choices": "Ihre Auswahl",
+        "your_choices_text": "Sie können Ihre Einwilligung jederzeit ändern oder widerrufen. Das Banner erscheint erneut, und alles, was unter einer abgelehnten Kategorie gespeichert wurde, wird entfernt.",
+        "change_preferences": "Cookie-Einstellungen ändern"
+    }
 }

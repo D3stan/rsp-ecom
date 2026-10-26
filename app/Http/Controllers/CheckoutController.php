@@ -3,27 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Enums\OpsEventType;
+use App\Exceptions\InvalidOrderTransition;
+use App\Models\Address;
+use App\Models\Cart;
+use App\Models\CheckoutSnapshot;
+use App\Models\Order;
 use App\Services\Newsletter\AbandonedCheckoutReminders;
 use App\Services\Ops\FunnelTracker;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response as HttpResponse;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
+use App\Services\OrderCreationService;
+use App\Services\StripeService;
 use App\Support\AddressRules;
 use App\Support\CheckoutTotals;
 use App\Support\ItalianProvinces;
 use App\Support\Money;
 use App\Support\Vat;
-use App\Models\CheckoutSnapshot;
-use App\Models\Order;
 use Artesaos\SEOTools\Facades\SEOMeta;
-use App\Services\OrderCreationService;
-use App\Services\StripeService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class CheckoutController extends Controller
 {
@@ -34,28 +37,30 @@ class CheckoutController extends Controller
     {
         $sessionId = $request->get('session_id');
 
-        if (!$sessionId) {
+        if (! $sessionId) {
             Log::warning('No session_id provided to success page');
+
             return redirect()->route('home')->with('error', 'Invalid checkout session. If you completed a payment, please check your email for confirmation or contact support.');
         }
 
         try {
             // Initialize Stripe client
             $stripe = StripeService::getClient();
-            
-            if (!$stripe) {
+
+            if (! $stripe) {
                 Log::error('Stripe secret key not configured for checkout success');
+
                 return redirect()->route('home')->with('error', 'Payment system not configured. Please contact support.');
             }
-            
+
             // Retrieve checkout session from Stripe (works for both user and guest sessions)
             $checkoutSession = $stripe->checkout->sessions->retrieve($sessionId);
-            
+
             Log::info('Retrieved checkout session', [
                 'session_id' => $sessionId,
                 'payment_status' => $checkoutSession->payment_status,
             ]);
-            
+
             // Find or create the order (idempotent: the webhook may have created it already, or may
             // arrive later). The service also requests the confirmation email once the order is committed.
             $order = null;
@@ -85,8 +90,8 @@ class CheckoutController extends Controller
                 // because the payment went through
                 if ($checkoutSession->payment_status === 'paid') {
                     $orderData = $this->createFallbackOrderData($checkoutSession);
-                    Log::warning("Order creation failed but payment succeeded. Created fallback order data.", [
-                        'session_id' => $sessionId
+                    Log::warning('Order creation failed but payment succeeded. Created fallback order data.', [
+                        'session_id' => $sessionId,
                     ]);
                 } else {
                     throw $e; // Re-throw if payment wasn't successful
@@ -94,7 +99,7 @@ class CheckoutController extends Controller
             }
 
             // Determine if this is a guest checkout
-            $isGuest = !$request->user() || ($order && $order->isGuestOrder());
+            $isGuest = ! $request->user() || ($order && $order->isGuestOrder());
 
             // The session id in the URL is not proof of ownership (it leaks through history, referrers,
             // shared links). Personal details are only shown to the proven buyer; anyone else, e.g. a
@@ -127,23 +132,23 @@ class CheckoutController extends Controller
                 'isGuest' => $isGuest,
                 'user' => $request->user(),
             ]);
-            
+
         } catch (\Exception $e) {
-            Log::error('Checkout success handling failed: ' . $e->getMessage(), [
+            Log::error('Checkout success handling failed: '.$e->getMessage(), [
                 'session_id' => $sessionId,
                 'user_id' => $request->user()?->id,
                 'exception' => get_class($e),
             ]);
-            
+
             // Instead of redirecting to home, provide more helpful error message
             $errorMessage = 'There was an issue retrieving your order details. ';
-            
+
             if (str_contains($e->getMessage(), 'No such checkout session')) {
                 $errorMessage .= 'The checkout session was not found. This may happen if the session has expired.';
             } else {
-                $errorMessage .= 'If you completed a payment, please check your email for confirmation or contact support with session ID: ' . $sessionId;
+                $errorMessage .= 'If you completed a payment, please check your email for confirmation or contact support with session ID: '.$sessionId;
             }
-            
+
             return redirect()->route('home')->with('error', $errorMessage);
         }
     }
@@ -155,18 +160,19 @@ class CheckoutController extends Controller
     {
         try {
             $stripe = StripeService::getClient();
-            
-            if (!$stripe) {
+
+            if (! $stripe) {
                 Log::error('Stripe secret key not configured for line items extraction');
+
                 return [];
             }
-            
+
             $lineItems = $stripe->checkout->sessions->allLineItems($checkoutSession->id);
-            
+
             $items = [];
             foreach ($lineItems->data as $item) {
                 $items[] = [
-                    'id' => 'temp_' . uniqid(),
+                    'id' => 'temp_'.uniqid(),
                     'quantity' => $item->quantity,
                     'price' => $item->price->unit_amount / 100,
                     'total' => ($item->price->unit_amount * $item->quantity) / 100,
@@ -179,10 +185,11 @@ class CheckoutController extends Controller
                     'size' => null,
                 ];
             }
-            
+
             return $items;
         } catch (\Exception $e) {
-            Log::error('Failed to extract line items from session: ' . $e->getMessage());
+            Log::error('Failed to extract line items from session: '.$e->getMessage());
+
             return [];
         }
     }
@@ -194,7 +201,7 @@ class CheckoutController extends Controller
     {
         $sessionId = $request->get('session_id');
         $message = $request->get('message', 'Your payment was cancelled. You can try again anytime.');
-        
+
         // If session_id is provided, close the order of an abandoned (never paid) checkout.
         // An order whose payment already went through must never be flipped by this public URL.
         if ($sessionId) {
@@ -207,7 +214,7 @@ class CheckoutController extends Controller
                     } else {
                         $order->save();
                     }
-                } catch (\App\Exceptions\InvalidOrderTransition $e) {
+                } catch (InvalidOrderTransition $e) {
                     // the order moved on meanwhile (e.g. the payment webhook): leave it as it is
                     Log::info('Checkout cancel left an order that can no longer be cancelled', ['order_id' => $order->id]);
                 }
@@ -218,7 +225,7 @@ class CheckoutController extends Controller
                 ]);
             }
         }
-        
+
         return Inertia::render('Checkout/Cancel', [
             'message' => $message,
         ]);
@@ -231,19 +238,19 @@ class CheckoutController extends Controller
     {
         // Set noindex for checkout pages
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('Checkout Details – ' . settings('store.name'));
-        
+        SEOMeta::setTitle('Checkout Details – '.settings('store.name'));
+
         try {
             $user = $request->user();
-            
-            if (!$user) {
+
+            if (! $user) {
                 return redirect()->route('guest.checkout.details');
             }
 
             // Get user's cart
             $cart = $user->carts()->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.productVariant', 'cartItems.size'])->latest()->first();
-            
-            if (!$cart || $cart->cartItems->isEmpty()) {
+
+            if (! $cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
@@ -254,11 +261,12 @@ class CheckoutController extends Controller
 
             return Inertia::render('Checkout/Details', array_merge($this->detailsProps($cart), [
                 'savedAddresses' => $user->addresses()->shipping()->orderByDesc('is_default')->orderByDesc('id')->get()
-                    ->map(fn ($address) => $address->only(['id', 'is_default', ...\App\Models\Address::CHECKOUT_FIELDS]))->all(),
+                    ->map(fn ($address) => $address->only(['id', 'is_default', ...Address::CHECKOUT_FIELDS]))->all(),
             ]));
 
         } catch (\Exception $e) {
-            Log::error('Failed to show checkout details: ' . $e->getMessage());
+            Log::error('Failed to show checkout details: '.$e->getMessage());
+
             return redirect()->route('cart')->with('error', 'Unable to load checkout page.');
         }
     }
@@ -270,18 +278,18 @@ class CheckoutController extends Controller
     {
         // Set noindex for checkout pages
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('Guest Checkout – ' . settings('store.name'));
+        SEOMeta::setTitle('Guest Checkout – '.settings('store.name'));
 
         if ($response = $this->guestCheckoutDisabledResponse()) {
             return $response;
         }
-        
+
         try {
             // Get guest cart from database using session ID
             $guestSessionId = session()->getId();
-            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.productVariant', 'cartItems.size'])->first();
-            
-            if (!$cart || $cart->cartItems->isEmpty()) {
+            $cart = Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.productVariant', 'cartItems.size'])->first();
+
+            if (! $cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
@@ -291,9 +299,10 @@ class CheckoutController extends Controller
             app(FunnelTracker::class)->record(OpsEventType::CheckoutStarted, $request);
 
             return Inertia::render('Checkout/Details', $this->detailsProps($cart));
-            
+
         } catch (\Exception $e) {
-            Log::error('Failed to show guest checkout details: ' . $e->getMessage());
+            Log::error('Failed to show guest checkout details: '.$e->getMessage());
+
             return redirect()->route('cart')->with('error', 'Unable to load checkout page.');
         }
     }
@@ -302,7 +311,7 @@ class CheckoutController extends Controller
      * Props of the checkout details page. The amounts come from checkoutTotals(), the same computation that
      * decides what Stripe charges and what the order stores.
      */
-    private function detailsProps(\App\Models\Cart $cart): array
+    private function detailsProps(Cart $cart): array
     {
         $totals = $this->checkoutTotals($cart);
         $appliedCoupon = session('applied_coupon');
@@ -331,7 +340,7 @@ class CheckoutController extends Controller
      *
      * @return array<int, array{id: int, name: string, variant_name: string|null, image: string, quantity: int, price: float, total: float}>
      */
-    private function summaryLines(\App\Models\Cart $cart): array
+    private function summaryLines(Cart $cart): array
     {
         return $cart->cartItems->map(function ($item) {
             $variant = $item->productVariant ?? $item->product?->defaultVariant;
@@ -358,7 +367,7 @@ class CheckoutController extends Controller
      *
      * @return array{items: float, shipping: float, discount: float, total: float, vat: array{rate: float|null, amount: float}, free_shipping_remaining: float|null}
      */
-    private function checkoutTotals(\App\Models\Cart $cart): array
+    private function checkoutTotals(Cart $cart): array
     {
         return CheckoutTotals::for($cart, session('applied_coupon'));
     }
@@ -440,7 +449,7 @@ class CheckoutController extends Controller
      *
      * @throws ValidationException
      */
-    private function assertAvailability(\App\Models\Cart $cart): void
+    private function assertAvailability(Cart $cart): void
     {
         foreach ($cart->cartItems as $item) {
             $variant = $item->productVariant ?? $item->product?->defaultVariant;
@@ -464,8 +473,8 @@ class CheckoutController extends Controller
     {
         try {
             $user = $request->user();
-            
-            if (!$user) {
+
+            if (! $user) {
                 return redirect()->route('guest.cart.checkout');
             }
 
@@ -474,8 +483,8 @@ class CheckoutController extends Controller
 
             // Get user's cart (using the correct relationship method)
             $cart = $user->carts()->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.productVariant', 'cartItems.size'])->latest()->first();
-            
-            if (!$cart || $cart->cartItems->isEmpty()) {
+
+            if (! $cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
@@ -491,19 +500,20 @@ class CheckoutController extends Controller
             $totalAmountCents = (int) round($totals['total'] * 100);
 
             // Create description of cart contents
-            $description = $cart->cartItems->map(function($item) {
+            $description = $cart->cartItems->map(function ($item) {
                 $sizeName = $item->size ? " ({$item->size->name})" : '';
-                return $item->quantity . 'x ' . $item->product->name . $sizeName;
+
+                return $item->quantity.'x '.$item->product->name.$sizeName;
             })->join(', ');
 
             // Prepare shipping address for metadata
             $shippingAddress = $validated['shipping_address'];
             $shippingAddressString = implode(', ', [
-                $shippingAddress['first_name'] . ' ' . $shippingAddress['last_name'],
+                $shippingAddress['first_name'].' '.$shippingAddress['last_name'],
                 $shippingAddress['address_line_1'],
                 $shippingAddress['city'],
-                $shippingAddress['state'] . ' ' . $shippingAddress['postal_code'],
-                $shippingAddress['country']
+                $shippingAddress['state'].' '.$shippingAddress['postal_code'],
+                $shippingAddress['country'],
             ]);
 
             // What is charged, frozen and committed BEFORE the Stripe call (no transaction around the call): the order
@@ -514,27 +524,27 @@ class CheckoutController extends Controller
             // Use Cashier's checkoutCharge for the entire cart
             try {
                 $checkoutSession = $user->checkoutCharge($totalAmountCents, 'Cart Purchase', 1, [
-                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('checkout.cancel'),
-                'expires_at' => app(AbandonedCheckoutReminders::class)->sessionExpiresAt(),
-                // the customer may tick Stripe's own "save my card" box (needs the customer, which checkoutCharge sets)
-                'saved_payment_method_options' => ['payment_method_save' => 'enabled'],
-                'metadata' => [
-                    'cart_id' => $cart->id,
-                    'user_id' => $user->id,
-                    'user_email' => $validated['email'],
-                    'type' => 'cart_checkout',
-                    'snapshot_id' => $snapshot->id,
-                    'description' => $this->metadataValue($description),
-                    'shipping_address' => $this->metadataValue($shippingAddressString),
-                    'customer_phone' => $validated['shipping_address']['phone'] ?? '',
-                    'order_notes' => $validated['order_notes'] ?? '',
-                    'coupon_code' => $validated['coupon_code'] ?? '',
-                    'save_address' => $request->boolean('save_address') ? '1' : '0',
-                    'locale' => app()->getLocale(),
-                    'source' => OrderCreationService::SESSION_SOURCE,
-                    'cart_hash' => $cart->contentHash(),
-                ]
+                    'success_url' => route('checkout.success').'?session_id={CHECKOUT_SESSION_ID}',
+                    'cancel_url' => route('checkout.cancel'),
+                    'expires_at' => app(AbandonedCheckoutReminders::class)->sessionExpiresAt(),
+                    // the customer may tick Stripe's own "save my card" box (needs the customer, which checkoutCharge sets)
+                    'saved_payment_method_options' => ['payment_method_save' => 'enabled'],
+                    'metadata' => [
+                        'cart_id' => $cart->id,
+                        'user_id' => $user->id,
+                        'user_email' => $validated['email'],
+                        'type' => 'cart_checkout',
+                        'snapshot_id' => $snapshot->id,
+                        'description' => $this->metadataValue($description),
+                        'shipping_address' => $this->metadataValue($shippingAddressString),
+                        'customer_phone' => $validated['shipping_address']['phone'] ?? '',
+                        'order_notes' => $validated['order_notes'] ?? '',
+                        'coupon_code' => $validated['coupon_code'] ?? '',
+                        'save_address' => $request->boolean('save_address') ? '1' : '0',
+                        'locale' => app()->getLocale(),
+                        'source' => OrderCreationService::SESSION_SOURCE,
+                        'cart_hash' => $cart->contentHash(),
+                    ],
                 ]);
             } catch (\Throwable $e) {
                 $snapshot->delete();
@@ -549,17 +559,18 @@ class CheckoutController extends Controller
             if ($request->header('X-Inertia')) {
                 return Inertia::location($checkoutSession->url);
             }
-            
+
             return redirect($checkoutSession->url);
-            
+
         } catch (ValidationException $e) {
             // The form errors (e.g. the minimum order amount) go back to the page as they are
             throw $e;
         } catch (\Exception $e) {
-            Log::error('Cart checkout failed: ' . $e->getMessage(), [
+            Log::error('Cart checkout failed: '.$e->getMessage(), [
                 'user_id' => $request->user()?->id,
                 'exception' => get_class($e),
             ]);
+
             return redirect()->back()->with('error', 'Unable to create checkout session. Please try again.');
         }
     }
@@ -574,25 +585,26 @@ class CheckoutController extends Controller
         }
 
         // Check if Stripe is properly configured
-        if (!StripeService::isConfigured()) {
+        if (! StripeService::isConfigured()) {
             Log::error('Stripe not properly configured for guest checkout', [
-                'secret_key_exists' => !empty(StripeService::getSecretKey()),
-                'public_key_exists' => !empty(StripeService::getPublicKey()),
-                'env_secret' => !empty(config('cashier.secret')),
-                'env_public' => !empty(config('cashier.key')),
+                'secret_key_exists' => ! empty(StripeService::getSecretKey()),
+                'public_key_exists' => ! empty(StripeService::getPublicKey()),
+                'env_secret' => ! empty(config('cashier.secret')),
+                'env_public' => ! empty(config('cashier.key')),
             ]);
+
             return redirect()->back()->with('error', 'Payment system not configured. Please contact support.');
         }
-        
+
         try {
             // Validate the checkout details
             $validated = $request->validate($this->checkoutRules());
 
             // Get guest cart from database using session ID
             $guestSessionId = session()->getId();
-            $cart = \App\Models\Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.productVariant', 'cartItems.size'])->first();
-            
-            if (!$cart || $cart->cartItems->isEmpty()) {
+            $cart = Cart::where('session_id', $guestSessionId)->with(['cartItems.product', 'cartItems.product.defaultVariant', 'cartItems.productVariant', 'cartItems.size'])->first();
+
+            if (! $cart || $cart->cartItems->isEmpty()) {
                 return redirect()->route('cart')->with('error', 'Your cart is empty.');
             }
 
@@ -608,67 +620,69 @@ class CheckoutController extends Controller
             $totalAmountCents = (int) round($totals['total'] * 100);
 
             // Create description from cart items
-            $description = $cart->cartItems->map(function($item) {
+            $description = $cart->cartItems->map(function ($item) {
                 $sizeName = $item->size ? " ({$item->size->name})" : '';
-                return $item->quantity . 'x ' . $item->product->name . $sizeName;
+
+                return $item->quantity.'x '.$item->product->name.$sizeName;
             })->join(', ');
 
             // Prepare shipping address for metadata
             $shippingAddress = $validated['shipping_address'];
             $shippingAddressString = implode(', ', [
-                $shippingAddress['first_name'] . ' ' . $shippingAddress['last_name'],
+                $shippingAddress['first_name'].' '.$shippingAddress['last_name'],
                 $shippingAddress['address_line_1'],
                 $shippingAddress['city'],
-                $shippingAddress['state'] . ' ' . $shippingAddress['postal_code'],
-                $shippingAddress['country']
+                $shippingAddress['state'].' '.$shippingAddress['postal_code'],
+                $shippingAddress['country'],
             ]);
 
             // For guest checkout, we need to create a temporary price in Stripe
             // or use Stripe's direct API since Cashier's guest checkout expects a price ID
             $stripe = StripeService::getClient();
-            
-            if (!$stripe) {
+
+            if (! $stripe) {
                 Log::error('Stripe secret key not configured for guest checkout');
+
                 return redirect()->back()->with('error', 'Payment system not configured. Please contact support.');
             }
-            
+
             // What is charged, frozen and committed BEFORE the Stripe call (no transaction around the call)
             $snapshot = CheckoutSnapshot::capture($cart, $totals, null, $guestSessionId, $validated['coupon_code'] ?? null, $priceChanges, $validated['shipping_address']);
             app(AbandonedCheckoutReminders::class)->rememberContact($snapshot, $request, $validated['email']);
 
             try {
-            $checkoutSession = $stripe->checkout->sessions->create([
-                'line_items' => [[
-                    'price_data' => [
-                        'currency' => config('cashier.currency'),
-                        'product_data' => [
-                            'name' => 'Cart Purchase',
-                            'description' => $this->metadataValue($description),
+                $checkoutSession = $stripe->checkout->sessions->create([
+                    'line_items' => [[
+                        'price_data' => [
+                            'currency' => config('cashier.currency'),
+                            'product_data' => [
+                                'name' => 'Cart Purchase',
+                                'description' => $this->metadataValue($description),
+                            ],
+                            'unit_amount' => $totalAmountCents,
                         ],
-                        'unit_amount' => $totalAmountCents,
+                        'quantity' => 1,
+                    ]],
+                    'mode' => 'payment',
+                    'success_url' => route('checkout.success').'?session_id={CHECKOUT_SESSION_ID}',
+                    'cancel_url' => route('checkout.cancel'),
+                    'expires_at' => app(AbandonedCheckoutReminders::class)->sessionExpiresAt(),
+                    'customer_email' => $validated['email'],
+                    'metadata' => [
+                        'guest_session_id' => $guestSessionId,
+                        'guest_email' => $validated['email'],
+                        'type' => 'guest_cart_checkout',
+                        'snapshot_id' => $snapshot->id,
+                        'description' => $this->metadataValue($description),
+                        'shipping_address' => $this->metadataValue($shippingAddressString),
+                        'customer_phone' => $validated['shipping_address']['phone'] ?? '',
+                        'order_notes' => $validated['order_notes'] ?? '',
+                        'coupon_code' => $validated['coupon_code'] ?? '',
+                        'locale' => app()->getLocale(),
+                        'source' => OrderCreationService::SESSION_SOURCE,
+                        'cart_hash' => $cart->contentHash(),
                     ],
-                    'quantity' => 1,
-                ]],
-                'mode' => 'payment',
-                'success_url' => route('checkout.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('checkout.cancel'),
-                'expires_at' => app(AbandonedCheckoutReminders::class)->sessionExpiresAt(),
-                'customer_email' => $validated['email'],
-                'metadata' => [
-                    'guest_session_id' => $guestSessionId,
-                    'guest_email' => $validated['email'],
-                    'type' => 'guest_cart_checkout',
-                    'snapshot_id' => $snapshot->id,
-                    'description' => $this->metadataValue($description),
-                    'shipping_address' => $this->metadataValue($shippingAddressString),
-                    'customer_phone' => $validated['shipping_address']['phone'] ?? '',
-                    'order_notes' => $validated['order_notes'] ?? '',
-                    'coupon_code' => $validated['coupon_code'] ?? '',
-                    'locale' => app()->getLocale(),
-                    'source' => OrderCreationService::SESSION_SOURCE,
-                    'cart_hash' => $cart->contentHash(),
-                ]
-            ]);
+                ]);
             } catch (\Throwable $e) {
                 $snapshot->delete();
 
@@ -682,14 +696,15 @@ class CheckoutController extends Controller
             if ($request->header('X-Inertia')) {
                 return Inertia::location($checkoutSession->url);
             }
-            
+
             return redirect($checkoutSession->url);
-            
+
         } catch (ValidationException $e) {
             // The form errors (e.g. the minimum order amount) go back to the page as they are
             throw $e;
         } catch (\Exception $e) {
-            Log::error('Guest cart checkout failed: ' . $e->getMessage());
+            Log::error('Guest cart checkout failed: '.$e->getMessage());
+
             return redirect()->back()->with('error', 'Unable to process guest checkout. Please try again.');
         }
     }
@@ -701,7 +716,7 @@ class CheckoutController extends Controller
     {
         // Try to extract line items from the session for fallback display
         $orderItems = $this->extractLineItemsFromSession($checkoutSession);
-        
+
         $total = (float) ($checkoutSession->amount_total / 100);
         $vat = Vat::includedIn($total);
 
@@ -717,7 +732,7 @@ class CheckoutController extends Controller
             'shipping_amount' => (float) (($checkoutSession->total_details->amount_shipping ?? 0) / 100),
             'currency' => strtoupper($checkoutSession->currency),
             'created_at' => now()->toISOString(),
-            'orderItems' => $orderItems // Include the extracted line items
+            'orderItems' => $orderItems, // Include the extracted line items
         ];
     }
 }

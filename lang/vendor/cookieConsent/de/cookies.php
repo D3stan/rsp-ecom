@@ -20,6 +20,7 @@ return [
     'day' => 'Tag|Tage',
     'hour' => 'Stunde|Stunden',
     'minute' => 'Minute|Minuten',
+    'session' => 'Browser-Sitzung',
 
     'categories' => [
         'essentials' => [
@@ -40,6 +41,11 @@ return [
         'consent' => 'Wird verwendet, um die Cookie-Einstellungen des Benutzers zu speichern.',
         'session' => 'Dient zur Identifizierung der Browsing-Sitzung des Nutzers.',
         'csrf' => 'Wird verwendet, um sowohl den Nutzer als auch unsere Website gegen Cross-Site Request Forgery-Angriffe zu schützen.',
+        'remember' => 'Hält Sie auf diesem Gerät angemeldet. Wird nur gesetzt, wenn Sie beim Login „Angemeldet bleiben“ ankreuzen.',
+        'sentry_replay' => 'Zeichnet die Momente rund um einen Fehler mit maskierten Texten auf, damit wir Fehler beheben können, von denen wir sonst nie erfahren würden. Bleibt im Browser, bis Sie den Tab schließen, kein Cookie.',
+        'appearance' => 'Merkt sich Ihre Wahl zwischen hellem und dunklem Design.',
+        'sidebar_state' => 'Merkt sich, ob die Seitenleiste in Ihrem Konto und im Admin-Bereich geöffnet oder geschlossen ist.',
+        'locale' => 'Merkt sich die gewählte Sprache. Wird im Browser-Speicher abgelegt, kein Cookie.',
         '_ga' => 'Haupt-Cookie, das von Google Analytics verwendet wird und es dem Dienst ermöglicht, einen Besucher von einem anderen zu unterscheiden.',
         '_ga_ID' => 'Wird von Google Analytics verwendet, um den Sitzungsstatus zu erhalten.',
         '_gid' => 'Wird von Google Analytics verwendet, um den Benutzer zu identifizieren.',

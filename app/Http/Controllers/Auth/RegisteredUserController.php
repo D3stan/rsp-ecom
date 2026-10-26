@@ -6,15 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\PendingUserVerification;
 use App\Models\User;
 use App\Notifications\PendingUserEmailVerification;
-use App\Services\EmailService;
 use App\Services\Newsletter\MarketingConsent;
 use App\Support\RegistrationAutoLogin;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -31,7 +30,7 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {

@@ -5,12 +5,12 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import useTranslation from '@/hooks/useTranslation';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { LayoutGrid, ShoppingBag, Heart, MessageSquare, Star } from 'lucide-react';
+import { Heart, LayoutGrid, MessageSquare, ShoppingBag, Star } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
     const { t } = useTranslation();
-    
+
     const mainNavItems: NavItem[] = [
         {
             title: t('dashboard.title'),
@@ -39,7 +39,7 @@ export function AppSidebar() {
             title: t('support'),
             href: route('contact'),
             icon: MessageSquare,
-        }
+        },
     ];
 
     return (

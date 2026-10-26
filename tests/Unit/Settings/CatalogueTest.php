@@ -1,5 +1,6 @@
 <?php
 
+use App\Settings\Settings;
 use App\Settings\SettingsRegistry;
 use App\Settings\SettingType;
 use Illuminate\Support\Facades\Validator;
@@ -102,7 +103,7 @@ it('does not allow writing readonly or env settings', function () {
     foreach (catalogue()->all() as $key => $definition) {
         if ($definition->access !== 'admin') {
             expect($definition->isWritable())->toBeFalse();
-            expect(fn () => app(App\Settings\Settings::class)->set($key, $definition->default))->toThrow(InvalidArgumentException::class);
+            expect(fn () => app(Settings::class)->set($key, $definition->default))->toThrow(InvalidArgumentException::class);
         }
     }
 

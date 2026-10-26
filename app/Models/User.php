@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\UserNotificationKind;
 use App\Jobs\SendUserNotification;
 use App\Notifications\AccountMailMessages;
+use Database\Factories\UserFactory;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -17,8 +18,8 @@ use Laravel\Cashier\Billable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, Billable;
+    /** @use HasFactory<UserFactory> */
+    use Billable, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -72,12 +73,10 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Determine if the user has a password set.
-     *
-     * @return bool
      */
     public function getHasPasswordAttribute(): bool
     {
-        return !is_null($this->password);
+        return ! is_null($this->password);
     }
 
     // Relationships

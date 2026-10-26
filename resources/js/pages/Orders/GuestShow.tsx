@@ -105,19 +105,20 @@ export default function GuestOrderShow({ order, supportEmail }: Props) {
                             </CardContent>
                         </Card>
 
-                        {(order.status === 'shipped' || order.status === 'delivered' || order.status === 'cancelled') && (order.tracking_number || order.status === 'cancelled') && (
-                            <Card className="bg-white">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2 text-gray-800">
-                                        <Truck className="h-5 w-5" />
-                                        {t('guest_order.tracking')}
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <OrderTracking order={order} />
-                                </CardContent>
-                            </Card>
-                        )}
+                        {(order.status === 'shipped' || order.status === 'delivered' || order.status === 'cancelled') &&
+                            (order.tracking_number || order.status === 'cancelled') && (
+                                <Card className="bg-white">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-gray-800">
+                                            <Truck className="h-5 w-5" />
+                                            {t('guest_order.tracking')}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <OrderTracking order={order} />
+                                    </CardContent>
+                                </Card>
+                            )}
 
                         <Card className="bg-white">
                             <CardHeader>

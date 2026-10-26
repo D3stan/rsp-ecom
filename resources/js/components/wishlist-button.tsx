@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button';
-import { Heart } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useWishlist } from '@/hooks/useWishlist';
 import useTranslation from '@/hooks/useTranslation';
-import { usePage, Link } from '@inertiajs/react';
+import { useWishlist } from '@/hooks/useWishlist';
+import { cn } from '@/lib/utils';
 import { type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { Heart } from 'lucide-react';
 
 interface WishlistButtonProps {
     productId: number;
@@ -35,16 +35,7 @@ export const WishlistButton: React.FC<WishlistButtonProps> = ({
     // If user is not authenticated, show login link
     if (!auth.user) {
         return (
-            <Button
-                variant={variant}
-                size={size}
-                disabled={disabled}
-                className={cn(
-                    'transition-all duration-200',
-                    className
-                )}
-                asChild
-            >
+            <Button variant={variant} size={size} disabled={disabled} className={cn('transition-all duration-200', className)} asChild>
                 <Link href={route('login')}>
                     <Heart className="h-4 w-4 text-current" />
                     {showText && <span className="ml-2">{t('wishlist.add')}</span>}
@@ -66,10 +57,7 @@ export const WishlistButton: React.FC<WishlistButtonProps> = ({
     };
 
     const getHeartClass = () => {
-        return cn(
-            'h-4 w-4 transition-colors',
-            inWishlist ? 'fill-red-500 text-red-500' : 'text-current'
-        );
+        return cn('h-4 w-4 transition-colors', inWishlist ? 'fill-red-500 text-red-500' : 'text-current');
     };
 
     return (
@@ -80,15 +68,13 @@ export const WishlistButton: React.FC<WishlistButtonProps> = ({
             disabled={disabled || isLoading}
             className={cn(
                 'transition-all duration-200',
-                inWishlist && 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100',
+                inWishlist && 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100',
                 isLoading && 'opacity-60',
-                className
+                className,
             )}
         >
             <Heart className={getHeartClass()} />
-            {showText && (
-                <span className="ml-2">{isLoading ? t('wishlist.loading') : inWishlist ? t('wishlist.remove') : t('wishlist.add')}</span>
-            )}
+            {showText && <span className="ml-2">{isLoading ? t('wishlist.loading') : inWishlist ? t('wishlist.remove') : t('wishlist.add')}</span>}
         </Button>
     );
 };

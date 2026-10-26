@@ -62,12 +62,17 @@ export default function CustomerShow({ customer, orders }: Props) {
                             {t('admin.customers.orders_and_paid', { count: customer.orders_count, paid: money(customer.total_spent, locale) })}
                         </p>
                         <div className="mt-2 space-x-1">
-                            <Badge variant={customer.is_active ? 'default' : 'outline'}>{customer.is_active ? t('admin.customers.status_active') : t('admin.customers.status_deactivated')}</Badge>
+                            <Badge variant={customer.is_active ? 'default' : 'outline'}>
+                                {customer.is_active ? t('admin.customers.status_active') : t('admin.customers.status_deactivated')}
+                            </Badge>
                             {!customer.verified && <Badge variant="secondary">{t('admin.customers.status_unverified')}</Badge>}
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" onClick={() => router.post(route('admin.customers.reset-link', customer.id), {}, { preserveScroll: true })}>
+                        <Button
+                            variant="outline"
+                            onClick={() => router.post(route('admin.customers.reset-link', customer.id), {}, { preserveScroll: true })}
+                        >
                             <Mail className="mr-2 h-4 w-4" /> {t('admin.customers.send_reset_link')}
                         </Button>
                         <Button variant={customer.is_active ? 'destructive' : 'default'} onClick={() => setConfirming(true)}>
@@ -92,7 +97,11 @@ export default function CustomerShow({ customer, orders }: Props) {
                             {(['name', 'email', 'phone'] as const).map((field) => (
                                 <div key={field} className="space-y-1">
                                     <Label htmlFor={field} className="capitalize">
-                                        {field === 'name' ? t('admin.customers.field_name') : field === 'email' ? t('admin.customers.field_email') : t('admin.customers.field_phone')}
+                                        {field === 'name'
+                                            ? t('admin.customers.field_name')
+                                            : field === 'email'
+                                              ? t('admin.customers.field_email')
+                                              : t('admin.customers.field_phone')}
                                     </Label>
                                     <Input id={field} value={form.data[field]} onChange={(e) => form.setData(field, e.target.value)} />
                                     {form.errors[field] && <p className="text-sm text-destructive">{form.errors[field]}</p>}

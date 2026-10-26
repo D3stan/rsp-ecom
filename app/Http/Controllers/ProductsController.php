@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Services\MarkdownRenderer;
-use App\Models\Category;
 use App\Support\CatalogPagination;
+use Artesaos\SEOTools\Facades\JsonLd;
+use Artesaos\SEOTools\Facades\OpenGraph;
+use Artesaos\SEOTools\Facades\SEOMeta;
+use Artesaos\SEOTools\Facades\TwitterCard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Artesaos\SEOTools\Facades\SEOMeta;
-use Artesaos\SEOTools\Facades\OpenGraph;
-use Artesaos\SEOTools\Facades\TwitterCard;
-use Artesaos\SEOTools\Facades\JsonLd;
 
 class ProductsController extends Controller
 {
@@ -26,38 +26,38 @@ class ProductsController extends Controller
         // Set SEO for products listing page
         $pageTitle = 'Products';
         $metaDescription = 'Browse our wide selection of high-quality products. Find the perfect items for your needs with filters and search.';
-        
+
         if ($search = $request->get('search')) {
             $pageTitle = "Search results for '{$search}'";
             $metaDescription = "Search results for '{$search}' - Find the products you're looking for.";
         }
-        
+
         if ($categorySlug = $request->get('category')) {
             $category = Category::where('slug', $categorySlug)->first();
             if ($category) {
-                $pageTitle = $category->name . ' Products';
+                $pageTitle = $category->name.' Products';
                 $metaDescription = $category->description ?? "Browse our {$category->name} collection. Find the perfect products in this category.";
             }
         }
-        
-        SEOMeta::setTitle($pageTitle . ' – ' . settings('store.name'));
+
+        SEOMeta::setTitle($pageTitle.' – '.settings('store.name'));
         SEOMeta::setDescription(Str::limit($metaDescription, 160));
         SEOMeta::setCanonical(route('products', $request->except('page')));
-        
+
         // Set noindex for filtered/search pages to avoid duplicate content
         if ($request->hasAny(['search', 'category', 'min_price', 'max_price', 'sort'])) {
             SEOMeta::addMeta('robots', 'noindex,follow', 'name');
         }
-        
+
         OpenGraph::setType('website');
         OpenGraph::setUrl(route('products', $request->except('page')));
-        OpenGraph::setTitle($pageTitle . ' – ' . settings('store.name'));
+        OpenGraph::setTitle($pageTitle.' – '.settings('store.name'));
         OpenGraph::setDescription(Str::limit($metaDescription, 300));
-        
+
         TwitterCard::setType('summary');
-        TwitterCard::setTitle($pageTitle . ' – ' . settings('store.name'));
+        TwitterCard::setTitle($pageTitle.' – '.settings('store.name'));
         TwitterCard::setDescription(Str::limit($metaDescription, 200));
-        
+
         $query = Product::with(['category', 'approvedReviews', 'defaultVariant'])
             ->active()
             ->inStock();
@@ -66,7 +66,7 @@ class ProductsController extends Controller
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -103,17 +103,17 @@ class ProductsController extends Controller
             case 'rating':
                 // Order by average rating (calculated from reviews)
                 $query->withAvg('approvedReviews', 'rating')
-                      ->orderBy('approved_reviews_avg_rating', 'desc');
+                    ->orderBy('approved_reviews_avg_rating', 'desc');
                 break;
             case 'popular':
                 // Order by number of reviews as popularity indicator
                 $query->withCount('approvedReviews')
-                      ->orderBy('approved_reviews_count', 'desc');
+                    ->orderBy('approved_reviews_count', 'desc');
                 break;
             case 'most_bought':
                 // Order by total quantity sold from order items
                 $query->withSum('orderItems', 'quantity')
-                      ->orderBy('order_items_sum_quantity', 'desc');
+                    ->orderBy('order_items_sum_quantity', 'desc');
                 break;
             default:
                 $query->orderBy('name', 'asc');
@@ -127,19 +127,19 @@ class ProductsController extends Controller
         $productsData = $products->through(function (Product $product) {
             // Handle empty image arrays - use default image
             $imageUrl = '/images/product.png';
-            if (!empty($product->images)) {
+            if (! empty($product->images)) {
                 $mainImage = $product->main_image_url;
                 if ($mainImage && $this->imageExists($mainImage)) {
                     $imageUrl = $mainImage;
                 }
             }
-            
+
             // Check if product is in user's wishlist (for authenticated users)
             $inWishlist = false;
             if (auth()->check()) {
                 $inWishlist = auth()->user()->hasInWishlist($product);
             }
-            
+
             return [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -159,7 +159,7 @@ class ProductsController extends Controller
                     'slug' => $product->category->slug,
                 ] : null,
                 'defaultVariantId' => $product->defaultVariant?->id,
-                'variants' => $product->activeVariants->map(fn($v) => [
+                'variants' => $product->activeVariants->map(fn ($v) => [
                     'id' => $v->id,
                     'name' => $v->name,
                     'price' => $v->price,
@@ -234,19 +234,19 @@ class ProductsController extends Controller
         $metaDescription = $product->seo_description
             ?: $markdown->toPlainText($product->defaultVariant?->description ?: $product->description);
 
-        SEOMeta::setTitle($pageTitle . ' – ' . settings('store.name'));
+        SEOMeta::setTitle($pageTitle.' – '.settings('store.name'));
         SEOMeta::setDescription(Str::limit($metaDescription, 160));
         SEOMeta::setCanonical(route('products.show', $product));
 
         // Open Graph for product
         OpenGraph::setType('product');
         OpenGraph::setUrl(route('products.show', $product));
-        OpenGraph::setTitle($pageTitle . ' – ' . settings('store.name'));
+        OpenGraph::setTitle($pageTitle.' – '.settings('store.name'));
         OpenGraph::setDescription(Str::limit($metaDescription, 300));
 
         // Get the main product image for social sharing
         $socialImageUrl = $product->social_image_url ?: $product->main_image_url;
-        if ($socialImageUrl && !filter_var($socialImageUrl, FILTER_VALIDATE_URL)) {
+        if ($socialImageUrl && ! filter_var($socialImageUrl, FILTER_VALIDATE_URL)) {
             $socialImageUrl = url($socialImageUrl);
         }
 
@@ -257,7 +257,7 @@ class ProductsController extends Controller
 
         // Twitter Card
         TwitterCard::setType('summary_large_image');
-        TwitterCard::setTitle($pageTitle . ' – ' . settings('store.name'));
+        TwitterCard::setTitle($pageTitle.' – '.settings('store.name'));
         TwitterCard::setDescription(Str::limit($metaDescription, 200));
 
         // JSON-LD Product structured data
@@ -268,16 +268,16 @@ class ProductsController extends Controller
 
         // Add product images
         $productImages = [];
-        if (!empty($product->images)) {
+        if (! empty($product->images)) {
             foreach ($product->images as $image) {
                 $imageUrl = $product->getImageUrl($image);
-                if (!filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+                if (! filter_var($imageUrl, FILTER_VALIDATE_URL)) {
                     $imageUrl = url($imageUrl);
                 }
                 $productImages[] = $imageUrl;
             }
         }
-        if (!empty($productImages)) {
+        if (! empty($productImages)) {
             JsonLd::addValue('image', $productImages);
         }
 
@@ -285,7 +285,7 @@ class ProductsController extends Controller
         if ($product->category) {
             JsonLd::addValue('brand', [
                 '@type' => 'Brand',
-                'name' => $product->category->name
+                'name' => $product->category->name,
             ]);
         }
 
@@ -300,8 +300,8 @@ class ProductsController extends Controller
             'url' => route('products.show', $product),
             'seller' => [
                 '@type' => 'Organization',
-                'name' => settings('store.name')
-            ]
+                'name' => settings('store.name'),
+            ],
         ]);
 
         // Add aggregated rating if reviews exist
@@ -311,7 +311,7 @@ class ProductsController extends Controller
                 'ratingValue' => round($product->average_rating, 1),
                 'reviewCount' => $product->review_count,
                 'bestRating' => 5,
-                'worstRating' => 1
+                'worstRating' => 1,
             ]);
         }
 
@@ -328,7 +328,7 @@ class ProductsController extends Controller
             // GPSR product identifier (the selected variant's SKU, else base_sku) and safety text: ProductSafety.tsx
             'base_sku' => $product->base_sku,
             'safety_information' => $product->safety_information,
-            'variants' => $product->activeVariants->map(fn($v) => [
+            'variants' => $product->activeVariants->map(fn ($v) => [
                 'id' => $v->id,
                 'name' => $v->name,
                 'sku' => $product->base_sku ? $product->base_sku.$v->sku_suffix : null,
@@ -389,7 +389,7 @@ class ProductsController extends Controller
             ->where('status', 'active')
             ->limit(4)
             ->get()
-            ->map(fn($p) => [
+            ->map(fn ($p) => [
                 'id' => $p->id,
                 'name' => $p->name,
                 'slug' => $p->slug,
@@ -476,7 +476,7 @@ class ProductsController extends Controller
         if (filter_var($imagePath, FILTER_VALIDATE_URL)) {
             return $imagePath;
         }
-        
+
         return Storage::url("products/{$productId}/{$imagePath}");
     }
 
@@ -485,7 +485,7 @@ class ProductsController extends Controller
      */
     private function imageExists(?string $imageUrl): bool
     {
-        if (!$imageUrl) {
+        if (! $imageUrl) {
             return false;
         }
 
@@ -497,11 +497,13 @@ class ProductsController extends Controller
         // For storage URLs, check if the file exists
         if (str_starts_with($imageUrl, '/storage/')) {
             $filePath = str_replace('/storage/', '', $imageUrl);
+
             return \Storage::disk('public')->exists($filePath);
         }
 
         // For other paths, check if the public file exists
         $publicPath = public_path($imageUrl);
+
         return file_exists($publicPath);
     }
 }

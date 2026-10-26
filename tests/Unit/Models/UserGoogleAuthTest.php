@@ -3,6 +3,7 @@
 namespace Tests\Unit\Models;
 
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -43,8 +44,8 @@ class UserGoogleAuthTest extends TestCase
             'google_id' => '123456789',
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
-        
+        $this->expectException(QueryException::class);
+
         User::factory()->create([
             'google_id' => '123456789',
         ]);
@@ -94,7 +95,7 @@ class UserGoogleAuthTest extends TestCase
         ]);
 
         $userArray = $user->toArray();
-        
+
         $this->assertArrayHasKey('has_password', $userArray);
         $this->assertTrue($userArray['has_password']);
     }

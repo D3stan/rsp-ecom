@@ -632,7 +632,6 @@ function FilterSection({
                     </div>
                 </div>
             </div>
-
         </div>
     );
 }

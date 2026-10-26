@@ -37,7 +37,7 @@ return new class extends Migration
 
                 $seenOrders[$shipment->order_id] = true;
 
-                if (!empty($shipment->driver) && $shipment->driver !== 'manual') {
+                if (! empty($shipment->driver) && $shipment->driver !== 'manual') {
                     DB::table('orders')
                         ->where('id', $shipment->order_id)
                         ->whereNull('tracking_driver')

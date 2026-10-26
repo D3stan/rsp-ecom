@@ -1,11 +1,11 @@
-import { useForm, usePage } from '@inertiajs/react';
 import { type SharedData } from '@/types';
+import { useForm, usePage } from '@inertiajs/react';
 
 import GoogleButton from '@/components/google-button';
 import HeadingSmall from '@/components/heading-small';
-import useTranslation from '@/hooks/useTranslation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import useTranslation from '@/hooks/useTranslation';
 
 export default function GoogleAccountSettings() {
     const { auth } = usePage<SharedData>().props;
@@ -22,10 +22,7 @@ export default function GoogleAccountSettings() {
 
     return (
         <div className="space-y-6">
-            <HeadingSmall
-                title={t('account.google.heading')}
-                description={t('account.google.heading_desc')}
-            />
+            <HeadingSmall title={t('account.google.heading')} description={t('account.google.heading_desc')} />
 
             <Card>
                 <CardHeader className="pb-4">
@@ -60,12 +57,7 @@ export default function GoogleAccountSettings() {
                                     <p className="text-sm text-muted-foreground">{t('account.google.connected_to', { email: user.email })}</p>
                                 </div>
                             </div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleUnlinkGoogle}
-                                disabled={processing || !user.has_password}
-                            >
+                            <Button variant="outline" size="sm" onClick={handleUnlinkGoogle} disabled={processing || !user.has_password}>
                                 {t('account.google.unlink')}
                             </Button>
                         </div>
@@ -97,14 +89,12 @@ export default function GoogleAccountSettings() {
                                     <p className="text-sm text-muted-foreground">{t('account.google.not_connected')}</p>
                                 </div>
                             </div>
-                            <GoogleButton className="w-auto px-4">
-                                {t('account.google.connect')}
-                            </GoogleButton>
+                            <GoogleButton className="w-auto px-4">{t('account.google.connect')}</GoogleButton>
                         </div>
                     )}
-                    
+
                     {user.google_id && !user.has_password && (
-                        <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3">
                             <p className="text-sm text-amber-800">
                                 <strong>{t('account.google.note_label')}</strong> {t('account.google.note_body')}
                             </p>

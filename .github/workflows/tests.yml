@@ -21,7 +21,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.4
+          php-version: 8.5
           tools: composer:v2
           coverage: xdebug
 
@@ -36,6 +36,15 @@ jobs:
 
       - name: Install Node Dependencies
         run: npm ci
+
+      - name: Type Check
+        run: npm run types
+
+      - name: JS Tests
+        run: npm run test:js
+
+      - name: Python Tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py'
 
       - name: Build Assets
         run: npm run build

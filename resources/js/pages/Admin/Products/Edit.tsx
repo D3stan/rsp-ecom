@@ -162,7 +162,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
                 t('admin.products.error_file_size', {
                     size: (totalFileSize / 1024 / 1024).toFixed(2),
                     max: uploadLimits.maxRequestSize,
-                })
+                }),
             );
             return;
         }
@@ -267,9 +267,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .map((v: any) => v.id)
             .filter((id): id is number => id !== undefined);
-        const newVariantIds = newVariants
-            .map((v) => v.id)
-            .filter((id): id is number => id !== undefined);
+        const newVariantIds = newVariants.map((v) => v.id).filter((id): id is number => id !== undefined);
 
         const removedIds = oldVariantIds.filter((id) => !newVariantIds.includes(id));
         if (removedIds.length > 0) {
@@ -334,10 +332,7 @@ export default function EditProduct({ product, categories, sizes, uploadLimits }
 
                                 <div>
                                     <Label htmlFor="category_id">{t('admin.products.category_required')}</Label>
-                                    <Select
-                                        value={data.category_id as string}
-                                        onValueChange={(value) => setData('category_id', value)}
-                                    >
+                                    <Select value={data.category_id as string} onValueChange={(value) => setData('category_id', value)}>
                                         <SelectTrigger className={formErrors.category_id ? 'border-red-500' : ''}>
                                             <SelectValue placeholder={t('admin.products.select_category')} />
                                         </SelectTrigger>

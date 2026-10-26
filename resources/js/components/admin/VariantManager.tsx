@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Plus, Trash2, GripVertical, Star, X } from 'lucide-react';
+import { GripVertical, Plus, Star, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 
 interface Variant {

@@ -2,8 +2,9 @@
 
 use App\Jobs\SendOrderEmail;
 use App\Models\OrderEmail;
+use Tests\TestCase;
 
-uses(Tests\TestCase::class);
+uses(TestCase::class);
 
 it('derives the shipped fingerprint from the tracking number only', function () {
     expect(OrderEmail::shippedFingerprint('ABC'))->toBe(OrderEmail::shippedFingerprint(' ABC '))

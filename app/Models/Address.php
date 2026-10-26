@@ -69,20 +69,20 @@ class Address extends Model
     // Accessors
     public function getFullNameAttribute(): string
     {
-        return trim($this->first_name . ' ' . $this->last_name);
+        return trim($this->first_name.' '.$this->last_name);
     }
 
     public function getFullAddressAttribute(): string
     {
         $address = $this->address_line_1;
-        
+
         if ($this->address_line_2) {
-            $address .= ', ' . $this->address_line_2;
+            $address .= ', '.$this->address_line_2;
         }
-        
-        $address .= ', ' . $this->city . ', ' . $this->state . ' ' . $this->postal_code;
-        $address .= ', ' . $this->country;
-        
+
+        $address .= ', '.$this->city.', '.$this->state.' '.$this->postal_code;
+        $address .= ', '.$this->country;
+
         return $address;
     }
 }
