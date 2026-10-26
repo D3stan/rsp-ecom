@@ -3036,9 +3036,9 @@
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Orders/Index.tsx": {
-    "mtime": 1792397797.8483562,
-    "seen": 1792951427.52564,
-    "ast_hash": "e5df398a97031f221a21adbf09412e76",
+    "mtime": 1793004319.8526378,
+    "seen": 1793004338.132707,
+    "ast_hash": "f0e9ea98cc385d4dbffd24b9f64483de",
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Orders/Ship.tsx": {
@@ -3066,9 +3066,9 @@
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Products/Index.tsx": {
-    "mtime": 1792397848.6410947,
-    "seen": 1792951427.525642,
-    "ast_hash": "64367530c982200ee5e3e42676af15bd",
+    "mtime": 1793004319.8905554,
+    "seen": 1793004338.132709,
+    "ast_hash": "e34001ce695036af4b2d6e539365f590",
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Products/Show.tsx": {
@@ -3078,9 +3078,9 @@
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Reviews/Index.tsx": {
-    "mtime": 1792398115.8607192,
-    "seen": 1792951427.525643,
-    "ast_hash": "bc0c866fc46f45fa758ead6366a4d36b",
+    "mtime": 1793004319.9838448,
+    "seen": 1793004338.132711,
+    "ast_hash": "1eb76f01471d2557ea9c9f0f68e55707",
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Reviews/Show.tsx": {

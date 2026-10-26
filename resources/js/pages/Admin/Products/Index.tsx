@@ -130,6 +130,16 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
 
     // Instant filtering - apply filters immediately on change
     useEffect(() => {
+        // Pagination remounts the page: without this check the effect would reload it without `page` (back to page 1)
+        if (
+            search === (filters.search || '') &&
+            categoryFilter === (filters.category || '') &&
+            statusFilter === (filters.status || '') &&
+            stockFilter === (filters.stock_filter || '')
+        ) {
+            return;
+        }
+
         const timeoutId = setTimeout(() => {
             router.get(
                 '/admin/products',
