@@ -53,7 +53,7 @@ return [
     |
     */
 
-    'policy' => null,
+    'policy' => 'cookies',
 
     /* Google Analytics configuration
     |--------------------------------------------------------------------------

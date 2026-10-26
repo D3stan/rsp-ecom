@@ -1,3 +1,4 @@
+import { canStorePreferences } from '@/lib/cookie-consent';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Translations = {
@@ -54,8 +55,9 @@ export function TranslationProvider({
     const availableLocales = supportedLocales.length > 0 ? supportedLocales : DEFAULT_SUPPORTED_LOCALES;
 
     const [locale, setLocale] = useState(() => {
-        // Try to get from localStorage first, then detect from browser, then use initialLocale
-        if (typeof window !== 'undefined') {
+        // Try to get from localStorage first, then detect from browser, then use initialLocale. Without the visitor's
+        // consent nothing is read from localStorage: the server's choice (session, then Accept-Language) is used.
+        if (typeof window !== 'undefined' && canStorePreferences()) {
             const savedLocale = localStorage.getItem('locale');
             if (savedLocale) {
                 return savedLocale;
@@ -193,7 +195,7 @@ export function TranslationProvider({
 
         // Update the locale state and localStorage
         setLocale(newLocale);
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && canStorePreferences()) {
             localStorage.setItem('locale', newLocale);
         }
 

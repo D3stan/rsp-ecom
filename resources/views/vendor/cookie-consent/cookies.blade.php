@@ -49,7 +49,7 @@
                                     <p class="cookies__name">{{ $cookie->name }}</p>
                                     <p class="cookies__duration">{{ \Carbon\CarbonInterval::minutes($cookie->duration)->cascade() }}</p>
                                     @if($cookie->description)
-                                        <p class="cookies__description">{{ $cookie->description }}</p>
+                                        <p class="cookies__description">{{ __($cookie->description) }}</p>
                                     @endif
                                 </li>
                                 @endforeach

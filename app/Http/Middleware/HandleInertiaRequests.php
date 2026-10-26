@@ -63,6 +63,11 @@ class HandleInertiaRequests extends Middleware
                 // consent cookie was decrypted) so the visitor's current choice is what is read.
                 'replay' => app(CookiesManager::class)->hasConsentFor('sentry_replay'),
             ],
+            // Whether the visitor accepted the optional interface preferences (theme, sidebar, language); the browser
+            // only stores those after this is true (resources/js/lib/cookie-consent.ts). Fresh manager, as above.
+            'cookieConsent' => [
+                'preferences' => app(CookiesManager::class)->hasConsentFor('appearance'),
+            ],
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

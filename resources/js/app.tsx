@@ -1,7 +1,7 @@
 import React from 'react';
 import '../css/app.css';
 
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import * as Sentry from '@sentry/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
@@ -11,6 +11,7 @@ import { ToastContainer } from './components/Toast';
 import { ToastProvider } from './contexts/ToastContext';
 import { TranslationProvider } from './contexts/TranslationContext';
 import { initializeTheme } from './hooks/use-appearance';
+import { type CookieConsentProps, setPreferencesConsent } from './lib/cookie-consent';
 import { initSentry, type SentryConfig } from './lib/sentry';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -35,6 +36,10 @@ createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
     setup({ el, App, props }) {
+        // Before anything renders: the theme and language code reads it on first render
+        setPreferencesConsent(props.initialPage.props.cookieConsent as CookieConsentProps | undefined);
+        router.on('navigate', (event) => setPreferencesConsent(event.detail.page.props.cookieConsent as CookieConsentProps | undefined));
+
         initSentry(
             props.initialPage.props.sentry as SentryConfig | undefined,
             props.initialPage.props.auth as { user?: { id: number; role?: string } | null },

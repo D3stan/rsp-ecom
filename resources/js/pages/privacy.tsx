@@ -1,7 +1,7 @@
 import Header from '@/components/header';
 import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 export default function Privacy() {
     const { t, locale } = useTranslation();
@@ -79,6 +79,9 @@ export default function Privacy() {
                             <section>
                                 <h2 className="mb-4 text-2xl font-bold text-black">{t('privacy.cookies')}</h2>
                                 <p className="mb-4 text-gray-600">{t('privacy.cookies_text')}</p>
+                                <Link href={route('cookies')} className="text-gray-900 underline">
+                                    {t('cookie_policy')}
+                                </Link>
                             </section>
 
                             <section>

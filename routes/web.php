@@ -122,6 +122,8 @@ Route::post('/contact', [ContactController::class, 'store'])->middleware('thrott
 
 Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
 
+Route::get('/cookies', [PageController::class, 'cookies'])->name('cookies');
+
 Route::get('/shipping-returns', [PageController::class, 'shippingReturns'])->name('shipping-returns');
 
 Route::get('/terms', [PageController::class, 'terms'])->name('terms');

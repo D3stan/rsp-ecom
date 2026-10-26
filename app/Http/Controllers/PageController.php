@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\CarbonInterval;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Artesaos\SEOTools\Facades\SEOMeta;
 use Artesaos\SEOTools\Facades\OpenGraph;
 use Artesaos\SEOTools\Facades\TwitterCard;
+use Whitecube\LaravelCookieConsent\CookiesManager;
 
 class PageController extends Controller
 {
@@ -51,6 +53,36 @@ class PageController extends Controller
         TwitterCard::setDescription('Read our privacy policy to understand how we collect, use, and protect your personal information.');
 
         return Inertia::render('privacy');
+    }
+
+    /**
+     * Display the Cookie Policy page, listing every cookie registered in App\Providers\CookiesServiceProvider.
+     */
+    public function cookies(CookiesManager $cookies): Response
+    {
+        SEOMeta::setTitle('Cookie Policy – ' . settings('store.name'));
+        SEOMeta::setDescription('Every cookie and browser storage item this website uses, what it is for and how long it lasts.');
+        SEOMeta::setCanonical(route('cookies'));
+
+        OpenGraph::setType('website');
+        OpenGraph::setUrl(route('cookies'));
+        OpenGraph::setTitle('Cookie Policy – ' . settings('store.name'));
+
+        TwitterCard::setType('summary');
+        TwitterCard::setTitle('Cookie Policy – ' . settings('store.name'));
+
+        return Inertia::render('cookies', [
+            'categories' => array_map(fn ($category): array => [
+                'key' => $category->key(),
+                'title' => $category->title,
+                'description' => $category->description,
+                'cookies' => array_map(fn ($cookie): array => [
+                    'name' => $cookie->name,
+                    'description' => __($cookie->description),
+                    'duration' => $cookie->duration > 0 ? CarbonInterval::minutes($cookie->duration)->cascade()->forHumans() : null,
+                ], $category->getCookies()),
+            ], $cookies->getCategories()),
+        ]);
     }
 
     /**

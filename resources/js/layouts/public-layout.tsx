@@ -64,6 +64,11 @@ export default function PublicLayout({ children, transparent = false, currentPag
                                     </Link>
                                 </li>
                                 <li>
+                                    <Link href="/cookies" className="footer-link md:footer-link-none hover:text-white">
+                                        {t('cookie_policy')}
+                                    </Link>
+                                </li>
+                                <li>
                                     <Link href="/terms" className="footer-link md:footer-link-none hover:text-white">
                                         {t('terms_of_service')}
                                     </Link>
