@@ -1476,6 +1476,8 @@
     "settings.orders.order_notes_max.help": "Maximum characters customers can write in the order note.",
     "settings.orders.checkout_expiry_minutes.label": "Payment page lifetime",
     "settings.orders.checkout_expiry_minutes.help": "How long the Stripe payment page of a checkout stays open (30 minutes to 24 hours). The abandoned-checkout reminder can only go out after it has expired.",
+    "settings.orders.paid_waiting_alert_days.label": "Alert: paid order not shipped after",
+    "settings.orders.paid_waiting_alert_days.help": "Days a paid order may wait without a shipment or tracking number before the invariant check raises an alert.",
     "settings.inventory.low_stock_threshold.label": "Low stock threshold",
     "settings.inventory.low_stock_threshold.help": "Products with this many units or fewer are flagged as low stock in the admin and on wishlists.",
     "settings.catalog.per_page.label": "Products per page",

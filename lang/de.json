@@ -1476,6 +1476,8 @@
     "settings.orders.order_notes_max.help": "Maximale Zeichenzahl, die Kunden in die Bestellnotiz schreiben können.",
     "settings.orders.checkout_expiry_minutes.label": "Gültigkeit der Zahlungsseite",
     "settings.orders.checkout_expiry_minutes.help": "Wie lange die Stripe-Zahlungsseite eines Checkouts geöffnet bleibt (30 Minuten bis 24 Stunden). Die Erinnerung an einen abgebrochenen Checkout kann erst nach ihrem Ablauf gesendet werden.",
+    "settings.orders.paid_waiting_alert_days.label": "Warnung: bezahlte Bestellung nicht versendet nach",
+    "settings.orders.paid_waiting_alert_days.help": "Tage, die eine bezahlte Bestellung ohne Sendung oder Trackingnummer warten darf, bevor die Prüfung Alarm schlägt.",
     "settings.inventory.low_stock_threshold.label": "Schwelle für niedrigen Bestand",
     "settings.inventory.low_stock_threshold.help": "Produkte mit dieser Stückzahl oder weniger werden im Admin-Bereich und auf Wunschlisten als knapp markiert.",
     "settings.catalog.per_page.label": "Produkte pro Seite",

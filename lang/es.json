@@ -1476,6 +1476,8 @@
     "settings.orders.order_notes_max.help": "Número máximo de caracteres que los clientes pueden escribir en la nota del pedido.",
     "settings.orders.checkout_expiry_minutes.label": "Duración de la página de pago",
     "settings.orders.checkout_expiry_minutes.help": "Tiempo que la página de pago de Stripe de un pedido permanece abierta (de 30 minutos a 24 horas). El recordatorio de pago abandonado solo puede enviarse después de que caduque.",
+    "settings.orders.paid_waiting_alert_days.label": "Alerta: pedido pagado sin enviar tras",
+    "settings.orders.paid_waiting_alert_days.help": "Días que un pedido pagado puede esperar sin envío ni número de seguimiento antes de que la comprobación lance una alerta.",
     "settings.inventory.low_stock_threshold.label": "Umbral de existencias bajas",
     "settings.inventory.low_stock_threshold.help": "Los productos con esta cantidad de unidades o menos se marcan como de poco stock en la administración y en las listas de deseos.",
     "settings.catalog.per_page.label": "Productos por página",

@@ -118,6 +118,15 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
 
     // Instant filtering - apply filters immediately on change
     useEffect(() => {
+        // Pagination remounts the page: without this check the effect would reload it without `page` (back to page 1)
+        if (
+            search === (filters.search || '') &&
+            statusFilter === (filters.status || 'pending') &&
+            ratingFilter === (filters.rating || '')
+        ) {
+            return;
+        }
+
         const timeoutId = setTimeout(() => {
             router.get(
                 '/admin/reviews',
@@ -135,6 +144,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
         }, 300);
 
         return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the local filter state; filters.* is only compared to skip redundant reloads
     }, [search, statusFilter, ratingFilter]);
 
     const clearFilters = () => {

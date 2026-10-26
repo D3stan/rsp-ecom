@@ -34,7 +34,7 @@ jobs:
           cache: 'npm'
 
       - name: Audit PHP dependencies
-        run: composer audit
+        run: composer audit --locked
 
       # shortcut: reports without failing. The production tree still carries high/critical advisories (mostly through
       # the shadcn CLI, which is listed under dependencies); drop continue-on-error once `npm audit --omit=dev` is clean.

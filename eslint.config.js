@@ -79,6 +79,7 @@ export default [
                             'removeEventListener',
                             'postMessage',
                             'getElementById',
+                            'field',
                             'dispatch',
                             'commit',
                             'includes',
@@ -94,7 +95,7 @@ export default [
         },
     },
     {
-        ignores: ['vendor', 'node_modules', 'public', 'bootstrap/ssr', 'tailwind.config.js', '.worktrees', 'storage'],
+        ignores: ['vendor', 'node_modules', 'public', 'bootstrap/ssr', 'tailwind.config.js', '.worktrees', '.claude', 'storage'],
     },
     prettier, // Turn off all rules that might conflict with Prettier
 ];

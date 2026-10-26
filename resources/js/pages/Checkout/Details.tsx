@@ -94,7 +94,7 @@ interface CheckoutDetailsProps extends SharedData {
 const isPhoneValid = (value: string): boolean => {
     const digits = value.replace(/\D/g, '').length;
 
-    return /^\+?[\d\s().\/-]+$/.test(value) && digits >= 6 && digits <= 15;
+    return /^\+?[\d\s()./-]+$/.test(value) && digits >= 6 && digits <= 15;
 };
 
 

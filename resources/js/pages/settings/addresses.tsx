@@ -52,9 +52,7 @@ export default function Addresses({ addresses, provinces, max }: AddressesProps)
                                                 {address.company && <p>{address.company}</p>}
                                                 <p>{address.address_line_1}</p>
                                                 {address.address_line_2 && <p>{address.address_line_2}</p>}
-                                                <p>
-                                                    {address.postal_code} {address.city} ({address.state}) · {address.country}
-                                                </p>
+                                                <p>{`${address.postal_code} ${address.city} (${address.state}) · ${address.country}`}</p>
                                                 {address.phone && <p>{address.phone}</p>}
                                             </address>
                                             {address.is_default && <Badge>{t('account.addresses.default')}</Badge>}

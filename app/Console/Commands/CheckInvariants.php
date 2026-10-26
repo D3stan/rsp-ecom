@@ -42,7 +42,8 @@ class CheckInvariants extends Command
             $telegram->sendOnce('invariant:'.$key, '🚨 '.$message, (int) config('ops.invariants.alert_window_minutes'));
         }
 
-        return self::FAILURE;
+        // Already reported above (log + Telegram); a failing exit would only duplicate it as a scheduler exception.
+        return self::SUCCESS;
     }
 
     /**
