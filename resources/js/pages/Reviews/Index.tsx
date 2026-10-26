@@ -1,12 +1,12 @@
-import AppLayout from '@/layouts/app-layout';
-import { Head, Link } from '@inertiajs/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useTranslation } from '@/hooks/useTranslation';
-import { Star, Package, Calendar, MessageSquare } from 'lucide-react';
-import type { Review, PaginatedData } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMoney } from '@/hooks/use-money';
+import { useTranslation } from '@/hooks/useTranslation';
+import AppLayout from '@/layouts/app-layout';
+import type { PaginatedData, Review } from '@/types';
+import { Head, Link } from '@inertiajs/react';
+import { Calendar, MessageSquare, Package, Star } from 'lucide-react';
 
 interface ReviewsIndexProps {
     reviews: PaginatedData<Review>;
@@ -27,14 +27,7 @@ export default function ReviewsIndex({ reviews }: ReviewsIndexProps) {
 
     const renderStars = (rating: number) => {
         return Array.from({ length: 5 }, (_, i) => (
-            <Star
-                key={i}
-                className={`h-4 w-4 ${
-                    i < rating
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-gray-300'
-                }`}
-            />
+            <Star key={i} className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
         ));
     };
 
@@ -49,14 +42,12 @@ export default function ReviewsIndex({ reviews }: ReviewsIndexProps) {
         >
             <Head title={t('reviews.title')} />
 
-            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+            <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">{t('reviews.title')}</h1>
-                        <p className="text-muted-foreground">
-                            {t('reviews.description')}
-                        </p>
+                        <p className="text-muted-foreground">{t('reviews.description')}</p>
                     </div>
                     <div className="flex items-center gap-3">
                         <span className="text-sm text-muted-foreground">
@@ -81,45 +72,34 @@ export default function ReviewsIndex({ reviews }: ReviewsIndexProps) {
                                                         className="h-16 w-16 rounded-lg object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center">
+                                                    <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-muted">
                                                         <Package className="h-8 w-8 text-muted-foreground" />
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex-1 min-w-0">
+                                            <div className="min-w-0 flex-1">
                                                 <CardTitle className="text-lg leading-tight">
-                                                    <Link
-                                                        href={`/products/${review.product.slug}`}
-                                                        className="hover:text-primary transition-colors"
-                                                    >
+                                                    <Link href={`/products/${review.product.slug}`} className="transition-colors hover:text-primary">
                                                         {review.product.name}
                                                     </Link>
                                                 </CardTitle>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {formatCurrency(review.product.price)}
-                                                </p>
+                                                <p className="text-sm text-muted-foreground">{formatCurrency(review.product.price)}</p>
                                             </div>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         {/* Rating */}
                                         <div className="flex items-center gap-2">
-                                            <div className="flex">
-                                                {renderStars(review.rating)}
-                                            </div>
-                                            <span className="text-sm font-medium">
-                                                {review.rating}/5
-                                            </span>
+                                            <div className="flex">{renderStars(review.rating)}</div>
+                                            <span className="text-sm font-medium">{review.rating}/5</span>
                                         </div>
 
                                         {/* Comment */}
                                         {review.comment && (
-                                            <div className="bg-muted/50 rounded-lg p-3">
+                                            <div className="rounded-lg bg-muted/50 p-3">
                                                 <div className="flex items-start gap-2">
-                                                    <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                                    <p className="text-sm text-muted-foreground leading-relaxed">
-                                                        "{review.comment}"
-                                                    </p>
+                                                    <MessageSquare className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                                                    <p className="text-sm leading-relaxed text-muted-foreground">"{review.comment}"</p>
                                                 </div>
                                             </div>
                                         )}
@@ -130,10 +110,7 @@ export default function ReviewsIndex({ reviews }: ReviewsIndexProps) {
                                                 <Calendar className="h-3 w-3" />
                                                 <span>{formatDate(review.created_at)}</span>
                                             </div>
-                                            <Badge 
-                                                variant={review.is_approved ? "outline" : "secondary"}
-                                                className="text-xs"
-                                            >
+                                            <Badge variant={review.is_approved ? 'outline' : 'secondary'} className="text-xs">
                                                 {review.is_approved ? t('reviews.approved') : t('reviews.pending')}
                                             </Badge>
                                         </div>
@@ -148,22 +125,18 @@ export default function ReviewsIndex({ reviews }: ReviewsIndexProps) {
                                 <div className="flex items-center gap-2">
                                     {reviews.prev_page_url && (
                                         <Button variant="outline" size="sm" asChild>
-                                            <Link href={reviews.prev_page_url}>
-                                                {t('products.prev')}
-                                            </Link>
+                                            <Link href={reviews.prev_page_url}>{t('products.prev')}</Link>
                                         </Button>
                                     )}
-                                    <span className="text-sm text-muted-foreground px-3">
-                                        {t('products.page_of', { 
-                                            current: reviews.current_page, 
-                                            total: reviews.last_page 
+                                    <span className="px-3 text-sm text-muted-foreground">
+                                        {t('products.page_of', {
+                                            current: reviews.current_page,
+                                            total: reviews.last_page,
                                         })}
                                     </span>
                                     {reviews.next_page_url && (
                                         <Button variant="outline" size="sm" asChild>
-                                            <Link href={reviews.next_page_url}>
-                                                {t('products.next')}
-                                            </Link>
+                                            <Link href={reviews.next_page_url}>{t('products.next')}</Link>
                                         </Button>
                                     )}
                                 </div>
@@ -172,17 +145,13 @@ export default function ReviewsIndex({ reviews }: ReviewsIndexProps) {
                     </>
                 ) : (
                     /* Empty State */
-                    <Card className="text-center py-12">
+                    <Card className="py-12 text-center">
                         <CardContent>
-                            <MessageSquare className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-                            <h3 className="text-lg font-medium mb-2">{t('reviews.no_reviews_title')}</h3>
-                            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                                {t('reviews.no_reviews_description')}
-                            </p>
+                            <MessageSquare className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+                            <h3 className="mb-2 text-lg font-medium">{t('reviews.no_reviews_title')}</h3>
+                            <p className="mx-auto mb-6 max-w-md text-muted-foreground">{t('reviews.no_reviews_description')}</p>
                             <Button asChild>
-                                <Link href={route('orders.index')}>
-                                    {t('reviews.view_orders')}
-                                </Link>
+                                <Link href={route('orders.index')}>{t('reviews.view_orders')}</Link>
                             </Button>
                         </CardContent>
                     </Card>

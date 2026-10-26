@@ -18,7 +18,17 @@ export default function StateField({ id, country, provinces, value, onChange, cl
     const { t } = useTranslation();
 
     if (country !== 'IT') {
-        return <Input id={id} name="state" autoComplete="address-level1" value={value} onChange={(e) => onChange(e.target.value)} className={className} {...invalidProps} />;
+        return (
+            <Input
+                id={id}
+                name="state"
+                autoComplete="address-level1"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className={className}
+                {...invalidProps}
+            />
+        );
     }
 
     return (

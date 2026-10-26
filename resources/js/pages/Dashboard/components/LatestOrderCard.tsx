@@ -1,11 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Link, usePage } from '@inertiajs/react';
-import { type Order, type SharedData } from '@/types';
-import { ShoppingBag, Package, Clock, CheckCircle, Truck } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMoney } from '@/hooks/use-money';
+import { useTranslation } from '@/hooks/useTranslation';
+import { type Order, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { CheckCircle, Clock, Package, ShoppingBag, Truck } from 'lucide-react';
 
 export const LatestOrderCard = () => {
     const { props } = usePage<SharedData & { recentOrders?: Order[] }>();
@@ -68,37 +68,33 @@ export const LatestOrderCard = () => {
                 {latestOrder ? (
                     <div className="space-y-4">
                         {/* Latest Order */}
-                        <div className="p-4 border rounded-lg bg-muted/20 overflow-hidden">
-                            <div className="flex items-center justify-between mb-3 gap-4">
+                        <div className="overflow-hidden rounded-lg border bg-muted/20 p-4">
+                            <div className="mb-3 flex items-center justify-between gap-4">
                                 <div className="min-w-0 flex-1">
-                                    <h4 className="font-medium truncate">{t('dashboard.order_number', { id: latestOrder.order_number })}</h4>
-                                    <p className="text-sm text-muted-foreground truncate">
-                                        {formatDate(latestOrder.created_at)} • {latestOrder.order_items.length} {latestOrder.order_items.length === 1 ? t('dashboard.item') : t('dashboard.items')}
+                                    <h4 className="truncate font-medium">{t('dashboard.order_number', { id: latestOrder.order_number })}</h4>
+                                    <p className="truncate text-sm text-muted-foreground">
+                                        {formatDate(latestOrder.created_at)} • {latestOrder.order_items.length}{' '}
+                                        {latestOrder.order_items.length === 1 ? t('dashboard.item') : t('dashboard.items')}
                                     </p>
                                 </div>
-                                <div className="text-right flex-shrink-0">
+                                <div className="flex-shrink-0 text-right">
                                     <div className="font-medium">{formatCurrency(latestOrder.total_amount || latestOrder.total)}</div>
-                                    <Badge 
-                                        variant="outline" 
-                                        className={`${getOrderStatusColor(latestOrder.status)} flex items-center gap-1 mt-1`}
-                                    >
+                                    <Badge variant="outline" className={`${getOrderStatusColor(latestOrder.status)} mt-1 flex items-center gap-1`}>
                                         {getOrderStatusIcon(latestOrder.status)}
                                         {t(`orders.status.${latestOrder.status}`, { fallback: latestOrder.status })}
                                     </Badge>
                                 </div>
                             </div>
-                            
+
                             {/* Order Items Preview */}
                             <div className="space-y-2 overflow-hidden">
                                 {latestOrder.order_items.slice(0, 2).map((item) => (
-                                    <div key={item.id} className="flex items-center justify-between text-sm gap-4">
-                                        <div className="flex-1 min-w-0">
-                                            <span className="font-medium truncate block">{item.product.name}</span>
-                                            {item.variant_name && (
-                                                <span className="text-muted-foreground truncate block">• {item.variant_name}</span>
-                                            )}
+                                    <div key={item.id} className="flex items-center justify-between gap-4 text-sm">
+                                        <div className="min-w-0 flex-1">
+                                            <span className="block truncate font-medium">{item.product.name}</span>
+                                            {item.variant_name && <span className="block truncate text-muted-foreground">• {item.variant_name}</span>}
                                         </div>
-                                        <div className="text-muted-foreground flex-shrink-0">
+                                        <div className="flex-shrink-0 text-muted-foreground">
                                             {t('dashboard.qty_price', { qty: item.quantity, price: formatCurrency(item.price) })}
                                         </div>
                                     </div>
@@ -113,24 +109,17 @@ export const LatestOrderCard = () => {
 
                         {/* Additional Orders */}
                         {recentOrders.slice(1, 3).map((order) => (
-                            <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg gap-4 overflow-hidden">
-                                <div className="flex items-center gap-3 min-w-0 flex-1">
-                                    <div className="flex-shrink-0">
-                                        {getOrderStatusIcon(order.status)}
-                                    </div>
+                            <div key={order.id} className="flex items-center justify-between gap-4 overflow-hidden rounded-lg border p-3">
+                                <div className="flex min-w-0 flex-1 items-center gap-3">
+                                    <div className="flex-shrink-0">{getOrderStatusIcon(order.status)}</div>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-medium truncate">{t('dashboard.order_number', { id: order.order_number })}</p>
-                                        <p className="text-xs text-muted-foreground truncate">
-                                            {formatDate(order.created_at)}
-                                        </p>
+                                        <p className="truncate text-sm font-medium">{t('dashboard.order_number', { id: order.order_number })}</p>
+                                        <p className="truncate text-xs text-muted-foreground">{formatDate(order.created_at)}</p>
                                     </div>
                                 </div>
-                                <div className="text-right flex-shrink-0">
+                                <div className="flex-shrink-0 text-right">
                                     <div className="text-sm font-medium">{formatCurrency(order.total_amount || order.total)}</div>
-                                    <Badge 
-                                        variant="outline" 
-                                        className={`${getOrderStatusColor(order.status)} text-xs`}
-                                    >
+                                    <Badge variant="outline" className={`${getOrderStatusColor(order.status)} text-xs`}>
                                         {t(`orders.status.${order.status}`, { fallback: order.status })}
                                     </Badge>
                                 </div>
@@ -138,23 +127,17 @@ export const LatestOrderCard = () => {
                         ))}
 
                         <Button variant="outline" className="w-full" asChild>
-                            <Link href={route('orders.index')}>
-                                {t('dashboard.view_all_orders')}
-                            </Link>
+                            <Link href={route('orders.index')}>{t('dashboard.view_all_orders')}</Link>
                         </Button>
                     </div>
                 ) : (
-                    <div className="text-center py-8">
+                    <div className="py-8 text-center">
                         <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground" />
                         <h3 className="mt-2 text-sm font-medium">{t('dashboard.no_orders_yet')}</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            {t('dashboard.no_orders_description')}
-                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">{t('dashboard.no_orders_description')}</p>
                         <div className="mt-6">
                             <Button asChild>
-                                <Link href={route('products')}>
-                                    {t('dashboard.browse_products')}
-                                </Link>
+                                <Link href={route('products')}>{t('dashboard.browse_products')}</Link>
                             </Button>
                         </div>
                     </div>

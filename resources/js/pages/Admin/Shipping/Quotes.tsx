@@ -9,22 +9,7 @@ import useTranslation from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { cn } from '@/lib/utils';
 import { Head } from '@inertiajs/react';
-import {
-    AlertCircle,
-    Clock,
-    Info,
-    Loader2,
-    MapPin,
-    Package,
-    Plus,
-    Receipt,
-    Scale,
-    Shield,
-    Sparkles,
-    Trash2,
-    Truck,
-    Wallet,
-} from 'lucide-react';
+import { AlertCircle, Clock, Info, Loader2, MapPin, Package, Plus, Receipt, Scale, Shield, Sparkles, Trash2, Truck, Wallet } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 
 export interface AddressInput {
@@ -89,11 +74,7 @@ interface CalculateResponse {
     errors?: Record<string, string>;
 }
 
-export default function ShippingQuotes({
-    sender,
-    rate_drivers = [],
-    default_parcel_weight_kg = 1.0,
-}: Props) {
+export default function ShippingQuotes({ sender, rate_drivers = [], default_parcel_weight_kg = 1.0 }: Props) {
     const { t } = useTranslation();
 
     const [senderAddress, setSenderAddress] = useState<AddressInput>({
@@ -161,15 +142,11 @@ export default function ShippingQuotes({
     };
 
     const updateParcel = (index: number, field: keyof QuoteParcel, value: string | number) => {
-        setParcels((prev) =>
-            prev.map((parcel, i) => (i === index ? { ...parcel, [field]: value } : parcel)),
-        );
+        setParcels((prev) => prev.map((parcel, i) => (i === index ? { ...parcel, [field]: value } : parcel)));
     };
 
     const toggleDriver = (driver: string) => {
-        setSelectedDrivers((prev) =>
-            prev.includes(driver) ? prev.filter((d) => d !== driver) : [...prev, driver],
-        );
+        setSelectedDrivers((prev) => (prev.includes(driver) ? prev.filter((d) => d !== driver) : [...prev, driver]));
     };
 
     const toggleAllDrivers = () => {
@@ -207,7 +184,7 @@ export default function ShippingQuotes({
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'Content-Type': 'application/json',
                     'X-XSRF-TOKEN': getCsrfToken(),
                 },
@@ -247,10 +224,7 @@ export default function ShippingQuotes({
         },
     ];
 
-    const minPrice =
-        results && results.quotes.length > 0
-            ? Math.min(...results.quotes.map((q) => Number(q.total_price)))
-            : null;
+    const minPrice = results && results.quotes.length > 0 ? Math.min(...results.quotes.map((q) => Number(q.total_price))) : null;
 
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
@@ -261,10 +235,9 @@ export default function ShippingQuotes({
                     <h1 className="text-2xl font-bold tracking-tight">
                         {t('admin.shipping.quotes.heading', { defaultValue: 'Shipping Quote Simulator' })}
                     </h1>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="mt-1 text-sm text-muted-foreground">
                         {t('admin.shipping.quotes.description', {
-                            defaultValue:
-                                'Compare live rates, transit times, and wallet balances across active shipping providers.',
+                            defaultValue: 'Compare live rates, transit times, and wallet balances across active shipping providers.',
                         })}
                     </p>
                 </div>
@@ -292,9 +265,7 @@ export default function ShippingQuotes({
                                                 id="sender_postal_code"
                                                 required
                                                 value={senderAddress.postal_code}
-                                                onChange={(e) =>
-                                                    setSenderAddress((prev) => ({ ...prev, postal_code: e.target.value }))
-                                                }
+                                                onChange={(e) => setSenderAddress((prev) => ({ ...prev, postal_code: e.target.value }))}
                                                 placeholder="e.g. 00100"
                                             />
                                         </div>
@@ -307,9 +278,7 @@ export default function ShippingQuotes({
                                                     id="sender_city"
                                                     required
                                                     value={senderAddress.city}
-                                                    onChange={(e) =>
-                                                        setSenderAddress((prev) => ({ ...prev, city: e.target.value }))
-                                                    }
+                                                    onChange={(e) => setSenderAddress((prev) => ({ ...prev, city: e.target.value }))}
                                                     placeholder="City"
                                                 />
                                             </div>
@@ -370,9 +339,7 @@ export default function ShippingQuotes({
                                                 id="recipient_postal_code"
                                                 required
                                                 value={recipientAddress.postal_code}
-                                                onChange={(e) =>
-                                                    setRecipientAddress((prev) => ({ ...prev, postal_code: e.target.value }))
-                                                }
+                                                onChange={(e) => setRecipientAddress((prev) => ({ ...prev, postal_code: e.target.value }))}
                                                 placeholder="e.g. 20121"
                                             />
                                         </div>
@@ -385,9 +352,7 @@ export default function ShippingQuotes({
                                                     id="recipient_city"
                                                     required
                                                     value={recipientAddress.city}
-                                                    onChange={(e) =>
-                                                        setRecipientAddress((prev) => ({ ...prev, city: e.target.value }))
-                                                    }
+                                                    onChange={(e) => setRecipientAddress((prev) => ({ ...prev, city: e.target.value }))}
                                                     placeholder="City"
                                                 />
                                             </div>
@@ -440,13 +405,7 @@ export default function ShippingQuotes({
                                             <Package className="h-4 w-4" />
                                             {t('admin.shipping.quotes.parcels', { defaultValue: 'Parcels' })}
                                         </CardTitle>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-7 text-xs"
-                                            onClick={addParcel}
-                                        >
+                                        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={addParcel}>
                                             <Plus className="mr-1 h-3.5 w-3.5" />
                                             {t('admin.shipping.quotes.add_parcel', { defaultValue: 'Add Parcel' })}
                                         </Button>
@@ -459,10 +418,7 @@ export default function ShippingQuotes({
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     {parcels.map((parcel, idx) => (
-                                        <div
-                                            key={idx}
-                                            className="grid grid-cols-2 gap-2 rounded-md border p-3 sm:grid-cols-6 items-end"
-                                        >
+                                        <div key={idx} className="grid grid-cols-2 items-end gap-2 rounded-md border p-3 sm:grid-cols-6">
                                             <div className="space-y-1 sm:col-span-1">
                                                 <Label htmlFor={`p_weight_${idx}`} className="text-[11px]">
                                                     {t('admin.shipping.quotes.weight', { defaultValue: 'Weight (kg)' })} *
@@ -529,9 +485,7 @@ export default function ShippingQuotes({
                                                     type="number"
                                                     min="1"
                                                     value={parcel.quantity}
-                                                    onChange={(e) =>
-                                                        updateParcel(idx, 'quantity', parseInt(e.target.value, 10) || 1)
-                                                    }
+                                                    onChange={(e) => updateParcel(idx, 'quantity', parseInt(e.target.value, 10) || 1)}
                                                 />
                                             </div>
                                             <div className="flex justify-end sm:col-span-1">
@@ -629,11 +583,7 @@ export default function ShippingQuotes({
                                                         defaultValue: 'Include Rate Providers',
                                                     })}
                                                 </Label>
-                                                <button
-                                                    type="button"
-                                                    onClick={toggleAllDrivers}
-                                                    className="text-[11px] text-primary hover:underline"
-                                                >
+                                                <button type="button" onClick={toggleAllDrivers} className="text-[11px] text-primary hover:underline">
                                                     {selectedDrivers.length === rate_drivers.length
                                                         ? t('admin.shipping.quotes.deselect_all', { defaultValue: 'Deselect All' })
                                                         : t('admin.shipping.quotes.select_all', { defaultValue: 'Select All' })}
@@ -647,10 +597,7 @@ export default function ShippingQuotes({
                                                             checked={selectedDrivers.includes(driver)}
                                                             onCheckedChange={() => toggleDriver(driver)}
                                                         />
-                                                        <Label
-                                                            htmlFor={`driver_${driver}`}
-                                                            className="text-xs font-medium capitalize cursor-pointer"
-                                                        >
+                                                        <Label htmlFor={`driver_${driver}`} className="cursor-pointer text-xs font-medium capitalize">
                                                             {driver}
                                                         </Label>
                                                     </div>
@@ -684,9 +631,7 @@ export default function ShippingQuotes({
                             {calculationError && (
                                 <Alert variant="destructive">
                                     <AlertCircle className="h-4 w-4" />
-                                    <AlertTitle>
-                                        {t('admin.shipping.quotes.calculation_failed', { defaultValue: 'Calculation Error' })}
-                                    </AlertTitle>
+                                    <AlertTitle>{t('admin.shipping.quotes.calculation_failed', { defaultValue: 'Calculation Error' })}</AlertTitle>
                                     <AlertDescription>{calculationError}</AlertDescription>
                                 </Alert>
                             )}
@@ -700,16 +645,15 @@ export default function ShippingQuotes({
                                             {t('admin.shipping.quotes.prepaid_balances', { defaultValue: 'Prepaid Wallet Balances' })}
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="pb-3 pt-0">
+                                    <CardContent className="pt-0 pb-3">
                                         <div className="flex flex-wrap gap-2">
                                             {Object.entries(results.balances).map(([provider, b]) => {
-                                                const amount =
-                                                    typeof b === 'object' && b !== null
-                                                        ? (b.balance ?? b.amount ?? 0)
-                                                        : Number(b);
+                                                const amount = typeof b === 'object' && b !== null ? (b.balance ?? b.amount ?? 0) : Number(b);
                                                 const curr =
                                                     typeof b === 'object' && b !== null && b.currency
-                                                        ? (b.currency === 'EUR' ? '€' : b.currency)
+                                                        ? b.currency === 'EUR'
+                                                            ? '€'
+                                                            : b.currency
                                                         : '€';
                                                 return (
                                                     <div
@@ -718,7 +662,8 @@ export default function ShippingQuotes({
                                                     >
                                                         <span className="font-semibold capitalize">{provider}:</span>
                                                         <span className="font-bold text-foreground">
-                                                            {curr}{Number(amount).toFixed(2)}
+                                                            {curr}
+                                                            {Number(amount).toFixed(2)}
                                                         </span>
                                                     </div>
                                                 );
@@ -736,7 +681,7 @@ export default function ShippingQuotes({
                                             key={provider}
                                             className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300"
                                         >
-                                            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                                             <div>
                                                 <span className="font-semibold capitalize">{provider}: </span>
                                                 <span>{err}</span>
@@ -772,7 +717,7 @@ export default function ShippingQuotes({
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     {calculating ? (
-                                        <div className="py-12 text-center text-muted-foreground space-y-2">
+                                        <div className="space-y-2 py-12 text-center text-muted-foreground">
                                             <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
                                             <p className="text-sm">
                                                 {t('admin.shipping.quotes.querying_providers', {
@@ -781,17 +726,16 @@ export default function ShippingQuotes({
                                             </p>
                                         </div>
                                     ) : !results ? (
-                                        <div className="py-12 text-center text-muted-foreground space-y-2">
+                                        <div className="space-y-2 py-12 text-center text-muted-foreground">
                                             <Scale className="mx-auto h-8 w-8 opacity-40" />
                                             <p className="text-sm">
                                                 {t('admin.shipping.quotes.empty_state', {
-                                                    defaultValue:
-                                                        'Enter origin, destination and parcel weights, then click "Calculate Live Quotes".',
+                                                    defaultValue: 'Enter origin, destination and parcel weights, then click "Calculate Live Quotes".',
                                                 })}
                                             </p>
                                         </div>
                                     ) : results.quotes.length === 0 ? (
-                                        <div className="py-10 text-center text-muted-foreground space-y-2">
+                                        <div className="space-y-2 py-10 text-center text-muted-foreground">
                                             <Info className="mx-auto h-8 w-8 opacity-50" />
                                             <p className="text-sm font-medium">
                                                 {t('admin.shipping.quotes.no_rates_found', {
@@ -807,15 +751,13 @@ export default function ShippingQuotes({
                                                     quote.list_price !== null &&
                                                     quote.list_price !== undefined &&
                                                     quote.list_price > quote.total_price;
-                                                const savingsAmount = hasListSavings
-                                                    ? (quote.list_price as number) - quote.total_price
-                                                    : 0;
+                                                const savingsAmount = hasListSavings ? (quote.list_price as number) - quote.total_price : 0;
 
                                                 return (
                                                     <div
                                                         key={`${quote.provider}-${quote.carrier_code}-${quote.service_name}-${idx}`}
                                                         className={cn(
-                                                            'rounded-lg border p-4 transition-all relative',
+                                                            'relative rounded-lg border p-4 transition-all',
                                                             isBestRate
                                                                 ? 'border-emerald-500/50 bg-emerald-500/5 shadow-xs ring-1 ring-emerald-500/30'
                                                                 : 'bg-card hover:border-muted-foreground/30',
@@ -823,7 +765,7 @@ export default function ShippingQuotes({
                                                     >
                                                         {isBestRate && (
                                                             <div className="absolute -top-2.5 right-4">
-                                                                <Badge className="bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs text-[10px] uppercase font-bold tracking-wide">
+                                                                <Badge className="bg-emerald-600 text-[10px] font-bold tracking-wide text-white uppercase shadow-xs hover:bg-emerald-700">
                                                                     <Sparkles className="mr-1 h-3 w-3" />
                                                                     {t('admin.shipping.quotes.best_rate', {
                                                                         defaultValue: 'Best Rate',
@@ -835,12 +777,10 @@ export default function ShippingQuotes({
                                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                                             <div className="space-y-1.5">
                                                                 <div className="flex flex-wrap items-center gap-1.5">
-                                                                    <Badge variant="outline" className="text-xs capitalize font-semibold">
+                                                                    <Badge variant="outline" className="text-xs font-semibold capitalize">
                                                                         {quote.provider}
                                                                     </Badge>
-                                                                    <span className="font-bold text-sm text-foreground">
-                                                                        {quote.carrier_name}
-                                                                    </span>
+                                                                    <span className="text-sm font-bold text-foreground">{quote.carrier_name}</span>
                                                                     {quote.raw_carrier_code && (
                                                                         <span className="text-xs text-muted-foreground">
                                                                             ({quote.raw_carrier_code})
@@ -848,9 +788,7 @@ export default function ShippingQuotes({
                                                                     )}
                                                                 </div>
 
-                                                                <p className="text-xs font-medium text-foreground">
-                                                                    {quote.service_name}
-                                                                </p>
+                                                                <p className="text-xs font-medium text-foreground">{quote.service_name}</p>
 
                                                                 <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs text-muted-foreground">
                                                                     {quote.estimated_delivery && (
@@ -860,18 +798,17 @@ export default function ShippingQuotes({
                                                                         </span>
                                                                     )}
 
-                                                                    {quote.taxable_weight_kg !== null &&
-                                                                        quote.taxable_weight_kg !== undefined && (
-                                                                            <span className="inline-flex items-center gap-1">
-                                                                                <Scale className="h-3.5 w-3.5" />
-                                                                                {quote.taxable_weight_kg} kg
-                                                                            </span>
-                                                                        )}
+                                                                    {quote.taxable_weight_kg !== null && quote.taxable_weight_kg !== undefined && (
+                                                                        <span className="inline-flex items-center gap-1">
+                                                                            <Scale className="h-3.5 w-3.5" />
+                                                                            {quote.taxable_weight_kg} kg
+                                                                        </span>
+                                                                    )}
 
                                                                     {quote.dimensional_weight_applied && (
                                                                         <Badge
                                                                             variant="outline"
-                                                                            className="border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px]"
+                                                                            className="border-amber-500/50 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-400"
                                                                         >
                                                                             {t('admin.shipping.quotes.volumetric_weight_applied', {
                                                                                 defaultValue: 'Volumetric Weight Applied',
@@ -882,7 +819,7 @@ export default function ShippingQuotes({
                                                             </div>
 
                                                             {/* Price Breakdown */}
-                                                            <div className="text-right space-y-1 self-end sm:self-auto">
+                                                            <div className="space-y-1 self-end text-right sm:self-auto">
                                                                 <div className="flex items-baseline justify-end gap-1.5">
                                                                     {hasListSavings && (
                                                                         <span className="text-xs text-muted-foreground line-through">
@@ -903,7 +840,7 @@ export default function ShippingQuotes({
                                                                     {hasListSavings && (
                                                                         <Badge
                                                                             variant="outline"
-                                                                            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold"
+                                                                            className="border-emerald-500/30 bg-emerald-500/10 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400"
                                                                         >
                                                                             {t('admin.shipping.quotes.save_amount', {
                                                                                 amount: savingsAmount.toFixed(2),
@@ -917,7 +854,7 @@ export default function ShippingQuotes({
 
                                                         {/* Surcharges breakdown */}
                                                         {quote.surcharges && Object.keys(quote.surcharges).length > 0 && (
-                                                            <div className="mt-3 rounded-md bg-muted/40 p-2 text-xs space-y-1 border">
+                                                            <div className="mt-3 space-y-1 rounded-md border bg-muted/40 p-2 text-xs">
                                                                 <div className="flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
                                                                     <Receipt className="h-3 w-3" />
                                                                     <span>
@@ -934,9 +871,7 @@ export default function ShippingQuotes({
                                                                                 {sName.replace(/_/g, ' ')}:
                                                                             </span>
                                                                             <span className="font-medium">
-                                                                                {typeof sVal === 'number'
-                                                                                    ? `€${sVal.toFixed(2)}`
-                                                                                    : String(sVal)}
+                                                                                {typeof sVal === 'number' ? `€${sVal.toFixed(2)}` : String(sVal)}
                                                                             </span>
                                                                         </div>
                                                                     ))}

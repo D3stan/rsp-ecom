@@ -221,7 +221,9 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                 <div key={item.id} className="flex items-center space-x-4 rounded-lg border p-3">
                                     <div className="flex-1">
                                         <p className="font-medium">{item.product.name}</p>
-                                        <p className="text-sm text-muted-foreground">{t('admin.orders.price_each', { price: formatCurrency(item.price) })}</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {t('admin.orders.price_each', { price: formatCurrency(item.price) })}
+                                        </p>
                                     </div>
                                     <div className="flex items-center space-x-2">
                                         <Button
@@ -299,7 +301,11 @@ export default function EditOrderDialog({ order, open, onOpenChange }: EditOrder
                                 <span>{formatCurrency(formData.shipping_amount)}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span>{order.tax_rate != null ? t('admin.orders.included_vat_rate_plain', { rate: order.tax_rate }) : t('admin.orders.tax')}</span>
+                                <span>
+                                    {order.tax_rate != null
+                                        ? t('admin.orders.included_vat_rate_plain', { rate: order.tax_rate })
+                                        : t('admin.orders.tax')}
+                                </span>
                                 <span>{formatCurrency(formData.tax_amount)}</span>
                             </div>
                             <Separator />

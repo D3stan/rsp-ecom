@@ -2,7 +2,6 @@ import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
-import useTranslation from '@/hooks/useTranslation';
 import GoogleButton from '@/components/google-button';
 import InputError from '@/components/input-error';
 import NewsletterConsentCheckbox from '@/components/newsletter/NewsletterConsentCheckbox';
@@ -10,6 +9,7 @@ import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import useTranslation from '@/hooks/useTranslation';
 import AuthLayout from '@/layouts/auth-layout';
 
 type RegisterForm = {
@@ -42,9 +42,7 @@ export default function Register() {
             <Head title={t('auth.register.head')} />
 
             <div className="flex flex-col gap-4">
-                <GoogleButton disabled={processing}>
-                    {t('auth.continue_with_google')}
-                </GoogleButton>
+                <GoogleButton disabled={processing}>{t('auth.continue_with_google')}</GoogleButton>
 
                 <div className="relative">
                     <div className="absolute inset-0 flex items-center">

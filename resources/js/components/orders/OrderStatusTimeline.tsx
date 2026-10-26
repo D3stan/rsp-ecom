@@ -1,7 +1,6 @@
 import { Timeline, TimelineBody, TimelineConnector, TimelineHeader, TimelineIcon, TimelineItem, TimelineTitle } from '@/components/ui/timeline';
 import useTranslation from '@/hooks/useTranslation';
 import { CheckCircle, Circle, Package, XCircle } from 'lucide-react';
-import React from 'react';
 
 interface OrderStatusTimelineProps {
     status: string;
@@ -52,9 +51,7 @@ export default function OrderStatusTimeline({ status }: OrderStatusTimelineProps
                     {index < statuses.length - 1 && <TimelineConnector />}
                     <TimelineHeader>
                         <TimelineIcon>{getStatusIcon(index)}</TimelineIcon>
-                        <TimelineTitle className={`text-sm ${getStatusColor(index)}`}>
-                            {step.label}
-                        </TimelineTitle>
+                        <TimelineTitle className={`text-sm ${getStatusColor(index)}`}>{step.label}</TimelineTitle>
                     </TimelineHeader>
                     <TimelineBody />
                 </TimelineItem>

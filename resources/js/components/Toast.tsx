@@ -32,7 +32,9 @@ function ToastItem({ toast }: ToastItemProps) {
     const Icon = iconMap[toast.type];
 
     return (
-        <div className={`pointer-events-auto w-full max-w-sm rounded-lg border shadow-lg ${toast.leaving ? 'toast-exit' : 'toast-enter'} ${colorMap[toast.type]}`}>
+        <div
+            className={`pointer-events-auto w-full max-w-sm rounded-lg border shadow-lg ${toast.leaving ? 'toast-exit' : 'toast-enter'} ${colorMap[toast.type]}`}
+        >
             <div className="p-4">
                 <div className="flex items-start">
                     <div className="flex-shrink-0">

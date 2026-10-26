@@ -107,9 +107,7 @@ export default function Profile({
                                 </p>
 
                                 {status === 'verification-link-sent' && (
-                                    <div className="mt-2 text-sm font-medium text-green-600">
-                                        {t('account.profile.verification_sent')}
-                                    </div>
+                                    <div className="mt-2 text-sm font-medium text-green-600">{t('account.profile.verification_sent')}</div>
                                 )}
                             </div>
                         )}

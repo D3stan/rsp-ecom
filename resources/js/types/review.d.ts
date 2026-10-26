@@ -1,5 +1,5 @@
-import type { Product } from './product';
 import type { User } from './index';
+import type { Product } from './product';
 
 export interface Review {
     id: number;

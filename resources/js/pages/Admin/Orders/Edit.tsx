@@ -380,9 +380,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-white">
-                            {t('admin.orders.edit_title', { order_number: order.order_number })}
-                        </h1>
+                        <h1 className="text-2xl font-bold text-white">{t('admin.orders.edit_title', { order_number: order.order_number })}</h1>
                         <p className="text-gray-500">
                             {t('admin.orders.last_updated', {
                                 date: new Date(order.updated_at).toLocaleDateString(locale),
@@ -545,9 +543,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                         <div className="flex items-center gap-2">
                                             <Package className="h-5 w-5 text-blue-600" />
                                             <CardTitle className="text-lg">{t('admin.orders.section_order_items')}</CardTitle>
-                                            <Badge variant="secondary">
-                                                {t('admin.orders.items_count', { count: formData.order_items.length })}
-                                            </Badge>
+                                            <Badge variant="secondary">{t('admin.orders.items_count', { count: formData.order_items.length })}</Badge>
                                         </div>
                                         <ChevronDown className={`h-4 w-4 transition-transform ${openSections.orderItems ? 'rotate-180' : ''}`} />
                                     </div>

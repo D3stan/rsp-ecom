@@ -143,7 +143,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
         }, 300); // 300ms debounce for search
 
         return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the local filter state; filters.* is only compared to skip redundant reloads
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the local filter state; filters.* is only compared to skip redundant reloads
     }, [search, statusFilter, paymentStatusFilter, refundDueFilter]);
 
     const clearFilters = () => {
@@ -295,7 +295,9 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                             </div>
 
                             <div>
-                                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t('admin.orders.filter_payment_status')}</label>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                    {t('admin.orders.filter_payment_status')}
+                                </label>
                                 <select
                                     value={paymentStatusFilter}
                                     onChange={(e) => setPaymentStatusFilter(e.target.value)}
@@ -482,9 +484,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
                                                             </Link>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem className="text-red-600">
-                                                            {t('admin.orders.cancel_order')}
-                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-red-600">{t('admin.orders.cancel_order')}</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </div>

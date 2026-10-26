@@ -45,9 +45,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
             <Head title={t('auth.log_in_title')} />
 
             <div className="flex flex-col gap-4">
-                <GoogleButton disabled={processing}>
-                    {t('auth.continue_with_google')}
-                </GoogleButton>
+                <GoogleButton disabled={processing}>{t('auth.continue_with_google')}</GoogleButton>
 
                 <div className="relative">
                     <div className="absolute inset-0 flex items-center">

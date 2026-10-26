@@ -97,11 +97,24 @@ const isPhoneValid = (value: string): boolean => {
     return /^\+?[\d\s()./-]+$/.test(value) && digits >= 6 && digits <= 15;
 };
 
-
-
 export default function CheckoutDetails() {
     const pageProps = usePage<CheckoutDetailsProps>().props;
-    const { cartItems, subtotal, shippingCost, taxAmount, taxRate, discountAmount = 0, couponCode: initialCouponCode, discountDescription, total, totalItems, freeShippingRemaining, savedAddresses = [], provinces, auth } = pageProps;
+    const {
+        cartItems,
+        subtotal,
+        shippingCost,
+        taxAmount,
+        taxRate,
+        discountAmount = 0,
+        couponCode: initialCouponCode,
+        discountDescription,
+        total,
+        totalItems,
+        freeShippingRemaining,
+        savedAddresses = [],
+        provinces,
+        auth,
+    } = pageProps;
     const { t, isLoading, locale } = useTranslation();
     const formatCurrency = useMoney();
 
@@ -487,436 +500,448 @@ export default function CheckoutDetails() {
                     </Card>
 
                     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start lg:gap-8">
-                    <form id="checkout-form" noValidate onSubmit={proceedToPayment} className="space-y-6">
-                        {/* Contact Information */}
-                        <Card className="border-2 border-gray-700 bg-white shadow-md">
-                            <Collapsible open={isContactOpen} onOpenChange={setIsContactOpen}>
-                                <CollapsibleTrigger className="w-full">
-                                    <CardHeader className="transition-colors hover:bg-gray-50">
-                                        <CardTitle className="flex items-center justify-between text-black">
-                                            <div className="flex items-center gap-2">
-                                                <CreditCard className="h-5 w-5" />
-                                                {t('checkout.contact_information')}
-                                            </div>
-                                            {isContactOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                                        </CardTitle>
-                                    </CardHeader>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                    <CardContent className="space-y-4">
-                                        <div>
-                                            <Label htmlFor="email" className="font-medium text-black">
-                                                {t('checkout.email')} *
-                                            </Label>
-                                            <Input
-                                                id="email"
-                                                name="email"
-                                                autoComplete="email"
-                                                {...invalidProps('email', 'email')}
-                                                type="email"
-                                                value={contactInfo.email}
-                                                onChange={(e) => updateContactInfo('email', e.target.value)}
-                                                required
-                                                placeholder={t('checkout.email_placeholder')}
-                                                className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
-                                            />
-                                            <InputError id="email-error" message={errors['email']} className="mt-1" />
-                                            <p className="mt-1 text-sm text-gray-600">{t('checkout.email_confirmation_text')}</p>
-                                        </div>
-                                    </CardContent>
-                                </CollapsibleContent>
-                            </Collapsible>
-                        </Card>
-
-                        {/* Shipping Information */}
-                        <Card className="border-2 border-gray-700 bg-white shadow-md">
-                            <Collapsible open={isShippingOpen} onOpenChange={setIsShippingOpen}>
-                                <CollapsibleTrigger className="w-full">
-                                    <CardHeader className="transition-colors hover:bg-gray-50">
-                                        <CardTitle className="flex items-center justify-between text-black">
-                                            <div className="flex items-center gap-2">
-                                                <Truck className="h-5 w-5" />
-                                                {t('checkout.shipping_information')}
-                                            </div>
-                                            {isShippingOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                                        </CardTitle>
-                                    </CardHeader>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                    <CardContent className="space-y-4">
-                                        {savedAddresses.length > 1 && (
+                        <form id="checkout-form" noValidate onSubmit={proceedToPayment} className="space-y-6">
+                            {/* Contact Information */}
+                            <Card className="border-2 border-gray-700 bg-white shadow-md">
+                                <Collapsible open={isContactOpen} onOpenChange={setIsContactOpen}>
+                                    <CollapsibleTrigger className="w-full">
+                                        <CardHeader className="transition-colors hover:bg-gray-50">
+                                            <CardTitle className="flex items-center justify-between text-black">
+                                                <div className="flex items-center gap-2">
+                                                    <CreditCard className="h-5 w-5" />
+                                                    {t('checkout.contact_information')}
+                                                </div>
+                                                {isContactOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                            </CardTitle>
+                                        </CardHeader>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                        <CardContent className="space-y-4">
                                             <div>
-                                                <Label htmlFor="saved_address" className="font-medium text-black">
-                                                    {t('checkout.saved_addresses')}
-                                                </Label>
-                                                <Select value={selectedAddress} onValueChange={selectSavedAddress}>
-                                                    <SelectTrigger id="saved_address" className="border-gray-300 bg-white text-black">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="bg-white text-black">
-                                                        {savedAddresses.map((address) => (
-                                                            <SelectItem key={address.id} value={String(address.id)}>
-                                                                {`${address.first_name} ${address.last_name} · ${address.address_line_1}, ${address.city}`}
-                                                            </SelectItem>
-                                                        ))}
-                                                        <SelectItem value="new">{t('checkout.use_new_address')}</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        )}
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                            <div>
-                                                <Label htmlFor="first_name" className="font-medium text-black">
-                                                    {t('checkout.first_name')} *
+                                                <Label htmlFor="email" className="font-medium text-black">
+                                                    {t('checkout.email')} *
                                                 </Label>
                                                 <Input
-                                                    id="first_name"
-                                                    name="first_name"
-                                                    autoComplete="given-name"
-                                                    {...invalidProps('shipping_address.first_name', 'first_name')}
-                                                    value={shippingAddress.first_name}
-                                                    onChange={(e) => updateShippingAddress('first_name', e.target.value)}
+                                                    id="email"
+                                                    name="email"
+                                                    autoComplete="email"
+                                                    {...invalidProps('email', 'email')}
+                                                    type="email"
+                                                    value={contactInfo.email}
+                                                    onChange={(e) => updateContactInfo('email', e.target.value)}
                                                     required
+                                                    placeholder={t('checkout.email_placeholder')}
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
-                                                <InputError id="first_name-error" message={errors['shipping_address.first_name']} className="mt-1" />
+                                                <InputError id="email-error" message={errors['email']} className="mt-1" />
+                                                <p className="mt-1 text-sm text-gray-600">{t('checkout.email_confirmation_text')}</p>
                                             </div>
+                                        </CardContent>
+                                    </CollapsibleContent>
+                                </Collapsible>
+                            </Card>
+
+                            {/* Shipping Information */}
+                            <Card className="border-2 border-gray-700 bg-white shadow-md">
+                                <Collapsible open={isShippingOpen} onOpenChange={setIsShippingOpen}>
+                                    <CollapsibleTrigger className="w-full">
+                                        <CardHeader className="transition-colors hover:bg-gray-50">
+                                            <CardTitle className="flex items-center justify-between text-black">
+                                                <div className="flex items-center gap-2">
+                                                    <Truck className="h-5 w-5" />
+                                                    {t('checkout.shipping_information')}
+                                                </div>
+                                                {isShippingOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                            </CardTitle>
+                                        </CardHeader>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                        <CardContent className="space-y-4">
+                                            {savedAddresses.length > 1 && (
+                                                <div>
+                                                    <Label htmlFor="saved_address" className="font-medium text-black">
+                                                        {t('checkout.saved_addresses')}
+                                                    </Label>
+                                                    <Select value={selectedAddress} onValueChange={selectSavedAddress}>
+                                                        <SelectTrigger id="saved_address" className="border-gray-300 bg-white text-black">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="bg-white text-black">
+                                                            {savedAddresses.map((address) => (
+                                                                <SelectItem key={address.id} value={String(address.id)}>
+                                                                    {`${address.first_name} ${address.last_name} · ${address.address_line_1}, ${address.city}`}
+                                                                </SelectItem>
+                                                            ))}
+                                                            <SelectItem value="new">{t('checkout.use_new_address')}</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            )}
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                <div>
+                                                    <Label htmlFor="first_name" className="font-medium text-black">
+                                                        {t('checkout.first_name')} *
+                                                    </Label>
+                                                    <Input
+                                                        id="first_name"
+                                                        name="first_name"
+                                                        autoComplete="given-name"
+                                                        {...invalidProps('shipping_address.first_name', 'first_name')}
+                                                        value={shippingAddress.first_name}
+                                                        onChange={(e) => updateShippingAddress('first_name', e.target.value)}
+                                                        required
+                                                        className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                    />
+                                                    <InputError
+                                                        id="first_name-error"
+                                                        message={errors['shipping_address.first_name']}
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="last_name" className="font-medium text-black">
+                                                        {t('checkout.last_name')} *
+                                                    </Label>
+                                                    <Input
+                                                        id="last_name"
+                                                        name="last_name"
+                                                        autoComplete="family-name"
+                                                        {...invalidProps('shipping_address.last_name', 'last_name')}
+                                                        value={shippingAddress.last_name}
+                                                        onChange={(e) => updateShippingAddress('last_name', e.target.value)}
+                                                        required
+                                                        className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                    />
+                                                    <InputError
+                                                        id="last_name-error"
+                                                        message={errors['shipping_address.last_name']}
+                                                        className="mt-1"
+                                                    />
+                                                </div>
+                                            </div>
+
                                             <div>
-                                                <Label htmlFor="last_name" className="font-medium text-black">
-                                                    {t('checkout.last_name')} *
+                                                <Label htmlFor="company" className="text-gray-600">
+                                                    {t('checkout.company')} ({t('checkout.optional')})
                                                 </Label>
                                                 <Input
-                                                    id="last_name"
-                                                    name="last_name"
-                                                    autoComplete="family-name"
-                                                    {...invalidProps('shipping_address.last_name', 'last_name')}
-                                                    value={shippingAddress.last_name}
-                                                    onChange={(e) => updateShippingAddress('last_name', e.target.value)}
-                                                    required
+                                                    id="company"
+                                                    name="company"
+                                                    autoComplete="organization"
+                                                    {...invalidProps('shipping_address.company', 'company')}
+                                                    value={shippingAddress.company}
+                                                    onChange={(e) => updateShippingAddress('company', e.target.value)}
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
-                                                <InputError id="last_name-error" message={errors['shipping_address.last_name']} className="mt-1" />
+                                                <InputError id="company-error" message={errors['shipping_address.company']} className="mt-1" />
                                             </div>
-                                        </div>
 
-                                        <div>
-                                            <Label htmlFor="company" className="text-gray-600">
-                                                {t('checkout.company')} ({t('checkout.optional')})
-                                            </Label>
-                                            <Input
-                                                id="company"
-                                                name="company"
-                                                autoComplete="organization"
-                                                {...invalidProps('shipping_address.company', 'company')}
-                                                value={shippingAddress.company}
-                                                onChange={(e) => updateShippingAddress('company', e.target.value)}
-                                                className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
-                                            />
-                                            <InputError id="company-error" message={errors['shipping_address.company']} className="mt-1" />
-                                        </div>
-
-                                        <div>
-                                            <Label htmlFor="address_line_1" className="font-medium text-black">
-                                                {t('checkout.address_line_1')} *
-                                            </Label>
-                                            <Input
-                                                id="address_line_1"
-                                                name="address_line_1"
-                                                autoComplete="address-line1"
-                                                {...invalidProps('shipping_address.address_line_1', 'address_line_1')}
-                                                value={shippingAddress.address_line_1}
-                                                onChange={(e) => updateShippingAddress('address_line_1', e.target.value)}
-                                                required
-                                                className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
-                                            />
-                                            <InputError
-                                                id="address_line_1-error"
-                                                message={errors['shipping_address.address_line_1']}
-                                                className="mt-1"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <Label htmlFor="address_line_2" className="text-gray-600">
-                                                {t('checkout.address_line_2')} ({t('checkout.optional')})
-                                            </Label>
-                                            <Input
-                                                id="address_line_2"
-                                                name="address_line_2"
-                                                autoComplete="address-line2"
-                                                {...invalidProps('shipping_address.address_line_2', 'address_line_2')}
-                                                value={shippingAddress.address_line_2}
-                                                onChange={(e) => updateShippingAddress('address_line_2', e.target.value)}
-                                                className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
-                                            />
-                                            <InputError
-                                                id="address_line_2-error"
-                                                message={errors['shipping_address.address_line_2']}
-                                                className="mt-1"
-                                            />
-                                        </div>
-
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                             <div>
-                                                <Label htmlFor="city" className="font-medium text-black">
-                                                    {t('checkout.city')} *
+                                                <Label htmlFor="address_line_1" className="font-medium text-black">
+                                                    {t('checkout.address_line_1')} *
                                                 </Label>
                                                 <Input
-                                                    id="city"
-                                                    name="city"
-                                                    autoComplete="address-level2"
-                                                    {...invalidProps('shipping_address.city', 'city')}
-                                                    value={shippingAddress.city}
-                                                    onChange={(e) => updateShippingAddress('city', e.target.value)}
-                                                    required
-                                                    className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
-                                                />
-                                                <InputError id="city-error" message={errors['shipping_address.city']} className="mt-1" />
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="state" className="font-medium text-black">
-                                                    {t('checkout.state')} *
-                                                </Label>
-                                                <StateField
-                                                    id="state"
-                                                    country={shippingAddress.country}
-                                                    provinces={provinces}
-                                                    value={shippingAddress.state}
-                                                    onChange={(value) => updateShippingAddress('state', value)}
-                                                    invalidProps={invalidProps('shipping_address.state', 'state')}
-                                                    className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
-                                                />
-                                                <InputError id="state-error" message={errors['shipping_address.state']} className="mt-1" />
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="postal_code" className="font-medium text-black">
-                                                    {t('checkout.postal_code')} *
-                                                </Label>
-                                                <Input
-                                                    id="postal_code"
-                                                    name="postal_code"
-                                                    autoComplete="postal-code"
-                                                    inputMode="text"
-                                                    autoCapitalize="characters"
-                                                    {...invalidProps('shipping_address.postal_code', 'postal_code')}
-                                                    value={shippingAddress.postal_code}
-                                                    onChange={(e) => updatePostalCode(e.target.value)}
+                                                    id="address_line_1"
+                                                    name="address_line_1"
+                                                    autoComplete="address-line1"
+                                                    {...invalidProps('shipping_address.address_line_1', 'address_line_1')}
+                                                    value={shippingAddress.address_line_1}
+                                                    onChange={(e) => updateShippingAddress('address_line_1', e.target.value)}
                                                     required
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
                                                 <InputError
-                                                    id="postal_code-error"
-                                                    message={errors['shipping_address.postal_code']}
+                                                    id="address_line_1-error"
+                                                    message={errors['shipping_address.address_line_1']}
                                                     className="mt-1"
                                                 />
                                             </div>
-                                        </div>
 
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <div>
-                                                <Label htmlFor="country" className="font-medium text-black">
-                                                    {t('checkout.country')} *
-                                                </Label>
-                                                <Select
-                                                    name="country"
-                                                    autoComplete="country"
-                                                    value={shippingAddress.country}
-                                                    onValueChange={(value) => updateShippingAddress('country', value)}
-                                                >
-                                                    <SelectTrigger
-                                                        id="country"
-                                                        {...invalidProps('shipping_address.country', 'country')}
-                                                        className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
-                                                    >
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="bg-white text-black">
-                                                        {destinations.map((code) => (
-                                                            <SelectItem key={code} value={code}>
-                                                                {countryName(code)}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <InputError id="country-error" message={errors['shipping_address.country']} className="mt-1" />
-                                            </div>
-                                            <div>
-                                                <Label htmlFor="phone" className="font-medium text-black">
-                                                    {t('checkout.phone')} *
+                                                <Label htmlFor="address_line_2" className="text-gray-600">
+                                                    {t('checkout.address_line_2')} ({t('checkout.optional')})
                                                 </Label>
                                                 <Input
-                                                    id="phone"
-                                                    name="phone"
-                                                    type="tel"
-                                                    autoComplete="tel"
-                                                    {...invalidProps('shipping_address.phone', 'phone')}
-                                                    value={shippingAddress.phone}
-                                                    onChange={(e) => updateShippingAddress('phone', e.target.value)}
-                                                    required
+                                                    id="address_line_2"
+                                                    name="address_line_2"
+                                                    autoComplete="address-line2"
+                                                    {...invalidProps('shipping_address.address_line_2', 'address_line_2')}
+                                                    value={shippingAddress.address_line_2}
+                                                    onChange={(e) => updateShippingAddress('address_line_2', e.target.value)}
                                                     className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
                                                 />
-                                                <InputError id="phone-error" message={errors['shipping_address.phone']} className="mt-1" />
+                                                <InputError
+                                                    id="address_line_2-error"
+                                                    message={errors['shipping_address.address_line_2']}
+                                                    className="mt-1"
+                                                />
                                             </div>
-                                        </div>
 
-                                        {auth?.user && (
-                                            <div className="flex items-center gap-2">
-                                                <Checkbox id="save_address" checked={saveAddress} onCheckedChange={(checked) => setSaveAddress(checked === true)} />
-                                                <Label htmlFor="save_address" className="text-sm text-gray-700">
-                                                    {t('checkout.save_address')}
-                                                </Label>
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                                <div>
+                                                    <Label htmlFor="city" className="font-medium text-black">
+                                                        {t('checkout.city')} *
+                                                    </Label>
+                                                    <Input
+                                                        id="city"
+                                                        name="city"
+                                                        autoComplete="address-level2"
+                                                        {...invalidProps('shipping_address.city', 'city')}
+                                                        value={shippingAddress.city}
+                                                        onChange={(e) => updateShippingAddress('city', e.target.value)}
+                                                        required
+                                                        className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                    />
+                                                    <InputError id="city-error" message={errors['shipping_address.city']} className="mt-1" />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="state" className="font-medium text-black">
+                                                        {t('checkout.state')} *
+                                                    </Label>
+                                                    <StateField
+                                                        id="state"
+                                                        country={shippingAddress.country}
+                                                        provinces={provinces}
+                                                        value={shippingAddress.state}
+                                                        onChange={(value) => updateShippingAddress('state', value)}
+                                                        invalidProps={invalidProps('shipping_address.state', 'state')}
+                                                        className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                    />
+                                                    <InputError id="state-error" message={errors['shipping_address.state']} className="mt-1" />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="postal_code" className="font-medium text-black">
+                                                        {t('checkout.postal_code')} *
+                                                    </Label>
+                                                    <Input
+                                                        id="postal_code"
+                                                        name="postal_code"
+                                                        autoComplete="postal-code"
+                                                        inputMode="text"
+                                                        autoCapitalize="characters"
+                                                        {...invalidProps('shipping_address.postal_code', 'postal_code')}
+                                                        value={shippingAddress.postal_code}
+                                                        onChange={(e) => updatePostalCode(e.target.value)}
+                                                        required
+                                                        className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                    />
+                                                    <InputError
+                                                        id="postal_code-error"
+                                                        message={errors['shipping_address.postal_code']}
+                                                        className="mt-1"
+                                                    />
+                                                </div>
                                             </div>
-                                        )}
-                                    </CardContent>
-                                </CollapsibleContent>
-                            </Collapsible>
-                        </Card>
 
-                        {/* Discount Code */}
-                        <Card className="border-2 border-gray-700 bg-white shadow-md">
-                            <Collapsible open={isDiscountOpen} onOpenChange={setIsDiscountOpen}>
-                                <CollapsibleTrigger className="w-full">
-                                    <CardHeader className="transition-colors hover:bg-gray-50">
-                                        <CardTitle className="flex items-center justify-between text-black">
-                                            <div className="flex items-center gap-2">
-                                                <Tag className="h-5 w-5" />
-                                                {t('cart.discount_code')}
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                <div>
+                                                    <Label htmlFor="country" className="font-medium text-black">
+                                                        {t('checkout.country')} *
+                                                    </Label>
+                                                    <Select
+                                                        name="country"
+                                                        autoComplete="country"
+                                                        value={shippingAddress.country}
+                                                        onValueChange={(value) => updateShippingAddress('country', value)}
+                                                    >
+                                                        <SelectTrigger
+                                                            id="country"
+                                                            {...invalidProps('shipping_address.country', 'country')}
+                                                            className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                        >
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="bg-white text-black">
+                                                            {destinations.map((code) => (
+                                                                <SelectItem key={code} value={code}>
+                                                                    {countryName(code)}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <InputError id="country-error" message={errors['shipping_address.country']} className="mt-1" />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="phone" className="font-medium text-black">
+                                                        {t('checkout.phone')} *
+                                                    </Label>
+                                                    <Input
+                                                        id="phone"
+                                                        name="phone"
+                                                        type="tel"
+                                                        autoComplete="tel"
+                                                        {...invalidProps('shipping_address.phone', 'phone')}
+                                                        value={shippingAddress.phone}
+                                                        onChange={(e) => updateShippingAddress('phone', e.target.value)}
+                                                        required
+                                                        className="border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                    />
+                                                    <InputError id="phone-error" message={errors['shipping_address.phone']} className="mt-1" />
+                                                </div>
                                             </div>
-                                            {isDiscountOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                                        </CardTitle>
-                                    </CardHeader>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                    <CardContent>
-                                        <div className="flex space-x-2">
-                                            <Input
-                                                type="text"
-                                                placeholder={t('cart.coupon_placeholder')}
-                                                value={couponCode}
-                                                onChange={(e) => setCouponCode(e.target.value)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        applyCoupon();
-                                                    }
+
+                                            {auth?.user && (
+                                                <div className="flex items-center gap-2">
+                                                    <Checkbox
+                                                        id="save_address"
+                                                        checked={saveAddress}
+                                                        onCheckedChange={(checked) => setSaveAddress(checked === true)}
+                                                    />
+                                                    <Label htmlFor="save_address" className="text-sm text-gray-700">
+                                                        {t('checkout.save_address')}
+                                                    </Label>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </CollapsibleContent>
+                                </Collapsible>
+                            </Card>
+
+                            {/* Discount Code */}
+                            <Card className="border-2 border-gray-700 bg-white shadow-md">
+                                <Collapsible open={isDiscountOpen} onOpenChange={setIsDiscountOpen}>
+                                    <CollapsibleTrigger className="w-full">
+                                        <CardHeader className="transition-colors hover:bg-gray-50">
+                                            <CardTitle className="flex items-center justify-between text-black">
+                                                <div className="flex items-center gap-2">
+                                                    <Tag className="h-5 w-5" />
+                                                    {t('cart.discount_code')}
+                                                </div>
+                                                {isDiscountOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                            </CardTitle>
+                                        </CardHeader>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                        <CardContent>
+                                            <div className="flex space-x-2">
+                                                <Input
+                                                    type="text"
+                                                    placeholder={t('cart.coupon_placeholder')}
+                                                    value={couponCode}
+                                                    onChange={(e) => setCouponCode(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            applyCoupon();
+                                                        }
+                                                    }}
+                                                    autoComplete="off"
+                                                    className="flex-1 border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={applyCoupon}
+                                                    disabled={!couponCode.trim() || isApplyingCoupon}
+                                                    className="border-gray-300 hover:bg-gray-50"
+                                                >
+                                                    {isApplyingCoupon ? t('cart.applying') : t('cart.apply')}
+                                                </Button>
+                                            </div>
+                                            {discountAmount > 0 && (
+                                                <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3">
+                                                    <p className="text-sm text-green-800">
+                                                        {t('cart.discount_applied', { amount: formatCurrency(discountAmount) })}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </CollapsibleContent>
+                                </Collapsible>
+                            </Card>
+
+                            {/* Order Notes */}
+                            <Card className="border-2 border-gray-700 bg-white shadow-md">
+                                <Collapsible open={isNotesOpen} onOpenChange={setIsNotesOpen}>
+                                    <CollapsibleTrigger className="w-full">
+                                        <CardHeader className="transition-colors hover:bg-gray-50">
+                                            <CardTitle className="flex items-center justify-between text-black">
+                                                <div className="flex items-center gap-2">
+                                                    <FileText className="h-5 w-5" />
+                                                    {t('checkout.order_notes')} ({t('checkout.optional')})
+                                                </div>
+                                                {isNotesOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                            </CardTitle>
+                                        </CardHeader>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                        <CardContent>
+                                            <Textarea
+                                                id="order_notes"
+                                                name="order_notes"
+                                                {...invalidProps('order_notes', 'order_notes')}
+                                                placeholder={t('checkout.order_notes_placeholder')}
+                                                value={orderNotes}
+                                                onChange={(e) => {
+                                                    clearError('order_notes');
+                                                    setOrderNotes(e.target.value);
                                                 }}
-                                                autoComplete="off"
-                                                className="flex-1 border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                maxLength={orderNotesMax}
+                                                className="resize-none border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
+                                                rows={3}
                                             />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={applyCoupon}
-                                                disabled={!couponCode.trim() || isApplyingCoupon}
-                                                className="border-gray-300 hover:bg-gray-50"
-                                            >
-                                                {isApplyingCoupon ? t('cart.applying') : t('cart.apply')}
-                                            </Button>
-                                        </div>
-                                        {discountAmount > 0 && (
-                                            <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3">
-                                                <p className="text-sm text-green-800">
-                                                    {t('cart.discount_applied', { amount: formatCurrency(discountAmount) })}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </CollapsibleContent>
-                            </Collapsible>
-                        </Card>
+                                            <InputError id="order_notes-error" message={errors['order_notes']} className="mt-1" />
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                {orderNotes.length}/{orderNotesMax} {t('checkout.characters')}
+                                            </p>
+                                        </CardContent>
+                                    </CollapsibleContent>
+                                </Collapsible>
+                            </Card>
 
-                        {/* Order Notes */}
-                        <Card className="border-2 border-gray-700 bg-white shadow-md">
-                            <Collapsible open={isNotesOpen} onOpenChange={setIsNotesOpen}>
-                                <CollapsibleTrigger className="w-full">
-                                    <CardHeader className="transition-colors hover:bg-gray-50">
-                                        <CardTitle className="flex items-center justify-between text-black">
-                                            <div className="flex items-center gap-2">
-                                                <FileText className="h-5 w-5" />
-                                                {t('checkout.order_notes')} ({t('checkout.optional')})
-                                            </div>
-                                            {isNotesOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                                        </CardTitle>
-                                    </CardHeader>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                    <CardContent>
-                                        <Textarea
-                                            id="order_notes"
-                                            name="order_notes"
-                                            {...invalidProps('order_notes', 'order_notes')}
-                                            placeholder={t('checkout.order_notes_placeholder')}
-                                            value={orderNotes}
-                                            onChange={(e) => {
-                                                clearError('order_notes');
-                                                setOrderNotes(e.target.value);
-                                            }}
-                                            maxLength={orderNotesMax}
-                                            className="resize-none border-gray-300 bg-white text-black focus:border-gray-500 focus:ring-gray-500"
-                                            rows={3}
-                                        />
-                                        <InputError id="order_notes-error" message={errors['order_notes']} className="mt-1" />
-                                        <p className="mt-1 text-xs text-gray-500">
-                                            {orderNotes.length}/{orderNotesMax} {t('checkout.characters')}
-                                        </p>
-                                    </CardContent>
-                                </CollapsibleContent>
-                            </Collapsible>
-                        </Card>
+                            {belowMinimum && (
+                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                    <p className="text-sm text-amber-800">{t('cart.min_amount_notice', { amount: formatCurrency(minAmount) })}</p>
+                                </div>
+                            )}
 
-                        {belowMinimum && (
-                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                                <p className="text-sm text-amber-800">{t('cart.min_amount_notice', { amount: formatCurrency(minAmount) })}</p>
+                            <MarketingConsentCheckbox checked={marketingConsent} onCheckedChange={setMarketingConsent} disabled={isProcessing} />
+
+                            {/* Action Buttons - Hidden on mobile, only show on desktop */}
+                            <div className="grid hidden grid-cols-1 gap-4 pt-6 md:grid md:grid-cols-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleBackToCart}
+                                    size="lg"
+                                    className="w-full border-gray-300 hover:bg-gray-50"
+                                >
+                                    <ArrowLeft className="mr-2 h-5 w-5" />
+                                    {t('cart.back_to_cart')}
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isProcessing || belowMinimum}
+                                    size="lg"
+                                    className="w-full bg-black text-white hover:bg-gray-800"
+                                >
+                                    <CreditCard className="mr-2 h-5 w-5" />
+                                    {isProcessing ? t('checkout.processing') : t('checkout.pay', { amount: formatCurrency(total) })}
+                                </Button>
                             </div>
-                        )}
+                        </form>
 
-                        <MarketingConsentCheckbox checked={marketingConsent} onCheckedChange={setMarketingConsent} disabled={isProcessing} />
-
-                        {/* Action Buttons - Hidden on mobile, only show on desktop */}
-                        <div className="grid hidden grid-cols-1 gap-4 pt-6 md:grid md:grid-cols-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={handleBackToCart}
-                                size="lg"
-                                className="w-full border-gray-300 hover:bg-gray-50"
-                            >
-                                <ArrowLeft className="mr-2 h-5 w-5" />
-                                {t('cart.back_to_cart')}
-                            </Button>
-                            <Button
-                                type="submit"
-                                disabled={isProcessing || belowMinimum}
-                                size="lg"
-                                className="w-full bg-black text-white hover:bg-gray-800"
-                            >
-                                <CreditCard className="mr-2 h-5 w-5" />
-                                {isProcessing ? t('checkout.processing') : t('checkout.pay', { amount: formatCurrency(total) })}
-                            </Button>
-                        </div>
-                    </form>
-
-                    {/* Order summary, desktop: right column, sticky */}
-                    <aside className="hidden lg:sticky lg:top-8 lg:block">
-                        <Card className="border-2 border-gray-700 bg-white shadow-md">
-                            <CardHeader>
-                                <CardTitle className="text-black">{t('cart.order_summary')}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <OrderSummary
-                                    lines={cartItems}
-                                    subtotal={subtotal}
-                                    discountAmount={discountAmount}
-                                    discountDescription={discountDescription}
-                                    shippingCost={shippingCost}
-                                    freeShippingRemaining={freeShippingRemaining}
-                                    total={total}
-                                    taxAmount={taxAmount}
-                                    taxRate={taxRate}
-                                />
-                            </CardContent>
-                        </Card>
-                    </aside>
+                        {/* Order summary, desktop: right column, sticky */}
+                        <aside className="hidden lg:sticky lg:top-8 lg:block">
+                            <Card className="border-2 border-gray-700 bg-white shadow-md">
+                                <CardHeader>
+                                    <CardTitle className="text-black">{t('cart.order_summary')}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <OrderSummary
+                                        lines={cartItems}
+                                        subtotal={subtotal}
+                                        discountAmount={discountAmount}
+                                        discountDescription={discountDescription}
+                                        shippingCost={shippingCost}
+                                        freeShippingRemaining={freeShippingRemaining}
+                                        total={total}
+                                        taxAmount={taxAmount}
+                                        taxRate={taxRate}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </aside>
                     </div>
                 </div>
 

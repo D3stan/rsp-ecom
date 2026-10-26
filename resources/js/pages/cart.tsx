@@ -4,10 +4,10 @@ import LoadingOverlay from '@/components/LoadingOverlay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/contexts/ToastContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useMoney } from '@/hooks/use-money';
 import { useSetting } from '@/hooks/use-setting';
-import { useToast } from '@/contexts/ToastContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { cartService } from '@/services/cartService';
 import { type SharedData } from '@/types';
@@ -57,7 +57,8 @@ interface CartPageProps extends SharedData {
 
 export default function Cart() {
     const pageProps = usePage<CartPageProps>().props;
-    const { cartItems, subtotal, shippingCost, discountAmount, discountDescription, couponCode, total, totalItems, freeShippingRemaining } = pageProps;
+    const { cartItems, subtotal, shippingCost, discountAmount, discountDescription, couponCode, total, totalItems, freeShippingRemaining } =
+        pageProps;
     const { auth } = pageProps;
     const isMobile = useIsMobile();
     const { t, isLoading } = useTranslation();
@@ -83,7 +84,7 @@ export default function Cart() {
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
     const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-        console.error("product image not found", 404)
+        console.error('product image not found', 404);
         const target = e.target as HTMLImageElement;
         if (!target.src.includes('product.png')) {
             target.src = '/images/product.png';
@@ -171,7 +172,7 @@ export default function Cart() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 },
                 body: JSON.stringify({ code: couponInput }),
@@ -212,7 +213,7 @@ export default function Cart() {
             const response = await fetch('/cart/remove-coupon', {
                 method: 'DELETE',
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 },
             });
@@ -415,11 +416,7 @@ export default function Cart() {
                                                 onChange={(e) => setCouponInput(e.target.value)}
                                                 className="flex-1 text-black"
                                             />
-                                            <Button
-                                                onClick={applyCoupon}
-                                                disabled={!couponInput.trim() || isApplyingCoupon}
-                                                variant="outline"
-                                            >
+                                            <Button onClick={applyCoupon} disabled={!couponInput.trim() || isApplyingCoupon} variant="outline">
                                                 {isApplyingCoupon ? t('cart.applying') : t('cart.apply')}
                                             </Button>
                                         </div>
@@ -439,7 +436,9 @@ export default function Cart() {
                                     />
                                     {(discountAmount ?? 0) > 0 && (
                                         <div className="flex justify-between text-green-600">
-                                            <span>{t('cart.discount')} {discountDescription && `(${discountDescription})`}</span>
+                                            <span>
+                                                {t('cart.discount')} {discountDescription && `(${discountDescription})`}
+                                            </span>
                                             <span>-{formatCurrency(discountAmount ?? 0)}</span>
                                         </div>
                                     )}

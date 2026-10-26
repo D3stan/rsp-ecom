@@ -43,7 +43,12 @@ export default function CustomersIndex({ customers, filters }: Props) {
     };
 
     return (
-        <AdminLayout breadcrumbs={[{ title: t('admin.nav.admin'), href: '/admin/dashboard' }, { title: t('admin.customers.title'), href: route('admin.customers.index') }]}>
+        <AdminLayout
+            breadcrumbs={[
+                { title: t('admin.nav.admin'), href: '/admin/dashboard' },
+                { title: t('admin.customers.title'), href: route('admin.customers.index') },
+            ]}
+        >
             <Head title={t('admin.customers.title')} />
             <div className="space-y-6 p-4 md:p-6">
                 <div>
@@ -55,7 +60,13 @@ export default function CustomersIndex({ customers, filters }: Props) {
                     <label htmlFor="customer-search" className="sr-only">
                         {t('admin.customers.search_label')}
                     </label>
-                    <Input id="customer-search" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('admin.customers.search_placeholder')} />
+                    <Input
+                        id="customer-search"
+                        type="search"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder={t('admin.customers.search_placeholder')}
+                    />
                     <Button type="submit" variant="secondary">
                         <Search className="h-4 w-4" />
                         <span className="sr-only sm:not-sr-only sm:ml-2">{t('admin.customers.search_button')}</span>
@@ -91,12 +102,16 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                             <span className="block truncate text-muted-foreground">{c.email}</span>
                                         </td>
                                         <td className="space-x-1 p-4">
-                                            <Badge variant={c.is_active ? 'default' : 'outline'}>{c.is_active ? t('admin.customers.status_active') : t('admin.customers.status_deactivated')}</Badge>
+                                            <Badge variant={c.is_active ? 'default' : 'outline'}>
+                                                {c.is_active ? t('admin.customers.status_active') : t('admin.customers.status_deactivated')}
+                                            </Badge>
                                             {!c.verified && <Badge variant="secondary">{t('admin.customers.status_unverified')}</Badge>}
                                         </td>
                                         <td className="p-4 text-right tabular-nums">{c.orders_count}</td>
                                         <td className="hidden p-4 text-right tabular-nums md:table-cell">{money(c.total_spent, locale)}</td>
-                                        <td className="hidden p-4 tabular-nums lg:table-cell">{c.created_at ? new Date(c.created_at).toLocaleDateString(locale) : '–'}</td>
+                                        <td className="hidden p-4 tabular-nums lg:table-cell">
+                                            {c.created_at ? new Date(c.created_at).toLocaleDateString(locale) : '–'}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -109,10 +124,20 @@ export default function CustomersIndex({ customers, filters }: Props) {
                                 {t('admin.customers.pagination_page', { current: customers.current_page, total: customers.last_page })}
                             </p>
                             <div className="flex gap-2">
-                                <Button variant="outline" size="sm" disabled={customers.current_page <= 1} onClick={() => load({ page: customers.current_page - 1 })}>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={customers.current_page <= 1}
+                                    onClick={() => load({ page: customers.current_page - 1 })}
+                                >
                                     <ChevronLeft className="h-4 w-4" /> {t('admin.customers.pagination_previous')}
                                 </Button>
-                                <Button variant="outline" size="sm" disabled={customers.current_page >= customers.last_page} onClick={() => load({ page: customers.current_page + 1 })}>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={customers.current_page >= customers.last_page}
+                                    onClick={() => load({ page: customers.current_page + 1 })}
+                                >
                                     {t('admin.customers.pagination_next')} <ChevronRight className="h-4 w-4" />
                                 </Button>
                             </div>

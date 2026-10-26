@@ -431,7 +431,9 @@ export default function Home() {
                                                 >
                                                     <IconComponent className="h-8 w-8" />
                                                 </div>
-                                                <h3 className="mb-2 text-sm font-semibold text-gray-900">{t(`categories.${category.name}`, { defaultValue: category.label })}</h3>
+                                                <h3 className="mb-2 text-sm font-semibold text-gray-900">
+                                                    {t(`categories.${category.name}`, { defaultValue: category.label })}
+                                                </h3>
                                                 <p className="text-xs font-medium text-gray-500">{t('products_count', { count: category.count })}</p>
                                             </div>
                                         </div>

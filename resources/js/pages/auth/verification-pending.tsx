@@ -1,13 +1,13 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import useTranslation from '@/hooks/useTranslation';
 import AuthLayout from '@/layouts/auth-layout';
+import { Head, useForm } from '@inertiajs/react';
+import { AlertCircle, CheckCircle, Clock, Loader2, Mail } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface Props {
     email?: string;
@@ -23,7 +23,7 @@ export default function VerificationPending({ email, status }: Props) {
     const [statusMessage, setStatusMessage] = useState<string>('');
     const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const isMountedRef = useRef(true);
-    
+
     const { data, setData, post, processing, errors } = useForm({
         email: email || '',
     });
@@ -44,18 +44,18 @@ export default function VerificationPending({ email, status }: Props) {
         try {
             // Get CSRF token from meta tag
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            
+
             const response = await fetch(`/verification/status?email=${encodeURIComponent(email)}`, {
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                     ...(token && { 'X-CSRF-TOKEN': token }),
                 },
-                credentials: 'same-origin'
+                credentials: 'same-origin',
             });
-            
+
             // Check if response is HTML (error page) instead of JSON
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
@@ -65,11 +65,11 @@ export default function VerificationPending({ email, status }: Props) {
                 console.error('HTML response:', htmlContent.substring(0, 200));
                 return;
             }
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
-            
+
             const responseData = await response.json();
 
             // Only update state if component is still mounted
@@ -79,11 +79,11 @@ export default function VerificationPending({ email, status }: Props) {
                 setVerificationStatus('verified');
                 setStatusMessage('Email verified successfully! Redirecting...');
                 stopPolling();
-                
+
                 // If the user is now authenticated, redirect immediately
                 // Otherwise, give a moment for the session to be established
                 const redirectDelay = responseData.authenticated ? 1000 : 2000;
-                
+
                 setTimeout(() => {
                     if (isMountedRef.current) {
                         // Force a full page reload to ensure session is properly established
@@ -102,7 +102,7 @@ export default function VerificationPending({ email, status }: Props) {
             // If still pending, continue polling
         } catch (error) {
             console.error('Error checking verification status:', error);
-            
+
             // Only update state if component is still mounted
             if (isMountedRef.current) {
                 // On network errors, we'll continue polling but could show a temporary warning
@@ -161,7 +161,7 @@ export default function VerificationPending({ email, status }: Props) {
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        
+
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
@@ -172,7 +172,7 @@ export default function VerificationPending({ email, status }: Props) {
         if (status === 'verification-link-sent') {
             setCanResend(false);
             setTimeLeft(60); // 60 seconds cooldown
-            
+
             const timer = setInterval(() => {
                 setTimeLeft((prev) => {
                     if (prev === null || prev <= 1) {
@@ -194,27 +194,18 @@ export default function VerificationPending({ email, status }: Props) {
     };
 
     return (
-        <AuthLayout
-            title={t('auth.pending.title')}
-            description={t('auth.pending.description')}
-        >
+        <AuthLayout title={t('auth.pending.title')} description={t('auth.pending.description')}>
             <Head title={t('auth.pending.head')} />
-            
-            <Card className="w-full max-w-md mx-auto">
-                <CardHeader className="text-center space-y-4">
-                    <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
-                        <Mail className="w-8 h-8 text-blue-600" />
+
+            <Card className="mx-auto w-full max-w-md">
+                <CardHeader className="space-y-4 text-center">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
+                        <Mail className="h-8 w-8 text-blue-600" />
                     </div>
                     <div className="space-y-2">
                         <CardTitle className="text-2xl font-semibold">{t('auth.check_email')}</CardTitle>
-                        <CardDescription className="text-base">
-                            {t('auth.pending.sent_to')}
-                        </CardDescription>
-                        {email && (
-                            <p className="font-medium text-sm text-white px-3 py-2 rounded-md">
-                                {email}
-                            </p>
-                        )}
+                        <CardDescription className="text-base">{t('auth.pending.sent_to')}</CardDescription>
+                        {email && <p className="rounded-md px-3 py-2 text-sm font-medium text-white">{email}</p>}
                     </div>
                 </CardHeader>
 
@@ -222,9 +213,7 @@ export default function VerificationPending({ email, status }: Props) {
                     {verificationStatus === 'verified' && (
                         <Alert className="border-green-200 bg-green-50">
                             <CheckCircle className="h-4 w-4 text-green-600" />
-                            <AlertDescription className="text-green-800">
-                                {statusMessage}
-                            </AlertDescription>
+                            <AlertDescription className="text-green-800">{statusMessage}</AlertDescription>
                         </Alert>
                     )}
 
@@ -245,9 +234,7 @@ export default function VerificationPending({ email, status }: Props) {
                     {status === 'verification-link-sent' && verificationStatus === 'pending' && (
                         <Alert>
                             <CheckCircle className="h-4 w-4" />
-                            <AlertDescription>
-                                {t('auth.pending.link_resent')}
-                            </AlertDescription>
+                            <AlertDescription>{t('auth.pending.link_resent')}</AlertDescription>
                         </Alert>
                     )}
 
@@ -260,41 +247,34 @@ export default function VerificationPending({ email, status }: Props) {
 
                     {verificationStatus === 'pending' && (
                         <div className="space-y-3">
-                            <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                                <p className="text-sm text-blue-800">
-                                    {t('auth.pending.waiting')}
-                                </p>
+                            <div className="flex items-center space-x-3 rounded-lg bg-blue-50 p-3">
+                                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                                <p className="text-sm text-blue-800">{t('auth.pending.waiting')}</p>
                             </div>
                         </div>
                     )}
 
                     <div className="space-y-3 text-sm text-gray-400">
                         <div className="flex items-start space-x-3">
-                            <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                            <Clock className="mt-0.5 h-4 w-4 flex-shrink-0" />
                             <p>
-                                {t('auth.pending.expiry_before')} <strong>{t('auth.pending.expiry_duration')}</strong> {t('auth.pending.expiry_after')}
+                                {t('auth.pending.expiry_before')} <strong>{t('auth.pending.expiry_duration')}</strong>{' '}
+                                {t('auth.pending.expiry_after')}
                             </p>
                         </div>
                         <div className="flex items-start space-x-3">
-                            <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                            <p>
-                                {t('auth.pending.tip_click')}
-                            </p>
+                            <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                            <p>{t('auth.pending.tip_click')}</p>
                         </div>
                         <div className="flex items-start space-x-3">
-                            <Mail className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                            <p>
-                                {t('auth.pending.tip_device')}
-                            </p>
+                            <Mail className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                            <p>{t('auth.pending.tip_device')}</p>
                         </div>
                     </div>
 
                     {verificationStatus !== 'verified' && (
                         <div className="border-t pt-4">
-                            <p className="text-sm text-gray-500 mb-3">
-                                {t('auth.pending.no_email')}
-                            </p>
+                            <p className="mb-3 text-sm text-gray-500">{t('auth.pending.no_email')}</p>
 
                             <form onSubmit={handleResend} className="space-y-3">
                                 <div>
@@ -311,16 +291,16 @@ export default function VerificationPending({ email, status }: Props) {
                                         disabled={processing || verificationStatus !== 'pending'}
                                     />
                                 </div>
-                                
-                                <Button 
-                                    type="submit" 
-                                    variant="outline" 
+
+                                <Button
+                                    type="submit"
+                                    variant="outline"
                                     className="w-full bg-gray-200 text-black"
                                     disabled={processing || !canResend || verificationStatus !== 'pending'}
                                 >
                                     {processing ? (
                                         <>
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                             {t('auth.pending.sending')}
                                         </>
                                     ) : !canResend && timeLeft ? (
@@ -335,9 +315,7 @@ export default function VerificationPending({ email, status }: Props) {
                 </CardContent>
 
                 <CardFooter className="flex-col space-y-2">
-                    <p className="text-xs text-gray-500 text-center">
-                        {t('auth.pending.support')}
-                    </p>
+                    <p className="text-center text-xs text-gray-500">{t('auth.pending.support')}</p>
                 </CardFooter>
             </Card>
         </AuthLayout>

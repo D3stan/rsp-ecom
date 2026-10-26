@@ -1,7 +1,7 @@
+import useTranslation from '@/hooks/useTranslation';
+import AppLayout from '@/layouts/app-layout';
 import { Head, Link } from '@inertiajs/react';
 import React from 'react';
-import AppLayout from '@/layouts/app-layout';
-import useTranslation from '@/hooks/useTranslation';
 
 interface Subscription {
     id: string;

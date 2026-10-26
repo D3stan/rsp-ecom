@@ -99,7 +99,11 @@ export default function AddressForm({ address, provinces, onDone }: AddressFormP
         }
     };
 
-    const field = (key: keyof typeof data, label: string, props: { required?: boolean; autoComplete?: string; type?: string; onChange?: (value: string) => void } = {}) => (
+    const field = (
+        key: keyof typeof data,
+        label: string,
+        props: { required?: boolean; autoComplete?: string; type?: string; onChange?: (value: string) => void } = {},
+    ) => (
         <div className="grid gap-1">
             <Label htmlFor={`address-${key}`}>
                 {label}

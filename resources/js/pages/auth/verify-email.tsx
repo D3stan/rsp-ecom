@@ -3,9 +3,9 @@ import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
-import useTranslation from '@/hooks/useTranslation';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
+import useTranslation from '@/hooks/useTranslation';
 import AuthLayout from '@/layouts/auth-layout';
 
 export default function VerifyEmail({ status }: { status?: string }) {
@@ -23,9 +23,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
             <Head title={t('auth.verify.head')} />
 
             {status === 'verification-link-sent' && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {t('auth.verify.link_sent')}
-                </div>
+                <div className="mb-4 text-center text-sm font-medium text-green-600">{t('auth.verify.link_sent')}</div>
             )}
 
             <form onSubmit={submit} className="space-y-6 text-center">
