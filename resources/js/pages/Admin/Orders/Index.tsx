@@ -143,6 +143,7 @@ export default function OrdersIndex({ orders, kpis, filters }: Props) {
         }, 300); // 300ms debounce for search
 
         return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the local filter state; filters.* is only compared to skip redundant reloads
     }, [search, statusFilter, paymentStatusFilter, refundDueFilter]);
 
     const clearFilters = () => {

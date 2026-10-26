@@ -79,6 +79,7 @@ export default [
                             'removeEventListener',
                             'postMessage',
                             'getElementById',
+                            'field',
                             'dispatch',
                             'commit',
                             'includes',

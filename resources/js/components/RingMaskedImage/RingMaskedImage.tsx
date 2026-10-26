@@ -195,51 +195,6 @@ export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     isIOSWebKit,
   });
 
-  // GSAP engine initialization (not a hook call inside callback)
-  useEffect(() => {
-    if (engine === 'gsap') {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      import('./engines/useGsapEngine').then(({ useGsapEngine }) => {
-        // This is just calling the function, not the hook
-        const gsapConfig = {
-          enabled: true,
-          sliceGroupRef,
-          circleRef,
-          containerRef,
-          mode,
-          shouldRunIntro,
-          onIntroComplete: markIntroComplete,
-          sliceLength,
-          circumference,
-          secondsPerTurn,
-          clockwise,
-          turnsPerViewport,
-          respectReducedMotion,
-          setDashArray,
-          isIOSWebKit,
-        };
-        
-        // Call the GSAP initialization function
-        console.log('GSAP config prepared:', gsapConfig);
-        // Note: This will be refactored to not use hook pattern
-      }).catch(() => {
-        console.warn('GSAP engine not available');
-      });
-    }
-  }, [
-    engine,
-    mode,
-    shouldRunIntro,
-    sliceLength,
-    circumference,
-    secondsPerTurn,
-    clockwise,
-    turnsPerViewport,
-    respectReducedMotion,
-    isIOSWebKit,
-    markIntroComplete,
-  ]);
-
   // Vanilla JS animation (fallback)
   useEffect(() => {
     if (engine === 'vanilla' && sliceGroupRef.current) {

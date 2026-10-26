@@ -144,6 +144,7 @@ export default function ReviewsIndex({ reviews, kpis, filters }: Props) {
         }, 300);
 
         return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the local filter state; filters.* is only compared to skip redundant reloads
     }, [search, statusFilter, ratingFilter]);
 
     const clearFilters = () => {

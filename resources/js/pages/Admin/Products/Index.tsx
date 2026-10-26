@@ -158,6 +158,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
         }, 300); // 300ms debounce for search
 
         return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are the local filter state; filters.* is only compared to skip redundant reloads
     }, [search, categoryFilter, statusFilter, stockFilter]);
 
     const clearFilters = () => {
