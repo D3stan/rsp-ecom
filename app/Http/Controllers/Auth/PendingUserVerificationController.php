@@ -12,8 +12,8 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,17 +25,18 @@ class PendingUserVerificationController extends Controller
     public function show(Request $request): Response|RedirectResponse
     {
         $email = $request->session()->get('email');
-        
-        if (!$email) {
+
+        if (! $email) {
             return redirect()->route('register');
         }
 
         $pendingUser = PendingUserVerification::where('email', $email)->first();
 
-        if (!$pendingUser) {
+        if (! $pendingUser) {
             if (User::where('email', $email)->exists()) {
                 return redirect()->route('login')->with('status', 'Your email is already verified. Please log in.');
             }
+
             return redirect()->route('register');
         }
 
@@ -56,8 +57,8 @@ class PendingUserVerificationController extends Controller
         $token = $request->route('token');
         $email = $request->route('email');
 
-        if (!$request->hasValidSignature()) {
-            \Illuminate\Support\Facades\Log::warning('Pending verification link rejected: invalid signature', [
+        if (! $request->hasValidSignature()) {
+            Log::warning('Pending verification link rejected: invalid signature', [
                 'scheme' => $request->getScheme(),
                 'host' => $request->getHost(),
                 'port' => $request->getPort(),
@@ -76,7 +77,7 @@ class PendingUserVerificationController extends Controller
             ->where('verification_token', $token)
             ->first();
 
-        if (!$pendingUser) {
+        if (! $pendingUser) {
             return redirect()->route('register')->with('error', 'Invalid verification link.');
         }
 
@@ -104,7 +105,7 @@ class PendingUserVerificationController extends Controller
         Auth::login($user);
 
         return redirect()->intended(route('dashboard', absolute: false))
-            ->with('success', 'Email verified successfully! Welcome to ' . settings('store.name') . '!');
+            ->with('success', 'Email verified successfully! Welcome to '.settings('store.name').'!');
     }
 
     /**
@@ -118,7 +119,7 @@ class PendingUserVerificationController extends Controller
 
         $pendingUser = PendingUserVerification::where('email', $request->email)->first();
 
-        if (!$pendingUser) {
+        if (! $pendingUser) {
             return back()->with('error', 'No pending verification found for this email.');
         }
 

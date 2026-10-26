@@ -3,6 +3,8 @@
 use App\Models\PendingUserVerification;
 use App\Models\User;
 use App\Notifications\PendingUserEmailVerification;
+use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 
@@ -18,13 +20,13 @@ test('registration creates pending user verification instead of user', function 
 
     // Should not create a user immediately
     expect(User::where('email', 'test@example.com')->exists())->toBeFalse();
-    
+
     // Should create a pending verification
     expect(PendingUserVerification::where('email', 'test@example.com')->exists())->toBeTrue();
-    
+
     // Should send verification email
     Notification::assertSentTo(
-        [new \Illuminate\Notifications\AnonymousNotifiable()],
+        [new AnonymousNotifiable],
         PendingUserEmailVerification::class
     );
 
@@ -39,7 +41,7 @@ test('pending verification email contains verification link', function () {
 
     // The notification uses a custom view, so we check the view data
     // Verify the mail message is configured correctly
-    expect($mail)->toBeInstanceOf(\Illuminate\Notifications\Messages\MailMessage::class);
+    expect($mail)->toBeInstanceOf(MailMessage::class);
     expect($mail->subject)->toBe(__('emails.verify_pending.subject', ['app' => config('app.name')]));
 
     // Generate the expected URL to verify it contains the right components
@@ -102,7 +104,7 @@ test('expired verification link redirects with error', function () {
 
     // Should not create user
     expect(User::where('email', $pendingUser->email)->exists())->toBeFalse();
-    
+
     // Should not delete pending verification (for potential resend)
     expect(PendingUserVerification::where('email', $pendingUser->email)->exists())->toBeTrue();
 
@@ -129,7 +131,7 @@ test('invalid verification token redirects with error', function () {
 
 test('can resend verification email', function () {
     Notification::fake();
-    
+
     $pendingUser = PendingUserVerification::factory()->create();
 
     $response = $this->post(route('verification.resend.pending'), [
@@ -137,7 +139,7 @@ test('can resend verification email', function () {
     ]);
 
     Notification::assertSentTo(
-        [new \Illuminate\Notifications\AnonymousNotifiable()],
+        [new AnonymousNotifiable],
         PendingUserEmailVerification::class
     );
 

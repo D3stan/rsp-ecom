@@ -8,8 +8,10 @@ use App\Shipping\Tracking\Drivers\ManualProvider;
 use App\Shipping\Tracking\Drivers\NullProvider;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\DTO\TrackingResult;
+use App\Shipping\Tracking\Exceptions\TrackingException;
 use App\Shipping\Tracking\Exceptions\UnknownTrackingDriver;
 use App\Shipping\Tracking\TrackingManager;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Http;
 
 function trkManager(): TrackingManager
@@ -70,7 +72,7 @@ it('rejects a custom driver that is not a TrackingProvider', function () {
     trkManager()->extend('bad', fn () => new stdClass);
 
     trkManager()->driver('bad');
-})->throws(\App\Shipping\Tracking\Exceptions\TrackingException::class, 'must implement');
+})->throws(TrackingException::class, 'must implement');
 
 it('throws a clear exception for an unknown driver', function () {
     config(['shipping.tracking.driver' => 'nope']);
@@ -212,7 +214,7 @@ it('passive drivers answer unknown without a network call', function () {
 });
 
 it('schedules tracking:sync every 15 minutes, gated by the driver capability', function () {
-    $event = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())
+    $event = collect(app(Schedule::class)->events())
         ->first(fn ($e) => str_contains($e->command, 'tracking:sync'));
 
     expect($event)->not->toBeNull()->and($event->expression)->toBe('*/15 * * * *')

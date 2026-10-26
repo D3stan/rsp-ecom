@@ -1,7 +1,10 @@
 <?php
 
+use App\Mail\OrderShipped;
 use App\Models\Order;
 use App\Models\User;
+use App\Shipping\Tracking\Enums\TrackingStatus;
+use App\Shipping\Tracking\ShipmentTrackingService;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Feature\Shipping\Support\TrackingFixtures as Fx;
@@ -82,9 +85,9 @@ it('feeds the carrier list to the ship, edit and show pages', function () {
 
 it('shows carrier, tracking status and the latest events on the show page', function () {
     $order = Fx::shippedOrder(['tracking_carrier' => 'acme']);
-    app(\App\Shipping\Tracking\ShipmentTrackingService::class)->apply($order, 'fake', Fx::result(
-        \App\Shipping\Tracking\Enums\TrackingStatus::InTransit,
-        Fx::event(\App\Shipping\Tracking\Enums\TrackingStatus::InTransit, '-1 hour', 'e1', 'Departed hub'),
+    app(ShipmentTrackingService::class)->apply($order, 'fake', Fx::result(
+        TrackingStatus::InTransit,
+        Fx::event(TrackingStatus::InTransit, '-1 hour', 'e1', 'Departed hub'),
     ));
 
     $this->actingAs($this->admin)->get(route('admin.orders.show', $order))->assertInertia(fn (Assert $page) => $page
@@ -97,7 +100,7 @@ it('shows carrier, tracking status and the latest events on the show page', func
 it('uses the chosen carrier for the link in the shipped email', function () {
     $order = Fx::shippedOrder(['tracking_number' => 'TRK-55', 'tracking_carrier' => 'acme']);
 
-    $html = (new \App\Mail\OrderShipped($order, 'TRK-55'))->render();
+    $html = (new OrderShipped($order, 'TRK-55'))->render();
 
     expect($html)->toContain('https://track.example.test/?n=TRK-55')->toContain('Acme Courier');
 });

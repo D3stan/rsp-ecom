@@ -3,6 +3,7 @@
 namespace Tests\Feature\Orders;
 
 use App\Models\Order;
+use App\Models\ShipmentTrackingEvent;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -97,7 +98,7 @@ class OrderMigrationsTest extends TestCase
         $shipped = Order::factory()->create(['status' => 'shipped']);
 
         foreach (['2026-05-03 09:00:00' => 'in_transit', '2026-05-04 15:30:00' => 'delivered'] as $at => $status) {
-            \App\Models\ShipmentTrackingEvent::query()->insert([
+            ShipmentTrackingEvent::query()->insert([
                 'order_id' => $scanned->id, 'provider' => 'fake', 'tracking_number' => 'T1', 'status' => $status,
                 'occurred_at' => $at, 'event_hash' => md5($at), 'created_at' => now(), 'updated_at' => now(),
             ]);

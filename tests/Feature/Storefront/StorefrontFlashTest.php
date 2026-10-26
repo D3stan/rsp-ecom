@@ -1,9 +1,11 @@
 <?php
 
+use App\Models\Cart;
 use App\Models\User;
 use App\Settings\Settings;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Support\CatalogFixtures;
 
 /*
  * P0-5: storefront controllers report their outcome as session flashes (->with('success'|'error', ...)), shared with
@@ -46,9 +48,9 @@ it('reports why the login page was shown as flash.error, not as an error prop', 
 
 it('does not toast a cart quantity change (the new quantity is visible on screen)', function () {
     $user = User::factory()->create();
-    $product = \Tests\Support\CatalogFixtures::product(['stock_quantity' => 10]);
-    $variant = \Tests\Support\CatalogFixtures::variant($product, ['stock_quantity' => 10, 'price' => 10]);
-    $cart = \App\Models\Cart::create(['user_id' => $user->id]);
+    $product = CatalogFixtures::product(['stock_quantity' => 10]);
+    $variant = CatalogFixtures::variant($product, ['stock_quantity' => 10, 'price' => 10]);
+    $cart = Cart::create(['user_id' => $user->id]);
     $item = $cart->cartItems()->create([
         'product_id' => $product->id,
         'product_variant_id' => $variant->id,

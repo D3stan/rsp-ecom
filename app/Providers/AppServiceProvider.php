@@ -2,10 +2,10 @@
 
 namespace App\Providers;
 
-use App\Console\Commands\SendTestOrderConfirmation;
+use App\Console\Commands\ClearSitemaps;
 use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\GenerateSitemapIndex;
-use App\Console\Commands\ClearSitemaps;
+use App\Console\Commands\SendTestOrderConfirmation;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Page;
@@ -16,15 +16,16 @@ use App\Models\User;
 use App\Observers\AdminAuditObserver;
 use App\Observers\OrderObserver;
 use App\Observers\ProductVariantObserver;
+use App\Services\StripeService;
+use App\Shipping\Labels\LabelManager;
 use App\Shipping\Tracking\Contracts\TrackingProvider;
 use App\Shipping\Tracking\TrackingManager;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\ServiceProvider;
 use Laravel\Cashier\Cashier;
-use App\Services\StripeService;
 use Stripe\Stripe;
 
 class AppServiceProvider extends ServiceProvider
@@ -42,7 +43,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(TrackingManager::class);
 
         // Label layer: one manager; a LabelProvider is resolved only when label creation is on (ShippingService).
-        $this->app->singleton(\App\Shipping\Labels\LabelManager::class);
+        $this->app->singleton(LabelManager::class);
         $this->app->bind(TrackingProvider::class, fn ($app) => $app->make(TrackingManager::class)->driver());
 
         // Register console commands
@@ -94,10 +95,10 @@ class AppServiceProvider extends ServiceProvider
 
         // Configure Cashier
         // Cashier::calculateTaxes(); // Uncomment to enable automatic tax calculation
-        
+
         // Set currency (can also be done via CASHIER_CURRENCY env variable)
         // Cashier::useCurrency('usd', '$');
-        
+
         // Configure custom models if needed
         // Cashier::useCustomerModel(User::class);
     }

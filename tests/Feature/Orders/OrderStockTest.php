@@ -3,6 +3,7 @@
 namespace Tests\Feature\Orders;
 
 use App\Jobs\SendOrderEmail;
+use App\Mail\OversoldOrderAlert;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderEmail;
@@ -138,7 +139,7 @@ class OrderStockTest extends TestCase
 
         foreach (['it', 'en', 'de', 'es', 'fr'] as $locale) {
             app()->setLocale($locale);
-            $mailable = new \App\Mail\OversoldOrderAlert($order->fresh());
+            $mailable = new OversoldOrderAlert($order->fresh());
             $html = $mailable->render();
 
             $this->assertStringContainsString($order->order_number, $html, $locale);

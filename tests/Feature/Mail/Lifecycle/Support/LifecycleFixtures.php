@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderEmail;
 use Illuminate\Support\Facades\Mail;
 use Symfony\Component\Mailer\SentMessage;
+use Symfony\Component\Mime\Email;
 
 class LifecycleFixtures
 {
@@ -65,7 +66,7 @@ class LifecycleFixtures
     /**
      * Messages delivered through the (array) mail transport so far.
      *
-     * @return array<int, \Symfony\Component\Mime\Email>
+     * @return array<int, Email>
      */
     public static function delivered(): array
     {

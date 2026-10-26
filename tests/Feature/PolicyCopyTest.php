@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Settings\SettingDefinition;
+use App\Settings\SettingsRegistry;
 use App\Support\Locales;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -228,9 +230,9 @@ class PolicyCopyTest extends TestCase
 
     public function test_the_withdrawal_days_are_one_readonly_public_value_shared_with_the_frontend(): void
     {
-        $definition = app(\App\Settings\SettingsRegistry::class)->get('legal.withdrawal_days');
+        $definition = app(SettingsRegistry::class)->get('legal.withdrawal_days');
 
-        $this->assertSame(\App\Settings\SettingDefinition::ACCESS_READONLY, $definition->access);
+        $this->assertSame(SettingDefinition::ACCESS_READONLY, $definition->access);
         $this->assertTrue($definition->public);
         $this->assertSame((int) config('shipping.withdrawal_days'), settings('legal.withdrawal_days'));
         $this->assertGreaterThanOrEqual(14, settings('legal.withdrawal_days'));

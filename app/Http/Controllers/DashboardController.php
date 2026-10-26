@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
 use Artesaos\SEOTools\Facades\SEOMeta;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -13,8 +12,8 @@ class DashboardController extends Controller
     {
         // Set noindex for user account pages
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('My Orders – ' . settings('store.name'));
-        
+        SEOMeta::setTitle('My Orders – '.settings('store.name'));
+
         $user = Auth::user();
         $orders = $user->orders()
             ->with(['orderItems.product.category', 'orderItems.product.defaultVariant', 'orderItems.size', 'orderItems.productVariant', 'trackingEvents'])
@@ -46,10 +45,10 @@ class DashboardController extends Controller
                         'size' => $item->size,
                     ];
                 })->toArray();
-                
+
                 return $orderData;
             });
-        
+
         // Get user's reviews to check which products have been reviewed
         $userReviews = $user->reviews()->select('product_id')->get();
 
@@ -63,8 +62,8 @@ class DashboardController extends Controller
     {
         // Set noindex for user account pages
         SEOMeta::addMeta('robots', 'noindex,nofollow', 'name');
-        SEOMeta::setTitle('My Wishlist – ' . settings('store.name'));
-        
+        SEOMeta::setTitle('My Wishlist – '.settings('store.name'));
+
         $user = Auth::user();
         $wishlist = $user->wishlist()
             ->with(['product.category', 'product.defaultVariant'])

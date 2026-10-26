@@ -10,6 +10,8 @@ use App\Mail\PaidOrderMissingAlert;
 use App\Mail\TestEmail;
 use App\Mail\WelcomeEmail;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Mail\Mailable;
 use Tests\Feature\Mail\Content\Support\EmailFixtures as Fx;
 
 /**
@@ -66,7 +68,7 @@ function visibleLeaks(string $output): array
  *
  * @return array<int, string>
  */
-function problemsWith(Illuminate\Mail\Mailable $mailable, string $locale, bool $customerFacing, Illuminate\Database\Eloquent\Model $order, string $label): array
+function problemsWith(Mailable $mailable, string $locale, bool $customerFacing, Model $order, string $label): array
 {
     $mail = Fx::deliver($mailable, $locale);
     $html = (string) $mail->getHtmlBody();

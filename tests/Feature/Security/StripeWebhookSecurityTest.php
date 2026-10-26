@@ -7,8 +7,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Tests\Feature\Orders\Support\BuildsStripeOrderFixtures;
 use Laravel\Cashier\Events\WebhookReceived;
+use Tests\Feature\Orders\Support\BuildsStripeOrderFixtures;
 use Tests\TestCase;
 
 class StripeWebhookSecurityTest extends TestCase

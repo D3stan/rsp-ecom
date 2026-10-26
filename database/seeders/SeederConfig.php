@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 /**
  * Seeding Configuration
- * 
+ *
  * Single point to control the volume of data generation
  * Following the principle of clean, maintainable code
  */
@@ -76,6 +76,7 @@ class SeederConfig
     public static function getQuantity(string $entity): int
     {
         $base = self::BASE_QUANTITIES[$entity] ?? 1;
+
         return (int) ($base * self::VOLUME_MULTIPLIER);
     }
 
@@ -87,7 +88,7 @@ class SeederConfig
         $country = array_rand(self::EU_LOCATIONS);
         $cities = self::EU_LOCATIONS[$country];
         $city = $cities[array_rand($cities)];
-        
+
         return [
             'country' => $country,
             'city' => $city,

@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\Address;
 use App\Models\User;
 use Database\Seeders\SeederConfig;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Address>
+ * @extends Factory<Address>
  */
 class AddressFactory extends Factory
 {
@@ -20,7 +21,7 @@ class AddressFactory extends Factory
     {
         $location = SeederConfig::getRandomEuLocation();
         $type = $this->faker->randomElement(['shipping', 'billing']);
-        
+
         return [
             'user_id' => User::factory(),
             'type' => $type,
@@ -57,6 +58,7 @@ class AddressFactory extends Factory
         ];
 
         $countryStates = $states[$country] ?? ['Region'];
+
         return $this->faker->randomElement($countryStates);
     }
 
@@ -86,16 +88,16 @@ class AddressFactory extends Factory
     private function getPhoneForCountry(string $country): string
     {
         return match ($country) {
-            'Germany' => '+49 ' . $this->faker->numerify('### #######'),
-            'France' => '+33 ' . $this->faker->numerify('# ## ## ## ##'),
-            'Italy' => '+39 ' . $this->faker->numerify('### #######'),
-            'Spain' => '+34 ' . $this->faker->numerify('### ### ###'),
-            'Netherlands' => '+31 ' . $this->faker->numerify('# ########'),
-            'Belgium' => '+32 ' . $this->faker->numerify('### ######'),
-            'Austria' => '+43 ' . $this->faker->numerify('### #######'),
-            'Sweden' => '+46 ' . $this->faker->numerify('## ### ####'),
-            'Denmark' => '+45 ' . $this->faker->numerify('## ## ## ##'),
-            'Finland' => '+358 ' . $this->faker->numerify('## #######'),
+            'Germany' => '+49 '.$this->faker->numerify('### #######'),
+            'France' => '+33 '.$this->faker->numerify('# ## ## ## ##'),
+            'Italy' => '+39 '.$this->faker->numerify('### #######'),
+            'Spain' => '+34 '.$this->faker->numerify('### ### ###'),
+            'Netherlands' => '+31 '.$this->faker->numerify('# ########'),
+            'Belgium' => '+32 '.$this->faker->numerify('### ######'),
+            'Austria' => '+43 '.$this->faker->numerify('### #######'),
+            'Sweden' => '+46 '.$this->faker->numerify('## ### ####'),
+            'Denmark' => '+45 '.$this->faker->numerify('## ## ## ##'),
+            'Finland' => '+358 '.$this->faker->numerify('## #######'),
             default => $this->faker->phoneNumber(),
         };
     }

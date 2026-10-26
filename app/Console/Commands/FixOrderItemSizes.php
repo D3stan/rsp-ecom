@@ -2,13 +2,14 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\OrderItem;
 use App\Models\Size;
+use Illuminate\Console\Command;
 
 class FixOrderItemSizes extends Command
 {
     protected $signature = 'fix:order-item-sizes';
+
     protected $description = 'Add size_id to order items that are missing it';
 
     public function handle()
@@ -16,11 +17,12 @@ class FixOrderItemSizes extends Command
         $this->info('Fixing order item sizes...');
 
         $orderItems = OrderItem::whereNull('size_id')->get();
-        $this->info('Found ' . $orderItems->count() . ' order items without size_id');
+        $this->info('Found '.$orderItems->count().' order items without size_id');
 
         $sizes = Size::all();
         if ($sizes->isEmpty()) {
             $this->error('No sizes found in database!');
+
             return 1;
         }
 

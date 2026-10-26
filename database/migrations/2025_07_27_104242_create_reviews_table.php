@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('comment')->nullable();
             $table->boolean('is_approved')->default(false);
             $table->timestamps();
-            
+
             $table->unique(['user_id', 'product_id']);
         });
     }

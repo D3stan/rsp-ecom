@@ -1,11 +1,19 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\CookiesServiceProvider;
+use App\Providers\LabelServiceProvider;
+use App\Providers\RateServiceProvider;
+use App\Providers\SettingsServiceProvider;
+use App\Providers\SocialiteServiceProvider;
+use App\Providers\TrackingServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\SettingsServiceProvider::class,
-    App\Providers\CookiesServiceProvider::class,
-    App\Providers\SocialiteServiceProvider::class,
-    App\Providers\TrackingServiceProvider::class,
-    App\Providers\LabelServiceProvider::class,
-    App\Providers\RateServiceProvider::class,
+    AppServiceProvider::class,
+    SettingsServiceProvider::class,
+    CookiesServiceProvider::class,
+    SocialiteServiceProvider::class,
+    TrackingServiceProvider::class,
+    LabelServiceProvider::class,
+    RateServiceProvider::class,
 ];

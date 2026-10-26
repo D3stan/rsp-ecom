@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Wishlist;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class WishlistController extends Controller
@@ -52,19 +52,19 @@ class WishlistController extends Controller
     public function destroy(Request $request, $wishlistId): RedirectResponse|JsonResponse
     {
         $user = Auth::user();
-        
+
         // Find the wishlist item and ensure it belongs to the authenticated user
         $wishlistItem = Wishlist::where('id', $wishlistId)
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$wishlistItem) {
+        if (! $wishlistItem) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Wishlist item not found',
                 ], 404);
             }
-            
+
             return redirect()->back()->withErrors(['error' => 'Wishlist item not found']);
         }
 
@@ -153,12 +153,14 @@ class WishlistController extends Controller
 
         if ($user->hasInWishlist($product)) {
             $user->removeFromWishlist($product);
+
             return response()->json([
                 'message' => 'Product removed from wishlist',
                 'in_wishlist' => false,
             ], 200);
         } else {
             $user->addToWishlist($product);
+
             return response()->json([
                 'message' => 'Product added to wishlist',
                 'in_wishlist' => true,

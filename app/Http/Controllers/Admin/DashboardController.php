@@ -7,7 +7,6 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Support\Revenue;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -46,11 +45,11 @@ class DashboardController extends Controller
         ];
 
         // Calculate growth percentages
-        $todayGrowth = $stats['yesterday']['orders'] > 0 
+        $todayGrowth = $stats['yesterday']['orders'] > 0
             ? round((($stats['today']['orders'] - $stats['yesterday']['orders']) / $stats['yesterday']['orders']) * 100, 1)
             : 0;
 
-        $revenueGrowth = $stats['yesterday']['revenue'] > 0 
+        $revenueGrowth = $stats['yesterday']['revenue'] > 0
             ? round((($stats['today']['revenue'] - $stats['yesterday']['revenue']) / $stats['yesterday']['revenue']) * 100, 1)
             : 0;
 
@@ -85,7 +84,7 @@ class DashboardController extends Controller
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
             $revenue = Revenue::net(Order::whereDate('created_at', $date));
-            
+
             $revenueChartData[] = [
                 'date' => $date->locale(app()->getLocale())->translatedFormat('M d'),
                 'revenue' => (float) $revenue,

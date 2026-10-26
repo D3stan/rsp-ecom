@@ -17,13 +17,13 @@ class DetectLanguage
     public function handle(Request $request, Closure $next): Response
     {
         $locale = $this->determineLocale($request);
-        
+
         // Set the application locale
         App::setLocale($locale);
-        
+
         // Store in session for persistence
         Session::put('locale', $locale);
-        
+
         return $next($request);
     }
 
@@ -67,12 +67,16 @@ class DetectLanguage
         // Fallback: walk full list, try exact then primary subtags
         foreach ($request->getLanguages() as $tag) {        // already sorted by q
             $tag = str_replace('_', '-', strtolower($tag));
-            if (in_array($tag, $supported, true)) return $tag;
+            if (in_array($tag, $supported, true)) {
+                return $tag;
+            }
 
             $primary = explode('-', $tag, 2)[0];
-            if (in_array($primary, $supported, true)) return $primary;
+            if (in_array($primary, $supported, true)) {
+                return $primary;
+            }
         }
-        
+
         return null;
     }
 }

@@ -8,19 +8,21 @@ use Illuminate\Support\Facades\File;
 class ClearSitemaps extends Command
 {
     protected $signature = 'sitemap:clear {--confirm : Skip confirmation prompt}';
+
     protected $description = 'Clear all generated sitemap files';
 
     public function handle(): int
     {
-        if (!$this->option('confirm') && !$this->confirm('Are you sure you want to clear all sitemap files?')) {
+        if (! $this->option('confirm') && ! $this->confirm('Are you sure you want to clear all sitemap files?')) {
             $this->info('Operation cancelled.');
+
             return self::SUCCESS;
         }
 
         $sitemapFiles = [
             'sitemap.xml',
             'sitemap-main.xml',
-            'sitemap-categories.xml'
+            'sitemap-categories.xml',
         ];
 
         // Find all sitemap-products-*.xml files
@@ -40,7 +42,7 @@ class ClearSitemaps extends Command
         }
 
         $this->info("Cleared {$deletedCount} sitemap files.");
-        
+
         return self::SUCCESS;
     }
 }

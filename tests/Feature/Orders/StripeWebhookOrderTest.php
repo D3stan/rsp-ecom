@@ -3,8 +3,11 @@
 namespace Tests\Feature\Orders;
 
 use App\Listeners\StripeWebhookListener;
+use App\Models\Address;
 use App\Models\Cart;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\User;
 use App\Services\OrderCreationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
@@ -121,7 +124,7 @@ class StripeWebhookOrderTest extends TestCase
         $event = $this->sessionCompletedEvent($this->guestSessionPayload($cart));
 
         $attempts = 0;
-        \App\Models\OrderItem::creating(function () use (&$attempts) {
+        OrderItem::creating(function () use (&$attempts) {
             if ($attempts++ === 0) {
                 throw new \RuntimeException('transient failure');
             }
@@ -136,7 +139,7 @@ class StripeWebhookOrderTest extends TestCase
 
         // Stripe retries the same event
         $this->dispatchWebhook($event);
-        \App\Models\OrderItem::flushEventListeners();
+        OrderItem::flushEventListeners();
 
         $this->assertSame(1, Order::count());
         $this->assertSame(1, Order::sole()->orderItems()->count());
@@ -148,13 +151,13 @@ class StripeWebhookOrderTest extends TestCase
         $this->dispatchWebhook($this->sessionCompletedEvent($this->sessionPayload(['metadata' => []])));
 
         $this->assertSame(0, Order::count());
-        $this->assertSame(0, \App\Models\Address::count());
+        $this->assertSame(0, Address::count());
         $this->assertSame([], $this->confirmationCalls);
     }
 
     public function test_legacy_metadata_session_still_creates_an_order(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         $cart = $this->makeCart($user);
 
         $this->dispatchWebhook($this->sessionCompletedEvent($this->userSessionPayload($user, $cart)));

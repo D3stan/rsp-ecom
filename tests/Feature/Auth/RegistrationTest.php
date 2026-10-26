@@ -2,8 +2,9 @@
 
 use App\Models\PendingUserVerification;
 use App\Models\User;
-use Illuminate\Support\Facades\Notification;
 use App\Notifications\PendingUserEmailVerification;
+use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\Notification;
 
 test('registration screen can be rendered', function () {
     $response = $this->get('/register');
@@ -30,7 +31,7 @@ test('new users can register and are sent verification email', function () {
 
     // Should send verification email
     Notification::assertSentTo(
-        [new \Illuminate\Notifications\AnonymousNotifiable()],
+        [new AnonymousNotifiable],
         PendingUserEmailVerification::class
     );
 

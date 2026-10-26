@@ -12,6 +12,7 @@ use App\Services\OrderCreationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Stripe\Checkout\Session;
 use Tests\Feature\Orders\Support\BuildsStripeOrderFixtures;
 use Tests\TestCase;
 
@@ -103,7 +104,7 @@ class OrderCreationServiceTest extends TestCase
         $cart = $this->makeCart(guestSessionId: 'guest-session-obj');
         $payload = $this->guestSessionPayload($cart);
 
-        $session = \Stripe\Checkout\Session::constructFrom($payload);
+        $session = Session::constructFrom($payload);
 
         $order = $this->service()->createFromStripeSession($session);
 

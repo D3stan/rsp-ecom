@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
 use App\Models\Address;
-use Database\Seeders\SeederConfig;
+use App\Models\Order;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Order>
+ * @extends Factory<Order>
  */
 class OrderFactory extends Factory
 {
@@ -21,15 +21,15 @@ class OrderFactory extends Factory
     {
         $status = $this->getRandomStatus();
         $orderDate = $this->faker->dateTimeBetween('-6 months', 'now');
-        
+
         // Calculate shipping and delivery dates based on status
         $shippingDate = null;
         $deliveryDate = null;
-        
+
         if (in_array($status, ['shipped', 'delivered'])) {
             $shippingDate = $this->faker->dateTimeBetween($orderDate, '+3 days');
         }
-        
+
         if ($status === 'delivered') {
             $deliveryDate = $this->faker->dateTimeBetween($shippingDate ?? $orderDate, '+7 days');
         }

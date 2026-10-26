@@ -5,10 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\PendingUserVerification;
 use App\Models\User;
+use GuzzleHttp\Client;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
 class GoogleAuthController extends Controller
@@ -29,7 +28,7 @@ class GoogleAuthController extends Controller
                 'error' => $e->getMessage(),
                 'code' => $e->getCode(),
             ]);
-            
+
             return redirect()->route('login')->with('error', 'Unable to connect to Google. Please try again later.');
         }
     }
@@ -44,7 +43,7 @@ class GoogleAuthController extends Controller
             // Do not set custom user-agent to comply with Google's "secure browsers" policy
             if (config('app.env') === 'local') {
                 $googleUser = Socialite::driver('google')
-                    ->setHttpClient(new \GuzzleHttp\Client(['verify' => false]))
+                    ->setHttpClient(new Client(['verify' => false]))
                     ->user();
             } else {
                 $googleUser = Socialite::driver('google')->user();
@@ -84,12 +83,13 @@ class GoogleAuthController extends Controller
             if ($user) {
                 // User exists, log them in
                 Auth::login($user);
+
                 return redirect()->intended('/dashboard');
             }
-            
+
             // Check if user exists with the same email
             $existingUser = User::where('email', $googleUser->getEmail())->first();
-            
+
             if ($existingUser && ! $existingUser->is_active) {
                 return redirect()->route('login')->withErrors(['email' => __('auth.failed')]);
             }
@@ -101,14 +101,15 @@ class GoogleAuthController extends Controller
                     'avatar' => $googleUser->getAvatar(),
                     'email_verified_at' => now(), // Ensure Google accounts are verified
                 ]);
-                
+
                 Auth::login($existingUser);
+
                 return redirect()->intended('/dashboard');
             }
 
             // Check if there's a pending verification for this email
             $pendingUser = PendingUserVerification::where('email', $googleUser->getEmail())->first();
-            
+
             if ($pendingUser) {
                 // Create verified user from pending verification
                 $user = User::create([
@@ -126,9 +127,10 @@ class GoogleAuthController extends Controller
                 $pendingUser->delete();
 
                 Auth::login($user);
-                return redirect()->intended('/dashboard')->with('success', 'Account verified via Google! Welcome to ' . settings('store.name') . '!');
+
+                return redirect()->intended('/dashboard')->with('success', 'Account verified via Google! Welcome to '.settings('store.name').'!');
             }
-            
+
             // Create new user
             $user = User::create([
                 'name' => $googleUser->getName(),
@@ -140,51 +142,52 @@ class GoogleAuthController extends Controller
                 'is_active' => true,
                 'password' => null, // No password for Google users initially
             ]);
-            
+
             Auth::login($user);
+
             return redirect()->intended('/dashboard');
-            
+
         } catch (\Exception $e) {
             \Log::error('Google OAuth callback error', [
                 'exception' => get_class($e),
                 'error' => $e->getMessage(),
                 'code' => $e->getCode(),
             ]);
-            
+
             // Handle specific Google OAuth errors
             if (str_contains($e->getMessage(), 'disallowed_useragent')) {
                 return redirect()->route('login')->with('error', 'Google authentication failed. Please ensure you are using a supported browser and try again.');
             }
-            
+
             if (str_contains($e->getMessage(), '403')) {
                 return redirect()->route('login')->with('error', 'Google authentication access denied. Please try again or contact support.');
             }
-            
+
             return redirect()->route('login')->with('error', 'Authentication failed. Please try again.');
         }
     }
-    
+
     /**
      * Unlink Google account from user.
      */
     public function unlinkGoogle(): RedirectResponse
     {
         $user = Auth::user();
-        
-        if (!$user) {
+
+        if (! $user) {
             return redirect()->route('login');
         }
-        
+
         // Ensure user has a password set before unlinking Google
-        if (!$user->password) {
+        if (! $user->password) {
             return redirect()->back()->with('error', 'Please set a password before unlinking your Google account.');
         }
-        
+
         $user->update([
             'google_id' => null,
             'avatar' => null,
         ]);
-        
+
         return redirect()->back()->with('success', 'Google account unlinked successfully.');
     }
 }

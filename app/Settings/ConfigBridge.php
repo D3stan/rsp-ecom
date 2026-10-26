@@ -59,6 +59,7 @@ class ConfigBridge
                                 if (isset($this->overlaid[$path])) {
                                     $this->restore($path);
                                 }
+
                                 continue;
                             }
                         }

@@ -26,10 +26,10 @@ class PromotionController extends Controller
         ]);
 
         $validation = $this->promotionService->validatePromotionCode($request->code);
-        
+
         if ($validation['valid']) {
             $discount = $this->promotionService->calculateDiscount(
-                $validation['coupon'], 
+                $validation['coupon'],
                 $request->subtotal ?? 0
             );
 

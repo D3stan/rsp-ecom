@@ -2,16 +2,17 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Product;
 use App\Models\Category;
+use App\Models\Product;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\Tags\Url;
-use Carbon\Carbon;
 
 class GenerateSitemap extends Command
 {
     protected $signature = 'generate:sitemap';
+
     protected $description = 'Generate comprehensive sitemap.xml with all public pages';
 
     public function handle(): int
@@ -32,31 +33,31 @@ class GenerateSitemap extends Command
         $staticPages = [
             '/products' => [
                 'frequency' => Url::CHANGE_FREQUENCY_HOURLY,
-                'priority' => 0.9
+                'priority' => 0.9,
             ],
             '/about' => [
                 'frequency' => Url::CHANGE_FREQUENCY_MONTHLY,
-                'priority' => 0.7
+                'priority' => 0.7,
             ],
             '/contact' => [
                 'frequency' => Url::CHANGE_FREQUENCY_MONTHLY,
-                'priority' => 0.6
+                'priority' => 0.6,
             ],
             '/privacy' => [
                 'frequency' => Url::CHANGE_FREQUENCY_YEARLY,
-                'priority' => 0.3
+                'priority' => 0.3,
             ],
             '/terms' => [
                 'frequency' => Url::CHANGE_FREQUENCY_YEARLY,
-                'priority' => 0.3
+                'priority' => 0.3,
             ],
             '/shipping-returns' => [
                 'frequency' => Url::CHANGE_FREQUENCY_MONTHLY,
-                'priority' => 0.5
+                'priority' => 0.5,
             ],
             '/faq' => [
                 'frequency' => Url::CHANGE_FREQUENCY_MONTHLY,
-                'priority' => 0.5
+                'priority' => 0.5,
             ],
         ];
 
@@ -111,8 +112,8 @@ class GenerateSitemap extends Command
         $sitemap->writeToFile(public_path('sitemap.xml'));
 
         $this->info("Sitemap generated successfully with {$productCount} products and static pages!");
-        $this->info('Sitemap saved to: ' . public_path('sitemap.xml'));
-        
+        $this->info('Sitemap saved to: '.public_path('sitemap.xml'));
+
         return self::SUCCESS;
     }
 }

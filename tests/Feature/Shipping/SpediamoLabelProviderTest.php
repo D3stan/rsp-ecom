@@ -3,6 +3,7 @@
 use App\Shipping\Labels\DTO\Address;
 use App\Shipping\Labels\DTO\Parcel;
 use App\Shipping\Labels\DTO\ShipmentRequest;
+use App\Shipping\Labels\DTO\ShipmentResult;
 use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
 use App\Shipping\Labels\Exceptions\LabelRejected;
 use App\Shipping\Providers\Spediamo\SpediamoLabelProvider;
@@ -235,7 +236,7 @@ it('retrieves courier waybill number via GET /v1/shipments/{id} during label cre
         ], 200),
     ]);
 
-    $shipmentResult = new \App\Shipping\Labels\DTO\ShipmentResult(
+    $shipmentResult = new ShipmentResult(
         externalId: 'shp_123',
         trackingNumber: 'A422-098-162-296',
         carrierCode: 'sda',

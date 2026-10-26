@@ -5,10 +5,9 @@ namespace Database\Factories;
 use App\Models\PendingUserVerification;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\PendingUserVerification>
+ * @extends Factory<PendingUserVerification>
  */
 class PendingUserVerificationFactory extends Factory
 {

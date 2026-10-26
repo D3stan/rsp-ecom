@@ -11,6 +11,7 @@ use App\Shipping\Tracking\ShipmentTrackingService;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Tests\Feature\Shipping\Support\TrackingFixtures as Fx;
 
@@ -146,11 +147,11 @@ it('rethrows a temporary carrier failure so the queue retries it, and keeps the 
 it('switches polling off for an order the carrier rejects, with a clear log', function () {
     Fx::useFake();
     $order = Fx::shippedOrder(['tracking_number' => 'ZZ-REJECTED']);
-    \Illuminate\Support\Facades\Log::spy();
+    Log::spy();
 
     trkRunJob($order->id);
 
-    \Illuminate\Support\Facades\Log::shouldHaveReceived('warning')->withArgs(fn ($m) => str_contains($m, 'polling disabled'))->once();
+    Log::shouldHaveReceived('warning')->withArgs(fn ($m) => str_contains($m, 'polling disabled'))->once();
     expect($order->fresh()->tracking_next_sync_at->gt(now()->addYear()))->toBeTrue();
 
     // never picked up again by the scheduler ...

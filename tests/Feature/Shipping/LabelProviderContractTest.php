@@ -22,6 +22,7 @@ use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
 use App\Shipping\Labels\Exceptions\LabelRejected;
 use App\Shipping\Providers\Dvaexpress\DvaexpressLabelProvider;
 use App\Shipping\Providers\Spediamo\SpediamoLabelProvider;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 
 function contractShipmentRequest(string $carrier): ShipmentRequest
@@ -138,7 +139,7 @@ it('throws LabelRejected when carrier rejects shipment creation', function (Clos
         return;
     }
 
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake([
         '*' => Http::response([
             'result' => 'KO',
@@ -167,7 +168,7 @@ it('throws LabelProviderUnavailable when provider is down or unreachable', funct
         return;
     }
 
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake([
         '*' => Http::response('Server Error', 503),
     ]);

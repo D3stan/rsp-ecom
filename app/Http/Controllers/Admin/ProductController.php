@@ -3,18 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Models\Category;
 use App\Models\Size;
 use App\Services\FileUploadConfigService;
 use App\Services\MarkdownRenderer;
 use App\Services\StockService;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class ProductController extends Controller
@@ -30,8 +32,8 @@ class ProductController extends Controller
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -69,7 +71,7 @@ class ProductController extends Controller
         // Sorting
         $sort = $request->get('sort', 'created_at');
         $direction = $request->get('direction', 'desc');
-        
+
         $allowedSorts = ['name', 'price', 'stock_quantity', 'created_at', 'status'];
         if (in_array($sort, $allowedSorts)) {
             $query->orderBy($sort, $direction);
@@ -83,6 +85,7 @@ class ProductController extends Controller
             $product->discount_percentage = $product->discount_percentage;
             $product->average_rating = $product->average_rating;
             $product->review_count = $product->review_count;
+
             return $product;
         });
 
@@ -92,7 +95,7 @@ class ProductController extends Controller
             'active_products' => Product::where('status', 'active')->count(),
             'low_stock_count' => Product::lowStock()->count(),
             'total_value' => Product::where('status', 'active')
-                                   ->sum(DB::raw('price * stock_quantity')),
+                ->sum(DB::raw('price * stock_quantity')),
         ];
 
         return Inertia::render('Admin/Products/Index', [
@@ -155,7 +158,7 @@ class ProductController extends Controller
 
             if ($fileUploadsEnabled) {
                 $validationRules['variants.*.images'] = 'nullable|array|max:10';
-                $validationRules['variants.*.images.*'] = 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule();
+                $validationRules['variants.*.images.*'] = 'image|mimes:jpeg,png,jpg,gif,webp|'.FileUploadConfigService::getFileValidationRule();
             }
 
             $validated = $request->validate($validationRules);
@@ -186,8 +189,10 @@ class ProductController extends Controller
             // Create variants
             $hasDefault = false;
             foreach ($validated['variants'] as $index => $variantData) {
-                $isDefault = !$hasDefault && ($variantData['is_default'] ?? $index === 0);
-                if ($isDefault) $hasDefault = true;
+                $isDefault = ! $hasDefault && ($variantData['is_default'] ?? $index === 0);
+                if ($isDefault) {
+                    $hasDefault = true;
+                }
 
                 $variant = ProductVariant::create([
                     'product_id' => $product->id,
@@ -212,27 +217,30 @@ class ProductController extends Controller
             DB::commit();
 
             return redirect()->route('admin.products.index')
-                ->with('success', 'Product created with ' . count($validated['variants']) . ' variant(s).');
+                ->with('success', 'Product created with '.count($validated['variants']).' variant(s).');
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             DB::rollBack();
             Log::error('Product creation failed', ['error' => $e->getMessage()]);
 
             // Handle duplicate slug/name error
             if ($e->getCode() === '23000' && str_contains($e->getMessage(), 'products_slug_unique')) {
                 return back()->withInput()->withErrors([
-                    'name' => 'A product with this name already exists. Please use a different name.'
+                    'name' => 'A product with this name already exists. Please use a different name.',
                 ]);
             }
 
-            return back()->withInput()->withErrors(['error' => 'Failed: ' . $e->getMessage()]);
+            return back()->withInput()->withErrors(['error' => 'Failed: '.$e->getMessage()]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Product creation failed', ['error' => $e->getMessage()]);
-            if (isset($product)) $product->delete();
-            return back()->withInput()->withErrors(['error' => 'Failed: ' . $e->getMessage()]);
+            if (isset($product)) {
+                $product->delete();
+            }
+
+            return back()->withInput()->withErrors(['error' => 'Failed: '.$e->getMessage()]);
         }
     }
 
@@ -243,29 +251,29 @@ class ProductController extends Controller
     {
         $storagePublicPath = storage_path('app/public');
         $publicStoragePath = public_path('storage');
-        
+
         // Check if storage/app/public directory exists and is writable
-        if (!is_dir($storagePublicPath)) {
-            throw new \Exception('Storage directory does not exist. Please create: ' . $storagePublicPath);
+        if (! is_dir($storagePublicPath)) {
+            throw new \Exception('Storage directory does not exist. Please create: '.$storagePublicPath);
         }
-        
-        if (!is_writable($storagePublicPath)) {
-            throw new \Exception('Storage directory is not writable. Please fix permissions for: ' . $storagePublicPath);
+
+        if (! is_writable($storagePublicPath)) {
+            throw new \Exception('Storage directory is not writable. Please fix permissions for: '.$storagePublicPath);
         }
-        
+
         // Check if storage link exists (only if file uploads are enabled)
-        if (ini_get('file_uploads') && !file_exists($publicStoragePath)) {
+        if (ini_get('file_uploads') && ! file_exists($publicStoragePath)) {
             \Log::warning('Storage link does not exist, but file uploads are enabled', [
                 'public_storage_path' => $publicStoragePath,
-                'storage_public_path' => $storagePublicPath
+                'storage_public_path' => $storagePublicPath,
             ]);
             // Don't throw an exception here, just log the warning
             // The system can still work without the symlink for image display
         }
-        
+
         // Ensure products directory exists
         $productStoragePath = storage_path('app/public/products');
-        if (!is_dir($productStoragePath)) {
+        if (! is_dir($productStoragePath)) {
             mkdir($productStoragePath, 0755, true);
             \Log::info('Created products directory', ['path' => $productStoragePath]);
         }
@@ -277,8 +285,11 @@ class ProductController extends Controller
     private function generateSku(string $productName): string
     {
         $base = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $productName), 0, 6));
-        if (strlen($base) < 3) $base = 'PROD' . $base;
-        return $base . '-' . time();
+        if (strlen($base) < 3) {
+            $base = 'PROD'.$base;
+        }
+
+        return $base.'-'.time();
     }
 
     /**
@@ -294,7 +305,7 @@ class ProductController extends Controller
         $uploadedImages = [];
 
         foreach ($images as $image) {
-            $filename = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
+            $filename = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
             $path = $image->storeAs($directory, $filename, 'public');
             if ($path) {
                 $uploadedImages[] = $filename;
@@ -331,13 +342,13 @@ class ProductController extends Controller
             if (is_string($images)) {
                 $images = json_decode($images, true) ?? [];
             }
-            if (!is_array($images)) {
+            if (! is_array($images)) {
                 $images = [];
             }
 
             // Generate image URLs for actual images only (not placeholder)
             $imageUrls = [];
-            if (!empty($images)) {
+            if (! empty($images)) {
                 foreach ($images as $image) {
                     if (filter_var($image, FILTER_VALIDATE_URL)) {
                         $imageUrls[] = $image;
@@ -422,7 +433,7 @@ class ProductController extends Controller
                 $variantCount = count($request->input('variants', []));
                 for ($i = 0; $i < $variantCount; $i++) {
                     $validationRules["variant_images_{$i}"] = 'nullable|array|max:10';
-                    $validationRules["variant_images_{$i}.*"] = 'image|mimes:jpeg,png,jpg,gif,webp|' . FileUploadConfigService::getFileValidationRule();
+                    $validationRules["variant_images_{$i}.*"] = 'image|mimes:jpeg,png,jpg,gif,webp|'.FileUploadConfigService::getFileValidationRule();
                 }
             }
 
@@ -464,12 +475,12 @@ class ProductController extends Controller
             \Log::info('Product updated', ['product_id' => $product->id]);
 
             // Delete removed variants
-            if (!empty($validated['variants_to_delete'])) {
+            if (! empty($validated['variants_to_delete'])) {
                 foreach ($validated['variants_to_delete'] as $variantId) {
                     $variant = ProductVariant::find($variantId);
                     if ($variant && $variant->product_id === $product->id) {
                         // Delete variant images from storage
-                        if (!empty($variant->images)) {
+                        if (! empty($variant->images)) {
                             foreach ($variant->images as $image) {
                                 Storage::disk('public')->delete("products/{$product->id}/variants/{$variant->id}/{$image}");
                             }
@@ -486,8 +497,10 @@ class ProductController extends Controller
             foreach ($validated['variants'] as $index => $variantData) {
                 \Log::info("Processing variant {$index}", ['variant_id' => $variantData['id'] ?? 'new']);
 
-                $isDefault = !$hasDefault && ($variantData['is_default'] ?? $index === 0);
-                if ($isDefault) $hasDefault = true;
+                $isDefault = ! $hasDefault && ($variantData['is_default'] ?? $index === 0);
+                if ($isDefault) {
+                    $hasDefault = true;
+                }
 
                 $variantAttributes = [
                     'name' => $variantData['name'],
@@ -500,7 +513,7 @@ class ProductController extends Controller
                     'status' => 'active',
                 ];
 
-                if (!empty($variantData['id'])) {
+                if (! empty($variantData['id'])) {
                     // Update existing variant
                     $variant = ProductVariant::find($variantData['id']);
                     if ($variant && $variant->product_id === $product->id) {
@@ -539,9 +552,9 @@ class ProductController extends Controller
                         unset($variantAttributes['stock_quantity']);
                         $loadedStock = (int) $variantData['stock_quantity_original'];
 
-                        \Log::info("Updating variant", ['variant_id' => $variant->id, 'attributes' => $variantAttributes]);
+                        \Log::info('Updating variant', ['variant_id' => $variant->id, 'attributes' => $variantAttributes]);
                         $variant->update($variantAttributes);
-                        \Log::info("Variant updated successfully", ['variant_id' => $variant->id]);
+                        \Log::info('Variant updated successfully', ['variant_id' => $variant->id]);
 
                         $delta = (int) $variantData['stock_quantity'] - $loadedStock;
                         [$stockBefore, $stockAfter] = $delta !== 0
@@ -561,18 +574,18 @@ class ProductController extends Controller
 
                 // Handle new image uploads for this variant
                 $imageKey = "variant_images_{$index}";
-                \Log::info("Checking for images", ['image_key' => $imageKey, 'has_file' => $request->hasFile($imageKey)]);
+                \Log::info('Checking for images', ['image_key' => $imageKey, 'has_file' => $request->hasFile($imageKey)]);
                 if ($fileUploadsEnabled && $request->hasFile($imageKey)) {
                     $files = $request->file($imageKey);
-                    \Log::info("Processing image uploads", ['count' => count($files), 'variant_id' => $variant->id]);
+                    \Log::info('Processing image uploads', ['count' => count($files), 'variant_id' => $variant->id]);
                     try {
                         $this->handleVariantImageUploads($variant, $files);
                     } catch (\Exception $e) {
-                        \Log::error("Image upload failed", ['error' => $e->getMessage(), 'variant_id' => $variant->id]);
+                        \Log::error('Image upload failed', ['error' => $e->getMessage(), 'variant_id' => $variant->id]);
                         throw $e;
                     }
                 }
-                \Log::info("Finished processing variant", ['variant_id' => $variant->id ?? 'new']);
+                \Log::info('Finished processing variant', ['variant_id' => $variant->id ?? 'new']);
             }
 
             $product->syncStockMirror();
@@ -582,20 +595,20 @@ class ProductController extends Controller
             \Log::info('Transaction committed successfully');
 
             $redirect = redirect()->route('admin.products.index')
-                ->with('success', 'Product updated with ' . count($validated['variants']) . ' variant(s).');
+                ->with('success', 'Product updated with '.count($validated['variants']).' variant(s).');
 
             if ($concurrentStock !== []) {
                 $redirect->with('warning', 'Stock changed while you were editing (orders placed meanwhile); your changes were applied on top. '
-                    . implode(', ', $concurrentStock) . '.');
+                    .implode(', ', $concurrentStock).'.');
             }
 
             return $redirect;
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Re-throw so Laravel handles it natively (422 + Inertia error props)
             // Do NOT call DB::rollBack() here — no transaction has been started yet
             throw $e;
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             DB::rollBack();
             \Log::error('Product update failed (QueryException)', [
                 'error' => $e->getMessage(),
@@ -605,11 +618,11 @@ class ProductController extends Controller
 
             if ($e->getCode() === '23000' && str_contains($e->getMessage(), 'products_slug_unique')) {
                 return back()->withInput()->withErrors([
-                    'name' => 'A product with this name already exists. Please use a different name.'
+                    'name' => 'A product with this name already exists. Please use a different name.',
                 ]);
             }
 
-            return back()->withInput()->withErrors(['error' => 'Database error: ' . $e->getMessage()]);
+            return back()->withInput()->withErrors(['error' => 'Database error: '.$e->getMessage()]);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Product update failed (Exception)', [
@@ -617,7 +630,8 @@ class ProductController extends Controller
                 'error' => $e->getMessage(),
                 'product_id' => $product->id,
             ]);
-            return back()->withInput()->withErrors(['error' => 'Error: ' . $e->getMessage()]);
+
+            return back()->withInput()->withErrors(['error' => 'Error: '.$e->getMessage()]);
         }
     }
 
@@ -628,7 +642,7 @@ class ProductController extends Controller
     {
         // Delete all variant images and directories
         foreach ($product->variants as $variant) {
-            if (!empty($variant->images)) {
+            if (! empty($variant->images)) {
                 foreach ($variant->images as $image) {
                     Storage::disk('public')->delete("products/{$product->id}/variants/{$variant->id}/{$image}");
                 }
@@ -656,7 +670,7 @@ class ProductController extends Controller
                 'product_id' => $product->id,
                 'image_count' => count($images),
                 'storage_path' => storage_path('app/public'),
-                'is_writable' => is_writable(storage_path('app/public'))
+                'is_writable' => is_writable(storage_path('app/public')),
             ]);
 
             foreach ($images as $index => $image) {
@@ -664,49 +678,49 @@ class ProductController extends Controller
                     'original_name' => $image->getClientOriginalName(),
                     'mime_type' => $image->getMimeType(),
                     'size' => $image->getSize(),
-                    'extension' => $image->getClientOriginalExtension()
+                    'extension' => $image->getClientOriginalExtension(),
                 ]);
-                
+
                 // Generate unique filename
-                $filename = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
-                
+                $filename = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
+
                 // Ensure the directory exists
                 $directory = "products/{$product->id}";
                 $fullPath = storage_path("app/public/{$directory}");
-                
-                if (!Storage::disk('public')->exists($directory)) {
+
+                if (! Storage::disk('public')->exists($directory)) {
                     Storage::disk('public')->makeDirectory($directory);
-                    \Log::info("Created directory", ['directory' => $directory, 'full_path' => $fullPath]);
+                    \Log::info('Created directory', ['directory' => $directory, 'full_path' => $fullPath]);
                 }
-                
+
                 // Check if directory is writable
-                if (!is_writable($fullPath)) {
-                    \Log::error("Directory not writable", ['directory' => $fullPath]);
+                if (! is_writable($fullPath)) {
+                    \Log::error('Directory not writable', ['directory' => $fullPath]);
                     throw new \Exception("Directory not writable: {$fullPath}");
                 }
-                
+
                 // Store the image
                 $path = $image->storeAs($directory, $filename, 'public');
-                
+
                 if ($path) {
                     // Verify file was actually created
                     $storedFilePath = storage_path("app/public/{$path}");
                     if (file_exists($storedFilePath)) {
-                        \Log::info("File verified on disk", ['path' => $storedFilePath]);
-                        
+                        \Log::info('File verified on disk', ['path' => $storedFilePath]);
+
                         // Add to product's images array
                         $product->addImage($filename);
-                        \Log::info("Image stored successfully", ['filename' => $filename, 'path' => $path]);
+                        \Log::info('Image stored successfully', ['filename' => $filename, 'path' => $path]);
                     } else {
-                        \Log::error("File not found on disk after storage", ['expected_path' => $storedFilePath]);
+                        \Log::error('File not found on disk after storage', ['expected_path' => $storedFilePath]);
                         throw new \Exception("File was not properly stored: {$filename}");
                     }
                 } else {
-                    \Log::error("Failed to store image", ['filename' => $filename]);
+                    \Log::error('Failed to store image', ['filename' => $filename]);
                     throw new \Exception("Failed to store image: {$filename}");
                 }
             }
-            
+
             \Log::info('Image upload process completed successfully');
         } catch (\Exception $e) {
             \Log::error('Image upload failed', [
@@ -724,7 +738,7 @@ class ProductController extends Controller
     public function removeImage(Product $product, string $filename)
     {
         $product->removeImage($filename);
-        
+
         return response()->json(['success' => true]);
     }
 
@@ -763,7 +777,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load(['category', 'size', 'reviews.user']);
-        
+
         // Add computed attributes
         $product->main_image_url = $product->main_image_url;
         $product->image_urls = $product->image_urls;

@@ -8,6 +8,7 @@ use App\Shipping\Labels\DTO\ShipmentResult;
 use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
 use App\Shipping\Labels\Exceptions\LabelRejected;
 use App\Shipping\Providers\Dvaexpress\DvaexpressLabelProvider;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 
 function dvaexpressLabelConfig(array $extra = []): array
@@ -124,7 +125,7 @@ it('handles order-fast flow mapping domestic and export shipments, vettore, acce
     Http::assertSentCount(1);
 
     // 2. Export shipment mapping
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake([
         'https://api.easyparcel.it/order-fast/test-label-dva-key*' => Http::response([
             'result' => 'OK',
@@ -276,7 +277,7 @@ it('cancels shipment via POST /richiesta-storno: succeeds on ammesso, throws Lab
     expect(true)->toBeTrue();
 
     // 2. Throws LabelRejected on stato_non_ammesso
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake([
         'https://api.easyparcel.it/richiesta-storno/test-label-dva-key*' => Http::response([
             'result' => 'OK',
@@ -295,7 +296,7 @@ it('cancels shipment via POST /richiesta-storno: succeeds on ammesso, throws Lab
         ->toThrow(LabelRejected::class, 'Stato dell\'ordine non valido per lo storno');
 
     // 3. Throws LabelRejected on tracking_presente
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake([
         'https://api.easyparcel.it/richiesta-storno/test-label-dva-key*' => Http::response([
             'result' => 'OK',
@@ -314,7 +315,7 @@ it('cancels shipment via POST /richiesta-storno: succeeds on ammesso, throws Lab
         ->toThrow(LabelRejected::class, 'Spedizione gia affidata al vettore');
 
     // 4. Throws LabelProviderUnavailable on tracking_non_verificabile
-    Http::swap(new \Illuminate\Http\Client\Factory);
+    Http::swap(new Factory);
     Http::fake([
         'https://api.easyparcel.it/richiesta-storno/test-label-dva-key*' => Http::response([
             'result' => 'OK',

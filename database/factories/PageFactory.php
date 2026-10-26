@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\Page;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Page>
+ * @extends Factory<Page>
  */
 class PageFactory extends Factory
 {
@@ -75,10 +76,10 @@ class PageFactory extends Factory
 
         // Add some variation with lists or additional sections
         if ($this->faker->boolean(40)) {
-            $paragraphs[] = "## Key Points\n\n" . 
-                "- " . $this->faker->sentence() . "\n" .
-                "- " . $this->faker->sentence() . "\n" .
-                "- " . $this->faker->sentence() . "\n";
+            $paragraphs[] = "## Key Points\n\n".
+                '- '.$this->faker->sentence()."\n".
+                '- '.$this->faker->sentence()."\n".
+                '- '.$this->faker->sentence()."\n";
         }
 
         if ($this->faker->boolean(30)) {
@@ -152,43 +153,43 @@ class PageFactory extends Factory
      */
     private function getAboutUsContent(): string
     {
-        return "# About Our Company\n\n" .
-               "Welcome to our online store! We are passionate about providing high-quality products and exceptional customer service.\n\n" .
-               "## Our Mission\n\n" .
-               "Our mission is to make online shopping easy, enjoyable, and accessible to everyone. We carefully curate our product selection to ensure we offer only the best items at competitive prices.\n\n" .
-               "## Our Values\n\n" .
-               "- **Quality**: We never compromise on product quality\n" .
-               "- **Customer Service**: Your satisfaction is our top priority\n" .
-               "- **Innovation**: We continuously improve our shopping experience\n" .
-               "- **Sustainability**: We care about our environmental impact\n\n" .
-               "Thank you for choosing us for your shopping needs!";
+        return "# About Our Company\n\n".
+               "Welcome to our online store! We are passionate about providing high-quality products and exceptional customer service.\n\n".
+               "## Our Mission\n\n".
+               "Our mission is to make online shopping easy, enjoyable, and accessible to everyone. We carefully curate our product selection to ensure we offer only the best items at competitive prices.\n\n".
+               "## Our Values\n\n".
+               "- **Quality**: We never compromise on product quality\n".
+               "- **Customer Service**: Your satisfaction is our top priority\n".
+               "- **Innovation**: We continuously improve our shopping experience\n".
+               "- **Sustainability**: We care about our environmental impact\n\n".
+               'Thank you for choosing us for your shopping needs!';
     }
 
     private function getPrivacyPolicyContent(): string
     {
-        return "# Privacy Policy\n\n" .
-               "This privacy policy describes how we collect, use, and protect your personal information.\n\n" .
-               "## Information We Collect\n\n" .
-               "We collect information you provide directly to us, such as when you create an account, make a purchase, or contact us.\n\n" .
-               "## How We Use Your Information\n\n" .
-               "We use your information to process orders, provide customer support, and improve our services.\n\n" .
-               "## Information Sharing\n\n" .
-               "We do not sell, trade, or otherwise transfer your personal information to third parties without your consent.\n\n" .
-               "Last updated: " . now()->format('F j, Y');
+        return "# Privacy Policy\n\n".
+               "This privacy policy describes how we collect, use, and protect your personal information.\n\n".
+               "## Information We Collect\n\n".
+               "We collect information you provide directly to us, such as when you create an account, make a purchase, or contact us.\n\n".
+               "## How We Use Your Information\n\n".
+               "We use your information to process orders, provide customer support, and improve our services.\n\n".
+               "## Information Sharing\n\n".
+               "We do not sell, trade, or otherwise transfer your personal information to third parties without your consent.\n\n".
+               'Last updated: '.now()->format('F j, Y');
     }
 
     private function getTermsOfServiceContent(): string
     {
-        return "# Terms of Service\n\n" .
-               "Please read these terms carefully before using our website.\n\n" .
-               "## Acceptance of Terms\n\n" .
-               "By accessing and using this website, you accept and agree to be bound by the terms and provision of this agreement.\n\n" .
-               "## Use License\n\n" .
-               "Permission is granted to temporarily download one copy of the materials for personal, non-commercial transitory viewing only.\n\n" .
-               "## Disclaimer\n\n" .
-               "The materials on this website are provided on an 'as is' basis. We make no warranties, expressed or implied.\n\n" .
-               "## Contact Information\n\n" .
-               "If you have any questions about these Terms of Service, please contact us.";
+        return "# Terms of Service\n\n".
+               "Please read these terms carefully before using our website.\n\n".
+               "## Acceptance of Terms\n\n".
+               "By accessing and using this website, you accept and agree to be bound by the terms and provision of this agreement.\n\n".
+               "## Use License\n\n".
+               "Permission is granted to temporarily download one copy of the materials for personal, non-commercial transitory viewing only.\n\n".
+               "## Disclaimer\n\n".
+               "The materials on this website are provided on an 'as is' basis. We make no warranties, expressed or implied.\n\n".
+               "## Contact Information\n\n".
+               'If you have any questions about these Terms of Service, please contact us.';
     }
 
     private function getContactUsContent(): string
@@ -203,12 +204,12 @@ class PageFactory extends Factory
         }
         $address = trim((string) settings('store.address', ''));
 
-        return "# Contact Us\n\n" .
-               "We'd love to hear from you! Get in touch with our customer service team.\n\n" .
-               "## Customer Service\n\n" .
-               implode("\n", $details) . "\n\n" .
-               ($address !== '' ? "## Business Address\n\n" . $address . "\n\n" : '') .
-               "## Response Time\n\n" .
-               "We typically respond to emails within 24 hours during business days.";
+        return "# Contact Us\n\n".
+               "We'd love to hear from you! Get in touch with our customer service team.\n\n".
+               "## Customer Service\n\n".
+               implode("\n", $details)."\n\n".
+               ($address !== '' ? "## Business Address\n\n".$address."\n\n" : '').
+               "## Response Time\n\n".
+               'We typically respond to emails within 24 hours during business days.';
     }
 }

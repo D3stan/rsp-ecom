@@ -40,7 +40,7 @@ class ProductVariant extends Model
 
     public function getFullSkuAttribute(): string
     {
-        return $this->product->base_sku . $this->sku_suffix;
+        return $this->product->base_sku.$this->sku_suffix;
     }
 
     public function getImageUrlsAttribute(): array
@@ -53,6 +53,7 @@ class ProductVariant extends Model
             if (filter_var($image, FILTER_VALIDATE_URL)) {
                 return $image;
             }
+
             return Storage::url("products/{$this->product_id}/variants/{$this->id}/{$image}");
         })->toArray();
     }
@@ -60,6 +61,7 @@ class ProductVariant extends Model
     public function getMainImageUrlAttribute(): string
     {
         $urls = $this->image_urls;
+
         return $urls[0] ?? '/images/product.png';
     }
 
@@ -76,7 +78,7 @@ class ProductVariant extends Model
         $filename = basename($filename);
 
         $images = collect($this->images ?? [])
-            ->filter(fn($img) => $img !== $filename)
+            ->filter(fn ($img) => $img !== $filename)
             ->values()
             ->toArray();
 
@@ -84,7 +86,7 @@ class ProductVariant extends Model
 
         $deleted = Storage::delete("products/{$this->product_id}/variants/{$this->id}/{$filename}");
 
-        if (!$deleted) {
+        if (! $deleted) {
             \Log::warning('Failed to delete variant image', [
                 'variant_id' => $this->id,
                 'filename' => $filename,
@@ -94,13 +96,13 @@ class ProductVariant extends Model
 
     public function clearImages(): void
     {
-        if (!empty($this->images)) {
+        if (! empty($this->images)) {
             foreach ($this->images as $image) {
-                if (!filter_var($image, FILTER_VALIDATE_URL)) {
+                if (! filter_var($image, FILTER_VALIDATE_URL)) {
                     $filename = basename($image); // Sanitize
                     $deleted = Storage::delete("products/{$this->product_id}/variants/{$this->id}/{$filename}");
 
-                    if (!$deleted) {
+                    if (! $deleted) {
                         \Log::warning('Failed to delete variant image during clear', [
                             'variant_id' => $this->id,
                             'filename' => $filename,
@@ -127,6 +129,7 @@ class ProductVariant extends Model
         if ($this->stock_quantity < $quantity) {
             return false;
         }
+
         return $this->decrement('stock_quantity', $quantity);
     }
 

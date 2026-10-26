@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 class Review extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'user_id',
         'product_id',
@@ -67,7 +68,7 @@ class Review extends Model
     // Accessors
     public function getStarsAttribute(): string
     {
-        return str_repeat('★', $this->rating) . str_repeat('☆', 5 - $this->rating);
+        return str_repeat('★', $this->rating).str_repeat('☆', 5 - $this->rating);
     }
 
     // Helper methods

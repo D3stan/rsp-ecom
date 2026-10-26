@@ -2,7 +2,9 @@
 
 use App\Jobs\SendOrderEmail;
 use App\Models\OrderEmail;
+use App\Models\Shipment;
 use App\Models\ShipmentTrackingEvent;
+use App\Models\User;
 use App\Shipping\Tracking\DTO\TrackingEvent;
 use App\Shipping\Tracking\DTO\TrackingResult;
 use App\Shipping\Tracking\Enums\TrackingStatus as S;
@@ -330,7 +332,7 @@ it('does not touch other tracking behaviour when auto_deliver is off', function 
 });
 
 it('follows the admin setting tracking.auto_deliver without a restart', function () {
-    $admin = App\Models\User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->create(['role' => 'admin']);
 
     // off in the admin: a delivered answer leaves the order shipped
     settings()->set('tracking.auto_deliver', false, $admin);
@@ -369,7 +371,7 @@ it('promotes carrier tracking number without triggering Order::updating tracking
         'carrier_code' => 'sda',
         'tracking_carrier' => 'sda',
         'tracking_number' => 'SPD-CODE-100',
-        'status' => \App\Models\Shipment::STATUS_CREATED,
+        'status' => Shipment::STATUS_CREATED,
     ]);
 
     $result = new TrackingResult(
@@ -391,4 +393,3 @@ it('promotes carrier tracking number without triggering Order::updating tracking
         ->and($freshOrder->tracking_next_sync_at)->not->toBeNull()
         ->and($freshOrder->tracking_next_sync_at->isFuture())->toBeTrue();
 });
-

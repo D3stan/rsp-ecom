@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use LogicException;
 use Throwable;
@@ -59,7 +60,7 @@ class MarketingConsent
      *
      * @param  string  $source  one of NewsletterSubscriber::SOURCES
      *
-     * @throws \Illuminate\Validation\ValidationException invalid email
+     * @throws ValidationException invalid email
      * @throws InvalidArgumentException unknown source
      */
     public function subscribe(

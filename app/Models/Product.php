@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 class Product extends Model
 {
     use HasFactory, RegeneratesSitemap;
+
     protected $fillable = [
         'name',
         'slug',
@@ -54,7 +55,7 @@ class Product extends Model
     public function getImageUrlAttribute(): string
     {
         // First, check if the default variant has images
-        if ($this->defaultVariant && !empty($this->defaultVariant->images)) {
+        if ($this->defaultVariant && ! empty($this->defaultVariant->images)) {
             $variantImages = $this->defaultVariant->images;
             $firstImage = is_array($variantImages) ? ($variantImages[0] ?? null) : null;
             if ($firstImage) {
@@ -64,7 +65,7 @@ class Product extends Model
 
         // Fallback to product-level images
         if ($this->images && count($this->images) > 0) {
-            return asset('storage/products/' . $this->id . '/' . $this->images[0]);
+            return asset('storage/products/'.$this->id.'/'.$this->images[0]);
         }
 
         // Return a default placeholder image if no images are set
@@ -138,7 +139,7 @@ class Product extends Model
         if (filter_var($filename, FILTER_VALIDATE_URL)) {
             return $filename;
         }
-        
+
         return Storage::url("products/{$this->id}/{$filename}");
     }
 
@@ -153,7 +154,7 @@ class Product extends Model
             \Log::error('Failed to add image to product', [
                 'product_id' => $this->id,
                 'filename' => $filename,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -161,16 +162,16 @@ class Product extends Model
 
     public function removeImage(string $filename): void
     {
-        $images = collect($this->images ?? [])->filter(fn($image) => $image !== $filename)->values()->toArray();
+        $images = collect($this->images ?? [])->filter(fn ($image) => $image !== $filename)->values()->toArray();
         $this->update(['images' => $images]);
-        
+
         // Delete the actual file
         Storage::delete("products/{$this->id}/{$filename}");
     }
 
     public function clearImages(): void
     {
-        if (!empty($this->images)) {
+        if (! empty($this->images)) {
             foreach ($this->images as $image) {
                 // Handle both local files and URLs
                 if (filter_var($image, FILTER_VALIDATE_URL)) {
@@ -285,7 +286,6 @@ class Product extends Model
     /**
      * Backward compatibility accessors - delegate to default variant
      */
-
     public function getPriceAttribute($value): ?float
     {
         // Return the raw database value, not the variant's value
@@ -319,7 +319,7 @@ class Product extends Model
     public function getMainImageUrlAttribute(): string
     {
         // First, check if the default variant has images
-        if ($this->defaultVariant && !empty($this->defaultVariant->images)) {
+        if ($this->defaultVariant && ! empty($this->defaultVariant->images)) {
             $variantImages = $this->defaultVariant->images;
             $firstImage = is_array($variantImages) ? ($variantImages[0] ?? null) : null;
             if ($firstImage) {
@@ -329,8 +329,8 @@ class Product extends Model
 
         // Fallback to product-level images
         $images = $this->images;
-        if (!empty($images)) {
-            return asset('storage/products/' . $this->id . '/' . $images[0]);
+        if (! empty($images)) {
+            return asset('storage/products/'.$this->id.'/'.$images[0]);
         }
 
         return '/images/product.png';
@@ -339,7 +339,7 @@ class Product extends Model
     public function getImageUrlsAttribute(): array
     {
         // First, check if the default variant has images
-        if ($this->defaultVariant && !empty($this->defaultVariant->images)) {
+        if ($this->defaultVariant && ! empty($this->defaultVariant->images)) {
             return $this->defaultVariant->image_urls;
         }
 
@@ -348,8 +348,9 @@ class Product extends Model
         if (empty($images)) {
             return ['/images/product.png'];
         }
+
         return collect($images)->map(function ($image) {
-            return asset('storage/products/' . $this->id . '/' . $image);
+            return asset('storage/products/'.$this->id.'/'.$image);
         })->toArray();
     }
 
@@ -364,11 +365,11 @@ class Product extends Model
         $comparePrice = $this->compare_price;
         $price = $this->price;
 
-        if (!$comparePrice || !$price || $comparePrice <= $price) {
+        if (! $comparePrice || ! $price || $comparePrice <= $price) {
             return null;
         }
 
-        if (!$comparePrice || $comparePrice <= $price) {
+        if (! $comparePrice || $comparePrice <= $price) {
             return null;
         }
 

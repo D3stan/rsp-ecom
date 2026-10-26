@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Cart extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'user_id',
         'session_id',
@@ -120,6 +121,7 @@ class Cart extends Model
 
         if ($existingItem) {
             $existingItem->increment('quantity', $quantity);
+
             return $existingItem;
         }
 

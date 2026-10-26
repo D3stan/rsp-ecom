@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -43,7 +44,7 @@ class CartMerger
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, CartItem>  $userItems
+     * @param  Collection<int, CartItem>  $userItems
      */
     private function mergeLine(Cart $userCart, $userItems, CartItem $guestItem): void
     {

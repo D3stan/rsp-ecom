@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\Setting;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * Storage rows of the settings table. Values are JSON, as App\Settings\Settings writes them.
  *
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Setting>
+ * @extends Factory<Setting>
  */
 class SettingFactory extends Factory
 {
