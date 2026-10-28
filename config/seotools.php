@@ -16,7 +16,7 @@ return [
             'description' => 'Quality motorcycle LED lighting products with fast shipping and excellent customer service. Angel eye headlights, LED lights for motard and lighting accessories.', // set false to total remove
             'separator' => ' – ',
             'keywords' => ['led headlights', 'angel eye', 'motard', 'motorcycle led lights', 'motorcycle lights', 'motorcycle lighting', 'front headlights', 'angel eyes led', 'motard accessories', 'bike lights', 'led motorcycle'],
-            'canonical' => 'full', // Set to null or 'full' to use Url::full(), set to 'current' to use Url::current(), set false to total remove
+            'canonical' => 'current', // Pages that do not call SEOMeta::setCanonical get the URL without its query string (no utm_* duplicates)
             'robots' => 'index,follow', // Set to 'all', 'none' or any combination of index/noindex and follow/nofollow
         ],
         /*
