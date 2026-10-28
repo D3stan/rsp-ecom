@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import * as Sentry from '@sentry/react';
+import { isTranslatedPageError } from './translation-guard';
 
 export interface SentryConfig {
     dsn: string | null;
@@ -93,6 +94,8 @@ export function initSentry(config: SentryConfig | undefined, auth: AuthProps | u
         replaysOnErrorSampleRate: 1.0,
         ignoreErrors: ['ResizeObserver loop limit exceeded', 'ResizeObserver loop completed with undelivered notifications.'],
         denyUrls: [/^chrome-extension:\/\//i, /^moz-extension:\/\//i, /^safari-(web-)?extension:\/\//i],
+        // Backstop for DOM calls the translation guard does not patch; same errors on untranslated pages are still sent
+        beforeSend: (event, hint) => (isTranslatedPageError(hint.originalException) ? null : event),
     });
 
     tagVisitor(auth);

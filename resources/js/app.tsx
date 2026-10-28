@@ -13,8 +13,11 @@ import { TranslationProvider } from './contexts/TranslationContext';
 import { initializeTheme } from './hooks/use-appearance';
 import { type CookieConsentProps, setPreferencesConsent } from './lib/cookie-consent';
 import { initSentry, type SentryConfig } from './lib/sentry';
+import { guardAgainstBrowserTranslation } from './lib/translation-guard';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+guardAgainstBrowserTranslation();
 
 // Wrapper component to provide context to all pages
 function AppWrapper({ children, pageProps }: { children: React.ReactNode; pageProps: Record<string, unknown> }) {

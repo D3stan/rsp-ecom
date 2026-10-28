@@ -2064,9 +2064,9 @@
     "semantic_hash": ""
   },
   "resources/js/app.tsx": {
-    "mtime": 1793006413.6307752,
-    "seen": 1793006619.906846,
-    "ast_hash": "52affd93897e2c0863988ce89a1d2098",
+    "mtime": 1793200489.564098,
+    "seen": 1793201385.144243,
+    "ast_hash": "80220f98aebf543ffe270505f1c89464",
     "semantic_hash": ""
   },
   "resources/js/components/LoadingOverlay.tsx": {
@@ -6762,9 +6762,9 @@
     "semantic_hash": ""
   },
   "resources/js/lib/sentry.ts": {
-    "mtime": 1793002179.7217968,
-    "seen": 1793004099.426037,
-    "ast_hash": "eaba471da0e1bf5b05934ba72c299b63",
+    "mtime": 1793201354.8770852,
+    "seen": 1793201385.144335,
+    "ast_hash": "86285054fb4c5b4c87c04111d30d7dab",
     "semantic_hash": ""
   },
   "tests/Feature/Ops/AbuseMonitorTest.php": {
@@ -6903,6 +6903,18 @@
     "mtime": 1793009936.4811041,
     "seen": 1793010003.18609,
     "ast_hash": "4a2938fd9142bd67b1b91270368af0ce",
+    "semantic_hash": ""
+  },
+  "resources/js/lib/__tests__/translation-guard.test.ts": {
+    "mtime": 1793201367.2910233,
+    "seen": 1793201385.144332,
+    "ast_hash": "970e4c1d626884e2fd2e024fd717e8eb",
+    "semantic_hash": ""
+  },
+  "resources/js/lib/translation-guard.ts": {
+    "mtime": 1793201345.0890484,
+    "seen": 1793201385.144335,
+    "ast_hash": "f2e5a835912bb374fce557b4a31f4a88",
     "semantic_hash": ""
   }
 }
