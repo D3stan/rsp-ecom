@@ -893,6 +893,7 @@
     "emails.common.vat_included": "VAT included",
     "emails.common.vat_portion": "of which VAT (:rate%)",
     "checkout.min_amount_error": "The minimum order amount is :amount (products only, shipping not included).",
+    "checkout.coupon_no_longer_valid": "The discount code :code is no longer valid and has been removed. Check the new total and try again.",
     "checkout.insufficient_stock_error": "There is not enough stock of \":product\" for the requested quantity. Please lower the quantity or remove it from the cart.",
     "admin.orders.oversold_title": "Sold beyond available stock",
     "admin.orders.oversold_body": "This paid order contains units that were not in stock when it was placed. Obtain the missing units or contact the customer.",

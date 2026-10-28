@@ -12,6 +12,7 @@ use App\Services\EmailService;
 use Mockery;
 use Mockery\MockInterface;
 use Stripe\ApiRequestor;
+use Stripe\Stripe;
 
 trait BuildsStripeOrderFixtures
 {
@@ -41,6 +42,38 @@ trait BuildsStripeOrderFixtures
     protected function tearDownOrderFixtures(): void
     {
         ApiRequestor::setHttpClient(null);
+        Stripe::setApiKey(null);
+    }
+
+    /**
+     * Answer Stripe's promotion-code lookup, which the checkout repeats before charging a cart that carries a coupon.
+     * $coupon overrides fields of the coupon (e.g. ['valid' => false] or ['redeem_by' => time() - 60]).
+     */
+    protected function fakePromotionCode(string $code, array $coupon = [], bool $found = true): void
+    {
+        // PromotionService calls Stripe statically, which needs the global key AppServiceProvider sets in production
+        Stripe::setApiKey('sk_test_fake_for_tests');
+        $this->stripeHttp->responses['GET /v1/promotion_codes'] = [
+            'object' => 'list',
+            'data' => $found ? [[
+                'id' => 'promo_test_1',
+                'object' => 'promotion_code',
+                'code' => $code,
+                'active' => true,
+                'coupon' => array_merge([
+                    'id' => 'coupon_test_1',
+                    'object' => 'coupon',
+                    'name' => $code,
+                    'valid' => true,
+                    'percent_off' => 10,
+                    'amount_off' => null,
+                    'redeem_by' => null,
+                    'max_redemptions' => null,
+                    'times_redeemed' => 0,
+                ], $coupon),
+            ]] : [],
+            'has_more' => false,
+        ];
     }
 
     /**

@@ -172,6 +172,7 @@ class ShippingAndVatTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('discountAmount', 15)->where('shippingCost', 5)->where('total', 140)->where('taxAmount', 25.25));
 
+        $this->fakePromotionCode('TEN');
         $this->withSession(['applied_coupon' => $coupon])->sessionCookie($sid)->post('/guest/checkout/cart', $this->checkoutForm());
         [$cents, $metadata] = $this->createdSession();
         $this->assertSame(14000, $cents);

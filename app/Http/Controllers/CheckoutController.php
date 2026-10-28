@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Services\Newsletter\AbandonedCheckoutReminders;
 use App\Services\Ops\FunnelTracker;
 use App\Services\OrderCreationService;
+use App\Services\PromotionService;
 use App\Services\StripeService;
 use App\Support\AddressRules;
 use App\Support\CheckoutTotals;
@@ -388,6 +389,28 @@ class CheckoutController extends Controller
     }
 
     /**
+     * The coupon was checked when it was applied to the cart; check it again right before charging, so a code that
+     * expired, was deactivated or ran out while the customer was checking out is not honoured. On failure the coupon is
+     * removed from the session and the customer is sent back to the details page, where the totals no longer include it.
+     *
+     * @throws ValidationException
+     */
+    private function assertCouponStillValid(): void
+    {
+        $code = session('applied_coupon.code');
+
+        if (! $code || app(PromotionService::class)->validatePromotionCode($code)['valid']) {
+            return;
+        }
+
+        session()->forget('applied_coupon');
+
+        throw ValidationException::withMessages([
+            'coupon' => __('checkout.coupon_no_longer_valid', ['code' => $code]),
+        ]);
+    }
+
+    /**
      * orders.min_amount (0 = off): the items of the cart (before discount, without shipping) must reach it.
      *
      * @throws ValidationException
@@ -491,6 +514,7 @@ class CheckoutController extends Controller
             // Charge every line at the current catalogue price of ITS OWN variant (never the default variant's price);
             // lines whose price moved since they were added are flagged in the checkout snapshot
             $priceChanges = $cart->refreshPrices();
+            $this->assertCouponStillValid();
 
             $totals = $this->checkoutTotals($cart);
             $this->assertMinimumAmount($totals['items']);
@@ -611,6 +635,7 @@ class CheckoutController extends Controller
             // Charge every line at the current catalogue price of ITS OWN variant (never the default variant's price);
             // lines whose price moved since they were added are flagged in the checkout snapshot
             $priceChanges = $cart->refreshPrices();
+            $this->assertCouponStillValid();
 
             $totals = $this->checkoutTotals($cart);
             $this->assertMinimumAmount($totals['items']);

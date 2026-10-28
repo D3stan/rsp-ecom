@@ -893,6 +893,7 @@
     "emails.common.vat_included": "IVA inclusa",
     "emails.common.vat_portion": "di cui IVA (:rate%)",
     "checkout.min_amount_error": "L'importo minimo dell'ordine è :amount (solo prodotti, spedizione esclusa).",
+    "checkout.coupon_no_longer_valid": "Il codice sconto :code non è più valido ed è stato rimosso. Controlla il nuovo totale e riprova.",
     "checkout.insufficient_stock_error": "La disponibilità di \":product\" non è sufficiente per la quantità richiesta. Ridurre la quantità o rimuovere il prodotto dal carrello.",
     "admin.orders.oversold_title": "Venduto oltre la disponibilità",
     "admin.orders.oversold_body": "Questo ordine pagato contiene unità che non erano disponibili al momento dell'acquisto. Procurare le unità mancanti oppure contattare il cliente.",

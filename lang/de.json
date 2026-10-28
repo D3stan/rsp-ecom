@@ -893,6 +893,7 @@
     "emails.common.vat_included": "inkl. MwSt.",
     "emails.common.vat_portion": "davon MwSt. (:rate %)",
     "checkout.min_amount_error": "Der Mindestbestellwert beträgt :amount (nur Artikel, ohne Versand).",
+    "checkout.coupon_no_longer_valid": "Der Rabattcode :code ist nicht mehr gültig und wurde entfernt. Prüfe den neuen Gesamtbetrag und versuche es erneut.",
     "checkout.insufficient_stock_error": "Vom Artikel \":product\" ist nicht genügend Bestand für die gewünschte Menge vorhanden. Bitte verringern Sie die Menge oder entfernen Sie den Artikel aus dem Warenkorb.",
     "admin.orders.oversold_title": "Über den Bestand hinaus verkauft",
     "admin.orders.oversold_body": "Diese bezahlte Bestellung enthält Einheiten, die bei der Bestellung nicht auf Lager waren. Beschaffen Sie die fehlenden Einheiten oder kontaktieren Sie den Kunden.",

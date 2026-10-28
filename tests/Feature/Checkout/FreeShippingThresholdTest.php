@@ -179,6 +179,7 @@ class FreeShippingThresholdTest extends TestCase
         $this->withSession(['applied_coupon' => $coupon])->actingAs($user)->get('/checkout/details')->assertInertia(fn (Assert $page) => $page
             ->where('discountAmount', 100)->where('shippingCost', 5)->where('total', 905)->where('freeShippingRemaining', 100));
 
+        $this->fakePromotionCode('TEN');
         $this->withSession(['applied_coupon' => $coupon])->actingAs($user)->post('/checkout/cart', $this->checkoutForm())->assertRedirect();
         [$cents, $metadata] = $this->createdSession();
         $this->assertSame(90500, $cents);
