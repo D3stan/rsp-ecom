@@ -24,7 +24,7 @@ Scheduled health checks, Telegram alerts, the health endpoint, audit and abuse s
 - MUST keep ops code non-fatal: a down cache, DB or Telegram must never break a request or the scheduler. Unenforced (`FailureModesTest` covers only a Stripe outage at payment).
 - MUST NOT collect cookies, headers, bodies or query strings in Sentry (frontend `dataCollection` is all off). Unenforced.
 - MUST start Sentry replay only after the `sentry_replay` cookie consent; it records errors only, fully masked. `SentryFrontendConfigTest` (consent gate).
-- MUST keep `/api/health` free of details: only `ok`/`fail` per check. Unenforced; `HealthEndpointTest` covers the 200/503 outcomes.
+- MUST keep `/api/health` free of details: only `ok`/`fail` per check. `HealthEndpointTest` (exact JSON on the healthy path, 503 outcomes).
 - NEVER let `AbuseMonitor` block anything; blocking belongs to rate limiters, Cloudflare and Stripe Radar. Unenforced.
 
 ## How it works

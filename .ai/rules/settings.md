@@ -19,8 +19,8 @@ DB-backed, admin-editable store settings declared in one catalogue and the bridg
 ## Rules
 - MUST declare every setting in `config/settings.php`; nothing else (service, validation, audit, admin page, shared props) is hand-written. Enforced by `tests/Unit/Settings/CatalogueTest.php`.
 - MUST add `settings.<key>.label` and `.help` to every locale in `lang/*.json`. Enforced by `CatalogueTest.php`.
-- NEVER store secrets (API keys, passwords, tokens) as settings; they live in `.env`. Unenforced.
-- NEVER mark a definition `public` unless it is safe to expose to the browser (shared as the `settings` Inertia prop). Unenforced.
+- NEVER store secrets (API keys, passwords, tokens) as settings; they live in `.env`. Enforced by `CatalogueTest.php` (key names matching secret/password/token/api key/webhook are rejected).
+- NEVER mark a definition `public` unless it is safe to expose to the browser (shared as the `settings` Inertia prop). Partly enforced by `CatalogueTest.php` (no sensitive or email/system/tracking/reviews-group setting, nor a fixed deny-list, is public).
 - MUST mark values whose content must not enter the audit trail `sensitive`. Unenforced.
 - MUST read bridged values through `config()` in legacy code and settings through `settings()` in new code; do not read the `settings` table directly. Unenforced.
 - MUST use `risk => 'high'` for settings that change money, tax or reachability. Unenforced.
@@ -29,7 +29,7 @@ DB-backed, admin-editable store settings declared in one catalogue and the bridg
 1. Boot: `SettingsServiceProvider` runs `ConfigBridge::apply()`, which writes customised values of `config_bridge` definitions into config; reset restores the pre-overlay value.
 2. Defaults come from the definition; rows exist only once customised (or seeded, unless `seed => false`).
 3. Values are cached as one array under a version key in the shared store; every write bumps the version.
-4. Long-running processes re-check the version at most every `recheck_seconds`, and queue workers/scheduler at each job/tick, so changes reach them without restart.
+4. Long-running processes re-check the version at most every `recheck_seconds`, and queue workers/scheduler at each job, loop or scheduled task, so changes reach them without restart.
 5. `legacy_aliases` map old keys to new ones for deprecated `Setting::get/set` callers.
 
 ## Traps
@@ -43,7 +43,7 @@ DB-backed, admin-editable store settings declared in one catalogue and the bridg
 - Groups: store, contact, social, tax, shipping, legal, compliance, orders, inventory, catalog, reviews, email, tracking, seo, newsletter, system.
 - Env: `SETTINGS_CACHE_STORE` (null = default cache store), `SETTINGS_RECHECK_SECONDS` (default 5). Use a store shared by web, workers and scheduler.
 - `php artisan settings:list [--group=tax]` shows key, value, source (no secrets).
-- `php artisan settings:purge-legacy-secrets [--force]` deletes legacy credential rows (`stripe_*`, `paypal_*`) left in the settings table.
+- `php artisan settings:purge-legacy-secrets [--force]` deletes the legacy rows `stripe_secret_key`, `stripe_public_key`, `stripe_webhook_secret` and every `paypal_*`; refuses unless `STRIPE_SECRET` and `STRIPE_KEY` are set; asks to confirm without `--force`.
 - `php artisan db:seed --class=SettingsSeeder` inserts missing rows only.
 
 ## Change recipes
@@ -58,6 +58,6 @@ Add a group: add it to `groups` with an icon name, and add `settings.group.<name
 ## Tests
 - `tests/Unit/Settings/CatalogueTest.php`: catalogue validity (keys, groups, translations).
 - `tests/Feature/Settings/SettingsServiceTest.php`: read/write, cache, validation.
-- `tests/Feature/Settings/ConfigBridgeTest.php`: overlay and restore.
+- `tests/Feature/Settings/ConfigBridgeTest.php`: overlay, restore, re-apply on `JobProcessing`/`Looping`, sender special case.
 - `tests/Feature/Settings/AdminSettingsControllerTest.php`: admin page.
-- `tests/Feature/Settings/SettingsCommandsTest.php`, `LegacyMigrationTest.php`, `LegacySettingsTest.php`: commands and legacy aliases.
+- `tests/Feature/Settings/SettingsCommandsTest.php` (incl. seeder), `LegacyMigrationTest.php`, `LegacySettingsTest.php`: commands and legacy aliases.

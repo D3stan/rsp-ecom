@@ -33,15 +33,16 @@ Page meta/OpenGraph/JSON-LD, canonical, robots and sitemap generation. Does not 
 3. `generate:sitemap-index` writes `sitemap-main.xml`, `sitemap-categories.xml`, `sitemap-products-N.xml` (5000 URLs per file) and the `sitemap.xml` index, then rewrites the `Sitemap:` line of `public/robots.txt` using `config('app.url')`.
 
 ## Traps
-- `resources/views/app.blade.php` prints a hardcoded canonical (`APP_URL` + request URI) and controllers also call `SEOMeta::setCanonical`; pages that do both may emit two canonical tags. Not verified in rendered output.
-- `public/robots.txt` is a tracked static file and wins over the `/robots.txt` route in `routes/web.php` when the web server serves static files; keep their rules in sync. The tracked file's `Sitemap:` line is localhost until a command rewrites it.
-- `generate:sitemap` (single `sitemap.xml`) overwrites the index from `generate:sitemap-index`; its weekly schedule can replace the index file. Intentional "backup", but know the effect.
+- Duplicate canonical: `app.blade.php` always prints `<link rel="canonical">` (`APP_URL` + request URI, query string included) and then `SEOMeta::generate()` prints a second one on every page whose controller calls `setCanonical` (home, products list, product, contact, static pages). Such pages emit two canonical tags; only pages without `setCanonical` get one. Known; do not add more `setCanonical` calls without fixing the layout.
+- `public/robots.txt` exists (tracked) and shadows the `/robots.txt` route in `routes/web.php`: the web server serves existing static files first, so the route is effectively dead. Keep the rules in both in sync. The tracked file's `Sitemap:` line is localhost until `generate:sitemap-index` rewrites it.
+- `generate:sitemap` writes the single `sitemap.xml` to the same path as the index, so the Sunday 03:00 run replaces the index until the next daily 02:00 run; the `sitemap-*.xml` chunk files stay but are unreferenced meanwhile.
 - No hreflang tags: locales are session-based on the same URLs, so there are no per-locale URLs to point at.
-- Sitemaps live in `public/`, which is rebuilt each deploy; they are not committed.
+- Sitemaps live in `public/`, which is rebuilt each deploy; they are gitignored.
+- Category sitemap URLs are `/products?category=slug`, which `ProductsController` serves as `noindex,follow`.
 
 ## Operate
-- `php artisan generate:sitemap-index [--force]`: daily 02:00 (`routes/console.php`), also run at container start by `docker/entrypoint.d/60-rsp-startup.sh` (skipped when `RSP_STARTUP_TASKS=false`).
-- `php artisan generate:sitemap`: weekly Sunday 03:00. `php artisan sitemap:clear [--confirm]`: deletes generated sitemaps.
+- `php artisan generate:sitemap-index [--force]`: daily 02:00 (`routes/console.php`), also run at container start by `docker/entrypoint.d/60-rsp-startup.sh` (skipped, together with the cache clear, when `RSP_STARTUP_TASKS=false`; the queue and scheduler containers set it).
+- `php artisan generate:sitemap`: weekly Sunday 03:00. `php artisan sitemap:clear [--confirm]`: deletes `sitemap.xml`, `sitemap-main.xml`, `sitemap-categories.xml` and `sitemap-products-*.xml` (not `robots.txt`).
 - Logs: `storage/logs/sitemap.log`, `storage/logs/sitemap-simple.log` (last run only).
 - `APP_URL`: base for sitemap URLs, robots `Sitemap:` line and the layout canonical.
 

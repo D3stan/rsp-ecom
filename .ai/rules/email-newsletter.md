@@ -22,8 +22,8 @@ Transactional order email delivery, marketing consent (double opt-in), newslette
 - MUST write a `consent_events` row (event, time, IP, user agent, source, `consent_text_version`) for every consent change. `MarketingConsentTest`.
 - MUST send newsletters only to `confirmed` subscribers (`MarketingConsent::allows()`, `NewsletterCampaign::audience()`). `CampaignsTest`.
 - MUST include in every marketing mail: sender identity (`store.legal_name`, `store.address`), signed unsubscribe link, `List-Unsubscribe` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. `CampaignsTest`.
-- MUST keep unsubscribe working while the newsletter is switched off, and immediate. `NewsletterSettingsTest`.
-- MUST answer `POST /newsletter/subscribe` identically for new, pending, confirmed and bot submissions (no enumeration). `NewsletterSignupFlowTest`.
+- MUST keep unsubscribe working while the newsletter is switched off, and immediate. `NewsletterSignupFlowTest`, `MarketingConsentTest`.
+- MUST answer `POST /newsletter/subscribe` identically for new, pending, confirmed and bot submissions (no enumeration). Partly enforced by `NewsletterSignupFlowTest` (known vs unknown email, honeypot).
 - NEVER confirm or unsubscribe on a GET: mail scanners prefetch links; only the button POST acts. `NewsletterSignupFlowTest`.
 - NEVER edit the text of a consent key in use: add `newsletter.consent_v2` in all five locales and bump the constant. Unenforced.
 - MUST erase on request: subscriber and consent trail deleted, one anonymised `erased` event kept. `AdminSubscribersTest`.
@@ -54,7 +54,7 @@ Abandoned-checkout reminder:
 2. At checkout `rememberContact()` stores `marketing_consent`, `locale`, `consent_ip` on the snapshot, and the email only with consent (also starts DOI, source `checkout`).
 3. On `checkout.session.expired` `SendAbandonedCheckoutReminder` is queued after `newsletter.abandoned_checkout_delay_minutes`, if reminders are on and the snapshot has consent and email.
 4. The job skips when: reminders off, already sent, snapshot empty, address unsubscribed or erased, or a paid order exists for that user/email since. Otherwise it claims `reminder_sent_at` by conditional UPDATE, then sends. A mail failure is logged, not retried.
-5. The mail's button is a signed `GET /checkout/recover/{snapshot}` (7 days): rebuilds the cart at today's prices and stock (unavailable lines dropped, quantities capped by stock and `orders.max_qty_per_line`, valid coupon re-applied), sets `recovered_at`. A registered customer's snapshot is recoverable only by them (guests go to login, others 403).
+5. The mail's button is a signed `GET /checkout/recover/{snapshot}` (7 days): rebuilds the cart at today's prices and stock (unavailable lines dropped, quantities capped by stock and `orders.max_qty_per_line`, valid coupon re-applied), sets `recovered_at`. A registered customer's snapshot is recoverable only by them (not logged in: redirect to login; another user: 403); a guest snapshot works for anyone with the signed link.
 
 Transactional order mail:
 1. `EmailService::sendOrderConfirmation|sendOrderShipped` never sends inline: checks admin settings, inserts an `order_emails` row (unique `(order_id, type, fingerprint)` is the "already handled" decision), dispatches `SendOrderEmail` after commit.
@@ -67,7 +67,7 @@ Transactional order mail:
 - "Sent" means accepted by SMTP, not delivered; bounces live at the mail provider.
 - A crash between SMTP hand-off and the `sent_at` write can duplicate one mail; accepted over ever losing one.
 - A wiped `jobs` table is recovered for confirmations by the 10-min command, not for shipped mail.
-- `MAIL_MAILER=log|array` in production delivers nothing; the app logs a critical warning hourly.
+- `MAIL_MAILER=log|array` in production delivers nothing; `AppServiceProvider` logs a critical warning at boot, at most once an hour (also for placeholder from/support addresses).
 - Consent at checkout only counts while `newsletter.enabled` (the checkbox is hidden otherwise).
 - The reminder is deliberately sent after session expiry so a customer never has two live payment pages.
 

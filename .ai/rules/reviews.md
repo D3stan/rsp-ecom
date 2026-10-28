@@ -44,7 +44,7 @@ Customer reviews, review photos, admin moderation and the review-request email. 
 ## Traps
 - Photos wait for admin approval even with auto-approve on: intentional, the success message differs (`reviews.photos_pending`).
 - Reject is not the inverse of approve for photos: approve touches text only, reject cascades to photos.
-- The admin `products.reviews.store` route creates reviews outside the customer rules (no purchase check, no photos, `is_approved` not set); do not reuse it as the model of the customer flow.
+- The admin `products.reviews.store` route (`Admin\ProductController::storeReview`) bypasses the customer rules: no purchase check, no photos, `is_approved` left at its default (false), review attached to the admin's own `user_id`. It validates `user_name`, but `reviews` has no such column and `Review::$fillable` drops it. Do not reuse it as the model of the customer flow.
 - `verified_purchase` shown on product pages is hardcoded `true` in `app/Http/Controllers/ProductsController.php`; it is valid only because customers must have a delivered order.
 - Photo file size limit comes from `FileUploadConfigService` (PHP ini aware), not a constant.
 

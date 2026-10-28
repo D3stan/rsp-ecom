@@ -18,16 +18,16 @@ Order lifecycle, payment status, refunds through Stripe, cancelling paid orders,
 - `app/Support/Revenue.php`: net revenue; `app/Services/StockService.php`: `restoreForOrder()`, `restoreItems()`.
 
 ## Rules
-- MUST change status only through `Order::transitionTo($to, $actor, $reason, $meta)`; it row-locks, validates, writes one `order_events` row. `tests/Feature/Admin/OrderTransitionsTest.php`.
+- MUST change status only through `Order::transitionTo($to, $actor, $reason, $meta)`; it row-locks, validates, writes one `order_events` row. `OrderTransitionsTest` (lifecycle map, stale copy).
 - MUST reach `shipped` only through `App\Shipping\ShippingService::ship()`; edit form, status endpoint and bulk update refuse it. Unenforced beyond controller validation.
 - MUST NOT ship unless `payment_status` is `succeeded` or `partially_refunded` (`Order::canShip()`). `tests/Feature/Shipping/ShipGuardTest.php`.
-- MUST NOT edit lines, prices, shipping, discount or totals once financials are locked (captured or `processing`); refund instead. `tests/Feature/Admin/OrderEditGuardsTest.php`.
-- NEVER change `payment_status` from the admin edit form; it follows Stripe and refunds only. Unenforced.
+- MUST NOT edit lines, prices, shipping, discount or totals once financials are locked (`Order::financialsLocked()`: payment captured or `processing`, or order `shipped`/`delivered`); refund instead. `OrderEditGuardsTest`, `PaymentStatusEditTest`.
+- NEVER set `refunded`/`partially_refunded` or undo a captured payment from the admin edit form on a Stripe order; only offline orders (no intent/session) may be edited freely. `PaymentStatusEditTest`.
 - MUST keep refund money in integer cents (`refunds`); `stripe_refund_id` is unique. DB constraint.
-- NEVER issue a new refund for an unconfirmed one; settle by webhook or Retry. `RefundTest`.
+- NEVER issue a new refund for an unconfirmed one; settle by webhook or Retry. `RefundTest` (pending reserves the amount, retry reuses the key).
 - MUST send the Stripe refund with idempotency key `refund:{refund_id}`. `RefundTest`.
-- NEVER let a refused transition fail a webhook; log it and save the other fields. Unenforced.
-- MUST NOT add an `Event::listen` for `StripeWebhookListener`; it is registered by event discovery. `RefundTest`.
+- NEVER let a refused transition fail a webhook: system moves in `OrderCreationService` catch `InvalidOrderTransition` and log it. `StripeAsyncEventsTest` (expired on a paid order answers 200).
+- MUST NOT add an `Event::listen` for `StripeWebhookListener`; it is registered by event discovery. `RefundTest` (registered exactly once).
 
 ## How it works
 Allowed moves (system moves record their source and run with no actor):
@@ -78,7 +78,7 @@ Net revenue = Σ total of captured, non-cancelled orders − Σ succeeded refund
 
 ## Tests
 - `tests/Feature/Orders/RefundTest.php`: refund outcomes, retry, idempotency, restock.
-- `tests/Feature/Admin/OrderTransitionsTest.php`, `OrderEditGuardsTest.php`, `tests/Feature/Shipping/ShipGuardTest.php`: transitions, financial lock, ship gate.
+- `tests/Feature/Admin/OrderTransitionsTest.php`, `OrderEditGuardsTest.php`, `PaymentStatusEditTest.php`, `PaidCancellationTest.php`, `tests/Feature/Shipping/ShipGuardTest.php`: transitions, financial lock, payment-status edits, cancel and refund due, ship gate.
 - `tests/Feature/Orders/OrderStatusConsistencyTest.php`: status/payment consistency.
 - `tests/Feature/Orders/StripeAsyncEventsTest.php`, `StripeWebhookOrderTest.php`: webhook handling.
 - `tests/Feature/Orders/OrderStockTest.php`: stock on cancel and refund.

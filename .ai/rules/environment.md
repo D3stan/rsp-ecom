@@ -49,7 +49,8 @@ Runtime vars need a restart or redeploy. Build-time vars (marked B) are baked in
 - `SHIPPING_RATES_DRIVER` accepts `fake`, `spediamo`, `dvaexpress`; `dvaexpress` is also a label driver, so `DVAEXPRESS_*` matters beyond rates.
 - Unlisted in templates but read: `DVAEXPRESS_SENDER_TAX_CODE`, `DVAEXPRESS_PICKUP_ENABLED`, `DVAEXPRESS_DEFAULT_COSA_SPEDIRE`, `SPEDIAMO_PURCHASE_URL`, `SETTINGS_CACHE_STORE`, `SETTINGS_RECHECK_SECONDS`, `QUEUE_ALERT_FAILED_JOBS_THRESHOLD`, `GOOGLE_ANALYTICS_ID`.
 - Many former keys (shipping toggles, store identity, similar) now live in DB-backed admin settings; env is only the default when no row exists. Check `config/settings.php` before adding an env var.
-- `GOOGLE_REDIRECT_URL` is a literal URL; Dokploy does not expand `${APP_URL}`.
+- Write `GOOGLE_REDIRECT_URL` as a full URL in stack templates; only `.env.example` uses `${APP_URL}`.
+- `ADMIN_EMAIL` and `ADMIN_PASSWORD` (`config/app.php`) seed the production admin in `UserSeeder`; without both, no admin is created.
 - No Redis vars: the image lacks the extension.
 
 ## Operate
@@ -59,5 +60,5 @@ Runtime vars need a restart or redeploy. Build-time vars (marked B) are baked in
 
 ## Tests
 - `tests/Feature/Settings/ConfigBridgeTest.php`: settings override config.
-- `tests/Feature/Ops/SentryFrontendConfigTest.php`: Sentry DSN wiring.
+- `tests/Feature/Ops/SentryFrontendConfigTest.php`: Sentry DSN, environment and release are shared with pages.
 - No test checks the templates themselves.

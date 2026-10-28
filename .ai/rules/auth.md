@@ -27,10 +27,10 @@ Sign-in, registration with pending email verification, Google login, listeners t
 - MUST refuse Google unlink when the account has no password. Enforced by `tests/Feature/Auth/GoogleAuthTest.php` (unlink without password).
 - MUST refuse linking a Google account already linked to another user. Enforced by `tests/Feature/Auth/GoogleAuthTest.php`.
 - MUST keep every admin route under `auth`, `verified`, `admin` (group in `routes/admin.php`). Enforced by `tests/Feature/Admin/CustomersTest.php` (customer gets 403) and `ReviewMediaModerationTest.php` (guest redirected to login).
-- MUST keep login and cart-merge listeners non-fatal: failures are `report()`ed, never block sign-in. Unenforced.
+- MUST keep the `ClaimGuestOrders` and `MergeGuestCartOnLogin` listeners non-fatal: failures are `report()`ed, never block sign-in. Enforced for the merge by `GuestCartMergeTest.php` (merge throws, customer still signed in); the order claim is unenforced.
 - MUST claim guest orders only for verified emails, case-insensitive match, idempotent. Enforced by `tests/Feature/Checkout/SavedAddressTest.php` (`claimGuestOrders`).
 - NEVER add a sign-in path that skips `Auth::login`/`Auth::attempt`: `Login` event drives order claim, cart merge and admin audit. Unenforced; `tests/Feature/Cart/GuestCartMergeTest.php` covers password, verification and Google paths.
-- MUST rate limit login at 5 failed attempts per email and IP key. Unenforced by tests (no test asserts the lockout).
+- MUST rate limit login at 5 failed attempts per email and IP key (`LoginRequest::throttleKey`). Unenforced.
 
 ## How it works
 1. Register: validate, create `PendingUserVerification` (24 h token), remember this browser via `app/Support/RegistrationAutoLogin.php`, email the signed link; optional newsletter opt-in goes out alongside.
