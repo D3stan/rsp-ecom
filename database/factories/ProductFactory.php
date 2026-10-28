@@ -259,7 +259,7 @@ class ProductFactory extends Factory
                     'price' => $product->getAttributes()['price'] ?? 99.99,
                     'stock_quantity' => $product->getAttributes()['stock_quantity'] ?? 10,
                     'description' => $product->getAttributes()['description'] ?? null,
-                    'images' => $product->getAttributes()['images'] ?? [],
+                    'images' => $product->images,
                     'is_default' => true,
                     'sort_order' => 0,
                     'status' => 'active',

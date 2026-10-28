@@ -1,6 +1,7 @@
 import ShippingLine from '@/components/checkout/ShippingLine';
 import { formatRate, useMoney } from '@/hooks/use-money';
 import { useTranslation } from '@/hooks/useTranslation';
+import { fallbackToDefaultImage } from '@/lib/utils';
 
 /** One line of the checkout details props (CheckoutController::summaryLines). */
 export interface SummaryLine {
@@ -49,6 +50,7 @@ export default function OrderSummary({
                         <img
                             src={line.image}
                             alt=""
+                            onError={fallbackToDefaultImage}
                             width={56}
                             height={56}
                             className="h-14 w-14 flex-shrink-0 rounded-md border border-gray-200 object-cover"
