@@ -542,7 +542,7 @@ class CheckoutController extends Controller
 
             // What is charged, frozen and committed BEFORE the Stripe call (no transaction around the call): the order
             // is built from it, whatever the customer does to the cart while paying
-            $snapshot = CheckoutSnapshot::capture($cart, $totals, $user->id, null, $validated['coupon_code'] ?? null, $priceChanges, $validated['shipping_address']);
+            $snapshot = CheckoutSnapshot::capture($cart, $totals, $user->id, null, session('applied_coupon.code'), $priceChanges, $validated['shipping_address']);
             app(AbandonedCheckoutReminders::class)->rememberContact($snapshot, $request, $validated['email'], $user);
 
             // Use Cashier's checkoutCharge for the entire cart
@@ -563,7 +563,7 @@ class CheckoutController extends Controller
                         'shipping_address' => $this->metadataValue($shippingAddressString),
                         'customer_phone' => $validated['shipping_address']['phone'] ?? '',
                         'order_notes' => $validated['order_notes'] ?? '',
-                        'coupon_code' => $validated['coupon_code'] ?? '',
+                        'coupon_code' => session('applied_coupon.code', ''), // the code the discount came from, not the form field
                         'save_address' => $request->boolean('save_address') ? '1' : '0',
                         'locale' => app()->getLocale(),
                         'source' => OrderCreationService::SESSION_SOURCE,
@@ -672,7 +672,7 @@ class CheckoutController extends Controller
             }
 
             // What is charged, frozen and committed BEFORE the Stripe call (no transaction around the call)
-            $snapshot = CheckoutSnapshot::capture($cart, $totals, null, $guestSessionId, $validated['coupon_code'] ?? null, $priceChanges, $validated['shipping_address']);
+            $snapshot = CheckoutSnapshot::capture($cart, $totals, null, $guestSessionId, session('applied_coupon.code'), $priceChanges, $validated['shipping_address']);
             app(AbandonedCheckoutReminders::class)->rememberContact($snapshot, $request, $validated['email']);
 
             try {
@@ -702,7 +702,7 @@ class CheckoutController extends Controller
                         'shipping_address' => $this->metadataValue($shippingAddressString),
                         'customer_phone' => $validated['shipping_address']['phone'] ?? '',
                         'order_notes' => $validated['order_notes'] ?? '',
-                        'coupon_code' => $validated['coupon_code'] ?? '',
+                        'coupon_code' => session('applied_coupon.code', ''), // the code the discount came from, not the form field
                         'locale' => app()->getLocale(),
                         'source' => OrderCreationService::SESSION_SOURCE,
                         'cart_hash' => $cart->contentHash(),

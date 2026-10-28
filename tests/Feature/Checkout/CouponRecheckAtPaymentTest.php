@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Cart;
+use App\Models\CheckoutSnapshot;
 use App\Models\User;
 use Tests\Feature\Orders\Support\BuildsStripeOrderFixtures;
 
@@ -71,3 +72,20 @@ it('refuses to charge and drops the coupon when it is no longer valid', function
     'used up' => [['max_redemptions' => 5, 'times_redeemed' => 5], true],
     'deactivated' => [[], false],
 ]);
+
+it('records the coupon the discount came from, not a stale code the form still sends', function () {
+    $this->actingAs($this->user)->post('/checkout/cart', [
+        'email' => 'buyer@example.com',
+        'shipping_address' => [
+            'first_name' => 'Mario', 'last_name' => 'Rossi', 'address_line_1' => 'Via Roma 10', 'city' => 'Milano',
+            'state' => 'MI', 'postal_code' => '20100', 'country' => 'IT', 'phone' => '+39 333 1234567',
+        ],
+        'order_notes' => '',
+        'coupon_code' => 'TEN',
+    ])->assertRedirect();
+
+    $session = collect($this->stripeHttp->requests)->last(fn ($r) => $r[0] === 'post' && str_ends_with($r[1], '/v1/checkout/sessions'));
+
+    expect($session[2]['metadata']['coupon_code'])->toBe('')
+        ->and(CheckoutSnapshot::query()->latest('id')->value('coupon_code'))->toBeNull();
+});
