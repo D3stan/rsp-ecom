@@ -47,14 +47,15 @@ class ProductsController extends Controller
 
         SEOMeta::setTitle($pageTitle.' – '.settings('store.name'));
         SEOMeta::setDescription(Str::limit($metaDescription, 160));
-        SEOMeta::setCanonical($isCategoryLanding ? route('products', ['category' => $seoCategory->slug]) : route('products', $request->except('page')));
+        $canonical = $isCategoryLanding ? route('products', ['category' => $seoCategory->slug]) : route('products', $request->except('page'));
+        SEOMeta::setCanonical($canonical);
 
         if (! $isCategoryLanding && $request->hasAny(['search', 'category', 'min_price', 'max_price', 'sort'])) {
             SEOMeta::addMeta('robots', 'noindex,follow', 'name');
         }
 
         OpenGraph::setType('website');
-        OpenGraph::setUrl(route('products', $request->except('page')));
+        OpenGraph::setUrl($canonical);
         OpenGraph::setTitle($pageTitle.' – '.settings('store.name'));
         OpenGraph::setDescription(Str::limit($metaDescription, 300));
 

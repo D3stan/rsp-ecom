@@ -14,17 +14,19 @@ function robotsAndCanonicalOf(string $html): array
 {
     preg_match('/<meta name="robots" content="([^"]*)"/', $html, $robots);
     preg_match_all('/<link rel="canonical" href="([^"]*)"/', $html, $canonicals);
+    preg_match('/<meta property="og:url" content="([^"]*)"/', $html, $ogUrl);
 
-    return [$robots[1] ?? null, $canonicals[1]];
+    return [$robots[1] ?? null, $canonicals[1], $ogUrl[1] ?? null];
 }
 
 it('indexes an active category landing page with a canonical of just the category', function () {
     $category = Category::factory()->active()->create();
 
-    [$robots, $canonicals] = robotsAndCanonicalOf($this->get("/products?category={$category->slug}&utm_source=ad")->getContent());
+    [$robots, $canonicals, $ogUrl] = robotsAndCanonicalOf($this->get("/products?category={$category->slug}&utm_source=ad")->getContent());
 
     expect($robots)->not->toContain('noindex')
-        ->and($canonicals)->toBe([route('products', ['category' => $category->slug])]);
+        ->and($canonicals)->toBe([route('products', ['category' => $category->slug])])
+        ->and($ogUrl)->toBe($canonicals[0]);
 });
 
 it('keeps search, price, sort and unknown or inactive category lists noindex', function (string $query) {
