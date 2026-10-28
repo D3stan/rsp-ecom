@@ -20,12 +20,6 @@ Schedule::command('generate:sitemap-index')
     ->withoutOverlapping()
     ->sendOutputTo(storage_path('logs/sitemap.log'));
 
-// Also keep the simple sitemap command for manual generation if needed
-Schedule::command('generate:sitemap')
-    ->weeklyOn(7, '03:00') // Run weekly on Sunday at 3 AM as backup
-    ->withoutOverlapping()
-    ->sendOutputTo(storage_path('logs/sitemap-simple.log'));
-
 // Safety net for confirmation emails whose queue job was lost or never created (7-day window).
 // Goes through EmailService, so it can never produce a duplicate mail. Its console output is not kept (it ran
 // every ten minutes and the file grew without rotation); failures and backlog warnings go to the application log.

@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Console\Commands\ClearSitemaps;
-use App\Console\Commands\GenerateSitemap;
 use App\Console\Commands\GenerateSitemapIndex;
 use App\Console\Commands\SendTestOrderConfirmation;
 use App\Models\Category;
@@ -50,7 +49,6 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 SendTestOrderConfirmation::class,
-                GenerateSitemap::class,
                 GenerateSitemapIndex::class,
                 ClearSitemaps::class,
             ]);
