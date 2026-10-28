@@ -32,20 +32,24 @@ class ProductsController extends Controller
             $metaDescription = "Search results for '{$search}' - Find the products you're looking for.";
         }
 
+        $seoCategory = null;
         if ($categorySlug = $request->get('category')) {
-            $category = Category::where('slug', $categorySlug)->first();
-            if ($category) {
-                $pageTitle = $category->name.' Products';
-                $metaDescription = $category->description ?? "Browse our {$category->name} collection. Find the perfect products in this category.";
+            $seoCategory = Category::where('slug', $categorySlug)->first();
+            if ($seoCategory) {
+                $pageTitle = $seoCategory->name.' Products';
+                $metaDescription = $seoCategory->description ?? "Browse our {$seoCategory->name} collection. Find the perfect products in this category.";
             }
         }
 
+        // A plain active category is the category's landing page (/categories/{slug} redirects here and the sitemap
+        // lists it), so it is indexed with a canonical of just the category. Search, price and sort variants are not.
+        $isCategoryLanding = $seoCategory?->is_active && ! $request->hasAny(['search', 'min_price', 'max_price', 'sort']);
+
         SEOMeta::setTitle($pageTitle.' – '.settings('store.name'));
         SEOMeta::setDescription(Str::limit($metaDescription, 160));
-        SEOMeta::setCanonical(route('products', $request->except('page')));
+        SEOMeta::setCanonical($isCategoryLanding ? route('products', ['category' => $seoCategory->slug]) : route('products', $request->except('page')));
 
-        // Set noindex for filtered/search pages to avoid duplicate content
-        if ($request->hasAny(['search', 'category', 'min_price', 'max_price', 'sort'])) {
+        if (! $isCategoryLanding && $request->hasAny(['search', 'category', 'min_price', 'max_price', 'sort'])) {
             SEOMeta::addMeta('robots', 'noindex,follow', 'name');
         }
 
