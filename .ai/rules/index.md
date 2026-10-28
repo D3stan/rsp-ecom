@@ -18,6 +18,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/Ops/*.php, app/Console/Commands/*.php, config/ops.php, routes/console.php | .ai/rules/ops-observability.md |
 | app/Domain/Orders/*.php, app/Models/Order*.php, app/Services/RefundService.php, tests/Feature/Orders/*.php | .ai/rules/orders-refunds.md |
 | app/Services/Reviews/*.php, app/Http/Controllers/ReviewController.php, app/Http/Controllers/Admin/Review*.php, app/Models/Review*.php, tests/Feature/Reviews/*.php | .ai/rules/reviews.md |
-| config/seotools.php, app/Console/Commands/GenerateSitemap.php, app/Console/Commands/GenerateSitemapIndex.php, app/Traits/RegeneratesSitemap.php, resources/views/app.blade.php | .ai/rules/seo.md |
+| config/seotools.php, app/Console/Commands/GenerateSitemapIndex.php, app/Traits/RegeneratesSitemap.php, resources/views/app.blade.php | .ai/rules/seo.md |
 | app/Settings/**/*.php, config/settings.php, tests/Feature/Settings/*.php, tests/Unit/Settings/*.php | .ai/rules/settings.md |
 | app/Shipping/**/*.php, config/shipping.php, tests/Feature/Shipping/*.php, tests/Unit/Shipping/*.php | .ai/rules/shipping.md |
