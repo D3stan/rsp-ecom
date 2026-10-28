@@ -92,7 +92,7 @@ it('pending-emails does nothing when confirmation emails are disabled', function
 it('registers every scheduled task', function () {
     $events = collect(app(Schedule::class)->events())->map(fn ($e) => $e->command);
 
-    foreach (['orders:send-pending-emails --force', 'auth:cleanup-pending --force', 'queue:prune-failed --hours=168', 'generate:sitemap-index', 'generate:sitemap'] as $command) {
+    foreach (['orders:send-pending-emails --force', 'auth:cleanup-pending --force', 'queue:prune-failed --hours=168', 'generate:sitemap-index'] as $command) {
         expect($events->contains(fn ($c) => str_contains($c, $command)))->toBeTrue("missing schedule entry: {$command}");
     }
 
