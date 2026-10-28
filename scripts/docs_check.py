@@ -19,10 +19,12 @@ BACKTICK_PATH = re.compile(r"`(" + TOP_DIRS + r"/[^\s`]+)`")
 MARKDOWN_LINK = re.compile(r"\]\(([^)\s#]+)(?:#[^)]*)?\)")
 DOC_REFERENCE_IN_CODE = re.compile(r"((?:docs|\.ai)/[\w./-]+\.md)")
 CODE_DIRS = ("app", "bootstrap", "config", "database", "resources/js", "routes", "tests", "scripts", ".github")
+SELF_FILES = ("scripts/docs_check.py", "tests/test_docs_check.py")  # their doc paths are patterns and fixtures
 
 
 def tracked_files(root: Path) -> list[str]:
-    out = subprocess.run(["git", "ls-files"], cwd=root, capture_output=True, text=True, check=True).stdout
+    # Untracked files count too, so a local run catches problems in docs that are not committed yet
+    out = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"], cwd=root, capture_output=True, text=True, check=True).stdout
     return [line for line in out.splitlines() if (root / line).exists()]
 
 
@@ -86,7 +88,7 @@ def check(root: Path) -> list[str]:
                 errors.append(f"{name}: links to {link}, which does not exist")
 
     for name in files:
-        if not name.startswith(CODE_DIRS) or name.endswith(".md") or name.startswith("tests/fixtures"):
+        if not name.startswith(CODE_DIRS) or name.endswith(".md") or name.startswith("tests/fixtures") or name in SELF_FILES:
             continue
         try:
             text = (root / name).read_text()
