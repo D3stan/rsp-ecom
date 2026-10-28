@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Carrier tracking state of an order (see docs/shipping-tracking-module.md).
+     * Carrier tracking state of an order (see .ai/rules/shipping.md).
      *
      * tracking_carrier        key of config('shipping.carriers') chosen by the admin
      * tracking_status         last normalised status (App\Shipping\Tracking\Enums\TrackingStatus value)

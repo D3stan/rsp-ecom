@@ -109,7 +109,7 @@ Route::post('stripe/webhook', [CashierWebhookController::class, 'handleWebhook']
     ->name('cashier.webhook');
 
 // Carrier tracking webhooks. Only drivers implementing SupportsWebhooks answer (404 otherwise), the driver
-// authenticates the request; CSRF-exempt in bootstrap/app.php. See docs/shipping-tracking-module.md.
+// authenticates the request; CSRF-exempt in bootstrap/app.php. See .ai/rules/shipping.md.
 Route::post('/webhooks/tracking/{driver}', TrackingWebhookController::class)
     ->where('driver', '[A-Za-z0-9_-]+')
     ->middleware('throttle:120,1')

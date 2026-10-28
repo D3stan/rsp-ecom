@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Http;
 use Throwable;
 
 /**
- * Label adapter for the Spediamo platform API (docs/spediamo/shipments.md, waybills.md).
+ * Label adapter for the Spediamo platform API (docs/vendor/spediamo/shipments.md, waybills.md).
  *
  *   POST {base_url}/v1/shipments            create the shipment  -> id, trackingNumber, courier, status
  *   GET  {base_url}/v1/waybills/{id}/pdf    download the label PDF

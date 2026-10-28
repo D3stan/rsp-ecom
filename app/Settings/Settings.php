@@ -15,7 +15,7 @@ use InvalidArgumentException;
 use Throwable;
 
 /**
- * Typed access to the admin settings declared in config/settings.php (docs/admin-settings.md).
+ * Typed access to the admin settings declared in config/settings.php (.ai/rules/settings.md).
  *
  * Precedence: stored row > definition default. Rows are JSON. The whole table (registry keys only, so legacy
  * secret rows never reach the cache) is cached as one array under `settings:v{version}`; every write bumps

@@ -4,7 +4,7 @@ use App\Mail\WelcomeEmail;
 use App\Models\User;
 use Tests\Feature\Mail\Content\Support\EmailFixtures as Fx;
 
-// store.name is DISPLAY only: app.name keeps naming caches and cookies (docs/admin-settings.md).
+// store.name is DISPLAY only: app.name keeps naming caches and cookies (.ai/rules/settings.md).
 
 it('shows the store name setting in the transactional mail layout and subjects', function () {
     settings()->set('store.name', 'Moto Luci Srl');

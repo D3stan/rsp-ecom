@@ -57,6 +57,11 @@ export interface RingMaskedImageProps {
     preserveAspectRatio?: string;
 }
 
+/**
+ * Ring mask: an SVG <mask> dims the image outside a rotating wedge; the wedge is a stroked circle
+ * whose dash pattern sets its size. The mask is alpha, not luminance, for WebKit compatibility.
+ * iOS WebKit: after the intro, the wedge moves via stroke-dashoffset instead of rotating the masked group.
+ */
 export const RingMaskedImage: React.FC<RingMaskedImageProps> = ({
     src,
     alt = '',

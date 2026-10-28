@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Abandoned-checkout reminder (docs/newsletter-and-reminders.md): who may be reminded (only with the marketing
+     * Abandoned-checkout reminder (.ai/rules/email-newsletter.md): who may be reminded (only with the marketing
      * consent ticked at checkout), in which language, and whether the one reminder was sent / the cart recovered.
      */
     public function up(): void

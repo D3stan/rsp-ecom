@@ -75,13 +75,13 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     });
     Route::resource('reviews', ReviewsController::class)->only(['index', 'show', 'update', 'destroy']);
 
-    // Settings Management (registry-driven, docs/admin-settings.md)
+    // Settings Management (registry-driven, .ai/rules/settings.md)
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
     Route::get('/settings/{group}/history', [SettingsController::class, 'history'])->name('settings.history');
     Route::patch('/settings/{group}', [SettingsController::class, 'update'])->name('settings.update');
     Route::delete('/settings/{key}', [SettingsController::class, 'reset'])->name('settings.reset');
 
-    // Newsletter (docs/newsletter-and-reminders.md)
+    // Newsletter (.ai/rules/email-newsletter.md)
     Route::redirect('/newsletter', '/admin/newsletter/subscribers');
     Route::get('/newsletter/subscribers', [NewsletterSubscribersController::class, 'index'])->name('newsletter.subscribers');
     Route::get('/newsletter/subscribers/export', [NewsletterSubscribersController::class, 'export'])->name('newsletter.subscribers.export');

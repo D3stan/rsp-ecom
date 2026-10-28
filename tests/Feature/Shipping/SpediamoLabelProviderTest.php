@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Http;
 
 /*
  * The Spediamo label driver maps a ShipmentRequest to POST /v1/shipments and reads the waybill PDF from
- * GET /v1/waybills/{id}/pdf. Built from docs/spediamo/shipments.md and waybills.md; never calls the real API.
+ * GET /v1/waybills/{id}/pdf. Built from docs/vendor/spediamo/shipments.md and waybills.md; never calls the real API.
  */
 
 function spediamoLabelConfig(): array

@@ -8,14 +8,15 @@ metadata:
 
 # Deploying with Dokploy
 
-Use the `dokploy-mcp` tools for every Dokploy operation and read each tool's schema instead of guessing parameters. For the full production cutover procedure follow `docs/deploy-runbook.md`; do not restate it here.
+Use the `dokploy-mcp` tools for every Dokploy operation and read each tool's schema instead of guessing parameters. Infrastructure facts (build, containers, env, CI, monitoring) live in `.ai/rules/deployment.md`; release, rollback and incident steps in `docs/runbooks.md`. Do not restate them here.
 
 ## Two stacks
 
-Dokploy runs two compose stacks of this repo. Find each one by name with `project-all` or `compose-search`; never hardcode compose IDs. Confirm which stack the user means before any write.
+Dokploy project `RSP` runs two compose stacks of this repo, both with auto-deploy on push. Find each one by name with `project-all` or `compose-search`; never hardcode compose IDs. Confirm which stack the user means before any write.
 
 | | Production | Sandbox |
 |---|---|---|
+| Git branch (push = deploy) | `main` | `sandbox` |
 | Compose file | `docker-compose.yml` | `docker-compose.sandbox.yml` |
 | Services | `app`, `queue`, `scheduler` | those three plus `mailpit`, `db` (MariaDB) |
 | Database | external Dokploy database | in-stack `rsp_sandbox` |
@@ -23,14 +24,14 @@ Dokploy runs two compose stacks of this repo. Find each one by name with `projec
 | Mail | Brevo SMTP | Mailpit: `MAIL_HOST=mailpit`, `MAIL_PORT=1025` |
 | Stripe | live keys | test keys only |
 
-- Both build the same `Dockerfile` (`serversideup/php:fpm-nginx`). Only `app` runs migrations (`AUTORUN_ENABLED=true`); `queue` and `scheduler` are command overrides with it off.
-- Domains: service `app`, port **8080** (not 80). Production uses `https: false` because TLS ends at the Cloudflare tunnel in front of Traefik. To read captured sandbox mail, add a domain for service `mailpit`, port `8025`.
+- Both build the same `Dockerfile` (`serversideup/php:8.5-fpm-nginx`). Only `app` runs migrations (`AUTORUN_ENABLED=true`); `queue` and `scheduler` are command overrides with it off.
+- Domains: service `app`, port **8080** (not 80). Production uses `https: false` because TLS ends at the Cloudflare tunnel in front of Traefik. Captured sandbox mail is served by service `mailpit`, port `8025`; check `domain-byComposeId` for its current domain.
 - Sandbox secrets live in the compose file and are throwaway. Never copy production secrets, keys or database dumps into sandbox.
 
 ## Safety rules
 
-- Never deploy or redeploy production unless the user explicitly asks. The user deploys everything at the end of a work stream, not incrementally. Sandbox is the place to test first.
-- Pass `freshVolumes: false` (or omit it) on `compose-deploy` and `compose-redeploy`. On sandbox, `true` wipes the database, Redis and Mailpit data; on production it wipes uploaded files and logs. Only set it when the user asks for a wipe.
+- Never deploy or redeploy production, and never push or merge to `main`, unless the user explicitly asks: a push to `main` is a production deploy. The user deploys everything at the end of a work stream, not incrementally. Sandbox is the place to test first.
+- Pass `freshVolumes: false` (or omit it) on `compose-deploy` and `compose-redeploy`. On sandbox, `true` wipes the database and Mailpit data; on production it wipes uploaded files and logs. Only set it when the user asks for a wipe.
 - Ask for explicit confirmation before `compose-delete`, `environment-remove`, `project-remove` or `domain-delete`.
 - `compose-saveEnvironment` replaces the whole env block: read the current value with `compose-one` first, change only what was asked, and never print secrets in chat. A saved change takes effect on the next deploy.
 - `compose-redeploy` takes the same parameters as `compose-deploy`; do not assume it skips the build.

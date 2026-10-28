@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Settings registry storage (docs/admin-settings.md): `type` becomes a plain string (the enum could only hold
+ * Settings registry storage (.ai/rules/settings.md): `type` becomes a plain string (the enum could only hold
  * string|boolean|json), rows record who changed them, and every change is audited in `setting_changes`.
  */
 return new class extends Migration

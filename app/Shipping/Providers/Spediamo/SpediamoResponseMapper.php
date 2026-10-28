@@ -12,7 +12,7 @@ use Throwable;
 /**
  * Pure translation of one `GET /v1/shipments/tracking` answer into a TrackingResult. No I/O.
  *
- * Fields used (docs/spediamo/shipments.md): top level `status`, `expectedDeliveryDate`, `deliveryDate`
+ * Fields used (docs/vendor/spediamo/shipments.md): top level `status`, `expectedDeliveryDate`, `deliveryDate`
  * (YYYY-MM-DD), `courier`, `trackingNumber`, `code`, and `tracking[]` items
  * `{date, time{hour,minute,second}, description, longDescription, site, status}`.
  *

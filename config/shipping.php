@@ -129,7 +129,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Carrier tracking module (app/Shipping/Tracking, docs/shipping-tracking-module.md)
+    | Carrier tracking module (app/Shipping/Tracking, .ai/rules/shipping.md)
     |--------------------------------------------------------------------------
     |
     | driver  manual (default: tracking links from the templates above, no API),
@@ -165,7 +165,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Label creation (app/Shipping/Labels, docs/shipping-tracking-module.md)
+    | Label creation (app/Shipping/Labels, .ai/rules/shipping.md)
     |--------------------------------------------------------------------------
     |
     | OPTIONAL and OFF by default. When enabled from the admin settings

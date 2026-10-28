@@ -8,7 +8,7 @@ use App\Shipping\Tracking\Enums\TrackingStatus;
  * API status string => TrackingStatus, for both the shipment's top-level `status` and each `tracking[].status`.
  *
  * Case-insensitive and trimmed. The built-in table follows the statuses the API documents for shipments
- * (the tracking enum itself is not published, see docs/shipping-tracking-module.md); config
+ * (the tracking enum itself is not published, see .ai/rules/shipping.md); config
  * shipping.tracking.drivers.spediamo.status_map overrides or extends it without code changes.
  * Blank values are "no information" (Unknown, not reported); anything else that is not listed is
  * Unknown too, and isMapped() lets the caller warn about it.

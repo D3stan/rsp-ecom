@@ -1,5 +1,5 @@
 # Deployment
 
-- This application is deployed on [Dokploy](https://dokploy.com/) as Docker Compose stacks, managed through the `dokploy-mcp` server. There is a production stack (`docker-compose.yml`) and a sandbox stack (`docker-compose.sandbox.yml`, with Mailpit, MariaDB and Redis for testing).
-- Activate the `deploying-to-dokploy` skill whenever deploying, changing Dokploy environment variables or domains, reading build or container logs, or troubleshooting a Dokploy deployment.
-- Never deploy production unless the user explicitly asks.
+- Dokploy auto-deploys on every push: a push or merge to `main` deploys PRODUCTION (`docker-compose.yml`), a push to `sandbox` deploys the sandbox (`docker-compose.sandbox.yml`). CI runs alongside the deploy and does not gate it.
+- Never push or merge to `main`, and never deploy production, unless the user explicitly asks for it in this conversation.
+- Activate the `deploying-to-dokploy` skill for any Dokploy operation (deploy, env vars, domains, logs, troubleshooting). Current infrastructure facts live in `.ai/rules/deployment.md`.

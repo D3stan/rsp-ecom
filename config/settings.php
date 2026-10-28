@@ -2,7 +2,7 @@
 
 /*
 |--------------------------------------------------------------------------
-| Admin settings catalogue (docs/admin-settings.md)
+| Admin settings catalogue (.ai/rules/settings.md)
 |--------------------------------------------------------------------------
 |
 | The only place that declares which settings exist. The service

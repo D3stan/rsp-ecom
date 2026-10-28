@@ -1,4 +1,4 @@
-// Admin configuration system (docs/admin-settings.md). Keys are catalogue keys ("group.name").
+// Admin configuration system (.ai/rules/settings.md). Keys are catalogue keys ("group.name").
 
 export type SettingType = 'string' | 'text' | 'email' | 'url' | 'int' | 'float' | 'bool' | 'enum' | 'list' | 'countries' | 'json';
 

@@ -6,7 +6,7 @@ namespace App\Support;
  * The VAT portion of a VAT-inclusive amount. One computation for the checkout pages, the stored order
  * (orders.tax_amount / orders.tax_rate), the emails and the order pages: they can never disagree.
  *
- * Source: settings `tax.rate` and `tax.prices_include_tax` (docs/admin-settings.md). Shop prices are VAT-inclusive,
+ * Source: settings `tax.rate` and `tax.prices_include_tax` (.ai/rules/settings.md). Shop prices are VAT-inclusive,
  * so nothing is added on top of what the customer pays; when `tax.prices_include_tax` is off there is no portion to
  * extract (no VAT is added to the charge either) and the result has no rate, so no "of which VAT" line is shown.
  */

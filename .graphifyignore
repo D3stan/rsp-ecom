@@ -1,0 +1,5 @@
+# Kept out of the knowledge graph: generated agent copies and raw vendor HTML.
+.agents/
+.claude/
+.ai/rules/boost/
+docs/vendor/_source/

@@ -1,4 +1,4 @@
-// Admin -> Settings. Everything is generated from the catalogue in config/settings.php (docs/admin-settings.md).
+// Admin -> Settings. Everything is generated from the catalogue in config/settings.php (.ai/rules/settings.md).
 import { ConfirmDialog } from '@/components/admin/settings/ConfirmDialog';
 import { groupIcon } from '@/components/admin/settings/group-icon';
 import { GroupForm } from '@/components/admin/settings/GroupForm';

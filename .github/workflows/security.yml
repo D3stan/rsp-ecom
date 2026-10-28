@@ -3,11 +3,11 @@ name: security
 on:
   push:
     branches:
-      - develop
+      - sandbox
       - main
   pull_request:
     branches:
-      - develop
+      - sandbox
       - main
   schedule:
     # Advisories appear without any change to the repository
@@ -24,7 +24,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.4
+          php-version: 8.5
           tools: composer:v2
 
       - name: Setup Node

@@ -17,7 +17,7 @@ use InvalidArgumentException;
 use Throwable;
 
 /**
- * Admin -> Settings. Everything is generated from the catalogue in config/settings.php (docs/admin-settings.md).
+ * Admin -> Settings. Everything is generated from the catalogue in config/settings.php (.ai/rules/settings.md).
  */
 class SettingsController extends Controller
 {

@@ -7,7 +7,7 @@ use App\Shipping\Support\CarrierCodeMap;
 
 /**
  * Maps a provider-neutral ShipmentRequest to the Spediamo POST /v1/shipments parameters
- * (docs/spediamo/shipments.md). Only this folder knows the carrier's field names.
+ * (docs/vendor/spediamo/shipments.md). Only this folder knows the carrier's field names.
  */
 class SpediamoLabelRequestMapper
 {

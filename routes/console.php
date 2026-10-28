@@ -44,7 +44,7 @@ Schedule::command('queue:prune-failed --hours=168')
     ->withoutOverlapping();
 
 // Alerts (critical log) when the queue worker is down or failed jobs pile up. Needs the scheduler itself
-// to be running: monitor /up externally as the complement (see docs/reports/email-operations.md).
+// to be running: monitor /up externally as the complement (see .ai/rules/email-newsletter.md).
 Schedule::command('ops:check-queue')
     ->everyFiveMinutes()
     ->withoutOverlapping();

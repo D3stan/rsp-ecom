@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 /**
- * Legacy settings merge (docs/admin-settings.md, "Legacy alias map").
+ * Legacy settings merge (.ai/rules/settings.md, "Legacy alias map").
  *
  * up():   rows saved under the old keys (tax_rate, site_name, order_shipped_enabled...) are rewritten under their
  *         catalogue keys with JSON values (mixed '' / '0' / '1' / numeric strings are parsed by the TARGET type),

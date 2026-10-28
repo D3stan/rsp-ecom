@@ -16,7 +16,7 @@ use Illuminate\Support\ServiceProvider;
 use Throwable;
 
 /**
- * Admin configuration system (docs/admin-settings.md): registry, service, config bridge and the
+ * Admin configuration system (.ai/rules/settings.md): registry, service, config bridge and the
  * manage-settings gate.
  */
 class SettingsServiceProvider extends ServiceProvider

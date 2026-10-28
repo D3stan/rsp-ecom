@@ -3,11 +3,11 @@ name: tests
 on:
   push:
     branches:
-      - develop
+      - sandbox
       - main
   pull_request:
     branches:
-      - develop
+      - sandbox
       - main
 
 jobs:
@@ -54,6 +54,14 @@ jobs:
 
       - name: Generate Application Key
         run: php artisan key:generate
+
+      - name: Docs Check
+        run: python3 scripts/docs_check.py
+
+      - name: Agent Files In Sync
+        run: |
+          php artisan boost:update --no-interaction
+          git diff --exit-code -- CLAUDE.md AGENTS.md .agents/skills .ai/rules/index.md .ai/rules/boost
 
       - name: Tests
         run: ./vendor/bin/pest

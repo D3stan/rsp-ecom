@@ -586,8 +586,8 @@ Download a new HTML snapshot outside the application API, then run:
 ```sh
 python3 scripts/generate_dvaexpress_docs.py \\
   --source /path/to/easyparcel.html \\
-  --snapshot docs/dvaexpress-doc.html \\
-  --output docs/dvaexpress
+  --snapshot docs/vendor/_source/dvaexpress-doc.html \\
+  --output docs/vendor/dvaexpress
 ```
 
 The generator uses only Python's standard library, preserves request-field tables, summarizes response shapes, and redacts public example API keys.
@@ -626,8 +626,8 @@ def generate(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, required=True, help="Downloaded EasyParcel HTML source")
-    parser.add_argument("--snapshot", type=Path, default=Path("docs/dvaexpress-doc.html"), help="Sanitized HTML snapshot destination")
-    parser.add_argument("--output", type=Path, default=Path("docs/dvaexpress"), help="Markdown output directory")
+    parser.add_argument("--snapshot", type=Path, default=Path("docs/vendor/_source/dvaexpress-doc.html"), help="Sanitized HTML snapshot destination")
+    parser.add_argument("--output", type=Path, default=Path("docs/vendor/dvaexpress"), help="Markdown output directory")
     arguments = parser.parse_args()
     generate(arguments.source, arguments.snapshot, arguments.output, require_complete=True)
 
