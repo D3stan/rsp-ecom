@@ -97,7 +97,7 @@ class CheckoutRecoveryController extends Controller
 
         try {
             $promotions = app(PromotionService::class);
-            $validation = $promotions->validatePromotionCode($snapshot->coupon_code);
+            $validation = $promotions->validatePromotionCode($snapshot->coupon_code, (float) $snapshot->subtotal, auth()->user());
 
             if (! ($validation['valid'] ?? false)) {
                 return;

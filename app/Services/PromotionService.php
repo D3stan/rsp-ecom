@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Order;
+use App\Models\User;
+use App\Support\Money;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Stripe\Coupon;
 use Stripe\Exception\ApiErrorException;
@@ -10,49 +14,34 @@ use Stripe\PromotionCode;
 class PromotionService
 {
     /**
-     * Validate a promotion code
+     * Validate a promotion code against everything that can be set on it in the Stripe Dashboard.
+     *
+     * The shop charges the discounted amount itself and never passes the code to Stripe, so Stripe's times_redeemed
+     * only counts uses outside the shop: usage is that plus the paid orders that carry the code. Pass what the caller
+     * knows: the items total enables the minimum-amount check, the user or email the first-order-only check. A check
+     * whose input is missing is skipped here and runs again right before charging, when both are known.
+     *
+     * @return array{valid: bool, error?: string, promotion_code?: PromotionCode, coupon?: Coupon, discount?: array<string, mixed>}
      */
-    public function validatePromotionCode(string $code): array
+    public function validatePromotionCode(string $code, ?float $itemsTotal = null, ?User $user = null, ?string $email = null): array
     {
         try {
             $promotionCodes = PromotionCode::all([
                 'code' => $code,
                 'active' => true,
                 'limit' => 1,
+                'expand' => ['data.coupon.applies_to'],
             ]);
 
             if (empty($promotionCodes->data)) {
-                return [
-                    'valid' => false,
-                    'error' => 'Promotion code not found or inactive.',
-                ];
+                return ['valid' => false, 'error' => __('coupon.not_found')];
             }
 
             $promotionCode = $promotionCodes->data[0];
             $coupon = $promotionCode->coupon;
 
-            // Check if coupon is valid
-            if (! $coupon->valid) {
-                return [
-                    'valid' => false,
-                    'error' => 'Coupon is no longer valid.',
-                ];
-            }
-
-            // Check expiration
-            if ($coupon->redeem_by && $coupon->redeem_by < time()) {
-                return [
-                    'valid' => false,
-                    'error' => 'Promotion code has expired.',
-                ];
-            }
-
-            // Check usage limits
-            if ($coupon->max_redemptions && $coupon->times_redeemed >= $coupon->max_redemptions) {
-                return [
-                    'valid' => false,
-                    'error' => 'Promotion code usage limit exceeded.',
-                ];
+            if ($error = $this->restrictionError($promotionCode, $coupon, $itemsTotal, $user, $email)) {
+                return ['valid' => false, 'error' => $error];
             }
 
             return [
@@ -68,11 +57,101 @@ class PromotionService
                 'error' => $e->getMessage(),
             ]);
 
-            return [
-                'valid' => false,
-                'error' => 'Error validating promotion code.',
-            ];
+            return ['valid' => false, 'error' => __('coupon.check_failed')];
         }
+    }
+
+    /**
+     * Why the shop cannot honour this code right now, or null when it can.
+     */
+    private function restrictionError(PromotionCode $promotionCode, Coupon $coupon, ?float $itemsTotal, ?User $user, ?string $email): ?string
+    {
+        if (! $coupon->valid) {
+            return __('coupon.not_valid');
+        }
+
+        $now = time();
+        $couponExpired = ($coupon->redeem_by ?? null) && $coupon->redeem_by < $now;
+        $codeExpired = ($promotionCode->expires_at ?? null) && $promotionCode->expires_at < $now;
+        if ($couponExpired || $codeExpired) {
+            return __('coupon.expired');
+        }
+
+        // Codes limited to Stripe customers or Stripe products cannot be matched to the shop's accounts and cart lines
+        if (($promotionCode->customer ?? null) || ! empty($coupon->applies_to->products ?? [])) {
+            return __('coupon.not_available');
+        }
+
+        // shortcut: two checkouts paying at the same moment can both take the last use; reserve a use at checkout start if that ever matters
+        if (($promotionCode->max_redemptions ?? null)
+            && ($promotionCode->times_redeemed ?? 0) + $this->paidOrdersWith([$promotionCode->code]) >= $promotionCode->max_redemptions) {
+            return __('coupon.used_up');
+        }
+
+        if (($coupon->max_redemptions ?? null)
+            && ($coupon->times_redeemed ?? 0) + $this->paidOrdersWith($this->codesOf($coupon, $promotionCode)) >= $coupon->max_redemptions) {
+            return __('coupon.used_up');
+        }
+
+        $restrictions = $promotionCode->restrictions ?? null;
+        $minimumCents = $restrictions->minimum_amount ?? null;
+
+        if ($minimumCents && $itemsTotal !== null && (int) round($itemsTotal * 100) < $minimumCents) {
+            $currency = strtoupper((string) ($restrictions->minimum_amount_currency ?? settings('store.currency', 'EUR')));
+
+            return __('coupon.minimum_amount', ['amount' => Money::format($minimumCents / 100, $currency)]);
+        }
+
+        if (($restrictions->first_time_transaction ?? false) && ($user || $email) && $this->hasPaidOrder($user, $email)) {
+            return __('coupon.first_order_only');
+        }
+
+        return null;
+    }
+
+    /**
+     * Paid orders (refunded ones included: the use happened) that carry one of these codes, ignoring case like Stripe.
+     *
+     * @param  array<int, string>  $codes
+     */
+    private function paidOrdersWith(array $codes): int
+    {
+        return Order::query()
+            ->whereIn('payment_status', Order::CAPTURED_PAYMENT_STATUSES)
+            ->whereIn(DB::raw('LOWER(coupon_code)'), array_map('strtolower', $codes))
+            ->count();
+    }
+
+    /**
+     * Every promotion code of a coupon, so a coupon-wide limit counts the uses of all of them.
+     *
+     * @return array<int, string>
+     */
+    private function codesOf(Coupon $coupon, PromotionCode $known): array
+    {
+        $codes = collect(PromotionCode::all(['coupon' => $coupon->id, 'limit' => 100])->data)->pluck('code');
+
+        return $codes->push($known->code)->unique()->values()->all();
+    }
+
+    /**
+     * Whether this customer already paid an order, as an account or as a guest with the same email.
+     */
+    private function hasPaidOrder(?User $user, ?string $email): bool
+    {
+        $emails = array_values(array_filter([$email, $user?->email]));
+
+        return Order::query()
+            ->whereIn('payment_status', Order::CAPTURED_PAYMENT_STATUSES)
+            ->where(function ($query) use ($user, $emails) {
+                if ($user) {
+                    $query->where('user_id', $user->id);
+                }
+                if ($emails) {
+                    $query->orWhereIn('guest_email', $emails);
+                }
+            })
+            ->exists();
     }
 
     /**

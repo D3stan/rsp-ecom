@@ -47,19 +47,25 @@ trait BuildsStripeOrderFixtures
 
     /**
      * Answer Stripe's promotion-code lookup, which the checkout repeats before charging a cart that carries a coupon.
-     * $coupon overrides fields of the coupon (e.g. ['valid' => false] or ['redeem_by' => time() - 60]).
+     * $coupon overrides fields of the coupon (e.g. ['valid' => false] or ['redeem_by' => time() - 60]), $promotion those
+     * of the promotion code itself (e.g. ['max_redemptions' => 2] or ['restrictions' => ['first_time_transaction' => true]]).
      */
-    protected function fakePromotionCode(string $code, array $coupon = [], bool $found = true): void
+    protected function fakePromotionCode(string $code, array $coupon = [], bool $found = true, array $promotion = []): void
     {
         // PromotionService calls Stripe statically, which needs the global key AppServiceProvider sets in production
         Stripe::setApiKey('sk_test_fake_for_tests');
         $this->stripeHttp->responses['GET /v1/promotion_codes'] = [
             'object' => 'list',
-            'data' => $found ? [[
+            'data' => $found ? [array_merge([
                 'id' => 'promo_test_1',
                 'object' => 'promotion_code',
                 'code' => $code,
                 'active' => true,
+                'expires_at' => null,
+                'max_redemptions' => null,
+                'times_redeemed' => 0,
+                'customer' => null,
+                'restrictions' => ['first_time_transaction' => false, 'minimum_amount' => null, 'minimum_amount_currency' => null],
                 'coupon' => array_merge([
                     'id' => 'coupon_test_1',
                     'object' => 'coupon',
@@ -71,7 +77,7 @@ trait BuildsStripeOrderFixtures
                     'max_redemptions' => null,
                     'times_redeemed' => 0,
                 ], $coupon),
-            ]] : [],
+            ], $promotion)] : [],
             'has_more' => false,
         ];
     }

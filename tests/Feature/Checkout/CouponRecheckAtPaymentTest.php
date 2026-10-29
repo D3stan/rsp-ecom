@@ -2,6 +2,7 @@
 
 use App\Models\Cart;
 use App\Models\CheckoutSnapshot;
+use App\Models\Order;
 use App\Models\User;
 use Tests\Feature\Orders\Support\BuildsStripeOrderFixtures;
 
@@ -72,6 +73,15 @@ it('refuses to charge and drops the coupon when it is no longer valid', function
     'used up' => [['max_redemptions' => 5, 'times_redeemed' => 5], true],
     'deactivated' => [[], false],
 ]);
+
+it('refuses a first-order-only code at payment for a customer who already paid an order', function () {
+    $this->fakePromotionCode('TEN', promotion: ['restrictions' => ['first_time_transaction' => true]]);
+    Order::factory()->create(['user_id' => $this->user->id, 'payment_status' => 'succeeded']);
+
+    checkoutWithCoupon($this)->assertSessionHasErrors('coupon');
+
+    expect(stripeSessionWasCreated($this->stripeHttp->requests))->toBeFalse()->and(session()->has('applied_coupon'))->toBeFalse();
+});
 
 it('records the coupon the discount came from, not a stale code the form still sends', function () {
     $this->actingAs($this->user)->post('/checkout/cart', [

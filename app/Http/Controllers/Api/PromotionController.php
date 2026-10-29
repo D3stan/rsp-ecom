@@ -25,7 +25,7 @@ class PromotionController extends Controller
             'subtotal' => 'nullable|numeric|min:0',
         ]);
 
-        $validation = $this->promotionService->validatePromotionCode($request->code);
+        $validation = $this->promotionService->validatePromotionCode($request->code, $request->filled('subtotal') ? (float) $request->subtotal : null, $request->user());
 
         if ($validation['valid']) {
             $discount = $this->promotionService->calculateDiscount(

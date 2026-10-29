@@ -328,9 +328,11 @@ class CartController extends Controller
 
         $code = $request->input('code');
 
-        // Use PromotionService to validate the coupon via Stripe
+        // Use PromotionService to validate the coupon via Stripe (guests' first-order check runs again at checkout)
+        $cart = $this->getOrCreateCart();
+        $subtotal = $cart ? $cart->subtotal : 0;
         $promotionService = app(PromotionService::class);
-        $validation = $promotionService->validatePromotionCode($code);
+        $validation = $promotionService->validatePromotionCode($code, (float) $subtotal, $request->user());
 
         if (! $validation['valid']) {
             // Check if this is an Inertia request
@@ -344,17 +346,13 @@ class CartController extends Controller
             ], 422);
         }
 
-        // Get cart for subtotal calculation
-        $cart = $this->getOrCreateCart();
-        $subtotal = $cart ? $cart->subtotal : 0;
-
         // Calculate discount amount
         $discount = $promotionService->calculateDiscount($validation['coupon'], $subtotal);
 
         // Store coupon in session
         session([
             'applied_coupon' => [
-                'code' => $code,
+                'code' => $validation['promotion_code']->code, // Stripe's spelling, so usage counts match whatever case was typed
                 'promotion_code_id' => $validation['promotion_code']->id,
                 'coupon_id' => $validation['coupon']->id,
                 'name' => $validation['coupon']->name,
