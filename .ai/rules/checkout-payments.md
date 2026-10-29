@@ -55,7 +55,8 @@ Order lifecycle, refunds and cancellations: `.ai/rules/orders-refunds.md`. Email
 - `stripe_secret_key` in the `settings` table is a legacy fallback; the env key wins (`settings:purge-legacy-secrets`).
 - Success page falls back to a temporary summary built from Stripe line items if order creation fails; it is not an order.
 - The coupon is validated against Stripe twice: when applied in the cart and again right before charging (`assertCouponStillValid` in `CheckoutController`); a code that is no longer valid is dropped and the customer sent back. Enforced by `tests/Feature/Checkout/CouponRecheckAtPaymentTest.php`. The recorded `coupon_code` comes from the session, never the form field.
-- `max_redemptions` never trips in practice: the shop charges the discounted amount itself and never passes the promotion code to Stripe, so Stripe's `times_redeemed` stays 0. A usage-limited code is effectively unlimited until redemptions are counted.
+- Coupons are created in the Stripe Dashboard (no admin page). The shop never passes the code to Stripe, so `PromotionService` counts usage itself: paid orders carrying the code plus Stripe's own `times_redeemed`. Honoured: coupon and code expiry, coupon-wide and per-code limits, minimum amount (items total, before discount), first order only (account or email with a paid order). Refused: codes limited to Stripe customers or products. Enforced by `tests/Feature/Checkout/PromotionCodeRulesTest.php`.
+- Usage is counted only once an order is paid, so two checkouts paying at the same moment can both take the last use (`shortcut:` in `PromotionService`).
 
 ## Operate
 - `php artisan ops:reconcile-stripe --hours=48`: scheduled daily 07:00 (`routes/console.php`); alerts on paid sessions with no order or mismatches. Needs the Stripe API.
