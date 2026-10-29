@@ -4,6 +4,7 @@ paths:
   - docker/**
   - docker-compose*.yml
   - .github/workflows/**
+  - .github/dependabot.yml
 ---
 # Deployment
 
@@ -15,6 +16,7 @@ Dokploy Docker Compose stacks (production and sandbox), the image they build, an
 - `docker-compose.sandbox.yml`: sandbox stack, same roles plus in-stack MariaDB and a mail catcher.
 - `docker/entrypoint.d/60-rsp-startup.sh`: startup tasks run after migrate.
 - `.github/workflows/tests.yml`, `lint.yml`, `security.yml`: CI only.
+- `.github/dependabot.yml`: weekly version-update PRs, targeted at `sandbox`.
 - `.ai/skills/deploying-to-dokploy/SKILL.md`: MCP call sequences.
 
 ## Rules
@@ -25,6 +27,7 @@ Dokploy Docker Compose stacks (production and sandbox), the image they build, an
 - MUST keep `queue` and `scheduler` on `AUTORUN_ENABLED=false` and `RSP_STARTUP_TASKS=false`, or every worker restart migrates and rebuilds sitemaps (unenforced; set in the compose files).
 - MUST keep sessions, cache and queue on a store all three containers share (`database`; unenforced).
 - MUST NOT add Redis settings: the image has no redis extension (unenforced).
+- NEVER enable auto-merge on Dependabot PRs: CI does not gate the deploy (unenforced).
 - Real values live only in the Dokploy Environment tab; never commit them (unenforced).
 
 ## How it works
@@ -45,6 +48,8 @@ Dokploy Docker Compose stacks (production and sandbox), the image they build, an
 - Build args and `VITE_*` vars are baked at build time; changing them needs a rebuild, not a restart.
 - `queue:work` exits every `--max-time` seconds by design; the restart policy brings it back.
 - Migrations are not reversed on rollback.
+- Dependabot security PRs ignore `target-branch` and go to the default branch `main`; they change `composer.lock`/`package-lock.json`, so merging one deploys production. Review it, then merge `main` back into `sandbox`. Version-update PRs go to `sandbox`.
+- `serversideup/php` is ignored in `dependabot.yml` on purpose (the image is pinned to PHP 8.5), as are Node majors. `mailpit:latest` in the sandbox compose is unpinned, so Dependabot cannot bump it.
 
 ## Operate
 - Live state: `compose-search`, `compose-one`, `domain-byComposeId`, `deployment-allByCompose`, `deployment-readLogs`.

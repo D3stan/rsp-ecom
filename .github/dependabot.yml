@@ -1,0 +1,45 @@
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    target-branch: sandbox
+    schedule: { interval: weekly, day: monday, time: "07:00", timezone: Europe/Rome }
+    open-pull-requests-limit: 5
+    labels: [dependencies, php]
+    cooldown: { default-days: 7 }
+    groups:
+      payments:
+        patterns: ["stripe/*", "laravel/cashier*"]
+      laravel:
+        patterns: ["laravel/*", "illuminate/*"]
+        exclude-patterns: ["laravel/cashier*"]
+        update-types: [minor, patch]
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /
+    target-branch: sandbox
+    schedule: { interval: weekly, day: monday, time: "07:00", timezone: Europe/Rome }
+    open-pull-requests-limit: 5
+    labels: [dependencies, javascript]
+    cooldown: { default-days: 7 }
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: sandbox
+    schedule: { interval: monthly }
+    labels: [dependencies, ci]
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: docker
+    directory: /
+    target-branch: sandbox
+    schedule: { interval: monthly }
+    labels: [dependencies, docker]
+    ignore:
+      - dependency-name: "serversideup/php"
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
