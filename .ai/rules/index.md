@@ -11,7 +11,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | tests/** | .ai/rules/boost/tests.md |
 | app/Services/StockService.php, app/Services/MarkdownRenderer.php, app/Models/Product.php, app/Models/ProductVariant.php, app/Http/Controllers/Admin/ProductController.php | .ai/rules/catalog-inventory.md |
 | app/Http/Controllers/Checkout*.php, app/Services/OrderCreationService.php, app/Services/PromotionService.php, app/Listeners/StripeWebhookListener.php, app/Support/CheckoutTotals.php, tests/Feature/Checkout/*.php | .ai/rules/checkout-payments.md |
-| Dockerfile, docker/**, docker-compose*.yml, .github/workflows/** | .ai/rules/deployment.md |
+| Dockerfile, docker/**, docker-compose*.yml, .github/workflows/**, .github/dependabot.yml | .ai/rules/deployment.md |
 | app/Services/Newsletter/*.php, app/Jobs/Newsletter/*.php, app/Jobs/SendOrderEmail.php, tests/Feature/Newsletter/*.php | .ai/rules/email-newsletter.md |
 | .env.example, .env.production.example, .env.sandbox.example | .ai/rules/environment.md |
 | lang/*.json, app/Support/Locales.php, app/Http/Middleware/DetectLanguage.php, app/Http/Middleware/ShareTranslations.php, resources/js/contexts/TranslationContext.tsx, resources/js/lib/translation-guard.ts | .ai/rules/i18n.md |
