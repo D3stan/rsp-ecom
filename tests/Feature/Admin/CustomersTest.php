@@ -6,14 +6,14 @@ use Illuminate\Support\Facades\Notification;
 
 beforeEach(function () {
     $this->admin = User::factory()->create(['role' => 'admin']);
-    $this->customer = User::factory()->create(['role' => 'customer', 'name' => 'Mario Rossi', 'is_active' => true]);
+    $this->customer = User::factory()->create(['role' => 'customer', 'name' => 'Zorblax Rossi', 'is_active' => true]);
 });
 
 it('lets an admin list and view customers', function () {
     Order::factory()->create(['user_id' => $this->customer->id, 'payment_status' => 'succeeded', 'total_amount' => 40]);
     Order::factory()->create(['user_id' => $this->customer->id, 'payment_status' => 'pending', 'total_amount' => 99]);
 
-    $this->actingAs($this->admin)->get(route('admin.customers.index', ['search' => 'Mario']))
+    $this->actingAs($this->admin)->get(route('admin.customers.index', ['search' => 'Zorblax']))
         ->assertOk()
         ->assertInertia(fn ($p) => $p->component('Admin/Customers/Index')
             ->has('customers.data', 1)
