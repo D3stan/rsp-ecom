@@ -22,7 +22,7 @@ Page meta/OpenGraph/JSON-LD, canonical, robots and sitemap generation. Does not 
 - MUST mark private/transactional pages (cart, dashboard) `noindex,nofollow` with `SEOMeta::addMeta('robots', ...)`. Unenforced.
 - MUST keep searched, price-filtered, sorted and unknown/inactive-category `/products` pages `noindex,follow`; a plain active `?category=` page is the category landing page and is indexed, canonical and `og:url` = just the category. Enforced by `tests/Feature/Seo/CategoryLandingIndexingTest.php`.
 - MUST print exactly one canonical per page: only SEOMeta prints it (controller `setCanonical`, else `defaults.canonical = 'current'`, the URL without its query string). Never add a canonical to the layout. Enforced by `tests/Feature/Seo/CanonicalTagTest.php`.
-- NEVER write `public/sitemap.xml` from anything but `generate:sitemap-index`: it is the index of the chunk files. Enforced by `tests/Feature/Seo/SitemapScheduleTest.php` (schedule).
+- NEVER write `sitemap.xml` (in `public/`) from anything but `generate:sitemap-index`: it is the index of the chunk files. Enforced by `tests/Feature/Seo/SitemapScheduleTest.php` (schedule).
 - NEVER emit JSON-LD without `JSON_HEX_TAG` (it is inlined in a `<script>`). Unenforced.
 - Product page title = `seo_title` or `name`; OG/Twitter image = `social_image_url` or main image, made absolute. `seo_title` is validated `nullable|string|max:255` in `app/Http/Controllers/Admin/ProductController.php`. Unenforced by tests.
 - Only active, in-stock products and categories with at least one such product belong in the sitemap. Unenforced.
