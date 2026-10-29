@@ -57,7 +57,7 @@
         "framer-motion": "^12.23.12",
         "globals": "^15.14.0",
         "gsap": "^3.13.0",
-        "laravel-vite-plugin": "^2.0",
+        "laravel-vite-plugin": "^3.2",
         "lucide-react": "^0.475.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
