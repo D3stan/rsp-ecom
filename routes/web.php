@@ -40,7 +40,8 @@ Route::put('/cart/items/{cartItem}', [CartController::class, 'update'])->name('c
 Route::delete('/cart/items/{cartItem}', [CartController::class, 'remove'])->name('cart.remove');
 Route::delete('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
-Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.apply-coupon');
+// Each try costs a Stripe lookup and reveals whether a code exists, so tries are limited
+Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon'])->middleware('throttle:10,1')->name('cart.apply-coupon');
 Route::delete('/cart/remove-coupon', [CartController::class, 'removeCoupon'])->name('cart.remove-coupon');
 
 // CSRF token endpoint for AJAX requests
@@ -140,7 +141,7 @@ Route::post('/newsletter/unsubscribe/{subscriber}', [NewsletterController::class
 
 // API routes for AJAX calls
 Route::prefix('api')->group(function () {
-    Route::post('/promotion/validate', [PromotionController::class, 'validate'])->name('api.promotion.validate');
+    Route::post('/promotion/validate', [PromotionController::class, 'validate'])->middleware('throttle:10,1')->name('api.promotion.validate');
 });
 
 Route::get('/api/translations/{locale}', function ($locale) {

@@ -87,7 +87,7 @@ it('keeps a first-order-only code to customers without a paid order', function (
     $this->fakePromotionCode('TEN', promotion: ['restrictions' => ['first_time_transaction' => true]]);
     $returning = User::factory()->create();
     paidOrderWith(null, ['user_id' => $returning->id]);
-    paidOrderWith(null, ['user_id' => null, 'guest_email' => 'guest@example.test']);
+    paidOrderWith(null, ['user_id' => null, 'guest_email' => 'Guest@Example.test']);
 
     expect(validateCode(user: $returning))->toMatchArray(['valid' => false, 'error' => __('coupon.first_order_only')])
         ->and(validateCode(email: 'guest@example.test')['valid'])->toBeFalse()
@@ -101,4 +101,14 @@ it('fails closed with a retry message when Stripe cannot be reached', function (
     $this->stripeHttp->responses['GET /v1/promotion_codes'] = ['__status' => 500, 'error' => ['message' => 'down']];
 
     expect(validateCode())->toMatchArray(['valid' => false, 'error' => __('coupon.check_failed')]);
+});
+
+it('limits coupon tries to ten a minute', function () {
+    $this->fakePromotionCode('TEN', found: false);
+
+    foreach (range(1, 10) as $try) {
+        $this->postJson('/cart/apply-coupon', ['code' => 'GUESS'.$try])->assertStatus(422);
+    }
+
+    $this->postJson('/cart/apply-coupon', ['code' => 'GUESS11'])->assertStatus(429);
 });

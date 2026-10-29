@@ -129,7 +129,7 @@ class PromotionService
      */
     private function codesOf(Coupon $coupon, PromotionCode $known): array
     {
-        $codes = collect(PromotionCode::all(['coupon' => $coupon->id, 'limit' => 100])->data)->pluck('code');
+        $codes = collect(PromotionCode::all(['coupon' => $coupon->id, 'limit' => 100])->autoPagingIterator())->pluck('code');
 
         return $codes->push($known->code)->unique()->values()->all();
     }
@@ -139,7 +139,7 @@ class PromotionService
      */
     private function hasPaidOrder(?User $user, ?string $email): bool
     {
-        $emails = array_values(array_filter([$email, $user?->email]));
+        $emails = array_map('strtolower', array_values(array_filter([$email, $user?->email])));
 
         return Order::query()
             ->whereIn('payment_status', Order::CAPTURED_PAYMENT_STATUSES)
@@ -148,7 +148,7 @@ class PromotionService
                     $query->where('user_id', $user->id);
                 }
                 if ($emails) {
-                    $query->orWhereIn('guest_email', $emails);
+                    $query->orWhereIn(DB::raw('LOWER(guest_email)'), $emails);
                 }
             })
             ->exists();
