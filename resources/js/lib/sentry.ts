@@ -107,18 +107,15 @@ export function initSentry(config: SentryConfig | undefined, auth: AuthProps | u
     });
 
     // A request that failed before a page came back (network down, server crashed mid-response)
-    router.on('exception', (event) => {
-        Sentry.captureException(event.detail.exception);
+    router.on('networkError', (event) => {
+        Sentry.captureException(event.detail.error);
     });
 
     // The server answered with something that is not an Inertia page, typically a plain 500
-    router.on('invalid', (event) => {
-        const response = event.detail.response;
-
+    router.on('httpException', (event) => {
         Sentry.captureMessage('Inertia received a non-Inertia response', {
             level: 'warning',
-            tags: { status: String(response.status) },
-            extra: { url: String(response.config?.url ?? '').split('?')[0] },
+            tags: { status: String(event.detail.response.status) },
         });
     });
 }
