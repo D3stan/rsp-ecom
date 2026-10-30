@@ -30,7 +30,7 @@ class PromotionService
                 'code' => $code,
                 'active' => true,
                 'limit' => 1,
-                'expand' => ['data.coupon.applies_to'],
+                'expand' => ['data.promotion.coupon.applies_to'],
             ]);
 
             if (empty($promotionCodes->data)) {
@@ -38,7 +38,7 @@ class PromotionService
             }
 
             $promotionCode = $promotionCodes->data[0];
-            $coupon = $promotionCode->coupon;
+            $coupon = $promotionCode->promotion->coupon;
 
             if ($error = $this->restrictionError($promotionCode, $coupon, $itemsTotal, $user, $email)) {
                 return ['valid' => false, 'error' => $error];
@@ -274,7 +274,7 @@ class PromotionService
     {
         try {
             $params = [
-                'coupon' => $couponId,
+                'promotion' => ['type' => 'coupon', 'coupon' => $couponId],
                 'code' => $promotionData['code'],
             ];
 
@@ -329,6 +329,7 @@ class PromotionService
             $promotionCodes = PromotionCode::all([
                 'active' => true,
                 'limit' => $limit,
+                'expand' => ['data.promotion.coupon'],
             ]);
 
             $codes = [];
@@ -337,13 +338,13 @@ class PromotionService
                     'id' => $promotionCode->id,
                     'code' => $promotionCode->code,
                     'coupon' => [
-                        'id' => $promotionCode->coupon->id,
-                        'name' => $promotionCode->coupon->name,
-                        'amount_off' => $promotionCode->coupon->amount_off,
-                        'percent_off' => $promotionCode->coupon->percent_off,
-                        'duration' => $promotionCode->coupon->duration,
-                        'times_redeemed' => $promotionCode->coupon->times_redeemed,
-                        'max_redemptions' => $promotionCode->coupon->max_redemptions,
+                        'id' => $promotionCode->promotion->coupon->id,
+                        'name' => $promotionCode->promotion->coupon->name,
+                        'amount_off' => $promotionCode->promotion->coupon->amount_off,
+                        'percent_off' => $promotionCode->promotion->coupon->percent_off,
+                        'duration' => $promotionCode->promotion->coupon->duration,
+                        'times_redeemed' => $promotionCode->promotion->coupon->times_redeemed,
+                        'max_redemptions' => $promotionCode->promotion->coupon->max_redemptions,
                     ],
                     'active' => $promotionCode->active,
                     'expires_at' => $promotionCode->expires_at,

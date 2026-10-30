@@ -140,7 +140,7 @@ class CheckoutSnapshotTest extends TestCase
         [$params, $json] = $this->stripeSessionRequest();
         $snapshot = CheckoutSnapshot::sole();
 
-        $this->assertSame(5500, (int) $params['line_items'][0]['price_data']['unit_amount']);
+        $this->assertSame(5500, (int) $params['line_items'][0]['price_data']['unit_amount_decimal']);
         $this->assertSame($snapshot->id, $params['metadata']['snapshot_id']);
         $this->assertSame((string) $user->id, (string) $params['metadata']['user_id']);
         $this->assertSame($user->id, $snapshot->user_id);

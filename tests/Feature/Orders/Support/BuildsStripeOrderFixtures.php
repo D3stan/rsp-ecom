@@ -66,7 +66,7 @@ trait BuildsStripeOrderFixtures
                 'times_redeemed' => 0,
                 'customer' => null,
                 'restrictions' => ['first_time_transaction' => false, 'minimum_amount' => null, 'minimum_amount_currency' => null],
-                'coupon' => array_merge([
+                'promotion' => ['type' => 'coupon', 'coupon' => array_merge([
                     'id' => 'coupon_test_1',
                     'object' => 'coupon',
                     'name' => $code,
@@ -76,7 +76,7 @@ trait BuildsStripeOrderFixtures
                     'redeem_by' => null,
                     'max_redemptions' => null,
                     'times_redeemed' => 0,
-                ], $coupon),
+                ], $coupon)],
             ], $promotion)] : [],
             'has_more' => false,
         ];
