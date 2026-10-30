@@ -6,7 +6,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 | --- | --- |
 | app/Http/Controllers/Auth/*.php, app/Http/Middleware/AdminMiddleware.php, app/Http/Middleware/EnsureUserIsActive.php, app/Listeners/*.php, routes/auth.php, tests/Feature/Auth/*.php | .ai/rules/auth.md |
 | app/Http/**, routes/** | .ai/rules/boost/http-routes.md |
-| resources/js/** | .ai/rules/boost/js.md |
 | app/Models/** | .ai/rules/boost/models.md |
 | tests/** | .ai/rules/boost/tests.md |
 | app/Services/StockService.php, app/Services/MarkdownRenderer.php, app/Models/Product.php, app/Models/ProductVariant.php, app/Http/Controllers/Admin/ProductController.php | .ai/rules/catalog-inventory.md |

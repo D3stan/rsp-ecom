@@ -1,7 +1,7 @@
 import React from 'react';
 import '../css/app.css';
 
-import { createInertiaApp, router } from '@inertiajs/react';
+import { createInertiaApp, type ResolvedComponent, router } from '@inertiajs/react';
 import * as Sentry from '@sentry/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
@@ -37,7 +37,7 @@ function AppWrapper({ children, pageProps }: { children: React.ReactNode; pagePr
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
-    resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
+    resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob<ResolvedComponent>('./pages/**/*.tsx')),
     setup({ el, App, props }) {
         // Before anything renders: the theme and language code reads it on first render
         setPreferencesConsent(props.initialPage.props.cookieConsent as CookieConsentProps | undefined);
@@ -53,7 +53,9 @@ createInertiaApp({
         // Renders the page (this app has no persistent layouts) next to the FlashToaster: inside Inertia's page
         // context, mounted once for every page (storefront, account and admin) and kept across visits.
         root.render(
-            <AppWrapper pageProps={props}>
+            // shortcut: these are the app props, not the page props, so translations/locale arrive undefined (as before
+            // Inertia 3); pass props.initialPage.props once the first-render language choice is reviewed
+            <AppWrapper pageProps={props as unknown as Record<string, unknown>}>
                 <App {...props}>
                     {({
                         Component,

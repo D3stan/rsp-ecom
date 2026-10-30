@@ -80,7 +80,7 @@ class ShippingAndVatTest extends TestCase
         foreach (array_reverse($this->stripeHttp->requests) as [$method, $url, $params]) {
             if ($method === 'post' && str_ends_with($url, '/v1/checkout/sessions')) {
                 return [
-                    (int) $params['line_items'][0]['price_data']['unit_amount'],
+                    (int) ($params['line_items'][0]['price_data']['unit_amount'] ?? $params['line_items'][0]['price_data']['unit_amount_decimal']),
                     $params['metadata'],
                 ];
             }
