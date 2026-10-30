@@ -18,7 +18,7 @@
         "laravel/socialite": "^5.23",
         "laravel/tinker": "^3.0",
         "sentry/sentry-laravel": "^4.29",
-        "spatie/laravel-sitemap": "^7.3",
+        "spatie/laravel-sitemap": "^8.2",
         "spatie/schema-org": "^5.0",
         "tightenco/ziggy": "^2.4",
         "whitecube/laravel-cookie-consent": "^1.3"
