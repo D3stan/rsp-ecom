@@ -243,8 +243,8 @@ export default function AdminDashboard({
                                     <XAxis dataKey="date" />
                                     <YAxis />
                                     <Tooltip
-                                        formatter={(value: number, name: string) => [
-                                            name === 'revenue' ? formatCurrency(value) : value,
+                                        formatter={(value, name) => [
+                                            name === 'revenue' ? formatCurrency(Number(value)) : value,
                                             name === 'revenue' ? t('admin.dashboard.chart_revenue') : t('admin.dashboard.chart_orders'),
                                         ]}
                                     />
