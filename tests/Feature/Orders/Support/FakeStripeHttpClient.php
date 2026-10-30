@@ -26,7 +26,7 @@ class FakeStripeHttpClient implements ClientInterface
      */
     public array $responses = [];
 
-    public function request($method, $absUrl, $headers, $params, $hasFile, $apiMode = 'v1')
+    public function request($method, $absUrl, $headers, $params, $hasFile, $apiMode = 'v1', $maxNetworkRetries = null)
     {
         $this->requests[] = [$method, $absUrl, $params];
         $this->headers[] = $headers;
