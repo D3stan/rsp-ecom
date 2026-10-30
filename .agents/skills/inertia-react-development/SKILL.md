@@ -93,9 +93,116 @@ router.visit('/users', {
 
 ## Form Handling
 
+### Form Component (Recommended)
+
+The recommended way to build forms is with the `<Form>` component:
+
+<!-- Form Component Example -->
+```react
+import { Form } from '@inertiajs/react'
+
+export default function CreateUser() {
+    return (
+        <Form action="/users" method="post">
+            {({ errors, processing, wasSuccessful }) => (
+                <>
+                    <input type="text" name="name" />
+                    {errors.name && <div>{errors.name}</div>}
+
+                    <input type="email" name="email" />
+                    {errors.email && <div>{errors.email}</div>}
+
+                    <button type="submit" disabled={processing}>
+                        {processing ? 'Creating...' : 'Create User'}
+                    </button>
+
+                    {wasSuccessful && <div>User created!</div>}
+                </>
+            )}
+        </Form>
+    )
+}
+```
+
+### Form Component With All Props
+
+<!-- Form Component Full Example -->
+```react
+import { Form } from '@inertiajs/react'
+
+<Form action="/users" method="post">
+    {({
+        errors,
+        hasErrors,
+        processing,
+        progress,
+        wasSuccessful,
+        recentlySuccessful,
+        clearErrors,
+        resetAndClearErrors,
+        defaults,
+        isDirty,
+        reset,
+        submit
+    }) => (
+        <>
+            <input type="text" name="name" defaultValue={defaults.name} />
+            {errors.name && <div>{errors.name}</div>}
+
+            <button type="submit" disabled={processing}>
+                {processing ? 'Saving...' : 'Save'}
+            </button>
+
+            {progress && (
+                <progress value={progress.percentage} max="100">
+                    {progress.percentage}%
+                </progress>
+            )}
+
+            {wasSuccessful && <div>Saved!</div>}
+        </>
+    )}
+</Form>
+```
+
+### Form Component Reset Props
+
+The `<Form>` component supports automatic resetting:
+
+- `resetOnError` - Reset form data when the request fails
+- `resetOnSuccess` - Reset form data when the request succeeds
+- `setDefaultsOnSuccess` - Update default values on success
+
+Use the `search-docs` tool with a query of `form component resetting` for detailed guidance.
+
+<!-- Form with Reset Props -->
+```react
+import { Form } from '@inertiajs/react'
+
+<Form
+    action="/users"
+    method="post"
+    resetOnSuccess
+    setDefaultsOnSuccess
+>
+    {({ errors, processing, wasSuccessful }) => (
+        <>
+            <input type="text" name="name" />
+            {errors.name && <div>{errors.name}</div>}
+
+            <button type="submit" disabled={processing}>
+                Submit
+            </button>
+        </>
+    )}
+</Form>
+```
+
+Forms can also be built using the `useForm` helper for more programmatic control. Use the `search-docs` tool with a query of `useForm helper` for guidance.
+
 ### `useForm` Hook
 
-For Inertia v2.0.x: Build forms using the `useForm` helper as the `<Form>` component is not available until v2.1.0+.
+For more programmatic control or to follow existing conventions, use the `useForm` hook:
 
 <!-- useForm Hook Example -->
 ```react

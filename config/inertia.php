@@ -33,15 +33,15 @@ return [
     |
     */
 
-    'testing' => [
+    'pages' => [
 
-        'ensure_pages_exist' => true,
+        'ensure_pages_exist' => false,
 
-        'page_paths' => [
+        'paths' => [
             resource_path('js/pages'),
         ],
 
-        'page_extensions' => [
+        'extensions' => [
             'js',
             'jsx',
             'svelte',
@@ -49,6 +49,12 @@ return [
             'tsx',
             'vue',
         ],
+
+    ],
+
+    'testing' => [
+
+        'ensure_pages_exist' => true,
 
     ],
 
