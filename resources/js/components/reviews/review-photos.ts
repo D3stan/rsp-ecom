@@ -17,10 +17,7 @@ export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const REQUEST_HEADROOM = 64 * 1024;
 
 export type PhotoProblem =
-    | { key: 'too_many' }
-    | { key: 'wrong_type'; name: string }
-    | { key: 'too_large'; name: string }
-    | { key: 'total_too_large' };
+    { key: 'too_many' } | { key: 'wrong_type'; name: string } | { key: 'too_large'; name: string } | { key: 'total_too_large' };
 
 /** Add the picked files to the current selection, dropping (and reporting) the ones the server would refuse. */
 export function addPhotos(current: File[], incoming: File[], limits: PhotoLimits): { files: File[]; problems: PhotoProblem[] } {
