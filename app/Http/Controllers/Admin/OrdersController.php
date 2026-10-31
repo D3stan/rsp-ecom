@@ -46,7 +46,7 @@ class OrdersController extends Controller
     /** "shipped" needs the carrier, the tracking number and the single shipped email: only the ship form does that. */
     private const TRACKING_SHIP_FORM_ONLY_MESSAGE = 'Add tracking with the ship form: it ships the order and notifies the customer.';
 
-    private const SHIP_FORM_ONLY_MESSAGE ='Use the ship form to ship an order: it records the carrier and tracking number and notifies the customer.';
+    private const SHIP_FORM_ONLY_MESSAGE = 'Use the ship form to ship an order: it records the carrier and tracking number and notifies the customer.';
 
     private const REFUND_UNCONFIRMED_MESSAGE = 'Stripe did not confirm the refund yet; it will be updated automatically. Do not retry with a new refund: '
         .'if it stays pending, use "Retry" on it (it resends the same request, so it cannot be paid twice).';
