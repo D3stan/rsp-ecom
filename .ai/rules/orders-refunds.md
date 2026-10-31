@@ -66,7 +66,8 @@ Net revenue = Σ total of captured, non-cancelled orders − Σ succeeded refund
 
 ## Traps
 - "Refund due" is computed, never stored: `cancelled` AND `payment_status` in `succeeded`/`partially_refunded`. Filter `?refund_due=1` on the order list.
-- Typing a tracking number in the edit form does not ship the order.
+- Tracking starts in the ship form: the edit form refuses a new tracking number or carrier on an order that is not `shipped`/`delivered` (resent unchanged values and clearing pass), and never ships the order. `ShipFormTest`, `AdminShippedEmailTest`, `OrderEditGuardsTest`.
+- Address edits from the edit form or the ship page add a `note` order event listing `field: old → new`. `OrderEventsTest`.
 - A refund made today lowers the creation month's revenue, not today's.
 - Unconfirmed is not failed: retrying with a new refund can double-pay.
 - Stripe charges the amount it was given while payment is in flight, so editing money then makes the order disagree with it.

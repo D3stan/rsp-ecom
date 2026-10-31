@@ -156,11 +156,11 @@ it('refuses "shipped" from the edit form, the status endpoint and the bulk actio
     Queue::assertNothingPushed();
 });
 
-it('does not ship an order when a tracking number is typed into the edit form', function () {
+it('refuses a tracking number typed into the edit form of an order that has not shipped', function () {
     $this->actingAs($this->admin)->put(route('admin.orders.update', $this->order), ['tracking_number' => 'TRK1', 'tracking_carrier' => 'acme'])
-        ->assertSessionHas('success');
+        ->assertSessionHasErrors('tracking_number');
 
-    expect($this->order->fresh()->status)->toBe('processing');
+    expect($this->order->fresh())->status->toBe('processing')->tracking_number->toBeNull();
     Queue::assertNothingPushed();
 });
 

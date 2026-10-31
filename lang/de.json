@@ -2131,7 +2131,6 @@
     "admin.orders.save": "Speichern",
     "admin.orders.cancel": "Abbrechen",
     "admin.orders.not_assigned": "Nicht zugewiesen",
-    "admin.orders.add": "Hinzufügen",
     "admin.orders.package_status": "Paketstatus",
     "admin.orders.in_transit": "Unterwegs",
     "admin.orders.track_package_with": "Verfolgen Sie Ihr Paket mit: {tracking_number}",

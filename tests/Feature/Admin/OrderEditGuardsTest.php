@@ -198,3 +198,15 @@ it('locks the amounts while the payment is in flight (Stripe charges the amount 
     $this->actingAs($this->admin)->get(route('admin.orders.edit', $order))
         ->assertInertia(fn (Assert $page) => $page->where('financials_locked', true));
 });
+
+it('accepts the tracking the edit form resends unchanged, and clearing it, on an order that has not shipped', function () {
+    $order = editGuardsOrder('succeeded');
+    $order->update(['tracking_number' => 'TRK-OLD']);
+
+    $this->actingAs($this->admin)->patch(route('admin.orders.update', $order), ['tracking_number' => ' trk-old ', 'notes' => 'Called'])
+        ->assertSessionHas('success');
+    $this->actingAs($this->admin)->patch(route('admin.orders.update', $order), ['tracking_number' => null])
+        ->assertSessionHas('success');
+
+    expect($order->fresh())->notes->toBe('Called')->tracking_number->toBeNull();
+});

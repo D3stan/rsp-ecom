@@ -52,12 +52,12 @@ it('rejects any carrier when none is configured', function () {
         ->assertSessionHasErrors('tracking_carrier');
 });
 
-it('saves, changes and clears the carrier from the edit form, and leaves it alone when not sent', function () {
+it('saves, changes and clears the carrier of a shipped order from the edit form, and leaves it alone when not sent', function () {
+    $this->order->update(['status' => 'shipped']);
     $url = route('admin.orders.update', $this->order);
 
-    // the edit form stores tracking data; it never ships the order (the ship form does)
     $this->actingAs($this->admin)->put($url, ['tracking_number' => 'TRK9', 'tracking_carrier' => 'acme'])->assertSessionHas('success');
-    expect($this->order->fresh())->tracking_carrier->toBe('acme')->tracking_number->toBe('TRK9')->status->toBe('processing');
+    expect($this->order->fresh())->tracking_carrier->toBe('acme')->tracking_number->toBe('TRK9');
 
     $this->actingAs($this->admin)->put($url, ['notes' => 'only notes']);
     expect($this->order->fresh()->tracking_carrier)->toBe('acme');

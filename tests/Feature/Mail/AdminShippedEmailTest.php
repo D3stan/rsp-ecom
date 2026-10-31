@@ -144,9 +144,9 @@ it('keeps the legacy fingerprint for an order shipped before carriers existed', 
         ->and(OrderEmail::shippedFingerprint('TRK1'))->toBe(substr(sha1('shipped|TRK1'), 0, 40));
 });
 
-it('sends nothing when the carrier changes on an order that is not shipped', function () {
-    $this->actingAs($this->admin)->put(route('admin.orders.update', $this->order), ['tracking_carrier' => 'acme'])->assertSessionHas('success');
+it('refuses a carrier on an order that is not shipped, and sends nothing', function () {
+    $this->actingAs($this->admin)->put(route('admin.orders.update', $this->order), ['tracking_carrier' => 'acme'])->assertSessionHasErrors('tracking_number');
 
-    expect($this->order->fresh())->status->toBe('processing')->tracking_carrier->toBe('acme');
+    expect($this->order->fresh())->status->toBe('processing')->tracking_carrier->toBeNull();
     Queue::assertNothingPushed();
 });

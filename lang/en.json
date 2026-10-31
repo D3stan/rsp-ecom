@@ -2131,7 +2131,6 @@
     "admin.orders.save": "Save",
     "admin.orders.cancel": "Cancel",
     "admin.orders.not_assigned": "Not assigned",
-    "admin.orders.add": "Add",
     "admin.orders.package_status": "Package Status",
     "admin.orders.in_transit": "In Transit",
     "admin.orders.track_package_with": "Track your package with: {tracking_number}",

@@ -92,3 +92,29 @@ it('gives an order without history an empty event list', function () {
     $this->actingAs($this->admin)->get(route('admin.orders.show', $order))
         ->assertInertia(fn (Assert $page) => $page->where('events', []));
 });
+
+it('records an address edit from the edit form as a history note with the old and new values', function () {
+    $order = eventsOrder('processing');
+    $address = $order->shippingAddress->only(['first_name', 'last_name', 'address_line_1', 'city', 'postal_code', 'country']);
+    $address['phone'] = '+39 333 0000000';
+    $oldPhone = (string) $order->shippingAddress->phone;
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.orders.update', $order), ['shipping_address' => json_encode($address)])
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseHas('order_events', ['order_id' => $order->id, 'type' => 'note', 'actor_id' => $this->admin->id]);
+    expect(json_decode(DB::table('order_events')->where('order_id', $order->id)->value('payload'), true)['reason'])
+        ->toBe("Shipping address changed: phone: {$oldPhone} → +39 333 0000000");
+});
+
+it('records no address note when the edit form resends the address unchanged', function () {
+    $order = eventsOrder('processing');
+    $address = $order->shippingAddress->only(['first_name', 'last_name', 'address_line_1', 'city', 'postal_code', 'country']);
+
+    $this->actingAs($this->admin)
+        ->patch(route('admin.orders.update', $order), ['shipping_address' => json_encode($address), 'notes' => 'Called'])
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseMissing('order_events', ['order_id' => $order->id]);
+});

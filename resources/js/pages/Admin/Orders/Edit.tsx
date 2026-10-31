@@ -133,6 +133,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     // The status the form showed when it was opened; the order prop refreshes after a refused save, this must not
     const [paymentStatusWas] = useState(order.payment_status);
+    const hasShipped = order.status === 'shipped' || order.status === 'delivered';
     const [formData, setFormData] = useState<FormData>({
         status: order.status,
         payment_status: order.payment_status,
@@ -460,64 +461,71 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                             </Select>
                                         </div>
                                     </div>
-                                    <div>
-                                        <Label htmlFor="tracking_number">{t('admin.orders.tracking_number')}</Label>
-                                        <Input
-                                            id="tracking_number"
-                                            value={formData.tracking_number}
-                                            onChange={(e) => setFormData((prev) => ({ ...prev, tracking_number: e.target.value }))}
-                                            placeholder={t('admin.orders.enter_tracking_number')}
-                                        />
-                                    </div>
-                                    {carriers.length > 0 && (
-                                        <div>
-                                            <Label htmlFor="tracking_carrier">{t('tracking_admin.carrier')}</Label>
-                                            <Select
-                                                value={formData.tracking_carrier || NO_CARRIER}
-                                                onValueChange={(value) =>
-                                                    setFormData((prev) => ({ ...prev, tracking_carrier: value === NO_CARRIER ? '' : value }))
-                                                }
-                                            >
-                                                <SelectTrigger id="tracking_carrier">
-                                                    <SelectValue placeholder={t('tracking_admin.carrier_select')} />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {carriers.map((carrier) => (
-                                                        <SelectItem key={carrier.code} value={carrier.code}>
-                                                            {carrier.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                    <SelectItem value={NO_CARRIER}>{t('tracking_admin.carrier_unknown')}</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    )}
-                                    {tracking_drivers.length > 1 && (
-                                        <div>
-                                            <Label htmlFor="tracking_driver">
-                                                {t('tracking_admin.provider', { defaultValue: 'Tracking Provider' })}
-                                            </Label>
-                                            <Select
-                                                value={formData.tracking_driver || NO_CARRIER}
-                                                onValueChange={(value) =>
-                                                    setFormData((prev) => ({ ...prev, tracking_driver: value === NO_CARRIER ? '' : value }))
-                                                }
-                                            >
-                                                <SelectTrigger id="tracking_driver">
-                                                    <SelectValue placeholder={t('tracking_admin.provider_default', { defaultValue: 'Default' })} />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value={NO_CARRIER}>
-                                                        {t('tracking_admin.provider_default', { defaultValue: 'Default' })}
-                                                    </SelectItem>
-                                                    {tracking_drivers.map((driver) => (
-                                                        <SelectItem key={driver} value={driver}>
-                                                            {driver}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                    {/* Tracking starts in the ship form; the server refuses it on an order that has not shipped */}
+                                    {hasShipped && (
+                                        <>
+                                            <div>
+                                                <Label htmlFor="tracking_number">{t('admin.orders.tracking_number')}</Label>
+                                                <Input
+                                                    id="tracking_number"
+                                                    value={formData.tracking_number}
+                                                    onChange={(e) => setFormData((prev) => ({ ...prev, tracking_number: e.target.value }))}
+                                                    placeholder={t('admin.orders.enter_tracking_number')}
+                                                />
+                                            </div>
+                                            {carriers.length > 0 && (
+                                                <div>
+                                                    <Label htmlFor="tracking_carrier">{t('tracking_admin.carrier')}</Label>
+                                                    <Select
+                                                        value={formData.tracking_carrier || NO_CARRIER}
+                                                        onValueChange={(value) =>
+                                                            setFormData((prev) => ({ ...prev, tracking_carrier: value === NO_CARRIER ? '' : value }))
+                                                        }
+                                                    >
+                                                        <SelectTrigger id="tracking_carrier">
+                                                            <SelectValue placeholder={t('tracking_admin.carrier_select')} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {carriers.map((carrier) => (
+                                                                <SelectItem key={carrier.code} value={carrier.code}>
+                                                                    {carrier.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                            <SelectItem value={NO_CARRIER}>{t('tracking_admin.carrier_unknown')}</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            )}
+                                            {tracking_drivers.length > 1 && (
+                                                <div>
+                                                    <Label htmlFor="tracking_driver">
+                                                        {t('tracking_admin.provider', { defaultValue: 'Tracking Provider' })}
+                                                    </Label>
+                                                    <Select
+                                                        value={formData.tracking_driver || NO_CARRIER}
+                                                        onValueChange={(value) =>
+                                                            setFormData((prev) => ({ ...prev, tracking_driver: value === NO_CARRIER ? '' : value }))
+                                                        }
+                                                    >
+                                                        <SelectTrigger id="tracking_driver">
+                                                            <SelectValue
+                                                                placeholder={t('tracking_admin.provider_default', { defaultValue: 'Default' })}
+                                                            />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value={NO_CARRIER}>
+                                                                {t('tracking_admin.provider_default', { defaultValue: 'Default' })}
+                                                            </SelectItem>
+                                                            {tracking_drivers.map((driver) => (
+                                                                <SelectItem key={driver} value={driver}>
+                                                                    {driver}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                     <div>
                                         <Label htmlFor="notes">{t('admin.orders.notes')}</Label>

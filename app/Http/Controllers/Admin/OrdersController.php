@@ -10,6 +10,7 @@ use App\Exceptions\RefundFailed;
 use App\Exceptions\RefundRefused;
 use App\Exceptions\RefundUnconfirmed;
 use App\Http\Controllers\Controller;
+use App\Models\Address;
 use App\Models\Order;
 use App\Models\OrderEmail;
 use App\Models\OrderEvent;
@@ -32,6 +33,7 @@ use App\Support\Revenue;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -42,7 +44,9 @@ class OrdersController extends Controller
 {
     /** Stripe may have refunded or not (timeout, 5xx): the refund stays pending and is settled automatically. */
     /** "shipped" needs the carrier, the tracking number and the single shipped email: only the ship form does that. */
-    private const SHIP_FORM_ONLY_MESSAGE = 'Use the ship form to ship an order: it records the carrier and tracking number and notifies the customer.';
+    private const TRACKING_SHIP_FORM_ONLY_MESSAGE = 'Add tracking with the ship form: it ships the order and notifies the customer.';
+
+    private const SHIP_FORM_ONLY_MESSAGE ='Use the ship form to ship an order: it records the carrier and tracking number and notifies the customer.';
 
     private const REFUND_UNCONFIRMED_MESSAGE = 'Stripe did not confirm the refund yet; it will be updated automatically. Do not retry with a new refund: '
         .'if it stays pending, use "Retry" on it (it resends the same request, so it cannot be paid twice).';
@@ -223,8 +227,8 @@ class OrdersController extends Controller
     }
 
     /**
-     * Update the specified order. Always editable: notes, tracking, addresses, payment status, and the status
-     * (through the order lifecycle). Money (lines, shipping, totals) only while the order is unpaid:
+     * Update the specified order. Always editable: notes, addresses (each change noted in the order history), payment
+     * status, and the status (through the order lifecycle). Tracking only once shipped: the ship form adds it. Money (lines, shipping, totals) only while the order is unpaid:
      * OrderFinancialEdit decides. Everything is written in one transaction, or nothing is.
      */
     public function update(Request $request, Order $order)
@@ -259,6 +263,10 @@ class OrdersController extends Controller
             // Shipping goes through the ship form only (ShippingService); keeping "shipped" on a shipped order is fine
             if ($request->input('status') === 'shipped' && $order->status !== 'shipped') {
                 return $this->shipFormOnly();
+            }
+
+            if ($this->addsTrackingBeforeShipping($request, $order)) {
+                return back()->withErrors(['tracking_number' => self::TRACKING_SHIP_FORM_ONLY_MESSAGE])->with('error', self::TRACKING_SHIP_FORM_ONLY_MESSAGE);
             }
 
             // Refused (paid order, invalid lines) before anything is written
@@ -322,8 +330,19 @@ class OrdersController extends Controller
                 foreach (['billing_address' => $order->billingAddress, 'shipping_address' => $order->shippingAddress] as $field => $address) {
                     $data = $request->filled($field) ? json_decode((string) $request->input($field), true) : null;
 
-                    if (is_array($data) && $address) {
-                        $address->update($data);
+                    if (! is_array($data) || ! $address) {
+                        continue;
+                    }
+
+                    $changes = $this->addressChanges($address, $data);
+                    $address->update($data);
+
+                    if ($changes->isNotEmpty()) {
+                        $order->events()->create([
+                            'actor_id' => $request->user()?->getKey(),
+                            'type' => OrderEvent::TYPE_NOTE,
+                            'payload' => ['reason' => ($field === 'billing_address' ? 'Billing' : 'Shipping').' address changed: '.$changes->implode('; '), 'meta' => ['source' => 'admin']],
+                        ]);
                     }
                 }
             });
@@ -586,9 +605,7 @@ class OrdersController extends Controller
         ]);
 
         $address = $order->shippingAddress;
-        $changes = collect($data)
-            ->filter(fn ($value, $key) => (string) $value !== (string) $address->{$key})
-            ->map(fn ($value, $key) => "{$key}: {$address->{$key}} → {$value}");
+        $changes = $this->addressChanges($address, $data);
 
         if ($changes->isEmpty()) {
             return back();
@@ -863,6 +880,41 @@ class OrdersController extends Controller
     private function shipFormOnly()
     {
         return back()->withErrors(['status' => self::SHIP_FORM_ONLY_MESSAGE])->with('error', self::SHIP_FORM_ONLY_MESSAGE);
+    }
+
+    /**
+     * A new tracking number or carrier on an order that has not shipped: tracking starts in the ship form, which also
+     * ships the order and emails the customer. Unchanged values (the edit form resends them) and clearing pass.
+     */
+    private function addsTrackingBeforeShipping(Request $request, Order $order): bool
+    {
+        if (in_array($order->status, ['shipped', 'delivered'], true)) {
+            return false;
+        }
+
+        foreach (['tracking_number', 'tracking_carrier'] as $field) {
+            $value = mb_strtolower(trim((string) $request->input($field)));
+
+            if ($value !== '' && $value !== mb_strtolower(trim((string) $order->getAttribute($field)))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The edited address fields as "field: old → new", for the order history.
+     *
+     * @param  array<string, mixed>  $data
+     * @return Collection<string, string>
+     */
+    private function addressChanges(Address $address, array $data): Collection
+    {
+        return collect($data)
+            ->only(Address::CHECKOUT_FIELDS)
+            ->filter(fn ($value, $key) => (string) $value !== (string) $address->{$key})
+            ->map(fn ($value, $key) => "{$key}: {$address->{$key}} → {$value}");
     }
 
     /**

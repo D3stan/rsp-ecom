@@ -2131,7 +2131,6 @@
     "admin.orders.save": "Enregistrer",
     "admin.orders.cancel": "Annuler",
     "admin.orders.not_assigned": "Non attribué",
-    "admin.orders.add": "Ajouter",
     "admin.orders.package_status": "Statut du colis",
     "admin.orders.in_transit": "En transit",
     "admin.orders.track_package_with": "Suivez votre colis avec : {tracking_number}",
