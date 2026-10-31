@@ -394,7 +394,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                     <Collapsible open={openSections.orderDetails} onOpenChange={() => toggleSection('orderDetails')}>
                         <Card>
                             <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer pb-4 hover:bg-gray-50">
+                                <CardHeader className="cursor-pointer pb-4 hover:bg-muted/50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Package className="h-5 w-5 text-blue-600" />
@@ -538,7 +538,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                     <Collapsible open={openSections.orderItems} onOpenChange={() => toggleSection('orderItems')}>
                         <Card>
                             <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer pb-4 hover:bg-gray-50">
+                                <CardHeader className="cursor-pointer pb-4 hover:bg-muted/50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Package className="h-5 w-5 text-blue-600" />
@@ -623,7 +623,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                     <Collapsible open={openSections.financial} onOpenChange={() => toggleSection('financial')}>
                         <Card>
                             <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer pb-4 hover:bg-gray-50">
+                                <CardHeader className="cursor-pointer pb-4 hover:bg-muted/50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <DollarSign className="h-5 w-5 text-green-600" />
@@ -697,7 +697,7 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                     <Collapsible open={openSections.addresses} onOpenChange={() => toggleSection('addresses')}>
                         <Card>
                             <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer pb-4 hover:bg-gray-50">
+                                <CardHeader className="cursor-pointer pb-4 hover:bg-muted/50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <MapPin className="h-5 w-5 text-red-600" />
@@ -849,6 +849,15 @@ export default function Edit({ order, allowed_transitions = [], financials_locke
                                                         id="shipping_country"
                                                         value={formData.shipping_address.country}
                                                         onChange={(e) => updateShippingAddress('country', e.target.value)}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Label htmlFor="shipping_phone">{t('admin.orders.ship.field_phone')}</Label>
+                                                    <Input
+                                                        id="shipping_phone"
+                                                        type="tel"
+                                                        value={formData.shipping_address.phone || ''}
+                                                        onChange={(e) => updateShippingAddress('phone', e.target.value)}
                                                     />
                                                 </div>
                                             </div>

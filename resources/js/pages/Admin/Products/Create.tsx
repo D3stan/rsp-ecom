@@ -345,7 +345,7 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                     <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
                         <Card>
                             <CollapsibleTrigger asChild>
-                                <CardHeader className="cursor-pointer transition-colors hover:bg-gray-50">
+                                <CardHeader className="cursor-pointer transition-colors hover:bg-muted/50">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Settings className="h-5 w-5 text-green-600" />

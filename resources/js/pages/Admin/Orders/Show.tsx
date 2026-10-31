@@ -31,7 +31,6 @@ import {
     DollarSign,
     Edit,
     Package,
-    Plus,
     SkipForward,
     Truck,
     User,
@@ -565,20 +564,8 @@ export default function OrderShow({
                                                         </Button>
                                                     </div>
                                                 ) : (
-                                                    <div className="mt-1 flex items-center space-x-2">
-                                                        <p className="text-sm text-muted-foreground">{t('admin.orders.not_assigned')}</p>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => {
-                                                                setTrackingNumber('');
-                                                                setIsAddingTracking(true);
-                                                            }}
-                                                        >
-                                                            <Plus className="mr-1 h-3 w-3" />
-                                                            {t('admin.orders.add')}
-                                                        </Button>
-                                                    </div>
+                                                    // Tracking is first set by the ship flow, never added here
+                                                    <p className="mt-1 text-sm text-muted-foreground">{t('admin.orders.not_assigned')}</p>
                                                 )}
                                             </div>
                                         </div>
