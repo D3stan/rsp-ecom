@@ -6,7 +6,6 @@ use App\Models\Category;
 use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use Spatie\Sitemap\Sitemap;
 use Spatie\Sitemap\SitemapIndex;
 use Spatie\Sitemap\Tags\Url;
@@ -22,7 +21,6 @@ class GenerateSitemapIndex extends Command
         $this->info('Generating sitemap index...');
 
         $sitemapIndex = SitemapIndex::create();
-        $baseUrl = config('app.url');
 
         // Generate main sitemap for static pages
         $this->generateMainSitemap();
@@ -53,9 +51,6 @@ class GenerateSitemapIndex extends Command
 
         $this->info("Sitemap index generated with {$productCount} products across multiple sitemaps!");
         $this->info('Sitemap index saved to: '.$sitemapIndexPath);
-
-        // Update robots.txt
-        $this->updateRobotsTxt($baseUrl.'/sitemap.xml');
 
         return self::SUCCESS;
     }
@@ -169,36 +164,5 @@ class GenerateSitemapIndex extends Command
             });
 
         $sitemap->writeToFile(public_path("sitemap-products-{$page}.xml"));
-    }
-
-    private function updateRobotsTxt(string $sitemapUrl): void
-    {
-        $this->info('Updating robots.txt...');
-        $robotsTxtPath = public_path('robots.txt');
-
-        if (! File::exists($robotsTxtPath)) {
-            $this->warn('robots.txt not found. Creating a new one.');
-            File::put($robotsTxtPath, "User-agent: *\nSitemap: {$sitemapUrl}");
-
-            return;
-        }
-
-        $content = File::get($robotsTxtPath);
-        $sitemapLine = "Sitemap: {$sitemapUrl}";
-
-        // Check if sitemap entry already exists
-        if (str_contains($content, 'Sitemap:')) {
-            // Replace existing sitemap entry
-            $content = preg_replace('/Sitemap: .*/', $sitemapLine, $content);
-        } else {
-            // Add new sitemap entry
-            $content = rtrim($content)."\n\n{$sitemapLine}";
-        }
-
-        // Replace the placeholder comment if it exists
-        $content = str_replace('# Sitemap location will be dynamically generated', '', $content);
-
-        File::put($robotsTxtPath, trim($content)."\n");
-        $this->info('robots.txt updated successfully.');
     }
 }

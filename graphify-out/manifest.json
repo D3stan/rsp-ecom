@@ -48,9 +48,9 @@
     "semantic_hash": ""
   },
   "app/Console/Commands/GenerateSitemapIndex.php": {
-    "mtime": 1793202170.041139,
-    "seen": 1793222295.5055418,
-    "ast_hash": "3716435cff5232e1f228d89473a19b36",
+    "mtime": 1793439502.8917804,
+    "seen": 1793439522.4584708,
+    "ast_hash": "10c940e9a4233d5a06524f0bf8784ce5",
     "semantic_hash": ""
   },
   "app/Console/Commands/ListDuplicateOrderSessions.php": {
@@ -3888,9 +3888,9 @@
     "semantic_hash": ""
   },
   "routes/web.php": {
-    "mtime": 1793270649.9482908,
-    "seen": 1793438301.983291,
-    "ast_hash": "a53ba5015c35bbb7dbc894bb9ba90f4a",
+    "mtime": 1793439493.67227,
+    "seen": 1793439522.458873,
+    "ast_hash": "2b818844423767f43672cc6f6028cd81",
     "semantic_hash": ""
   },
   "tests/CreatesApplication.php": {
@@ -4779,12 +4779,6 @@
     "mtime": 1793002179.692152,
     "seen": 1793004099.426303,
     "ast_hash": "9496dd4baaa29973f25ee4f06b830bf6",
-    "semantic_hash": ""
-  },
-  "public/robots.txt": {
-    "mtime": 1793439041.2173343,
-    "seen": 1793439086.930124,
-    "ast_hash": "6e727c612c31b851a4920603c90bd023",
     "semantic_hash": ""
   },
   "public/apple-touch-icon.png": {
@@ -6270,15 +6264,21 @@
     "semantic_hash": ""
   },
   ".ai/rules/seo.md": {
-    "mtime": 1793270649.9302287,
-    "seen": 1793438301.9834518,
-    "ast_hash": "1e114909be94b431d0aafc9de26c21a7",
+    "mtime": 1793439515.833537,
+    "seen": 1793439522.459031,
+    "ast_hash": "a8d901fa456dd62778002175eced2b7f",
     "semantic_hash": ""
   },
   ".github/dependabot.yml": {
     "mtime": 1793270649.9307032,
     "seen": 1793438301.983454,
     "ast_hash": "4ac3bd90aa134e13ebbe28215b5e3ee4",
+    "semantic_hash": ""
+  },
+  "tests/Feature/Seo/RobotsTxtTest.php": {
+    "mtime": 1793439502.902752,
+    "seen": 1793439522.45897,
+    "ast_hash": "5f28624efc93bfa6103490a44b96dd8b",
     "semantic_hash": ""
   }
 }

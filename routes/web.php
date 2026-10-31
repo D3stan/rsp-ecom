@@ -273,7 +273,8 @@ require __DIR__.'/auth.php';
 require __DIR__.'/admin.php';
 
 Route::get('/robots.txt', function () {
-    $content = 'User-agent: *
+    // Only production may be indexed: the sandbox is publicly reachable.
+    $content = app()->isProduction() ? 'User-agent: *
 Disallow: /admin/
 Disallow: /dashboard/
 Disallow: /cart/
@@ -284,7 +285,7 @@ Disallow: /api/
 Allow: /
 
 # Sitemap location
-Sitemap: '.url('/sitemap.xml');
+Sitemap: '.url('/sitemap.xml') : "User-agent: *\nDisallow: /";
 
     return response($content)
         ->header('Content-Type', 'text/plain');

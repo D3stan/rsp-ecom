@@ -33,3 +33,4 @@ graphify-out/cache/
 *.sql
 *.sql.gz
 __pycache__/
+/public/robots.txt
