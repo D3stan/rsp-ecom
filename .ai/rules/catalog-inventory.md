@@ -46,6 +46,7 @@ Products, variants, images, stock bookkeeping, back-in-stock emails, GPSR fields
 - Legacy columns are still read: `scopeInStock`/`scopeLowStock` (home, shop list, admin low-stock), the shop price filter/sort/range, `products.images` in `ProductsController` and `DescribesOrder`, JSON-LD price/availability, and `Cart::addItem` seeds the line price from `products.price` (`Cart::refreshPrices()` corrects it at checkout).
 - Markdown headings are demoted by 2 levels (no second h1); soft breaks render as `<br>` for legacy plain text.
 - Compliance block falls back to `store.*` and `contact.support_email` when `compliance.*` is empty.
+- Discount = `products.compare_price` above `products.price` (the legacy mirror, not the variant price); the storefront strikes it through and badges "Sale" at 20%+. Only `quickDiscount` writes it: the full edit form neither sends nor validates it, and nothing expires it.
 
 ## Operate
 - Settings: `inventory.low_stock_threshold`, `email.enabled`, `email.back_in_stock`, `compliance.manufacturer_name|manufacturer_address|manufacturer_email|eu_responsible_person` (`config/settings.php`).
@@ -57,4 +58,5 @@ Products, variants, images, stock bookkeeping, back-in-stock emails, GPSR fields
 - `tests/Feature/Orders/OrderStockTest.php`: deduction, oversold, restore on cancel; `RefundTest.php`: restock on refund.
 - `tests/Feature/Admin/ProductStockConcurrencyTest.php`: delta semantics, clamp, stale-form warning.
 - `tests/Feature/Catalog/`: markdown, images, safety/compliance, description props, foreign keys.
+- `tests/Feature/Admin/ProductQuickDiscountTest.php`: set/clear the compare price, reject one not above the price, admin only.
 - `tests/Support/CatalogFixtures.php`: use for product + default variant setup.
