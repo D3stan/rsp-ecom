@@ -204,15 +204,15 @@
     "semantic_hash": ""
   },
   "app/Http/Controllers/Admin/OrdersController.php": {
-    "mtime": 1793440291.1844823,
-    "seen": 1793720878.022871,
+    "mtime": 1793720999.132206,
+    "seen": 1793721747.409972,
     "ast_hash": "8a66b1929bb21bed470364aa68df011a",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Admin/ProductController.php": {
-    "mtime": 1793720864.6175532,
-    "seen": 1793720878.022872,
-    "ast_hash": "06f0199813e7955cbb8dad7494185fc6",
+    "mtime": 1793721699.5922701,
+    "seen": 1793721747.409973,
+    "ast_hash": "dea5fe9e52ce7ddc871c9ce1cd615c1f",
     "semantic_hash": ""
   },
   "app/Http/Controllers/Admin/ReviewMediaController.php": {
@@ -3054,15 +3054,15 @@
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Products/Index.tsx": {
-    "mtime": 1793202170.076795,
-    "seen": 1793222295.505868,
-    "ast_hash": "62f600c8468d5c1bd10d58b124916029",
+    "mtime": 1793721699.9242048,
+    "seen": 1793721747.410305,
+    "ast_hash": "29878d72e5a4d7601b319fc0878f1701",
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Products/Show.tsx": {
-    "mtime": 1792398118.7084599,
-    "seen": 1792951427.525643,
-    "ast_hash": "a6f23bb3a822347ad5ade6ca634709e3",
+    "mtime": 1793721709.1326735,
+    "seen": 1793721747.410306,
+    "ast_hash": "021c9b2cf83dd602c11d64ed9bd41a64",
     "semantic_hash": ""
   },
   "resources/js/pages/Admin/Reviews/Index.tsx": {
@@ -3858,9 +3858,9 @@
     "semantic_hash": ""
   },
   "routes/admin.php": {
-    "mtime": 1793270649.948071,
-    "seen": 1793438301.983288,
-    "ast_hash": "ad9ff91f645b8cd98f228f259e12a931",
+    "mtime": 1793721686.1217325,
+    "seen": 1793721747.4103801,
+    "ast_hash": "bf7379751c431b85228fe53ff339b7b9",
     "semantic_hash": ""
   },
   "routes/api.php": {
@@ -4050,8 +4050,8 @@
     "semantic_hash": ""
   },
   "tests/Feature/Catalog/ProductSafetyTest.php": {
-    "mtime": 1793720863.281821,
-    "seen": 1793720878.0232902,
+    "mtime": 1793720999.143115,
+    "seen": 1793721747.4104419,
     "ast_hash": "4161958c904ce097530d4a5737606720",
     "semantic_hash": ""
   },
@@ -6246,9 +6246,9 @@
     "semantic_hash": ""
   },
   ".ai/rules/catalog-inventory.md": {
-    "mtime": 1793270649.9293406,
-    "seen": 1793438301.983447,
-    "ast_hash": "0b5589dd315377b73d32bda04d0aa0f0",
+    "mtime": 1793721739.749905,
+    "seen": 1793721747.410551,
+    "ast_hash": "189e90090d2191baca5d650b6b23f3f1",
     "semantic_hash": ""
   },
   ".ai/rules/i18n.md": {
@@ -6279,6 +6279,12 @@
     "mtime": 1793439996.2299368,
     "seen": 1793720878.023344,
     "ast_hash": "5f28624efc93bfa6103490a44b96dd8b",
+    "semantic_hash": ""
+  },
+  "tests/Feature/Admin/ProductQuickDiscountTest.php": {
+    "mtime": 1793721727.318215,
+    "seen": 1793721747.4104269,
+    "ast_hash": "7c377b5c8c046b5486b771a6fd6b13d6",
     "semantic_hash": ""
   }
 }

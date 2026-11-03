@@ -47,6 +47,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('products/description-images', [ProductDescriptionController::class, 'image'])->name('products.description-images');
     Route::resource('products', ProductController::class);
     Route::patch('products/{product}/quick-stock', [ProductController::class, 'quickStock'])->name('products.quick-stock');
+    Route::patch('products/{product}/quick-discount', [ProductController::class, 'quickDiscount'])->name('products.quick-discount');
     Route::delete('products/{product}/images/{filename}', [ProductController::class, 'removeImage'])->name('products.remove-image');
     Route::post('products/{product}/reviews', [ProductController::class, 'storeReview'])->name('products.reviews.store');
 

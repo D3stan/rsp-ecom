@@ -518,9 +518,11 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                                 </Link>
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuItem>
-                                                                <Zap className="mr-2 h-4 w-4" />
-                                                                {t('admin.products.flash_discount')}
+                                                            <DropdownMenuItem asChild>
+                                                                <Link href={`/admin/products/${product.id}?discount=1`}>
+                                                                    <Zap className="mr-2 h-4 w-4" />
+                                                                    {t('admin.products.flash_discount')}
+                                                                </Link>
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
                                                             <DropdownMenuItem
@@ -593,9 +595,11 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem>
-                                                        <Zap className="mr-2 h-4 w-4" />
-                                                        {t('admin.products.flash_discount')}
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/admin/products/${product.id}?discount=1`}>
+                                                            <Zap className="mr-2 h-4 w-4" />
+                                                            {t('admin.products.flash_discount')}
+                                                        </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem

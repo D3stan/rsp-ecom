@@ -14,7 +14,7 @@ Products, variants, images, stock bookkeeping, back-in-stock emails, GPSR fields
 - `app/Services/StockService.php`: the only place that moves stock for orders, refunds and manual corrections.
 - `app/Observers/ProductVariantObserver.php`: announces restocks for every Eloquent write to a variant.
 - `app/Listeners/QueueRestockNotifications.php`: recipients, cooldown, cart/wishlist rules; `app/Jobs/SendRestockEmail.php` sends.
-- `app/Http/Controllers/Admin/ProductController.php`: create/update with variants, image upload, `quickStock`.
+- `app/Http/Controllers/Admin/ProductController.php`: create/update with variants, image upload, `quickStock`, `quickDiscount` (sets `products.compare_price`, the struck-through "was" price; the list's Flash Discount opens it via `?discount=1` on the show page).
 - `app/Services/MarkdownRenderer.php`: the only markdown code; `resources/js/components/product/RichText.tsx` just prints its HTML.
 - `app/Http/Controllers/ProductsController.php`: storefront page, builds the `compliance` block and description props.
 

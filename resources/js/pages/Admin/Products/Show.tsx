@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { DollarSign, Edit2, MessageSquare, Package, Percent, Plus, Star, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { route } from 'ziggy-js';
@@ -62,7 +62,9 @@ export default function ProductsShow({ product }: Props) {
     const { t, locale } = useTranslation();
     const lowStockThreshold = useSetting('inventory.low_stock_threshold', 10);
     const [isRestocking, setIsRestocking] = useState(false);
-    const [isDiscounting, setIsDiscounting] = useState(false);
+    // The list's "Flash Discount" action links here with ?discount=1 to open the form directly
+    const { url } = usePage();
+    const [isDiscounting, setIsDiscounting] = useState(() => new URLSearchParams(url.split('?')[1]).has('discount'));
     const [isAddingReview, setIsAddingReview] = useState(false);
 
     // Quick restock form
@@ -79,8 +81,9 @@ export default function ProductsShow({ product }: Props) {
     const {
         data: discountData,
         setData: setDiscountData,
-        put: discountPut,
+        patch: discountPatch,
         processing: discountProcessing,
+        errors: discountErrors,
     } = useForm({
         compare_price: product.compare_price?.toString() || '',
     });
@@ -158,7 +161,7 @@ export default function ProductsShow({ product }: Props) {
 
     const handleQuickDiscount = (e: React.FormEvent) => {
         e.preventDefault();
-        discountPut(route('admin.products.update', product.id), {
+        discountPatch(route('admin.products.quick-discount', product.id), {
             onSuccess: () => setIsDiscounting(false),
         });
     };
@@ -374,6 +377,7 @@ export default function ProductsShow({ product }: Props) {
                                         onChange={(e) => setDiscountData('compare_price', e.target.value)}
                                         placeholder={t('admin.products.placeholder_compare_price')}
                                     />
+                                    {discountErrors.compare_price && <p className="text-sm text-red-600">{discountErrors.compare_price}</p>}
                                     <div className="flex gap-2">
                                         <Button type="submit" size="sm" disabled={discountProcessing} className="flex-1">
                                             {discountProcessing ? t('admin.products.updating') : t('admin.products.set_discount')}

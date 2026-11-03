@@ -11,6 +11,7 @@ use App\Services\FileUploadConfigService;
 use App\Services\MarkdownRenderer;
 use App\Services\StockService;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -766,6 +767,21 @@ class ProductController extends Controller
         }
 
         return back()->with('success', 'Stock updated successfully.');
+    }
+
+    /**
+     * Set or clear the "was" price the storefront strikes through next to `products.price`.
+     * An empty value ends the discount; a value not above the price is rejected (it would show no discount).
+     */
+    public function quickDiscount(Request $request, Product $product): RedirectResponse
+    {
+        $validated = $request->validate([
+            'compare_price' => ['nullable', 'numeric', 'gt:'.(float) $product->price],
+        ]);
+
+        $product->update(['compare_price' => $validated['compare_price'] ?? null]);
+
+        return back()->with('success', 'Discount updated successfully.');
     }
 
     /**
