@@ -1,32 +1,32 @@
 # Graph Report - rsp-ecom  (2026-11-03)
 
 ## Corpus Check
-- 1029 files · ~670,426 words
+- 1031 files · ~671,183 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 35 file(s) not represented in the graph (top: (none) 23, .css 4, .example 3)
 
 ## Summary
-- 7778 nodes · 20675 edges · 428 communities (233 shown, 195 thin omitted)
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 840 edges (avg confidence: 0.87)
+- 7792 nodes · 20684 edges · 426 communities (230 shown, 196 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 818 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `638d78c5`
+- Built from commit: `5b2c533e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - TrackingRequest
 - sidebar.tsx
-- Input
+- Details.tsx
 - Inertia\Testing\AssertableInertia
-- BuildsStripeOrderFixtures
+- AdminAlertsTest.php
 - ProductController
 - GroupForm.tsx
-- Products/Index.tsx
+- lucide-react
 - useTranslation.ts
-- Illuminate\Database\Eloquent\Relations\BelongsTo
-- DvaexpressClient
+- Illuminate\Database\Eloquent\Model
+- CarrierCodeMap
 - TelegramNotifier
 - TrackingStatus
 - Illuminate\Http\Client\Request
@@ -34,14 +34,14 @@
 - Illuminate\Console\Command
 - Illuminate\Support\Facades\Log
 - Order
-- OrderConfirmation
+- Button
 - MailInfrastructureTest.php
 - Orders/Show.tsx
 - TrackingManager
 - InvariantCheckerTest.php
 - Product
 - Refund
-- FunnelTrackerTest.php
+- Inertia\Inertia
 - package.json
 - ShippingRatesTest.php
 - OrderCreationService
@@ -56,13 +56,14 @@
 - dependencies
 - app.tsx
 - EmailService
-- Cart
+- TrackingProviderUnavailable
 - ReviewMedia
 - RateProvider
 - Illuminate\Database\Schema\Blueprint
 - RateManager
 - QueueHealthCheckTest.php
-- NewsletterSignupFlowTest.php
+- TelegramNotifierTest.php
+- ProductsController.php
 - SpediamoLabelProvider
 - ReviewPhotosTest.php
 - index.d.ts
@@ -77,8 +78,8 @@
 - OrderEmailDeliveryTest.php
 - AGENTS.md
 - ProductVariant
-- CoexistingProvidersTest.php
-- Controller
+- DvaexpressLabelProviderTest.php
+- Illuminate\Http\RedirectResponse
 - timeline.tsx
 - AbandonedCheckoutTest
 - TrackingWebhookTest.php
@@ -86,7 +87,7 @@
 - .supported
 - TrackingProviderContractTest.php
 - ShipFormTest.php
-- SwapRehearsalTest.php
+- CoexistingProvidersTest.php
 - ShipmentTrackingServiceTest.php
 - TrackingManagerTest.php
 - CustomerOrderPayloadTest.php
@@ -99,7 +100,7 @@
 - Illuminate\Database\Eloquent\Builder
 - PageFactory
 - RingMaskedImage.tsx
-- CarrierCodeMap
+- StripeReconciliationTest.php
 - OrderStatusEmailsTest.php
 - Card
 - app.tsx
@@ -113,9 +114,9 @@
 - ReviewRequests
 - Illuminate\Database\Eloquent\Factories\Factory
 - ReviewRequestEmailTest.php
-- SuccessPageAndFlashTest
+- BuildsStripeOrderFixtures
 - OrderStockTest
-- Order.php
+- ShipmentTrackingService
 - Address
 - components.json
 - AdminListPaginationTest.php
@@ -123,64 +124,64 @@
 - compilerOptions
 - 2026_10_14_300000_add_tax_rate_to_orders_table.php
 - TrackingRejected
-- SystemInfo
+- Illuminate\Support\Facades\Log
 - StripeAsyncEventsTest
 - CatalogueTest.php
 - docs_check.py
 - CouponRecheckAtPaymentTest.php
 - OrderFactory
-- OrderFinancialEdit
+- VariantRestocked
 - CheckoutDetailsSummaryTest.php
 - CategoryFactory
-- DailyDigest.php
+- ReviewPhotoProcessor
 - Environment
 - AdminAlertsTest
 - TestCase
-- Illuminate\Database\Eloquent\Model
+- AuditLogTest.php
 - SEO
-- ShippingService
+- restockProduct
 - LabelShippingTest.php
 - FreeShippingThresholdTest
-- AbstractHttpProviderTest.php
+- HomeController.php
 - CheckoutSuccessPrivacyTest
 - VerificationStatusLoginBypassTest.php
 - AppServiceProvider
 - OrderItemFactory.php
 - ReviewFactory
-- RefundRefused
+- UserGoogleAuthTest
 - OpsEventType
 - AdminShippedEmailTest.php
 - spediamo/README.md
 - LogHygieneTest
-- Page
+- PageSeeder
 - Shipment
 - Geo
 - Deployment
-- .fields
+- AccountDeletionKeepsOrdersTest.php
 - devDependencies
 - NextWorkingDay
 - GuestCartMergeTest.php
 - MarkdownRendererTest.php
 - StripeWebhookOrderTest
 - GuestOrderPageTest
-- spdCaptureLogs
-- OrdersController.php
+- FailureModesTest
+- NewsletterSubscribersController.php
 - CookieConsentTest.php
 - Settings.php
 - DeferredShippedEmailTest.php
 - require
 - ProductSafetyTest.php
-- profile.tsx
+- @inertiajs/react
 - Runbooks
 - InvariantChecker
-- Illuminate\Support\Facades\Storage
+- Illuminate\Database\Eloquent\Relations\HasMany
 - ProductionExceptionPagesTest.php
 - ShipGuardTest.php
 - OrderStatusConsistencyTest
 - CartController
-- User.php
+- HandleInertiaRequests.php
 - Admin settings
-- utils.ts
+- cartService
 - ProductFactory
 - LabelManager
 - ShipmentBuilder
@@ -188,42 +189,41 @@
 - CheckoutController.php
 - PromotionCodeRulesTest.php
 - Setting
-- OrdersController
+- OrdersController.php
 - AccountNotificationQueueTest.php
 - ContactFormTest
 - scripts
 - order-confirmation.blade.php
 - generate_dvaexpress_docs.py
 - ImageUploadService
-- Rules
 - ContactCopyTest.php
 - GenerateSitemapIndex.php
 - composer.json
 - config
 - require-dev
 - order-shipped.blade.php
-- AbandonedCheckoutReminders
+- CheckoutSnapshot
 - DailyDigestTest.php
 - scripts
 - compact_request_table
 - Category
-- OrderCreationService.php
+- RegeneratesSitemap
 - ProductFactory
 - performance-test.js
 - admin-new-order.blade.php
-- Illuminate\Support\Facades\Queue
+- CachesConditionalRequests
 - Admin/Reviews/Index.tsx
-- .issues
+- RateRejected
 - settings.d.ts
-- HealthEndpointTest.php
+- RiderGalleryTest.php
 - 2026_10_13_110000_create_order_emails_table.php
-- `POST https://api.easyparcel.it/pudo/{APIKEY}`
-- optionalDependencies
+- OrderMigrationsTest
+- PendingUserVerificationFactory.php
 - SimpleRingMaskedImage.tsx
 - ui/icon.tsx
 - 2026_10_13_100000_add_unique_index_to_orders_stripe_checkout_session_id.php
 - SentryFrontendConfigTest.php
-- AbuseMonitor
+- Toast.tsx
 - How it works
 - order-cancelled.blade.php
 - order-confirmation-text.blade.php
@@ -240,7 +240,7 @@
 - 2026_10_13_100100_add_locale_to_orders_table.php
 - Closure
 - 2026_10_15_100100_restrict_category_and_size_deletes.php
-- Illuminate\Support\Facades\DB
+- LoginRequest
 - 2026_10_15_500000_add_notify_back_in_stock_to_users_table.php
 - dvaexpress/README.md
 - ProductListPerPageTest.php
@@ -252,14 +252,13 @@
 - admin-new-order-text.blade.php
 - order-shipped-text.blade.php
 - NewsletterSubscriber
-- CanonicalTagTest.php
-- ShipmentUndoE2ETest.php
+- .url
+- Reviews
 - ProductDescriptionPropsTest.php
 - AdminTrackingCarrierTest.php
 - SavedAddressTest
 - Tax Document
 - Illuminate\Support\Facades\Schema
-- PasswordResetTest.php
 - HasLogo
 - CartQuantityLimitTest.php
 - .handle
@@ -310,24 +309,29 @@
 - verify-email-text.blade.php
 - welcome-text.blade.php
 - OrderEventsTest.php
-- WishlistFactory.php
-- ProductDescriptionFormTest.php
+- Account and billing
+- 2025_08_12_171951_add_size_id_to_order_items_table.php
+- 2026_03_06_204454_add_variant_id_to_order_items.php
 - LifecycleSettingsTest.php
-- StorefrontFlashTest.php
+- 2026_10_15_400000_add_delivered_at_to_orders_table.php
 - CheckPendingVerifications
 - HealthController
-- 2026_10_15_400400_add_refund_restock_tracking.php
-- 2026_10_15_600200_add_reminder_fields_to_checkout_snapshots_table.php
+- 2026_10_15_600000_create_newsletter_subscribers_table.php
+- FakeStripeHttpClient
 - PickupDateTest.php
 - PromotionService
 - 2026_10_23_100000_add_weight_kg_to_sizes_table.php
 - 2026_10_23_200000_add_pickup_and_notify_to_shipments.php
+- 2026_10_13_200100_create_shipment_tracking_events_table.php
 - 2025_07_27_104206_create_sizes_table.php
 - 2025_07_27_104234_create_order_items_table.php
 - GenerateDvaexpressDocsTest
 - 2025_07_27_104247_create_pages_table.php
 - 2025_08_02_104706_create_subscriptions_table.php
+- 2026_10_15_500100_create_restock_notifications_table.php
+- 2026_11_03_161835_change_status_to_string_on_products_table.php
 - 2026_10_15_400200_add_refund_payment_statuses_to_orders_table.php
+- CategoryLandingIndexingTest.php
 - 0001_01_01_000002_create_jobs_table.php
 - Deploying with Dokploy
 - 2026_10_19_100000_add_tracking_driver_to_orders_table.php
@@ -337,13 +341,10 @@
 - use-appearance.tsx
 - 2025_07_27_104238_create_wishlists_table.php
 - ProductStockConcurrencyTest.php
-- 2026_10_16_100000_create_shipments_table.php
-- 2026_10_14_400000_create_checkout_snapshots_table.php
 - StripeWebhookSecurityTest
 - DocumentParser
 - web.php
 - SentryEventFilterTest.php
-- 2026_10_23_100000_add_shipping_address_to_checkout_snapshots_table.php
 - SpediamoResponseMapperTest.php
 - 2026_10_25_144448_create_ops_events_table.php
 - CustomerTrackingTest.php
@@ -352,13 +353,11 @@
 - 2026_10_25_145043_create_audit_logs_table.php
 - CLAUDE.md
 - OrderTransitionsTest.php
-- ReviewAutoApproveTest.php
 - 0001_01_01_000000_create_users_table.php
 - 2026_10_13_200000_add_tracking_columns_to_orders_table.php
 - laravel-boost
 - product-filters.ts
 - 2026_03_06_204618_add_base_sku_to_products.php
-- 2026_10_15_500200_add_safety_information_to_products_table.php
 - PaymentStatusEditTest.php
 - 2025_07_27_104222_create_carts_table.php
 - 2025_07_27_104225_create_cart_items_table.php
@@ -375,18 +374,16 @@
 ## God Nodes (most connected - your core abstractions)
 1. `Order` - 363 edges
 2. `useTranslation()` - 283 edges
-3. `User` - 277 edges
+3. `User` - 278 edges
 4. `Button()` - 190 edges
 5. `cn()` - 176 edges
 6. `settings()` - 169 edges
 7. `react` - 143 edges
-8. `Product` - 133 edges
+8. `Product` - 135 edges
 9. `@inertiajs/react` - 113 edges
 10. `Card()` - 110 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Operate` --references--> `SendRestockEmail`  [INFERRED]
-  .ai/rules/catalog-inventory.md → app/Jobs/SendRestockEmail.php
 - `Traps` --references--> `FileUploadConfigService`  [INFERRED]
   .ai/rules/reviews.md → app/Services/FileUploadConfigService.php
 - `Operate` --references--> `ReviewPhotoProcessor`  [INFERRED]
@@ -395,95 +392,101 @@
   .ai/rules/settings.md → app/Settings/helpers.php
 - `Rules` --references--> `AbandonedCheckoutTest`  [INFERRED]
   .ai/rules/email-newsletter.md → tests/Feature/Newsletter/AbandonedCheckoutTest.php
+- `Rules` --references--> `InvalidOrderTransition`  [INFERRED]
+  .ai/rules/orders-refunds.md → app/Exceptions/InvalidOrderTransition.php
 
 ## Import Cycles
 - None detected.
 
-## Communities (428 total, 195 thin omitted)
+## Communities (426 total, 196 thin omitted)
 
 ### Community 0 - "TrackingRequest"
-Cohesion: 0.13
-Nodes (24): ApiKeyHeaderAuthenticator, TrackingRequest, {closure#10}(), {closure#11}(), {closure#13}(), {closure#16}(), {closure#17}(), {closure#2}() (+16 more)
+Cohesion: 0.08
+Nodes (36): TrackingRequest, at(), authenticate(), {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}() (+28 more)
 
 ### Community 1 - "sidebar.tsx"
-Cohesion: 0.05
-Nodes (104): class-variance-authority, @radix-ui/react-navigation-menu, @radix-ui/react-slot, AdminSidebar(), AppContent(), AppContentProps, AppHeader(), AppHeaderProps (+96 more)
+Cohesion: 0.06
+Nodes (96): class-variance-authority, @radix-ui/react-navigation-menu, @radix-ui/react-slot, @radix-ui/react-toggle, @radix-ui/react-toggle-group, AdminSidebar(), AppHeader(), AppHeaderProps (+88 more)
 
-### Community 2 - "Input"
-Cohesion: 0.05
-Nodes (113): AddressForm(), AddressFormProps, StateField(), StateFieldProps, Address, EditOrderDialog(), EditOrderDialogProps, Order (+105 more)
+### Community 2 - "Details.tsx"
+Cohesion: 0.08
+Nodes (58): AddressForm(), AddressFormProps, StateField(), StateFieldProps, AbandonedCheckoutStatsData, SelectInput, GroupNav(), GroupNavProps (+50 more)
 
 ### Community 3 - "Inertia\Testing\AssertableInertia"
-Cohesion: 0.04
-Nodes (66): {closure#2}(), {closure#4}(), {closure#6}(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}() (+58 more)
+Cohesion: 0.03
+Nodes (95): {closure#2}(), {closure#4}(), {closure#6}(), {closure#1}(), {closure#3}(), {closure#4}(), {closure#1}(), {closure#2}() (+87 more)
 
-### Community 4 - "BuildsStripeOrderFixtures"
-Cohesion: 0.05
-Nodes (13): StripeWebhookListener, {closure#1}(), {closure#3}(), SuccessPendingTest, {closure#2}(), {closure#2}(), {closure#3}(), {closure#5}() (+5 more)
+### Community 4 - "AdminAlertsTest.php"
+Cohesion: 0.15
+Nodes (4): StripeWebhookListener, {closure#2}(), {closure#2}(), {closure#1}()
 
 ### Community 5 - "ProductController"
-Cohesion: 0.13
+Cohesion: 0.12
 Nodes (3): ProductController, FileUploadConfigService, Exception
 
 ### Community 6 - "GroupForm.tsx"
-Cohesion: 0.06
-Nodes (68): react, csrfToken(), MarkdownEditor(), MarkdownEditorProps, COUNTRY_CODES, countryName(), displayNames, MultiSelectInput (+60 more)
+Cohesion: 0.08
+Nodes (50): csrfToken(), MarkdownEditor(), MarkdownEditorProps, COUNTRY_CODES, countryName(), displayNames, MultiSelectInput, MultiSelectInputProps (+42 more)
 
-### Community 7 - "Products/Index.tsx"
-Cohesion: 0.11
-Nodes (29): AppearanceToggleDropdown(), DropdownMenu(), DropdownMenuCheckboxItem(), DropdownMenuContent(), DropdownMenuGroup(), DropdownMenuItem(), DropdownMenuLabel(), DropdownMenuRadioItem() (+21 more)
+### Community 7 - "lucide-react"
+Cohesion: 0.05
+Nodes (80): lucide-react, @radix-ui/react-dropdown-menu, recharts, AppearanceToggleDropdown(), OrderTracking(), TrackedOrder, Compliance, ProductSafety() (+72 more)
 
 ### Community 8 - "useTranslation.ts"
 Cohesion: 0.05
-Nodes (97): @inertiajs/react, lucide-react, recharts, CreateAccountOffer(), PendingOrderNotice(), PendingOrderNoticeProps, ErrorFallback(), FooterLegalLine() (+89 more)
+Nodes (94): MarketingConsentCheckbox(), MarketingConsentCheckboxProps, withBold(), OrderSummary(), OrderSummaryProps, PendingOrderNotice(), PendingOrderNoticeProps, ShippingLine() (+86 more)
 
-### Community 9 - "Illuminate\Database\Eloquent\Relations\BelongsTo"
-Cohesion: 0.06
-Nodes (8): {closure#1}(), {closure#2}(), CartItem, OrderEvent, OrderItem, Wishlist, {closure#2}(), {closure#3}()
+### Community 9 - "Illuminate\Database\Eloquent\Model"
+Cohesion: 0.04
+Nodes (18): How it works, {closure#1}(), {closure#2}(), AuditLog, CartItem, ConsentEvent, NewsletterCampaignSend, OrderEvent (+10 more)
+
+### Community 10 - "CarrierCodeMap"
+Cohesion: 0.08
+Nodes (11): DvaexpressClient, {closure#1}(), DvaexpressRateProvider, {closure#2}(), CarrierCodeMap, {closure#38}(), {closure#1}(), {closure#2}() (+3 more)
 
 ### Community 11 - "TelegramNotifier"
-Cohesion: 0.31
-Nodes (3): CheckQueueHealth, SendDailyDigest, TelegramNotifier
+Cohesion: 0.19
+Nodes (4): CheckQueueHealth, SendDailyDigest, AbuseMonitor, TelegramNotifier
 
 ### Community 12 - "TrackingStatus"
-Cohesion: 0.04
-Nodes (27): {closure#1}(), {closure#1}(), CachesConditionalRequests, {closure#1}(), VerifiesHmacSignature, FakeProvider, TrackingEvent, TrackingResult (+19 more)
+Cohesion: 0.06
+Nodes (25): {closure#1}(), {closure#1}(), SupportsWebhooks, {closure#1}(), VerifiesHmacSignature, FakeProvider, TrackingEvent, TrackingResult (+17 more)
 
 ### Community 13 - "Illuminate\Http\Client\Request"
-Cohesion: 0.10
-Nodes (20): {closure#10}(), {closure#12}(), {closure#14}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}() (+12 more)
+Cohesion: 0.09
+Nodes (21): {closure#10}(), {closure#12}(), {closure#14}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}() (+13 more)
 
 ### Community 14 - "User"
-Cohesion: 0.07
-Nodes (5): CustomersController, {closure#3}(), User, {closure#4}(), UserCashierTest
+Cohesion: 0.05
+Nodes (9): CustomersController, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), User, AccountMailMessages, {closure#4}() (+1 more)
 
 ### Community 15 - "Illuminate\Console\Command"
 Cohesion: 0.07
-Nodes (11): CleanupExpiredPendingVerifications, ClearSitemaps, DispatchScheduledNewsletters, FixOrderItemSizes, ListDuplicateOrderSessions, ListSettings, PurgeLegacySecrets, SendHeartbeat (+3 more)
+Nodes (12): CleanupExpiredPendingVerifications, ClearSitemaps, DispatchScheduledNewsletters, FixOrderItemSizes, ListDuplicateOrderSessions, ListSettings, PurgeLegacySecrets, SendHeartbeat (+4 more)
 
 ### Community 16 - "Illuminate\Support\Facades\Log"
-Cohesion: 0.10
-Nodes (10): DispatchCampaign, SendAbandonedCheckoutReminder, SendRestockEmail, SendWelcomeEmail, Locales, {closure#3}(), {closure#11}(), {closure#14}() (+2 more)
+Cohesion: 0.09
+Nodes (9): DispatchCampaign, SendAbandonedCheckoutReminder, {closure#1}(), SendRestockEmail, Locales, GET /api/translations/{locale}(), POST /change-language(), {closure#2}() (+1 more)
 
 ### Community 17 - "Order"
-Cohesion: 0.04
-Nodes (7): Entry points, SendTestOrderConfirmation, {closure#3}(), {closure#4}(), Order, OrderObserver, {closure#2}()
+Cohesion: 0.05
+Nodes (6): Entry points, SendTestOrderConfirmation, {closure#3}(), {closure#4}(), Order, OrderObserver
 
-### Community 18 - "OrderConfirmation"
-Cohesion: 0.09
-Nodes (22): OrderConfirmation, OrderShipped, {closure#1}(), {closure#2}(), {closure#21}(), {closure#3}(), amountOf(), {closure#1}() (+14 more)
+### Community 18 - "Button"
+Cohesion: 0.10
+Nodes (41): react, CreateAccountOffer(), CreateAccountOfferProps, GoogleButton(), GoogleButtonProps, InputError(), NewsletterSignup(), NewsletterSignupProps (+33 more)
 
 ### Community 19 - "MailInfrastructureTest.php"
 Cohesion: 0.06
-Nodes (16): TestEmail, WelcomeEmail, {closure#1}(), {closure#2}(), {closure#6}(), runAsWorker(), {closure#1}(), {closure#15}() (+8 more)
+Nodes (19): SendWelcomeEmail, WelcomeEmail, {closure#1}(), {closure#2}(), {closure#3}(), {closure#6}(), runAsWorker(), {closure#1}() (+11 more)
 
 ### Community 20 - "Orders/Show.tsx"
-Cohesion: 0.09
-Nodes (57): AddressEntry, BuyLabelDialog(), euro(), Props, eurosToCents(), Line, OrderRefund, OrderRefunds() (+49 more)
+Cohesion: 0.08
+Nodes (58): AddressEntry, BuyLabelDialog(), euro(), Props, eurosToCents(), Line, OrderRefund, OrderRefunds() (+50 more)
 
 ### Community 21 - "TrackingManager"
 Cohesion: 0.09
-Nodes (7): SyncShipmentTracking, {closure#1}(), {closure#2}(), SupportsWebhooks, TrackingException, UnknownTrackingDriver, TrackingManager
+Nodes (6): SyncShipmentTracking, {closure#1}(), {closure#2}(), TrackingException, UnknownTrackingDriver, TrackingManager
 
 ### Community 22 - "InvariantCheckerTest.php"
 Cohesion: 0.13
@@ -491,51 +494,55 @@ Nodes (27): {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {clos
 
 ### Community 23 - "Product"
 Cohesion: 0.05
-Nodes (6): Traps, {closure#1}(), {closure#2}(), ProductsController, {closure#1}(), Product
+Nodes (4): {closure#1}(), Product, Wishlist, WishlistFactory
 
 ### Community 24 - "Refund"
-Cohesion: 0.09
-Nodes (8): RefundFailed, RefundUnconfirmed, Refund, {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), RefundService
+Cohesion: 0.07
+Nodes (11): RefundFailed, RefundRefused, RefundUnconfirmed, Refund, {closure#1}(), {closure#3}(), {closure#4}(), {closure#5}() (+3 more)
 
-### Community 25 - "FunnelTrackerTest.php"
-Cohesion: 0.20
-Nodes (4): addToCart(), {closure#7}(), {closure#8}(), {closure#9}()
+### Community 25 - "Inertia\Inertia"
+Cohesion: 0.06
+Nodes (7): {closure#1}(), {closure#4}(), {closure#5}(), {closure#7}(), ReviewController, FunnelTracker, CheckoutTotals
 
 ### Community 26 - "package.json"
 Cohesion: 0.05
-Nodes (46): private, type, clsx, concurrently, eslint, eslint-config-prettier, @eslint/js, eslint-plugin-i18next (+38 more)
+Nodes (46): optionalDependencies, lightningcss-linux-x64-gnu, @rollup/rollup-linux-x64-gnu, @tailwindcss/oxide-linux-x64-gnu, private, type, clsx, concurrently (+38 more)
 
 ### Community 27 - "ShippingRatesTest.php"
 Cohesion: 0.06
-Nodes (47): BearerTokenAuthenticator, SpediamoRateProvider, RateAddress, RateParcel, RateRequest, RateProviderUnavailable, {closure#11}(), {closure#13}() (+39 more)
+Nodes (45): BearerTokenAuthenticator, SpediamoRateProvider, RateAddress, RateParcel, RateRequest, {closure#11}(), {closure#13}(), {closure#1}() (+37 more)
+
+### Community 28 - "OrderCreationService"
+Cohesion: 0.09
+Nodes (4): {closure#2}(), {closure#1}(), {closure#2}(), OrderCreationService
 
 ### Community 30 - "Settings"
 Cohesion: 0.07
-Nodes (20): Settings, {closure#1}(), {closure#15}(), {closure#2}(), {closure#20}(), {closure#24}(), {closure#27}(), {closure#3}() (+12 more)
+Nodes (14): {closure#1}(), {closure#20}(), {closure#24}(), {closure#27}(), {closure#3}(), {closure#33}(), {closure#35}(), {closure#36}() (+6 more)
 
 ### Community 31 - "LifecycleMailTest.php"
 Cohesion: 0.03
-Nodes (33): NewOrderAlert, OrderCancelled, OrderDelivered, OrderRefunded, PaidOrderMissingAlert, {closure#18}(), {closure#19}(), {closure#20}() (+25 more)
+Nodes (53): NewOrderAlert, OrderCancelled, OrderConfirmation, OrderDelivered, OrderRefunded, OrderShipped, {closure#1}(), {closure#18}() (+45 more)
 
 ### Community 32 - "Illuminate\Database\Seeder"
 Cohesion: 0.09
 Nodes (9): AddressSeeder, CategorySeeder, DatabaseSeeder, OrderSeeder, ProductSeeder, ReviewSeeder, SettingsSeeder, SizeSeeder (+1 more)
 
 ### Community 33 - "CampaignsTest.php"
-Cohesion: 0.06
-Nodes (28): {closure#1}(), NewsletterCampaignsController, SendCampaignEmail, NewsletterCampaignMail, NewsletterCampaign, campaignRecipients(), campaignSubscriber(), {closure#1}() (+20 more)
+Cohesion: 0.08
+Nodes (26): SendCampaignEmail, NewsletterCampaignMail, NewsletterCampaign, campaignRecipients(), campaignSubscriber(), {closure#1}(), {closure#15}(), {closure#16}() (+18 more)
 
 ### Community 34 - "RefundTest.php"
-Cohesion: 0.07
-Nodes (51): {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}(), {closure#17}(), {closure#18}() (+43 more)
+Cohesion: 0.11
+Nodes (30): {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#15}(), {closure#17}(), {closure#18}(), {closure#19}() (+22 more)
 
 ### Community 36 - "SpediamoProviderTest.php"
-Cohesion: 0.12
-Nodes (21): {closure#10}(), {closure#12}(), {closure#13}(), {closure#15}(), {closure#16}(), {closure#19}(), {closure#21}(), {closure#22}() (+13 more)
+Cohesion: 0.10
+Nodes (28): {closure#10}(), {closure#12}(), {closure#13}(), {closure#14}(), {closure#15}(), {closure#16}(), {closure#17}(), {closure#18}() (+20 more)
 
 ### Community 37 - "Inertia\Response"
-Cohesion: 0.09
-Nodes (4): DashboardController, NewsletterController, PageController, Revenue
+Cohesion: 0.08
+Nodes (5): DashboardController, ConfirmablePasswordController, NewsletterController, PageController, Revenue
 
 ### Community 38 - "dependencies"
 Cohesion: 0.05
@@ -546,43 +553,43 @@ Cohesion: 0.14
 Nodes (15): react-dom, vitest, renderWithTranslations(), translations, renderWithTranslations(), translations, Consumer(), DEFAULT_SUPPORTED_LOCALES (+7 more)
 
 ### Community 40 - "EmailService"
-Cohesion: 0.08
-Nodes (10): {closure#2}(), {closure#3}(), SendPendingOrderEmails, OrderEmail, EmailService, {closure#2}(), {closure#1}(), {closure#3}() (+2 more)
+Cohesion: 0.07
+Nodes (10): {closure#2}(), {closure#3}(), SendPendingOrderEmails, OrderEmail, EmailService, Privacy, {closure#1}(), {closure#3}() (+2 more)
 
-### Community 41 - "Cart"
-Cohesion: 0.11
-Nodes (3): Cart, {closure#1}(), Shipping
+### Community 41 - "TrackingProviderUnavailable"
+Cohesion: 0.10
+Nodes (9): {closure#1}(), {closure#2}(), SpediamoProvider, AbstractHttpProvider, TrackingProviderUnavailable, {closure#11}(), {closure#31}(), {closure#4}() (+1 more)
 
 ### Community 42 - "ReviewMedia"
-Cohesion: 0.10
-Nodes (27): {closure#7}(), ReviewMedia, GET /robots.txt(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}() (+19 more)
+Cohesion: 0.22
+Nodes (17): ReviewMedia, {closure#4}(), {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}() (+9 more)
 
 ### Community 43 - "RateProvider"
-Cohesion: 0.04
-Nodes (16): Change recipes, Entry points, Operate, Rules, Shipping, Tests, Traps, ShippingProviderManifest (+8 more)
+Cohesion: 0.06
+Nodes (6): ShippingProviderManifest, LabelProvider, DvaexpressManifest, SpediamoManifest, RateProvider, createLabelDriver()
 
 ### Community 44 - "Illuminate\Database\Schema\Blueprint"
 Cohesion: 0.08
-Nodes (19): {closure#1}(), {closure#2}(), {closure#1}(), {closure#2}(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}() (+11 more)
+Nodes (20): {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#1}(), {closure#2}(), {closure#3}() (+12 more)
 
 ### Community 45 - "RateManager"
-Cohesion: 0.06
-Nodes (15): How it works, How it works, ShippingQuotesController, CookiesServiceProvider, {closure#1}(), {closure#2}(), LabelServiceProvider, {closure#1}() (+7 more)
+Cohesion: 0.05
+Nodes (21): How it works, Change recipes, Entry points, How it works, Operate, Rules, Shipping, Tests (+13 more)
 
 ### Community 46 - "QueueHealthCheckTest.php"
 Cohesion: 0.14
 Nodes (8): {closure#12}(), {closure#13}(), {closure#2}(), {closure#3}(), {closure#6}(), {closure#7}(), seedFailedJobs(), seedJob()
 
-### Community 48 - "NewsletterSignupFlowTest.php"
-Cohesion: 0.06
-Nodes (30): NewsletterConfirm, {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}(), {closure#15}(), {closure#16}(), {closure#17}() (+22 more)
+### Community 48 - "ProductsController.php"
+Cohesion: 0.10
+Nodes (6): {closure#12}(), {closure#2}(), {closure#5}(), {closure#6}(), ProductsController, CatalogPagination
 
 ### Community 49 - "SpediamoLabelProvider"
-Cohesion: 0.12
-Nodes (18): SpediamoLabelProvider, {closure#1}(), {closure#11}(), {closure#12}(), {closure#15}(), {closure#18}(), {closure#20}(), {closure#21}() (+10 more)
+Cohesion: 0.07
+Nodes (27): CancelsShipments, ConfirmsPayment, FakeLabelProvider, LabelDocument, ShipmentResult, LabelProviderUnavailable, LabelRejected, SpediamoLabelProvider (+19 more)
 
 ### Community 50 - "ReviewPhotosTest.php"
-Cohesion: 0.18
+Cohesion: 0.19
 Nodes (14): {closure#10}(), {closure#11}(), {closure#13}(), {closure#15}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}() (+6 more)
 
 ### Community 51 - "index.d.ts"
@@ -594,80 +601,80 @@ Cohesion: 0.08
 Nodes (6): {closure#2}(), {closure#3}(), ConfigBridge, {closure#4}(), {closure#6}(), newBridge()
 
 ### Community 53 - "Review"
-Cohesion: 0.10
-Nodes (4): {closure#5}(), {closure#6}(), ReviewsController, Review
+Cohesion: 0.09
+Nodes (5): ReviewMediaController, {closure#5}(), {closure#6}(), ReviewsController, Review
 
 ### Community 54 - "AppUrlSchemeTest.php"
 Cohesion: 0.06
 Nodes (3): PasswordController, GET /_test/client(), GET /_test/client()
 
 ### Community 55 - "SyncTrackingTest.php"
-Cohesion: 0.07
-Nodes (15): TrackingRejected, SyncOrderTracking, {closure#11}(), TrackingFixtures, {closure#10}(), {closure#11}(), {closure#12}(), {closure#14}() (+7 more)
+Cohesion: 0.09
+Nodes (12): SyncOrderTracking, {closure#10}(), {closure#11}(), {closure#12}(), {closure#14}(), {closure#15}(), {closure#17}(), {closure#18}() (+4 more)
 
 ### Community 56 - "Settings.php"
-Cohesion: 0.15
-Nodes (3): {closure#4}(), {closure#2}(), {closure#5}()
+Cohesion: 0.14
+Nodes (8): Settings, {closure#2}(), {closure#5}(), {closure#15}(), {closure#2}(), {closure#34}(), {closure#8}(), {closure#9}()
 
 ### Community 57 - "PaidCancellationTest.php"
-Cohesion: 0.08
-Nodes (19): cancellationOrder(), {closure#10}(), {closure#13}(), {closure#15}(), {closure#16}(), {closure#17}(), {closure#18}(), {closure#20}() (+11 more)
+Cohesion: 0.09
+Nodes (17): cancellationOrder(), {closure#10}(), {closure#13}(), {closure#15}(), {closure#16}(), {closure#17}(), {closure#18}(), {closure#20}() (+9 more)
 
 ### Community 58 - ".product"
-Cohesion: 0.05
-Nodes (31): {closure#2}(), {closure#4}(), {closure#7}(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#1}() (+23 more)
+Cohesion: 0.03
+Nodes (48): {closure#2}(), {closure#4}(), {closure#7}(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#1}() (+40 more)
 
 ### Community 59 - "Illuminate\Http\Client\PendingRequest"
-Cohesion: 0.04
-Nodes (23): CachedClientCredentialsAuthenticator, Authenticator, RefreshesCredentials, ShippingCredentialsException, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}() (+15 more)
+Cohesion: 0.05
+Nodes (24): ApiKeyHeaderAuthenticator, CachedClientCredentialsAuthenticator, Authenticator, RefreshesCredentials, ShippingCredentialsException, {closure#1}(), {closure#2}(), {closure#3}() (+16 more)
 
 ### Community 60 - "OrderEmailDeliveryTest.php"
-Cohesion: 0.09
-Nodes (29): How it works, SendOrderEmail, {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}() (+21 more)
+Cohesion: 0.07
+Nodes (38): How it works, Entry points, i18n, Operate, Rules, Tests, Traps, SendOrderEmail (+30 more)
 
 ### Community 61 - "AGENTS.md"
 Cohesion: 0.07
 Nodes (27): Application Structure & Architecture, Artisan, Conventions, Deployment, Deployment, Do Things the Laravel Way, Documentation Files, Foundational Context (+19 more)
 
 ### Community 62 - "ProductVariant"
-Cohesion: 0.10
-Nodes (6): {closure#1}(), QueueRestockNotifications, ProductVariant, ProductVariantObserver, {closure#2}(), migrateImages()
-
-### Community 63 - "CoexistingProvidersTest.php"
 Cohesion: 0.07
-Nodes (25): CancelsShipments, ConfirmsPayment, FakeLabelProvider, LabelDocument, ShipmentResult, LabelException, LabelProviderUnavailable, LabelRejected (+17 more)
+Nodes (12): {closure#1}(), QueueRestockNotifications, ProductVariant, ProductVariantObserver, {closure#2}(), migrateImages(), {closure#2}(), {closure#3}() (+4 more)
 
-### Community 64 - "Controller"
-Cohesion: 0.05
-Nodes (17): {closure#1}(), {closure#4}(), {closure#5}(), {closure#7}(), ReviewMediaController, AuthenticatedSessionController, ConfirmablePasswordController, EmailVerificationNotificationController (+9 more)
+### Community 63 - "DvaexpressLabelProviderTest.php"
+Cohesion: 0.17
+Nodes (14): DvaexpressLabelProvider, {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}(), {closure#15}() (+6 more)
+
+### Community 64 - "Illuminate\Http\RedirectResponse"
+Cohesion: 0.10
+Nodes (6): {closure#1}(), NewsletterCampaignsController, GoogleAuthController, PendingUserVerificationController, VerifyEmailController, CategoryController
 
 ### Community 65 - "timeline.tsx"
 Cohesion: 0.17
 Nodes (18): OrderStatusTimeline(), OrderStatusTimelineProps, Timeline, TimelineBody, TimelineBodyProps, TimelineConnector, TimelineConnectorProps, TimelineHeader (+10 more)
 
 ### Community 67 - "TrackingWebhookTest.php"
-Cohesion: 0.12
-Nodes (19): {closure#10}(), {closure#11}(), {closure#14}(), {closure#16}(), {closure#18}(), {closure#2}(), {closure#20}(), {closure#22}() (+11 more)
+Cohesion: 0.13
+Nodes (18): {closure#10}(), {closure#11}(), {closure#14}(), {closure#16}(), {closure#18}(), {closure#2}(), {closure#20}(), {closure#22}() (+10 more)
 
 ### Community 68 - "SettingsRegistry"
-Cohesion: 0.08
-Nodes (10): Change recipes, {closure#1}(), SettingsRegistry, clearCaches(), {closure#1}(), down(), parse(), socialLinks() (+2 more)
+Cohesion: 0.09
+Nodes (10): Change recipes, {closure#1}(), {closure#7}(), SettingsRegistry, clearCaches(), {closure#1}(), down(), parse() (+2 more)
 
 ### Community 70 - ".supported"
-Cohesion: 0.13
-Nodes (3): {closure#3}(), LocalesTest, PolicyCopyTest
+Cohesion: 0.10
+Nodes (4): {closure#3}(), LocalesTest, {closure#2}(), PolicyCopyTest
 
 ### Community 71 - "TrackingProviderContractTest.php"
 Cohesion: 0.06
-Nodes (15): PassiveProvider, TrackingProvider, ManualProvider, NullProvider, {closure#10}(), {closure#13}(), {closure#17}(), {closure#18}() (+7 more)
+Nodes (17): PassiveProvider, TrackingProvider, ManualProvider, NullProvider, {closure#3}(), createTrackingDriver(), {closure#10}(), {closure#13}() (+9 more)
 
 ### Community 72 - "ShipFormTest.php"
 Cohesion: 0.09
-Nodes (19): {closure#13}(), {closure#15}(), {closure#16}(), {closure#14}(), {closure#15}(), {closure#17}(), {closure#2}(), {closure#20}() (+11 more)
+Nodes (17): {closure#13}(), {closure#15}(), {closure#16}(), {closure#14}(), {closure#15}(), {closure#17}(), {closure#2}(), {closure#20}() (+9 more)
 
-### Community 73 - "SwapRehearsalTest.php"
-Cohesion: 0.17
-Nodes (7): {closure#2}(), {closure#2}(), {closure#3}(), {closure#5}(), {closure#6}(), swapFakeApis(), RehearsalProvider
+### Community 73 - "CoexistingProvidersTest.php"
+Cohesion: 0.06
+Nodes (10): ShipmentTrackingEvent, {closure#2}(), createRateDriver(), verifySignature(), {closure#2}(), {closure#3}(), {closure#5}(), {closure#6}() (+2 more)
 
 ### Community 74 - "ShipmentTrackingServiceTest.php"
 Cohesion: 0.13
@@ -679,15 +686,15 @@ Nodes (20): {closure#1}(), {closure#10}(), {closure#12}(), {closure#13}(), {clos
 
 ### Community 77 - "SettingDefinition"
 Cohesion: 0.11
-Nodes (5): SettingDefinition, {closure#9}(), {closure#1}(), {closure#2}(), {closure#3}()
+Nodes (6): SettingDefinition, {closure#4}(), {closure#9}(), {closure#1}(), {closure#2}(), {closure#3}()
 
 ### Community 79 - "BackInStockTest.php"
-Cohesion: 0.06
-Nodes (51): VariantRestocked, BackInStock, RestockNotification, {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}() (+43 more)
+Cohesion: 0.08
+Nodes (18): BackInStock, {closure#14}(), {closure#21}(), {closure#22}(), {closure#24}(), {closure#26}(), {closure#27}(), {closure#29}() (+10 more)
 
 ### Community 80 - "CheckoutController.php"
-Cohesion: 0.13
-Nodes (9): Checkout and payments, Entry points, How it works, Operate, Rules, Tests, Traps, CheckoutController (+1 more)
+Cohesion: 0.10
+Nodes (5): How it works, Traps, CheckoutController, Cart, Shipping
 
 ### Community 81 - "OrderEditGuardsTest.php"
 Cohesion: 0.15
@@ -698,76 +705,76 @@ Cohesion: 0.10
 Nodes (12): SettingType, Bool, Countries, Email, Enum, Float, Int, Json (+4 more)
 
 ### Community 83 - "Illuminate\Database\Eloquent\Builder"
-Cohesion: 0.09
-Nodes (9): How it works, AuditLog, {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), OpsEvent, {closure#1}() (+1 more)
+Cohesion: 0.19
+Nodes (5): {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#1}()
 
 ### Community 84 - "PageFactory"
 Cohesion: 0.14
 Nodes (5): {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), PageFactory
 
 ### Community 85 - "RingMaskedImage.tsx"
-Cohesion: 0.24
-Nodes (5): useFramerEngine(), UseFramerEngineProps, Engine, Mode, RingMaskedImageProps
+Cohesion: 0.19
+Nodes (9): framer-motion, useFramerEngine(), UseFramerEngineProps, Engine, Mode, RingMaskedImage(), RingMaskedImageProps, RingMaskedImageDemo() (+1 more)
 
-### Community 86 - "CarrierCodeMap"
-Cohesion: 0.12
-Nodes (10): {closure#1}(), {closure#2}(), {closure#3}(), CarrierCodeMap, {closure#38}(), {closure#1}(), {closure#2}(), {closure#3}() (+2 more)
+### Community 86 - "StripeReconciliationTest.php"
+Cohesion: 0.22
+Nodes (18): {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}(), {closure#17}(), {closure#18}(), {closure#3}() (+10 more)
 
 ### Community 87 - "OrderStatusEmailsTest.php"
-Cohesion: 0.12
-Nodes (8): {closure#10}(), {closure#13}(), {closure#3}(), {closure#5}(), {closure#6}(), {closure#9}(), lifecycleJobs(), LifecycleFixtures
+Cohesion: 0.10
+Nodes (10): {closure#1}(), {closure#10}(), {closure#13}(), {closure#3}(), {closure#5}(), {closure#6}(), {closure#9}(), lifecycleJobs() (+2 more)
 
 ### Community 88 - "Card"
-Cohesion: 0.09
-Nodes (59): AbandonedCheckoutStats(), AbandonedCheckoutStatsData, CampaignStatus, CampaignStatusBadge(), VARIANT, NewsletterTabs(), SystemPanel(), GoogleAccountSettings() (+51 more)
+Cohesion: 0.07
+Nodes (87): AbandonedCheckoutStats(), CampaignStatus, CampaignStatusBadge(), VARIANT, NewsletterTabs(), Props, SafetyInformationField(), readGroupHash() (+79 more)
 
 ### Community 89 - "app.tsx"
 Cohesion: 0.16
 Nodes (18): @sentry/react, AppWrapper(), setup(), ToastProvider(), clearPreferences(), CookieConsentProps, PREFERENCE_COOKIES, PREFERENCE_STORAGE_KEYS (+10 more)
 
 ### Community 90 - "DescribesOrder"
-Cohesion: 0.09
-Nodes (9): {closure#1}(), {closure#1}(), DescribesOrder, Money, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}() (+1 more)
+Cohesion: 0.11
+Nodes (7): {closure#1}(), DescribesOrder, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), publicLinkExpiresInDays()
 
 ### Community 91 - "ProductReviewsDisplayTest.php"
 Cohesion: 0.19
 Nodes (7): approvedReview(), {closure#11}(), {closure#12}(), {closure#2}(), {closure#3}(), {closure#6}(), {closure#8}()
 
 ### Community 92 - "VariantLabelTest.php"
-Cohesion: 0.21
-Nodes (11): {closure#1}(), {closure#10}(), {closure#11}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}() (+3 more)
+Cohesion: 0.23
+Nodes (10): {closure#10}(), {closure#11}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}(), {closure#8}() (+2 more)
 
 ### Community 93 - ".result"
-Cohesion: 0.20
-Nodes (11): Coupons and cancellations, `POST https://api.easyparcel.it/checkcoupon/{APIKEY}`, `POST https://api.easyparcel.it/richiesta-storno/{APIKEY}`, Orders and tracking, `POST https://api.easyparcel.it/getorder/{APIKEY}`, `POST https://api.easyparcel.it/listorder/{APIKEY}`, `POST https://api.easyparcel.it/tracking/{APIKEY}`, `POST https://api.easyparcel.it/order/{APIKEY}` (+3 more)
+Cohesion: 0.16
+Nodes (14): Coupons and cancellations, `POST https://api.easyparcel.it/checkcoupon/{APIKEY}`, `POST https://api.easyparcel.it/richiesta-storno/{APIKEY}`, Locations and customs, `POST https://api.easyparcel.it/pudo/{APIKEY}`, `POST https://api.easyparcel.it/taric-search/{APIKEY}`, Orders and tracking, `POST https://api.easyparcel.it/getorder/{APIKEY}` (+6 more)
 
 ### Community 96 - "settings"
-Cohesion: 0.07
-Nodes (17): {closure#1}(), {closure#1}(), settings(), CheckoutTest, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}() (+9 more)
+Cohesion: 0.10
+Nodes (16): {closure#1}(), settings(), {closure#1}(), SenderAddress, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}() (+8 more)
 
 ### Community 97 - "ReviewRequests"
-Cohesion: 0.26
+Cohesion: 0.29
 Nodes (3): {closure#1}(), SendReviewRequests, ReviewRequests
 
 ### Community 98 - "Illuminate\Database\Eloquent\Factories\Factory"
-Cohesion: 0.09
-Nodes (5): CartFactory, CartItemFactory, PendingUserVerificationFactory, ProductVariantFactory, SettingFactory
+Cohesion: 0.13
+Nodes (4): CartFactory, CartItemFactory, ProductVariantFactory, SettingFactory
 
 ### Community 99 - "ReviewRequestEmailTest.php"
 Cohesion: 0.19
 Nodes (20): {closure#1}(), ReviewRequest, {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}() (+12 more)
 
-### Community 100 - "SuccessPageAndFlashTest"
-Cohesion: 0.09
-Nodes (8): Entry points, Operate, Ops and observability, Rules, Tests, Traps, SuccessPageAndFlashTest, FailureModesTest
+### Community 100 - "BuildsStripeOrderFixtures"
+Cohesion: 0.07
+Nodes (3): SuccessPageAndFlashTest, lockedLookup(), BuildsStripeOrderFixtures
 
-### Community 102 - "Order.php"
-Cohesion: 0.15
-Nodes (5): {closure#2}(), {closure#3}(), {closure#6}(), {closure#7}(), ShipmentTrackingEvent
+### Community 102 - "ShipmentTrackingService"
+Cohesion: 0.14
+Nodes (5): {closure#3}(), {closure#6}(), {closure#1}(), ShipmentTrackingService, {closure#8}()
 
 ### Community 103 - "Address"
-Cohesion: 0.06
-Nodes (3): {closure#1}(), Address, lockedLookup()
+Cohesion: 0.07
+Nodes (12): {closure#1}(), Address, {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}() (+4 more)
 
 ### Community 104 - "components.json"
 Cohesion: 0.11
@@ -782,12 +789,12 @@ Cohesion: 0.11
 Nodes (17): compilerOptions, allowJs, baseUrl, esModuleInterop, forceConsistentCasingInFileNames, isolatedModules, jsx, module (+9 more)
 
 ### Community 109 - "TrackingRejected"
-Cohesion: 0.09
-Nodes (18): DvaexpressProvider, DvaexpressResponseMapper, DvaexpressStatusMap, ResolvesCarrierTrackingUrl, {closure#1}(), {closure#10}(), {closure#12}(), {closure#13}() (+10 more)
+Cohesion: 0.08
+Nodes (21): DvaexpressProvider, DvaexpressResponseMapper, DvaexpressStatusMap, ResolvesCarrierTrackingUrl, TrackingRejected, {closure#1}(), {closure#10}(), {closure#11}() (+13 more)
 
-### Community 110 - "SystemInfo"
-Cohesion: 0.20
-Nodes (3): {closure#1}(), {closure#2}(), SystemInfo
+### Community 110 - "Illuminate\Support\Facades\Log"
+Cohesion: 0.05
+Nodes (5): SystemInfo, {closure#2}(), {closure#4}(), {closure#5}(), recordQueueCheck()
 
 ### Community 112 - "CatalogueTest.php"
 Cohesion: 0.19
@@ -802,40 +809,48 @@ Cohesion: 0.29
 Nodes (5): checkoutWithCoupon(), {closure#4}(), {closure#5}(), {closure#6}(), stripeSessionWasCreated()
 
 ### Community 115 - "OrderFactory"
-Cohesion: 0.12
-Nodes (13): How it works, Operate, Orders, refunds and cancellations, Rules, Tests, Traps, Entry points, How it works (+5 more)
+Cohesion: 0.19
+Nodes (7): How it works, Operate, Orders, refunds and cancellations, Rules, Tests, Traps, OrderFactory
+
+### Community 116 - "VariantRestocked"
+Cohesion: 0.13
+Nodes (18): VariantRestocked, {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#15}(), {closure#16}(), {closure#17}() (+10 more)
 
 ### Community 117 - "CheckoutDetailsSummaryTest.php"
-Cohesion: 0.21
-Nodes (4): CheckoutDetailsSummaryTest, {closure#1}(), {closure#3}(), {closure#4}()
+Cohesion: 0.19
+Nodes (6): Checkout and payments, Entry points, Operate, Rules, Tests, CheckoutDetailsSummaryTest
+
+### Community 119 - "ReviewPhotoProcessor"
+Cohesion: 0.19
+Nodes (4): {closure#3}(), InvalidReviewPhoto, {closure#1}(), ReviewPhotoProcessor
 
 ### Community 120 - "Environment"
 Cohesion: 0.14
 Nodes (11): Entry points, Environment, How it works, Operate, Rules, Tests, Traps, UserSeeder (+3 more)
 
 ### Community 122 - "TestCase"
-Cohesion: 0.04
-Nodes (11): Privacy, FAQPageTest, HeroImagesTest, DuplicateSessionsCommandTest, OrderMigrationsTest, ConfigHygieneTest, RouteHygieneTest, ProfileGoogleSettingsTest (+3 more)
+Cohesion: 0.05
+Nodes (11): {closure#1}(), {closure#3}(), SuccessPendingTest, FAQPageTest, HeroImagesTest, DuplicateSessionsCommandTest, ConfigHygieneTest, RouteHygieneTest (+3 more)
 
-### Community 123 - "Illuminate\Database\Eloquent\Model"
+### Community 123 - "AuditLogTest.php"
 Cohesion: 0.13
-Nodes (5): ConsentEvent, NewsletterCampaignSend, SettingChange, AdminAuditObserver, AuditLogger
+Nodes (7): {closure#11}(), {closure#13}(), {closure#3}(), {closure#4}(), {closure#6}(), {closure#8}(), signInFrom()
 
 ### Community 124 - "SEO"
 Cohesion: 0.25
 Nodes (7): Entry points, How it works, Operate, Rules, SEO, Tests, Traps
 
-### Community 125 - "ShippingService"
-Cohesion: 0.16
-Nodes (4): ShipInput, ShipOutcome, ShippingService, {closure#3}()
+### Community 125 - "restockProduct"
+Cohesion: 0.31
+Nodes (15): {closure#20}(), {closure#23}(), {closure#25}(), {closure#28}(), {closure#30}(), {closure#31}(), {closure#32}(), {closure#33}() (+7 more)
 
 ### Community 126 - "LabelShippingTest.php"
 Cohesion: 0.10
 Nodes (20): {closure#1}(), {closure#10}(), {closure#12}(), {closure#14}(), {closure#15}(), {closure#17}(), {closure#18}(), {closure#2}() (+12 more)
 
-### Community 128 - "AbstractHttpProviderTest.php"
-Cohesion: 0.16
-Nodes (13): at(), authenticate(), {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#2}() (+5 more)
+### Community 128 - "HomeController.php"
+Cohesion: 0.17
+Nodes (4): {closure#1}(), {closure#3}(), {closure#4}(), HomeController
 
 ### Community 130 - "VerificationStatusLoginBypassTest.php"
 Cohesion: 0.24
@@ -846,8 +861,8 @@ Cohesion: 0.11
 Nodes (12): Email, newsletter and abandoned-checkout reminders, Entry points, Operate, Rules, Tests, Traps, AppServiceProvider, {closure#22}() (+4 more)
 
 ### Community 135 - "OpsEventType"
-Cohesion: 0.14
-Nodes (8): OpsEventType, AddToCart, CheckoutStarted, PaymentStarted, StripeWebhook, FunnelTracker, OpsEventFactory, {closure#14}()
+Cohesion: 0.12
+Nodes (9): OpsEventType, AddToCart, CheckoutStarted, PaymentStarted, StripeWebhook, OpsEvent, DailyDigest, OpsEventFactory (+1 more)
 
 ### Community 136 - "AdminShippedEmailTest.php"
 Cohesion: 0.17
@@ -858,8 +873,8 @@ Cohesion: 0.18
 Nodes (7): Addresses, Resources, Spediamo API reference, Shipments, `GET /v1/waybills/{shipmentId}/pdf`, Waybill, Waybills
 
 ### Community 140 - "Shipment"
-Cohesion: 0.18
-Nodes (20): {closure#7}(), Shipment, awaitingShipment(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}() (+12 more)
+Cohesion: 0.08
+Nodes (26): {closure#7}(), OrdersController, Shipment, ShipInput, ShipOutcome, {closure#2}(), {closure#3}(), ShippingService (+18 more)
 
 ### Community 141 - "Geo"
 Cohesion: 0.20
@@ -869,17 +884,17 @@ Nodes (9): Geo, Geo for Couriers, Geography, `GET /v1/countries`, `GET /v1/count
 Cohesion: 0.25
 Nodes (7): Deployment, Entry points, How it works, Operate, Rules, Tests, Traps
 
-### Community 143 - ".fields"
-Cohesion: 0.29
-Nodes (6): SpediamoPackages, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}()
+### Community 143 - "AccountDeletionKeepsOrdersTest.php"
+Cohesion: 0.36
+Nodes (9): assertOrderKept(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#6}(), {closure#7}(), {closure#8}(), deleteAccount() (+1 more)
 
 ### Community 144 - "devDependencies"
 Cohesion: 0.14
 Nodes (14): devDependencies, eslint, eslint-config-prettier, @eslint/js, eslint-plugin-i18next, eslint-plugin-react, eslint-plugin-react-hooks, prettier (+6 more)
 
 ### Community 145 - "NextWorkingDay"
-Cohesion: 0.27
-Nodes (5): {closure#14}(), {closure#2}(), NextWorkingDay, {closure#1}(), {closure#2}()
+Cohesion: 0.15
+Nodes (13): {closure#14}(), {closure#2}(), NextWorkingDay, {closure#5}(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}() (+5 more)
 
 ### Community 146 - "GuestCartMergeTest.php"
 Cohesion: 0.28
@@ -889,25 +904,21 @@ Nodes (17): cartPageQuantities(), {closure#10}(), {closure#11}(), {closure#12}()
 Cohesion: 0.19
 Nodes (19): {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}(), {closure#15}(), {closure#16}() (+11 more)
 
-### Community 151 - "spdCaptureLogs"
-Cohesion: 0.31
-Nodes (7): {closure#14}(), {closure#17}(), {closure#18}(), {closure#20}(), {closure#29}(), spdCaptureLogs(), spdMessages()
-
-### Community 152 - "OrdersController.php"
-Cohesion: 0.12
-Nodes (4): {closure#6}(), {closure#1}(), SenderAddress, {closure#1}()
+### Community 151 - "FailureModesTest"
+Cohesion: 0.20
+Nodes (7): Entry points, Operate, Ops and observability, Rules, Tests, Traps, FailureModesTest
 
 ### Community 153 - "CookieConsentTest.php"
 Cohesion: 0.09
 Nodes (11): {closure#2}(), CookieDuration, {closure#11}(), {closure#15}(), {closure#20}(), {closure#5}(), {closure#6}(), {closure#7}() (+3 more)
 
 ### Community 154 - "Settings.php"
-Cohesion: 0.13
-Nodes (4): SettingsChanged, {closure#2}(), {closure#5}(), {closure#7}()
+Cohesion: 0.20
+Nodes (3): SettingsChanged, {closure#2}(), {closure#5}()
 
 ### Community 155 - "DeferredShippedEmailTest.php"
-Cohesion: 0.26
-Nodes (15): {closure#2}(), {closure#3}(), buyLabel(), carrierSays(), {closure#1}(), {closure#10}(), {closure#11}(), {closure#2}() (+7 more)
+Cohesion: 0.33
+Nodes (13): buyLabel(), carrierSays(), {closure#1}(), {closure#10}(), {closure#11}(), {closure#2}(), {closure#3}(), {closure#4}() (+5 more)
 
 ### Community 156 - "require"
 Cohesion: 0.14
@@ -917,13 +928,17 @@ Nodes (14): require, artesaos/seotools, fakerphp/faker, inertiajs/inertia-larave
 Cohesion: 0.21
 Nodes (12): {closure#10}(), {closure#11}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}() (+4 more)
 
-### Community 158 - "profile.tsx"
-Cohesion: 0.23
-Nodes (12): @headlessui/react, AppearanceToggleTab(), BackInStockPreference(), Heading(), HeadingSmall(), NewsletterPreference(), NewsletterPreferenceProps, Switch() (+4 more)
+### Community 158 - "@inertiajs/react"
+Cohesion: 0.09
+Nodes (32): @headlessui/react, @inertiajs/react, AppContent(), AppContentProps, AppLogoIcon(), AppLogoIconProps, AppShell(), AppShellProps (+24 more)
 
 ### Community 159 - "Runbooks"
 Cohesion: 0.25
 Nodes (7): Change an env var, Failed migration on boot, Invariant or Stripe-reconcile alert, Queue backlog or stuck jobs, Rollback, Routine release, Runbooks
+
+### Community 161 - "Illuminate\Database\Eloquent\Relations\HasMany"
+Cohesion: 0.05
+Nodes (4): {closure#7}(), Page, {closure#2}(), {closure#4}()
 
 ### Community 162 - "ProductionExceptionPagesTest.php"
 Cohesion: 0.20
@@ -933,21 +948,17 @@ Nodes (3): {closure#4}(), {closure#7}(), inertiaHeaders()
 Cohesion: 0.26
 Nodes (11): {closure#10}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}(), {closure#8}() (+3 more)
 
-### Community 166 - "User.php"
-Cohesion: 0.21
-Nodes (4): {closure#1}(), {closure#2}(), {closure#4}(), AccountMailMessages
+### Community 165 - "CartController"
+Cohesion: 0.20
+Nodes (4): CartController, {closure#1}(), {closure#2}(), {closure#4}()
 
 ### Community 167 - "Admin settings"
 Cohesion: 0.29
 Nodes (6): Admin settings, Entry points, Operate, Rules, Tests, Traps
 
-### Community 168 - "utils.ts"
-Cohesion: 0.05
-Nodes (50): @radix-ui/react-accordion, OrderSummary(), OrderSummaryProps, ShippingLine(), ShippingLineProps, LoadingOverlay(), LoadingOverlayProps, OrderTracking() (+42 more)
-
 ### Community 170 - "LabelManager"
-Cohesion: 0.06
-Nodes (21): {closure#1}(), {closure#2}(), {closure#3}(), TestShippingRates, {closure#1}(), {closure#3}(), {closure#4}(), {closure#1}() (+13 more)
+Cohesion: 0.09
+Nodes (12): {closure#1}(), {closure#2}(), {closure#3}(), {closure#1}(), {closure#3}(), InspectsBalance, {closure#1}(), FakeRateProvider (+4 more)
 
 ### Community 171 - "ShipmentBuilder"
 Cohesion: 0.19
@@ -958,8 +969,8 @@ Cohesion: 0.29
 Nodes (7): {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), emailKeys(), emailKeysUsedInCode(), placeholdersOf()
 
 ### Community 173 - "CheckoutController.php"
-Cohesion: 0.13
-Nodes (8): AddressController, {closure#2}(), {closure#3}(), {closure#4}(), AddressRules, {closure#1}(), {closure#2}(), ItalianProvinces
+Cohesion: 0.26
+Nodes (6): AddressController, {closure#2}(), {closure#3}(), {closure#4}(), AddressRules, ItalianProvinces
 
 ### Community 174 - "PromotionCodeRulesTest.php"
 Cohesion: 0.26
@@ -969,13 +980,13 @@ Nodes (10): {closure#10}(), {closure#3}(), {closure#4}(), {closure#5}(), {closur
 Cohesion: 0.14
 Nodes (9): CheckStripeConfig, Setting, StripeService, {closure#12}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}() (+1 more)
 
-### Community 176 - "OrdersController"
-Cohesion: 0.13
-Nodes (6): OrderTransitions, InvalidOrderTransition, {closure#10}(), {closure#13}(), OrdersController, {closure#5}()
+### Community 176 - "OrdersController.php"
+Cohesion: 0.07
+Nodes (8): OrderFinancialEdit, OrderTransitions, InvalidOrderTransition, OrderEditRefused, {closure#10}(), {closure#13}(), {closure#6}(), {closure#5}()
 
 ### Community 177 - "AccountNotificationQueueTest.php"
-Cohesion: 0.12
-Nodes (17): UserNotificationKind, PasswordReset, VerifyEmail, {closure#1}(), SendUserNotification, {closure#10}(), {closure#12}(), {closure#14}() (+9 more)
+Cohesion: 0.08
+Nodes (20): UserNotificationKind, PasswordReset, VerifyEmail, {closure#1}(), SendUserNotification, ContactMessage, {closure#10}(), {closure#12}() (+12 more)
 
 ### Community 179 - "scripts"
 Cohesion: 0.20
@@ -988,10 +999,6 @@ Nodes (9): emails.layouts.base, emails.partials.address, emails.partials.button,
 ### Community 181 - "generate_dvaexpress_docs.py"
 Cohesion: 0.18
 Nodes (9): generate(), json_type(), main(), render_document(), render_readme(), response_shape(), sanitize_snapshot(), section_fragments() (+1 more)
-
-### Community 183 - "Rules"
-Cohesion: 0.18
-Nodes (6): Catalog and inventory, Entry points, How it works, Operate, Rules, Tests
 
 ### Community 184 - "ContactCopyTest.php"
 Cohesion: 0.29
@@ -1013,9 +1020,9 @@ Nodes (9): require-dev, laravel/boost, laravel/pail, laravel/pint, laravel/sail,
 Cohesion: 0.22
 Nodes (8): emails.layouts.base, emails.partials.address, emails.partials.button, emails.partials.facts, emails.partials.items, emails.partials.paragraph, emails.partials.section-title, emails.partials.withdrawal
 
-### Community 190 - "AbandonedCheckoutReminders"
-Cohesion: 0.06
-Nodes (14): Entry points, How it works, i18n, Operate, Rules, Tests, Traps, DetectLanguage (+6 more)
+### Community 190 - "CheckoutSnapshot"
+Cohesion: 0.15
+Nodes (4): CheckoutSnapshot, AbandonedCheckoutReminders, {closure#4}(), `GET /v1/shipments/settings`
 
 ### Community 192 - "scripts"
 Cohesion: 0.25
@@ -1026,12 +1033,12 @@ Cohesion: 0.33
 Nodes (10): compact_request_table(), direct_children(), generic_table(), markdown_table(), normalized(), render_operation(), request_tables(), response_tables() (+2 more)
 
 ### Community 194 - "Category"
-Cohesion: 0.08
-Nodes (16): Category, Size, {closure#1}(), {closure#2}(), {closure#3}(), RegeneratesSitemap, {closure#1}(), {closure#2}() (+8 more)
+Cohesion: 0.06
+Nodes (10): Category, Size, {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), deleteIsRefused() (+2 more)
 
-### Community 195 - "OrderCreationService.php"
-Cohesion: 0.18
-Nodes (3): {closure#2}(), Vat, {closure#2}()
+### Community 195 - "RegeneratesSitemap"
+Cohesion: 0.27
+Nodes (4): {closure#1}(), {closure#2}(), {closure#3}(), RegeneratesSitemap
 
 ### Community 197 - "performance-test.js"
 Cohesion: 0.43
@@ -1041,41 +1048,33 @@ Nodes (6): runAllTests(), testAnimationMethod(), testFPS(), testIOSDetection(), 
 Cohesion: 0.25
 Nodes (7): emails.layouts.base, emails.partials.address, emails.partials.button, emails.partials.items, emails.partials.paragraph, emails.partials.section-title, emails.partials.totals
 
-### Community 199 - "Illuminate\Support\Facades\Queue"
-Cohesion: 0.24
-Nodes (6): {closure#3}(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), purchaseBody()
-
 ### Community 200 - "Admin/Reviews/Index.tsx"
-Cohesion: 0.07
-Nodes (59): FIELDS, INPUTS, Props, recipientField(), seed(), ShippingIssues(), ConfirmDialog(), ConfirmDialogProps (+51 more)
+Cohesion: 0.10
+Nodes (46): @radix-ui/react-dialog, Address, EditOrderDialog(), EditOrderDialogProps, Order, OrderItem, FIELDS, INPUTS (+38 more)
 
-### Community 201 - ".issues"
-Cohesion: 0.36
-Nodes (4): RecipientAddressCheck, {closure#1}(), {closure#3}(), {closure#4}()
+### Community 201 - "RateRejected"
+Cohesion: 0.10
+Nodes (11): {closure#4}(), SpediamoIssueMapper, RateException, RateRejected, CarriesIssues, RecipientAddressCheck, ShippingIssue, {closure#1}() (+3 more)
 
 ### Community 202 - "settings.d.ts"
 Cohesion: 0.17
 Nodes (11): CarrierRow, PublicSettings, SettingField, SettingGroup, SettingHistoryEntry, SettingKey, SettingsPageProps, SettingType (+3 more)
 
-### Community 203 - "HealthEndpointTest.php"
-Cohesion: 0.36
-Nodes (4): {closure#2}(), {closure#4}(), {closure#5}(), recordQueueCheck()
-
-### Community 205 - "`POST https://api.easyparcel.it/pudo/{APIKEY}`"
-Cohesion: 0.50
-Nodes (3): Locations and customs, `POST https://api.easyparcel.it/pudo/{APIKEY}`, `POST https://api.easyparcel.it/taric-search/{APIKEY}`
-
-### Community 206 - "optionalDependencies"
-Cohesion: 0.50
-Nodes (4): optionalDependencies, lightningcss-linux-x64-gnu, @rollup/rollup-linux-x64-gnu, @tailwindcss/oxide-linux-x64-gnu
+### Community 203 - "RiderGalleryTest.php"
+Cohesion: 0.27
+Nodes (8): {closure#2}(), {closure#3}(), {closure#5}(), {closure#6}(), {closure#7}(), {closure#8}(), {closure#9}(), featuredPhoto()
 
 ### Community 210 - "SentryFrontendConfigTest.php"
 Cohesion: 0.22
 Nodes (7): {closure#3}(), {closure#5}(), {closure#6}(), {closure#7}(), {closure#8}(), {closure#9}(), consentCookie()
 
+### Community 211 - "Toast.tsx"
+Cohesion: 0.32
+Nodes (7): colorMap, iconColorMap, iconMap, ToastContainer(), ToastItem(), ToastItemProps, Toast
+
 ### Community 212 - "How it works"
-Cohesion: 0.11
-Nodes (11): Auth, Entry points, How it works, Operate, Tests, Traps, ClaimGuestOrders, MergeGuestCartOnLogin (+3 more)
+Cohesion: 0.12
+Nodes (12): Auth, Entry points, How it works, Operate, Rules, Tests, Traps, ClaimGuestOrders (+4 more)
 
 ### Community 213 - "order-cancelled.blade.php"
 Cohesion: 0.33
@@ -1098,32 +1097,32 @@ Cohesion: 0.40
 Nodes (5): autoload, psr-4, App\\, Database\\Factories\\, Database\\Seeders\\
 
 ### Community 221 - ".status"
-Cohesion: 0.25
-Nodes (10): `DELETE /v1/shipments`, `DELETE /v1/shipments/{ids}`, `GET /v1/shipments/{id}`, `GET /v1/shipments/search/{status}`, `GET /v1/shipments/stream/{status}`, `GET /v1/shipments/tracking`, `PATCH /v1/shipments/{id}`, `POST /v1/shipments` (+2 more)
+Cohesion: 0.20
+Nodes (12): `DELETE /v1/shipments`, `DELETE /v1/shipments/{ids}`, `GET /v1/shipments/{id}`, `GET /v1/shipments/search/{status}`, `GET /v1/shipments/stream/{status}`, `GET /v1/shipments/tracking`, `PATCH /v1/shipments/{id}`, `POST /v1/shipments` (+4 more)
 
 ### Community 222 - "Reviews/Create.tsx"
-Cohesion: 0.25
-Nodes (11): addPhotos(), formatBytes(), PHOTO_TYPES, PhotoLimits, PhotoProblem, ReviewPhotoInput(), ReviewPhotoInputProps, limits (+3 more)
+Cohesion: 0.29
+Nodes (9): addPhotos(), formatBytes(), PHOTO_TYPES, PhotoLimits, PhotoProblem, ReviewPhotoInput(), ReviewPhotoInputProps, limits (+1 more)
 
 ### Community 223 - "Illuminate\Database\Migrations\Migration"
 Cohesion: 0.09
-Nodes (5): {closure#1}(), {closure#1}(), {closure#1}(), {closure#2}(), {closure#1}()
+Nodes (5): {closure#1}(), {closure#1}(), {closure#1}(), {closure#1}(), {closure#2}()
 
 ### Community 224 - "Illuminate\Http\Request"
 Cohesion: 0.06
-Nodes (10): CategoriesAndSizesController, ProductDescriptionController, SettingsController, VerificationStatusController, WishlistController, {closure#4}(), HandleInertiaRequests, TrackingWebhookController (+2 more)
+Nodes (16): CategoriesAndSizesController, ProductDescriptionController, SettingsController, ShippingQuotesController, EmailVerificationNotificationController, EmailVerificationPromptController, NewPasswordController, PasswordResetLinkController (+8 more)
 
 ### Community 227 - "Closure"
-Cohesion: 0.06
-Nodes (20): Rules, GuestOrderController, RestockUnsubscribeController, AdminMiddleware, AssignRequestId, {closure#1}(), Authenticate, CaptureGuestSessionId (+12 more)
+Cohesion: 0.05
+Nodes (22): How it works, GuestOrderController, RestockUnsubscribeController, AdminMiddleware, AssignRequestId, {closure#1}(), Authenticate, CaptureGuestSessionId (+14 more)
 
-### Community 229 - "Illuminate\Support\Facades\DB"
-Cohesion: 0.06
-Nodes (8): {closure#3}(), ReviewController, ProfileController, LoginRequest, ProfileUpdateRequest, InvalidReviewPhoto, {closure#1}(), ReviewPhotoProcessor
+### Community 229 - "LoginRequest"
+Cohesion: 0.10
+Nodes (4): AuthenticatedSessionController, ProfileController, LoginRequest, ProfileUpdateRequest
 
 ### Community 231 - "dvaexpress/README.md"
-Cohesion: 0.12
-Nodes (12): Account and billing, `POST https://api.easyparcel.it/addfund/{APIKEY}`, `POST https://api.easyparcel.it/apikeyinfo/{APIKEY}`, `POST https://api.easyparcel.it/balance/{APIKEY}`, `POST https://api.easyparcel.it/newcustomer/{APIKEY}`, Error catalogue, Errors, DVA Express API reference (+4 more)
+Cohesion: 0.17
+Nodes (7): Error catalogue, Errors, DVA Express API reference, Refreshing the reference, Resources, `POST https://api.easyparcel.it/getwaybill/{APIKEY}`, Waybills
 
 ### Community 232 - "ProductListPerPageTest.php"
 Cohesion: 0.21
@@ -1143,15 +1142,15 @@ Nodes (4): emails.layouts.base-text, emails.partials.address-text, emails.partia
 
 ### Community 240 - "NewsletterSubscriber"
 Cohesion: 0.05
-Nodes (37): {closure#3}(), {closure#4}(), NewsletterSubscribersController, NewsletterPreferenceController, NewsletterSubscriber, {closure#1}(), {closure#2}(), {closure#3}() (+29 more)
+Nodes (41): {closure#3}(), {closure#4}(), NewsletterConfirm, NewsletterSubscriber, {closure#1}(), {closure#2}(), {closure#3}(), MarketingConsent (+33 more)
 
-### Community 241 - "CanonicalTagTest.php"
-Cohesion: 0.22
-Nodes (4): canonicalsOf(), {closure#1}(), {closure#2}(), {closure#1}()
+### Community 241 - ".url"
+Cohesion: 0.18
+Nodes (3): {closure#7}(), GET /robots.txt(), {closure#1}()
 
-### Community 242 - "ShipmentUndoE2ETest.php"
-Cohesion: 0.31
-Nodes (7): {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}(), createPaidProcessingOrder()
+### Community 242 - "Reviews"
+Cohesion: 0.29
+Nodes (6): Entry points, How it works, Operate, Reviews, Tests, Traps
 
 ### Community 243 - "ProductDescriptionPropsTest.php"
 Cohesion: 0.33
@@ -1169,21 +1168,17 @@ Nodes (5): `GET /v1/taxDocuments/{id}`, `GET /v1/taxDocuments/search`, `GET /v1/
 Cohesion: 0.08
 Nodes (6): {closure#1}(), {closure#1}(), {closure#1}(), {closure#1}(), {closure#1}(), {closure#1}()
 
-### Community 248 - "PasswordResetTest.php"
-Cohesion: 0.13
-Nodes (9): assertOrderKept(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#6}(), {closure#7}(), {closure#8}(), deleteAccount() (+1 more)
-
 ### Community 249 - "HasLogo"
-Cohesion: 0.10
-Nodes (8): AbandonedCheckoutReminder, ContactMessage, OversoldOrderAlert, HasLogo, `POST /v1/shipments/estimate`, `POST /v1/shipments/{ids}/estimate`, {closure#3}(), {closure#19}()
+Cohesion: 0.11
+Nodes (7): AbandonedCheckoutReminder, {closure#1}(), OversoldOrderAlert, PaidOrderMissingAlert, TestEmail, HasLogo, Money
 
 ### Community 250 - "CartQuantityLimitTest.php"
 Cohesion: 0.27
 Nodes (9): cartLimitAdd(), cartLimitSet(), {closure#1}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}() (+1 more)
 
 ### Community 254 - "PendingUserVerification"
-Cohesion: 0.06
-Nodes (11): SendTestVerificationEmail, RegisteredUserController, PendingUserVerification, PendingUserEmailVerification, {closure#15}(), {closure#16}(), {closure#17}(), {closure#2}() (+3 more)
+Cohesion: 0.07
+Nodes (10): SendTestVerificationEmail, PendingUserVerification, PendingUserEmailVerification, {closure#15}(), {closure#16}(), {closure#17}(), {closure#2}(), registerForStatusPolling() (+2 more)
 
 ### Community 256 - "admin-oversold-order.blade.php"
 Cohesion: 0.50
@@ -1233,21 +1228,17 @@ Nodes (5): {closure#1}(), {closure#2}(), {closure#4}(), {closure#6}(), StockServ
 Cohesion: 0.27
 Nodes (10): {closure#10}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}(), {closure#8}() (+2 more)
 
-### Community 363 - "ProductDescriptionFormTest.php"
-Cohesion: 0.54
-Nodes (6): {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), descriptionFormFixture(), descriptionFormPayload()
-
-### Community 365 - "StorefrontFlashTest.php"
-Cohesion: 0.25
-Nodes (3): {closure#2}(), {closure#6}(), {closure#7}()
-
-### Community 368 - "2026_10_15_400400_add_refund_restock_tracking.php"
+### Community 313 - "Account and billing"
 Cohesion: 0.33
-Nodes (3): {closure#1}(), {closure#2}(), {closure#3}()
+Nodes (5): Account and billing, `POST https://api.easyparcel.it/addfund/{APIKEY}`, `POST https://api.easyparcel.it/apikeyinfo/{APIKEY}`, `POST https://api.easyparcel.it/balance/{APIKEY}`, `POST https://api.easyparcel.it/newcustomer/{APIKEY}`
 
 ### Community 370 - "PickupDateTest.php"
-Cohesion: 0.07
-Nodes (27): Address, Parcel, ShipmentRequest, DvaexpressLabelRequestMapper, SpediamoLabelRequestMapper, {closure#10}(), {closure#11}(), {closure#13}() (+19 more)
+Cohesion: 0.06
+Nodes (33): Address, Parcel, ShipmentRequest, DvaexpressLabelRequestMapper, SpediamoLabelRequestMapper, SpediamoPackages, {closure#10}(), {closure#11}() (+25 more)
+
+### Community 383 - "CategoryLandingIndexingTest.php"
+Cohesion: 0.83
+Nodes (3): {closure#1}(), {closure#2}(), robotsAndCanonicalOf()
 
 ### Community 387 - "0001_01_01_000002_create_jobs_table.php"
 Cohesion: 0.33
@@ -1274,16 +1265,16 @@ Cohesion: 0.37
 Nodes (11): {closure#10}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#6}(), {closure#8}(), {closure#9}(), stockEditFixture() (+3 more)
 
 ### Community 441 - "web.php"
-Cohesion: 0.04
-Nodes (14): CheckoutRecoveryController, ContactController, DashboardController, {closure#3}(), {closure#4}(), HomeController, {closure#12}(), {closure#5}() (+6 more)
+Cohesion: 0.10
+Nodes (7): CheckoutRecoveryController, ContactController, DashboardController, {closure#5}(), {closure#9}(), GET /checkout(), GET /guest/checkout()
 
 ### Community 446 - "SentryEventFilterTest.php"
 Cohesion: 0.24
 Nodes (7): SentryEventFilter, {closure#1}(), {closure#2}(), {closure#4}(), {closure#5}(), {closure#7}(), sentryEventFor()
 
 ### Community 448 - "SpediamoResponseMapperTest.php"
-Cohesion: 0.08
-Nodes (21): {closure#2}(), SpediamoProvider, SpediamoResponseMapper, SpediamoStatusMap, {closure#11}(), {closure#31}(), {closure#4}(), {closure#1}() (+13 more)
+Cohesion: 0.14
+Nodes (16): SpediamoResponseMapper, SpediamoStatusMap, {closure#1}(), {closure#10}(), {closure#11}(), {closure#12}(), {closure#13}(), {closure#14}() (+8 more)
 
 ### Community 453 - "CustomerTrackingTest.php"
 Cohesion: 0.24
@@ -1298,12 +1289,8 @@ Cohesion: 0.07
 Nodes (27): Application Structure & Architecture, Artisan, Conventions, Deployment, Deployment, Do Things the Laravel Way, Documentation Files, Foundational Context (+19 more)
 
 ### Community 467 - "OrderTransitionsTest.php"
-Cohesion: 0.10
-Nodes (26): {closure#11}(), {closure#15}(), {closure#10}(), {closure#11}(), {closure#13}(), {closure#15}(), {closure#16}(), {closure#17}() (+18 more)
-
-### Community 469 - "ReviewAutoApproveTest.php"
-Cohesion: 0.36
-Nodes (5): {closure#1}(), {closure#2}(), {closure#3}(), {closure#5}(), reviewApprovalSubmit()
+Cohesion: 0.09
+Nodes (27): {closure#11}(), {closure#15}(), {closure#10}(), {closure#11}(), {closure#13}(), {closure#15}(), {closure#16}(), {closure#17}() (+19 more)
 
 ### Community 476 - "0001_01_01_000000_create_users_table.php"
 Cohesion: 0.33
@@ -1322,11 +1309,11 @@ Cohesion: 0.38
 Nodes (4): buildProductFilterParams(), ProductFilterOverrides, ProductFilterState, FilterSectionProps
 
 ### Community 495 - "PaymentStatusEditTest.php"
-Cohesion: 0.33
-Nodes (9): {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}(), {closure#7}(), {closure#8}(), {closure#9}() (+1 more)
+Cohesion: 0.15
+Nodes (12): Vat, {closure#2}(), {closure#3}(), {closure#2}(), {closure#3}(), {closure#4}(), {closure#5}(), {closure#6}() (+4 more)
 
 ### Community 508 - "SettingsCommandsTest.php"
-Cohesion: 0.27
+Cohesion: 0.16
 Nodes (5): ClearAllCache, {closure#1}(), {closure#2}(), {closure#3}(), legacySecretRows()
 
 ### Community 550 - "useGsapEngine.ts"
@@ -1335,23 +1322,23 @@ Nodes (3): gsap, useGsapEngine(), UseGsapEngineProps
 
 ## Knowledge Gaps
 - **143 isolated node(s):** `php`, `AddToCart`, `CheckoutStarted`, `PaymentStarted`, `StripeWebhook` (+138 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2444 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **195 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2452 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **196 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Order` connect `Order` to `Inertia\Testing\AssertableInertia`, `BuildsStripeOrderFixtures`, `Illuminate\Database\Eloquent\Relations\BelongsTo`, `TrackingStatus`, `Illuminate\Console\Command`, `Illuminate\Support\Facades\Log`, `OrderConfirmation`, `MailInfrastructureTest.php`, `TrackingManager`, `InvariantCheckerTest.php`, `Refund`, `ShippingRatesTest.php`, `OrderCreationService`, `LifecycleMailTest.php`, `Illuminate\Database\Seeder`, `RefundTest.php`, `Inertia\Response`, `EmailService`, `RateProvider`, `RateManager`, `ReviewPhotosTest.php`, `SyncTrackingTest.php`, `PaidCancellationTest.php`, `.product`, `OrderEmailDeliveryTest.php`, `CoexistingProvidersTest.php`, `Controller`, `TrackingWebhookTest.php`, `TrackingProviderContractTest.php`, `ShipFormTest.php`, `TrackingManagerTest.php`, `CustomerOrderPayloadTest.php`, `BackInStockTest.php`, `OrderEditGuardsTest.php`, `Illuminate\Database\Eloquent\Builder`, `OrderStatusEmailsTest.php`, `DescribesOrder`, `VariantLabelTest.php`, `CheckoutSuccessOrderTest`, `ReviewRequests`, `ReviewRequestEmailTest.php`, `Order.php`, `Address`, `AdminListPaginationTest.php`, `ShippingAndVatTest`, `CouponRecheckAtPaymentTest.php`, `OrderFinancialEdit`, `DailyDigest.php`, `TestCase`, `Illuminate\Database\Eloquent\Model`, `ShippingService`, `LabelShippingTest.php`, `FreeShippingThresholdTest`, `OrderItemFactory.php`, `RefundRefused`, `AdminShippedEmailTest.php`, `Shipment`, `GuestOrderPageTest`, `OrdersController.php`, `Settings.php`, `DeferredShippedEmailTest.php`, `ShipGuardTest.php`, `OrderStatusConsistencyTest`, `LabelManager`, `ShipmentBuilder`, `CheckoutController.php`, `PromotionCodeRulesTest.php`, `OrdersController`, `AbandonedCheckoutReminders`, `DailyDigestTest.php`, `Category`, `OrderCreationService.php`, `Illuminate\Support\Facades\Queue`, `.status`, `Illuminate\Http\Request`, `ShipmentUndoE2ETest.php`, `AdminTrackingCarrierTest.php`, `PasswordResetTest.php`, `HasLogo`, `.handle`, `OrderFactory.php`, `2. Feature ideas (19)`, `OrderEventsTest.php`, `PickupDateTest.php`, `PromotionService`, `ProductStockConcurrencyTest.php`, `web.php`, `SpediamoResponseMapperTest.php`, `CustomerTrackingTest.php`, `OrderTransitionsTest.php`, `ReviewAutoApproveTest.php`, `CustomersTest.php`, `PaymentStatusEditTest.php`?**
-  _High betweenness centrality (0.219) - this node is a cross-community bridge._
+- **Why does `Order` connect `Order` to `Inertia\Testing\AssertableInertia`, `AdminAlertsTest.php`, `Illuminate\Database\Eloquent\Model`, `TrackingStatus`, `Illuminate\Console\Command`, `Illuminate\Support\Facades\Log`, `MailInfrastructureTest.php`, `TrackingManager`, `InvariantCheckerTest.php`, `Refund`, `Inertia\Inertia`, `ShippingRatesTest.php`, `OrderCreationService`, `LifecycleMailTest.php`, `Illuminate\Database\Seeder`, `RefundTest.php`, `Inertia\Response`, `EmailService`, `RateManager`, `ReviewPhotosTest.php`, `SyncTrackingTest.php`, `PaidCancellationTest.php`, `.product`, `Illuminate\Http\Client\PendingRequest`, `OrderEmailDeliveryTest.php`, `ProductVariant`, `Illuminate\Http\RedirectResponse`, `TrackingWebhookTest.php`, `TrackingProviderContractTest.php`, `ShipFormTest.php`, `CoexistingProvidersTest.php`, `TrackingManagerTest.php`, `CustomerOrderPayloadTest.php`, `BackInStockTest.php`, `OrderEditGuardsTest.php`, `Illuminate\Database\Eloquent\Builder`, `StripeReconciliationTest.php`, `OrderStatusEmailsTest.php`, `DescribesOrder`, `VariantLabelTest.php`, `CheckoutSuccessOrderTest`, `ReviewRequests`, `ReviewRequestEmailTest.php`, `BuildsStripeOrderFixtures`, `ShipmentTrackingService`, `Address`, `AdminListPaginationTest.php`, `ShippingAndVatTest`, `TrackingRejected`, `CouponRecheckAtPaymentTest.php`, `VariantRestocked`, `TestCase`, `LabelShippingTest.php`, `FreeShippingThresholdTest`, `OrderItemFactory.php`, `OpsEventType`, `AdminShippedEmailTest.php`, `Shipment`, `AccountDeletionKeepsOrdersTest.php`, `NextWorkingDay`, `GuestOrderPageTest`, `DeferredShippedEmailTest.php`, `Illuminate\Database\Eloquent\Relations\HasMany`, `ShipGuardTest.php`, `OrderStatusConsistencyTest`, `HandleInertiaRequests.php`, `LabelManager`, `ShipmentBuilder`, `PromotionCodeRulesTest.php`, `OrdersController.php`, `CheckoutSnapshot`, `DailyDigestTest.php`, `Category`, `.status`, `Illuminate\Http\Request`, `Closure`, `AdminTrackingCarrierTest.php`, `HasLogo`, `OrderFactory.php`, `2. Feature ideas (19)`, `OrderEventsTest.php`, `PickupDateTest.php`, `PromotionService`, `ProductStockConcurrencyTest.php`, `CustomerTrackingTest.php`, `OrderTransitionsTest.php`, `CustomersTest.php`, `PaymentStatusEditTest.php`?**
+  _High betweenness centrality (0.191) - this node is a cross-community bridge._
 - **What connects `php`, `AddToCart`, `CheckoutStarted` to the rest of the system?**
   _143 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `TrackingRequest` be split into smaller, more focused modules?**
-  _Cohesion score 0.1346153846153846 - nodes in this community are weakly interconnected._
-- **Why does `User` connect `User` to `Inertia\Testing\AssertableInertia`, `BuildsStripeOrderFixtures`, `Illuminate\Database\Eloquent\Relations\BelongsTo`, `Illuminate\Http\Client\Request`, `Illuminate\Console\Command`, `Illuminate\Support\Facades\Log`, `Order`, `MailInfrastructureTest.php`, `TrackingManager`, `Product`, `Refund`, `FunnelTrackerTest.php`, `ShippingRatesTest.php`, `Settings`, `LifecycleMailTest.php`, `Illuminate\Database\Seeder`, `CampaignsTest.php`, `RefundTest.php`, `Inertia\Response`, `EmailService`, `Cart`, `ReviewMedia`, `RateProvider`, `NewsletterSignupFlowTest.php`, `ReviewPhotosTest.php`, `SettingsServiceProvider.php`, `PaidCancellationTest.php`, `.product`, `Illuminate\Http\Client\PendingRequest`, `OrderEmailDeliveryTest.php`, `CoexistingProvidersTest.php`, `Controller`, `AdminSettingsControllerTest.php`, `TrackingProviderContractTest.php`, `ShipFormTest.php`, `ShipmentTrackingServiceTest.php`, `CustomerOrderPayloadTest.php`, `SettingDefinition`, `BackInStockTest.php`, `CheckoutController.php`, `OrderEditGuardsTest.php`, `Illuminate\Database\Eloquent\Builder`, `OrderStatusEmailsTest.php`, `DescribesOrder`, `ProductReviewsDisplayTest.php`, `VariantLabelTest.php`, `CheckoutSuccessOrderTest`, `settings`, `Illuminate\Database\Eloquent\Factories\Factory`, `ReviewRequestEmailTest.php`, `Address`, `AdminListPaginationTest.php`, `ShippingAndVatTest`, `CouponRecheckAtPaymentTest.php`, `CheckoutDetailsSummaryTest.php`, `Environment`, `TestCase`, `Illuminate\Database\Eloquent\Model`, `ShippingService`, `LabelShippingTest.php`, `FreeShippingThresholdTest`, `VerificationStatusLoginBypassTest.php`, `ReviewFactory`, `AdminShippedEmailTest.php`, `Shipment`, `GuestCartMergeTest.php`, `Illuminate\Support\Facades\Storage`, `Settings.php`, `DeferredShippedEmailTest.php`, `ProductSafetyTest.php`, `ShipGuardTest.php`, `OrderStatusConsistencyTest`, `User.php`, `ProductFactory`, `CheckoutController.php`, `PromotionCodeRulesTest.php`, `AccountNotificationQueueTest.php`, `AbandonedCheckoutReminders`, `Category`, `OrderCreationService.php`, `Illuminate\Support\Facades\Queue`, `How it works`, `Illuminate\Http\Request`, `Closure`, `Illuminate\Support\Facades\DB`, `ProductListPerPageTest.php`, `UserFactory.php`, `NewsletterSubscriber`, `ShipmentUndoE2ETest.php`, `AdminTrackingCarrierTest.php`, `SavedAddressTest`, `PasswordResetTest.php`, `HasLogo`, `CartQuantityLimitTest.php`, `OrderFactory.php`, `PendingUserVerification`, `OrderEventsTest.php`, `WishlistFactory.php`, `PasswordResetTest.php`, `ProductDescriptionFormTest.php`, `LifecycleSettingsTest.php`, `StorefrontFlashTest.php`, `PickupDateTest.php`, `PromotionService`, `RequestIdTest.php`, `ProductStockConcurrencyTest.php`, `CustomerTrackingTest.php`, `OrderTransitionsTest.php`, `ReviewAutoApproveTest.php`, `CustomersTest.php`, `PaymentStatusEditTest.php`?**
-  _High betweenness centrality (0.149) - this node is a cross-community bridge._
+  _Cohesion score 0.08305084745762711 - nodes in this community are weakly interconnected._
+- **Why does `User` connect `User` to `Inertia\Testing\AssertableInertia`, `Illuminate\Database\Eloquent\Model`, `Illuminate\Http\Client\Request`, `Illuminate\Console\Command`, `Illuminate\Support\Facades\Log`, `Order`, `MailInfrastructureTest.php`, `TrackingManager`, `Product`, `Refund`, `Inertia\Inertia`, `ShippingRatesTest.php`, `OrderCreationService`, `Settings`, `LifecycleMailTest.php`, `Illuminate\Database\Seeder`, `CampaignsTest.php`, `RefundTest.php`, `Inertia\Response`, `EmailService`, `ReviewMedia`, `ReviewPhotosTest.php`, `SettingsServiceProvider.php`, `PaidCancellationTest.php`, `.product`, `OrderEmailDeliveryTest.php`, `ProductVariant`, `Illuminate\Http\RedirectResponse`, `AdminSettingsControllerTest.php`, `TrackingProviderContractTest.php`, `ShipFormTest.php`, `CoexistingProvidersTest.php`, `ShipmentTrackingServiceTest.php`, `CustomerOrderPayloadTest.php`, `SettingDefinition`, `BackInStockTest.php`, `CheckoutController.php`, `OrderEditGuardsTest.php`, `OrderStatusEmailsTest.php`, `DescribesOrder`, `ProductReviewsDisplayTest.php`, `VariantLabelTest.php`, `settings`, `Illuminate\Database\Eloquent\Factories\Factory`, `ReviewRequestEmailTest.php`, `BuildsStripeOrderFixtures`, `Address`, `AdminListPaginationTest.php`, `ShippingAndVatTest`, `Illuminate\Support\Facades\Log`, `CouponRecheckAtPaymentTest.php`, `VariantRestocked`, `CheckoutDetailsSummaryTest.php`, `Environment`, `TestCase`, `AuditLogTest.php`, `restockProduct`, `LabelShippingTest.php`, `FreeShippingThresholdTest`, `VerificationStatusLoginBypassTest.php`, `ReviewFactory`, `UserGoogleAuthTest`, `AdminShippedEmailTest.php`, `Shipment`, `AccountDeletionKeepsOrdersTest.php`, `NextWorkingDay`, `GuestCartMergeTest.php`, `Illuminate\Support\Facades\Storage`, `Settings.php`, `DeferredShippedEmailTest.php`, `ProductSafetyTest.php`, `Illuminate\Database\Eloquent\Relations\HasMany`, `ShipGuardTest.php`, `OrderStatusConsistencyTest`, `ProductFactory`, `CheckoutController.php`, `PromotionCodeRulesTest.php`, `AccountNotificationQueueTest.php`, `CheckoutSnapshot`, `Category`, `RiderGalleryTest.php`, `How it works`, `Illuminate\Http\Request`, `LoginRequest`, `ProductListPerPageTest.php`, `UserFactory.php`, `NewsletterSubscriber`, `AdminTrackingCarrierTest.php`, `SavedAddressTest`, `PasswordResetTest.php`, `HasLogo`, `CartQuantityLimitTest.php`, `OrderFactory.php`, `PendingUserVerification`, `OrderEventsTest.php`, `LifecycleSettingsTest.php`, `PickupDateTest.php`, `PromotionService`, `ProductStockConcurrencyTest.php`, `CustomerTrackingTest.php`, `OrderTransitionsTest.php`, `CustomersTest.php`, `PaymentStatusEditTest.php`?**
+  _High betweenness centrality (0.167) - this node is a cross-community bridge._
 - **Should `sidebar.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.048530901722391086 - nodes in this community are weakly interconnected._
-- **Why does `useTranslation()` connect `useTranslation.ts` to `sidebar.tsx`, `Input`, `timeline.tsx`, `GroupForm.tsx`, `Products/Index.tsx`, `Admin/Reviews/Index.tsx`, `utils.ts`, `app.tsx`, `Orders/Show.tsx`, `Card`, `profile.tsx`, `Reviews/Create.tsx`, `AbandonedCheckoutReminders`?**
-  _High betweenness centrality (0.101) - this node is a cross-community bridge._
-- **Should `Input` be split into smaller, more focused modules?**
-  _Cohesion score 0.05033528562940327 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05509677419354839 - nodes in this community are weakly interconnected._
+- **Why does `useTranslation()` connect `useTranslation.ts` to `sidebar.tsx`, `Details.tsx`, `timeline.tsx`, `GroupForm.tsx`, `lucide-react`, `Admin/Reviews/Index.tsx`, `app.tsx`, `Button`, `Orders/Show.tsx`, `Card`, `OrderEmailDeliveryTest.php`, `Reviews/Create.tsx`, `@inertiajs/react`?**
+  _High betweenness centrality (0.116) - this node is a cross-community bridge._
+- **Should `Details.tsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.07629107981220658 - nodes in this community are weakly interconnected._

@@ -43,7 +43,7 @@ class QueueRestockNotifications implements ShouldQueue
         $variant = ProductVariant::with('product')->find($event->variantId);
 
         // Sold out again (or switched off) before we got here: nothing to announce
-        if (! $variant || ! $variant->isInStock() || $variant->product?->status !== 'active') {
+        if (! $variant || ! $variant->isInStock() || ! $variant->product?->isPurchasable()) {
             return;
         }
 

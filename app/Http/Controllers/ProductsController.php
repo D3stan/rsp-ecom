@@ -231,7 +231,7 @@ class ProductsController extends Controller
             ->withAvg('approvedReviews', 'rating')
             ->withCount('approvedReviews')
             ->where('slug', $slug)
-            ->where('status', 'active')
+            ->purchasable()
             ->firstOrFail();
 
         // Set SEO meta tags for product page
@@ -242,6 +242,11 @@ class ProductsController extends Controller
         SEOMeta::setTitle($pageTitle.' – '.settings('store.name'));
         SEOMeta::setDescription(Str::limit($metaDescription, 160));
         SEOMeta::setCanonical(route('products.show', $product));
+
+        // reachable by direct link only; setRobots replaces the config default (addMeta would print a second robots tag)
+        if ($product->status === 'unlisted') {
+            SEOMeta::setRobots('noindex,nofollow');
+        }
 
         // Open Graph for product
         OpenGraph::setType('product');

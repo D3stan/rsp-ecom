@@ -185,10 +185,28 @@ class Product extends Model
         $this->update(['images' => []]);
     }
 
+    /** Statuses whose page can be opened and bought; `unlisted` is reachable only by direct link. */
+    public const PURCHASABLE_STATUSES = ['active', 'unlisted'];
+
     // Scopes
+
+    /**
+     * Listed on the storefront (lists, counts, search, related, sitemap). Unlisted products are excluded
+     * on purpose; access and purchase checks MUST use purchasable() / isPurchasable() instead.
+     */
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
+    }
+
+    public function scopePurchasable($query)
+    {
+        return $query->whereIn('status', self::PURCHASABLE_STATUSES);
+    }
+
+    public function isPurchasable(): bool
+    {
+        return in_array($this->status, self::PURCHASABLE_STATUSES, true);
     }
 
     public function scopeFeatured($query)
@@ -236,7 +254,7 @@ class Product extends Model
 
     public function canAddToCart(int $quantity = 1): bool
     {
-        return $this->status === 'active' && $this->stock_quantity >= $quantity;
+        return $this->isPurchasable() && $this->stock_quantity >= $quantity;
     }
 
     public function decrementStock(int $quantity): bool

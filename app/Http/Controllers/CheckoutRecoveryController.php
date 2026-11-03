@@ -45,7 +45,7 @@ class CheckoutRecoveryController extends Controller
                 $variant = ProductVariant::with('product')->find($line['product_variant_id'] ?? null);
                 $product = $variant?->product;
 
-                if (! $variant || ! $product || $product->status !== 'active' || ! $variant->canAddToCart(1)) {
+                if (! $variant || ! $product || ! $product->isPurchasable() || ! $variant->canAddToCart(1)) {
                     $skipped[] = (string) ($line['product_name'] ?? '');
 
                     continue;

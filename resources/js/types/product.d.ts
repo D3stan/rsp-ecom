@@ -10,7 +10,7 @@ export interface Product {
     image_url?: string;
     category?: Category;
     stock_quantity?: number;
-    status?: 'active' | 'inactive' | 'draft';
+    status?: 'active' | 'inactive' | 'draft' | 'unlisted';
     is_active?: boolean; // deprecated, use status instead
     rating?: number;
     inWishlist?: boolean;

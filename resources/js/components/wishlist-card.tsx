@@ -41,8 +41,11 @@ export const WishlistCard: React.FC<WishlistCardProps> = ({ item, variant = 'det
         ));
     };
 
+    // unlisted products are hidden from lists but still sold by direct link
+    const isPurchasable = item.product.status === 'active' || item.product.status === 'unlisted';
+
     const getStockStatus = () => {
-        if (item.product.status !== 'active') {
+        if (!isPurchasable) {
             return { status: t('products.discontinued'), color: 'bg-red-100 text-red-800 border-red-200' };
         }
         if (!item.product.stock_quantity || item.product.stock_quantity === 0) {
@@ -173,10 +176,10 @@ export const WishlistCard: React.FC<WishlistCardProps> = ({ item, variant = 'det
                             <Button
                                 size="sm"
                                 className="w-full"
-                                disabled={item.product.status !== 'active' || item.product.stock_quantity === 0}
-                                asChild={item.product.status === 'active' && item.product.stock_quantity !== 0}
+                                disabled={!isPurchasable || item.product.stock_quantity === 0}
+                                asChild={isPurchasable && item.product.stock_quantity !== 0}
                             >
-                                {item.product.status === 'active' && item.product.stock_quantity !== 0 ? (
+                                {isPurchasable && item.product.stock_quantity !== 0 ? (
                                     <Link href={`/products/${item.product.slug}`}>
                                         <ShoppingCart className="mr-2 h-4 w-4" />
                                         {t('products.add_to_cart')}
@@ -184,7 +187,7 @@ export const WishlistCard: React.FC<WishlistCardProps> = ({ item, variant = 'det
                                 ) : (
                                     <>
                                         <ShoppingCart className="mr-2 h-4 w-4" />
-                                        {item.product.status !== 'active' ? t('products.discontinued') : t('products.out_of_stock')}
+                                        {!isPurchasable ? t('products.discontinued') : t('products.out_of_stock')}
                                     </>
                                 )}
                             </Button>

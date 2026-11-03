@@ -21,6 +21,7 @@ Page meta/OpenGraph/JSON-LD, canonical, robots and sitemap generation. Does not 
 ## Rules
 - MUST set per-page meta in the controller via the `SEOMeta`/`OpenGraph`/`TwitterCard` facades before rendering; the layout only prints them. Unenforced.
 - MUST mark private/transactional pages (cart, dashboard) `noindex,nofollow` with `SEOMeta::addMeta('robots', ...)`. Unenforced.
+- MUST mark unlisted product pages `noindex,nofollow` with `SEOMeta::setRobots()`, not `addMeta` (that adds a second tag next to the config default `index,follow`). Enforced by `tests/Feature/Catalog/UnlistedProductTest.php`.
 - MUST keep searched, price-filtered, sorted and unknown/inactive-category `/products` pages `noindex,follow`; a plain active `?category=` page is the category landing page and is indexed, canonical and `og:url` = just the category. Enforced by `tests/Feature/Seo/CategoryLandingIndexingTest.php`.
 - MUST print exactly one canonical per page: only SEOMeta prints it (controller `setCanonical`, else `defaults.canonical = 'current'`, the URL without its query string). Never add a canonical to the layout. Enforced by `tests/Feature/Seo/CanonicalTagTest.php`.
 - NEVER write `sitemap.xml` (in `public/`) from anything but `generate:sitemap-index`: it is the index of the chunk files. Enforced by `tests/Feature/Seo/SitemapScheduleTest.php` (schedule).

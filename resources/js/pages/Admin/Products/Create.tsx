@@ -303,6 +303,12 @@ export default function CreateProduct({ categories, sizes, uploadLimits }: Props
                                                     {t('admin.products.status_draft')}
                                                 </div>
                                             </SelectItem>
+                                            <SelectItem value="unlisted">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                                                    {t('admin.products.status_unlisted')}
+                                                </div>
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

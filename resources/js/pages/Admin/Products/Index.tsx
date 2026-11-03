@@ -38,7 +38,7 @@ interface Product {
     stock_quantity: number;
     sku?: string;
     images: string[];
-    status: 'active' | 'inactive' | 'draft';
+    status: 'active' | 'inactive' | 'draft' | 'unlisted';
     featured: boolean;
     category_id?: number;
     size_id?: number;
@@ -105,6 +105,7 @@ const statusColors = {
     active: 'bg-green-100 text-green-800',
     inactive: 'bg-gray-100 text-gray-800',
     draft: 'bg-yellow-100 text-yellow-800',
+    unlisted: 'bg-blue-100 text-blue-800',
 };
 
 export default function ProductsIndex({ products, categories, filters, stats }: Props) {
@@ -189,6 +190,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
             active: t('admin.products.status_active'),
             inactive: t('admin.products.status_inactive'),
             draft: t('admin.products.status_draft'),
+            unlisted: t('admin.products.status_unlisted'),
         };
         return (
             <Badge className={statusColors[status as keyof typeof statusColors]} variant="secondary">
@@ -375,6 +377,7 @@ export default function ProductsIndex({ products, categories, filters, stats }: 
                                     <option value="active">{t('admin.products.status_active')}</option>
                                     <option value="inactive">{t('admin.products.status_inactive')}</option>
                                     <option value="draft">{t('admin.products.status_draft')}</option>
+                                    <option value="unlisted">{t('admin.products.status_unlisted')}</option>
                                 </select>
                             </div>
 

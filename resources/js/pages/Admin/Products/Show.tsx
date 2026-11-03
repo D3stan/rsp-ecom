@@ -9,7 +9,7 @@ import { useSetting } from '@/hooks/use-setting';
 import { useTranslation } from '@/hooks/useTranslation';
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { DollarSign, Edit2, MessageSquare, Package, Percent, Plus, Star, TrendingUp } from 'lucide-react';
+import { Check, DollarSign, Edit2, Link2, MessageSquare, Package, Percent, Plus, Star, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { route } from 'ziggy-js';
 
@@ -23,7 +23,7 @@ interface Product {
     stock_quantity: number;
     sku?: string;
     images: string[];
-    status: 'active' | 'inactive' | 'draft';
+    status: 'active' | 'inactive' | 'draft' | 'unlisted';
     featured: boolean;
     category_id?: number;
     size_id?: number;
@@ -108,23 +108,39 @@ export default function ProductsShow({ product }: Props) {
         }).format(amount);
     };
 
+    const [linkCopied, setLinkCopied] = useState(false);
+
+    // the only way to reach an unlisted product: it appears in no storefront list
+    const copyPublicLink = async () => {
+        try {
+            await navigator.clipboard.writeText(route('products.show', product.slug));
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2000);
+        } catch {
+            // clipboard blocked (insecure context): nothing to recover
+        }
+    };
+
     const getStatusBadge = (status: string) => {
         const variants = {
             active: 'default',
             inactive: 'secondary',
             draft: 'outline',
+            unlisted: 'secondary',
         } as const;
 
         const colors = {
             active: 'bg-green-500',
             inactive: 'bg-gray-500',
             draft: 'bg-yellow-500',
+            unlisted: 'bg-blue-500',
         };
 
         const labels: Record<string, string> = {
             active: t('admin.products.status_active'),
             inactive: t('admin.products.status_inactive'),
             draft: t('admin.products.status_draft'),
+            unlisted: t('admin.products.status_unlisted'),
         };
 
         return (
@@ -193,12 +209,18 @@ export default function ProductsShow({ product }: Props) {
                         <h1 className="text-2xl font-bold text-white">{product.name}</h1>
                         <p className="text-gray-500">{t('admin.products.sku_display', { sku: product.sku || t('admin.products.not_available') })}</p>
                     </div>
-                    <Button size="sm" asChild>
-                        <Link href={route('admin.products.edit', product.id)}>
-                            <Edit2 className="mr-2 h-4 w-4" />
-                            {t('admin.products.edit')}
-                        </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={copyPublicLink}>
+                            {linkCopied ? <Check className="mr-2 h-4 w-4" /> : <Link2 className="mr-2 h-4 w-4" />}
+                            {linkCopied ? t('admin.products.link_copied') : t('admin.products.copy_link')}
+                        </Button>
+                        <Button size="sm" asChild>
+                            <Link href={route('admin.products.edit', product.id)}>
+                                <Edit2 className="mr-2 h-4 w-4" />
+                                {t('admin.products.edit')}
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-2">
