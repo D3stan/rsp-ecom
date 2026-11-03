@@ -126,6 +126,30 @@ it('saves the safety information when the admin creates a product', function () 
     expect(Product::where('name', 'Brand new headlight')->value('safety_information'))->toBe('Check the beam alignment after fitting.');
 });
 
+it('creates a product when the variants arrive as a JSON string, as the create form sends them', function () {
+    $template = safetyProduct();
+
+    $this->actingAs(User::factory()->create(['role' => 'admin']))
+        ->post(route('admin.products.store'), [
+            'name' => 'Form-posted headlight',
+            'category_id' => $template->category_id,
+            'size_id' => $template->size_id,
+            'status' => 'active',
+            'featured' => '0',
+            'base_sku' => '',
+            'variants' => json_encode([[
+                'name' => 'Standard',
+                'price' => 0,
+                'stock_quantity' => 10,
+                'is_default' => true,
+                'sort_order' => 0,
+            ]]),
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect(Product::where('name', 'Form-posted headlight')->first()->variants)->toHaveCount(1);
+});
+
 it('limits the safety information to 5000 characters', function () {
     $product = safetyProduct();
     $admin = User::factory()->create(['role' => 'admin']);

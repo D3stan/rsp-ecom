@@ -135,6 +135,10 @@ class ProductController extends Controller
 
             $fileUploadsEnabled = ini_get('file_uploads') && FileUploadConfigService::getMaxFileUploadSize() > 0;
 
+            if (! $this->decodeVariantsInput($request)) {
+                return back()->withInput()->withErrors(['variants' => 'Invalid variants data format']);
+            }
+
             $validationRules = [
                 'name' => 'required|string|max:255',
                 'category_id' => 'required|exists:categories,id',
@@ -389,15 +393,8 @@ class ProductController extends Controller
 
             $fileUploadsEnabled = ini_get('file_uploads') && FileUploadConfigService::getMaxFileUploadSize() > 0;
 
-            // Decode JSON variants from FormData
-            $variantsInput = $request->input('variants');
-            if (is_string($variantsInput)) {
-                $variantsInput = json_decode($variantsInput, true);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    return back()->withInput()->withErrors(['variants' => 'Invalid variants data format']);
-                }
-                // Merge decoded variants back into request for validation
-                $request->merge(['variants' => $variantsInput]);
+            if (! $this->decodeVariantsInput($request)) {
+                return back()->withInput()->withErrors(['variants' => 'Invalid variants data format']);
             }
 
             $validationRules = [
@@ -811,5 +808,26 @@ class ProductController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Review added successfully.');
+    }
+
+    /**
+     * The admin forms post `variants` as a JSON string inside FormData (images travel separately as
+     * `variant_images_N`), so it must become an array before validation. Returns false on malformed JSON.
+     */
+    private function decodeVariantsInput(Request $request): bool
+    {
+        $variantsInput = $request->input('variants');
+        if (! is_string($variantsInput)) {
+            return true;
+        }
+
+        $decoded = json_decode($variantsInput, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return false;
+        }
+
+        $request->merge(['variants' => $decoded]);
+
+        return true;
     }
 }
