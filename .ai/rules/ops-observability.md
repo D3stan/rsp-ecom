@@ -33,7 +33,7 @@ Each `ops:*` command computes problems, logs them (`Log::error`/`critical`), pus
 | Command | Frequency | Alert means |
 |---|---|---|
 | `ops:check-queue` | 5 min | A runnable job waited longer than `mail.queue_alerts.max_job_age_minutes` (worker down), the `jobs` table is missing, or `failed_jobs` exceeds the threshold. Skipped on `sync`/`null` queues. Exit 1 on problem; Telegram reminder hourly |
-| `ops:heartbeat` | 5 min | Pings `OPS_HEARTBEAT_URL` (dead-man's switch). Silent no-op when unset; failures are not reported on purpose, the external service alerts on missing pings |
+| `ops:heartbeat` | 5 min | Pings `OPS_HEARTBEAT_URL` (dead-man's switch). Silent no-op when unset; failures only print a warning and exit 0 on purpose, the external service alerts on missing pings |
 | `ops:check-invariants` | 15 min | Silent failures, one message per key, repeated every `alert_window_minutes`: `payment-pending` (unpaid orders past the limit, expiry webhook not arriving), `paid-waiting` (paid, not shipped for days), `failed-emails`, `webhook-silence` (paid order but no Stripe webhook seen: endpoint/secret/firewall), `payments-without-orders` (many `payment_started`, zero paid orders: checkout broken), `no-orders` (off by default), `funnel-*` (step conversion collapsed vs the previous week). Always exits 0 (already alerted) |
 | `ops:reconcile-stripe` | daily 07:00 | Compares Stripe sessions of the last `--hours` (48) with orders: paid session without order, paid at Stripe but not marked paid, marked paid but not paid at Stripe, amount mismatch, or Stripe unreachable/no key. Exit 1; reminder daily |
 | `ops:daily-digest` | daily 08:00 | Yesterday's orders, funnel, abandoned checkouts, failed emails/jobs, last check results. A missing digest means the scheduler is down |
@@ -51,7 +51,7 @@ Data sources:
 Sentry: backend via `sentry/sentry-laravel` (DSN env) with the `sentry` log channel turning `Log::error()` and above into issues. `SentryEventFilter` sends each distinct failure once per 10 min to protect the quota. Frontend `initSentry()` tags visitors `admin`/`customer`/`guest` by id only, and wires the Inertia `exception`/`invalid` hooks, an error boundary and the feedback form on the 500 page. `AssignRequestId` puts a request id in logs, Sentry tags, the `X-Request-Id` header and the 500 page. Source maps upload during the Docker build when the auth token env vars are set; the release name is shared through `public/build/release.txt`.
 
 ## Traps
-- `ops:check-invariants` returns SUCCESS even with problems: it already alerted; a failing exit would double-report as a scheduler exception.
+- `ops:check-invariants` and `ops:heartbeat` return SUCCESS even with problems: the scheduler reports any non-zero exit to Sentry as an exception, which would double-report (invariants already alerted; the heartbeat service alerts on the missing ping).
 - `webhook-silence` ignores orders created before the first `ops_events` row; a fresh or wiped table never alerts.
 - `payment_pending_hours` must exceed your slowest payment method (bank transfers), or it alerts on normal orders.
 - Abuse `payment_failed` only fires if `payment_intent.payment_failed` is enabled on the Stripe webhook endpoint.

@@ -47,6 +47,8 @@ class OrderFactory extends Factory
             'shipping_address_id' => Address::factory()->shipping(),
             'billing_address_id' => Address::factory()->billing(),
             'status' => $status,
+            // follows the final status (states and overrides); left to the column default, every order was a stale `pending` payment
+            'payment_status' => fn (array $attributes) => $this->getPaymentStatusForOrder($attributes['status']),
             'subtotal' => $subtotal, // VAT-inclusive
             'tax_amount' => $taxAmount, // VAT contained in the total
             'tax_rate' => $taxRate,
@@ -90,7 +92,7 @@ class OrderFactory extends Factory
     {
         return match ($orderStatus) {
             'pending' => 'failed', // seeded orders have no Stripe session, so nothing would ever expire a `pending` payment
-            'processing', 'shipped', 'delivered' => 'paid',
+            'processing', 'shipped', 'delivered' => 'succeeded',
             'cancelled' => $this->faker->randomElement(['refunded', 'failed']),
             default => 'pending',
         };

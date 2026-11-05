@@ -32,10 +32,11 @@ class SendHeartbeat extends Command
             Http::connectTimeout(3)->timeout(5)->get($url)->throw();
         } catch (Throwable) {
             // Not reported: a failed ping is what the external service exists to notice. Reporting it here would
-            // alert twice, and an outage of that service would flood Sentry.
+            // alert twice, and an outage of that service would flood Sentry. Exits 0 for the same reason: the
+            // scheduler turns a non-zero exit into an exception, which Sentry would then report.
             $this->warn('Heartbeat ping failed.');
 
-            return self::FAILURE;
+            return self::SUCCESS;
         }
 
         $this->info('Heartbeat sent.');

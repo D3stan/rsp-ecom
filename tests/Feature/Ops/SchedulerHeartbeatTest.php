@@ -29,7 +29,8 @@ it('fails quietly when the ping cannot be delivered', function () {
     config(['ops.heartbeat_url' => 'https://hc-ping.com/abc']);
     Http::fake(['hc-ping.com/*' => fn () => throw new ConnectionException('unreachable')]);
 
-    $this->artisan('ops:heartbeat')->assertFailed();
+    // exit 0: the scheduler would report a non-zero exit to Sentry
+    $this->artisan('ops:heartbeat')->expectsOutputToContain('Heartbeat ping failed')->assertSuccessful();
 });
 
 it('is scheduled every five minutes', function () {
