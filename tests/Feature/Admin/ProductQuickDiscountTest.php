@@ -43,7 +43,7 @@ it('rejects a compare price that is not above the current price', function () {
 });
 
 it('is admin only', function () {
-    $product = CatalogFixtures::product(['price' => 100]);
+    $product = CatalogFixtures::product(['price' => 100, 'compare_price' => null]);
 
     $this->actingAs(User::factory()->create())
         ->patch(route('admin.products.quick-discount', $product), ['compare_price' => '130']);
