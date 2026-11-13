@@ -38,11 +38,13 @@ export function ToastProvider({ children }: ToastProviderProps) {
 
         setToasts((prev) => [...prev, newToast]);
 
-        // Auto remove toast after duration
+        // Auto remove toast after duration; Infinity keeps it until the close button is pressed
         const duration = toast.duration || 5000;
-        setTimeout(() => {
-            removeToast(id);
-        }, duration);
+        if (Number.isFinite(duration)) {
+            setTimeout(() => {
+                removeToast(id);
+            }, duration);
+        }
     };
 
     // Mark as leaving first so the exit animation can play, then unmount

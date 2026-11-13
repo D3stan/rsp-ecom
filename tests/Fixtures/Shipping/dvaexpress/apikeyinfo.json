@@ -1,0 +1,25 @@
+{
+  "response": {
+    "azienda": "easyparcel.it",
+    "logo": "https://www.easyparcel.it/logo.jpg",
+    "system": "API",
+    "lastversion": "1.1.20",
+    "call": "apikeyinfo",
+    "dettagli": {
+      "apikey": "test-dva-rate-key",
+      "cliente": "EasyParcel Demo",
+      "attivazione": "2026-01-01",
+      "scadenza": "2026-12-31",
+      "ip_access": "Unlimited",
+      "limite_giornaliero": "Unlimited",
+      "live": "true",
+      "credito_prepagato": "125.00",
+      "email_ordine_mittente": "false",
+      "ldv_api": "false",
+      "misure": "cm-kg",
+      "valuta": "EUR",
+      "fast_quote": "0"
+    },
+    "timestamp": "2026-10-19 12:19:18"
+  }
+}

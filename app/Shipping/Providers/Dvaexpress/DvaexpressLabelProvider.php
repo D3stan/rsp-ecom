@@ -51,8 +51,17 @@ class DvaexpressLabelProvider implements CancelsShipments, LabelProvider
         return $this->carriers->isEmpty() || $this->carriers->toProvider($carrierCode) !== null;
     }
 
+    /**
+     * In production a test-mode API key is refused before anything is sent: DVA would accept the order, return a
+     * placeholder waybill (123456789000) and a blank label, and the order would be marked shipped with nothing picked
+     * up. Other environments may buy test labels. An unreadable account (outage) does not block the purchase.
+     */
     public function createShipment(ShipmentRequest $request): ShipmentResult
     {
+        if (app()->isProduction() && $this->client->isLive() === false) {
+            throw new LabelRejected(DvaexpressClient::TEST_MODE_MESSAGE);
+        }
+
         if (trim((string) $request->sender->postalCode) === '' || trim((string) $request->sender->city) === '') {
             throw new LabelRejected('Dvaexpress: Sender address requires at least postal code and city (configure shipping.sender_postal_code and shipping.sender_city in settings or .env).');
         }
@@ -244,8 +253,16 @@ class DvaexpressLabelProvider implements CancelsShipments, LabelProvider
         );
     }
 
+    /**
+     * A test-mode order was never real (nothing charged, nothing to pick up), so there is nothing to cancel at DVA:
+     * the shipment is only cancelled locally. This is how a label bought in test mode is removed from an order.
+     */
     public function cancelShipment(string $externalId): void
     {
+        if ($this->client->isLive() === false) {
+            return;
+        }
+
         $orderId = trim($externalId);
         $payload = [
             'ordini' => [is_numeric($orderId) ? (int) $orderId : $orderId],

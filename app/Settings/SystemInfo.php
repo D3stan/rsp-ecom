@@ -9,6 +9,7 @@ use App\Jobs\SendWelcomeEmail;
 use App\Models\AuditLog;
 use App\Models\OpsEvent;
 use App\Services\Ops\TelegramNotifier;
+use App\Shipping\Support\ShippingAlerts;
 use Illuminate\Console\Scheduling\Event as ScheduledEvent;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel;
@@ -57,6 +58,7 @@ class SystemInfo
                     $this->item('invariants', $this->lastCheck(self::INVARIANTS_CACHE_KEY), 'status', 'runtime'),
                     $this->item('stripe_reconciliation', $this->lastCheck(self::RECONCILIATION_CACHE_KEY), 'status', 'runtime'),
                     $this->item('last_stripe_webhook', $this->lastStripeWebhook(), 'status', 'runtime'),
+                    $this->item('shipping_alerts', $this->shippingAlerts(), 'table', 'runtime'),
                     $this->item('sentry_configured', filled(config('sentry.dsn')), 'bool', 'env'),
                     $this->item('telegram_configured', app(TelegramNotifier::class)->isConfigured(), 'bool', 'env'),
                     $this->item('heartbeat_configured', filled(config('ops.heartbeat_url')), 'bool', 'env'),
@@ -227,6 +229,22 @@ class SystemInfo
             'label' => __("settings.system.section.{$id}"),
             'items' => $items,
         ];
+    }
+
+    /**
+     * Open shipping problems (carrier account in test mode, last failed label purchase), the same list as the admin
+     * banner. Empty when everything is fine.
+     *
+     * @return list<array{when: string, provider: string, problem: string, message: string}>
+     */
+    private function shippingAlerts(): array
+    {
+        return array_map(fn (array $alert): array => [
+            'when' => Carbon::parse($alert['at'])->format('Y-m-d H:i'),
+            'provider' => $alert['provider'],
+            'problem' => $alert['kind'],
+            'message' => $alert['message'],
+        ], app(ShippingAlerts::class)->all());
     }
 
     /**

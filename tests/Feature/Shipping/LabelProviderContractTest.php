@@ -61,6 +61,7 @@ dataset('label providers', function () {
                     'waybill_number' => ['2875561502819'],
                     'waybill_base64' => base64_encode('%PDF-1.4 fake dva waybill'),
                 ], 200),
+                '*/apikeyinfo/*' => Http::response(['response' => ['dettagli' => ['live' => 'true']]], 200),
                 '*/richiesta-storno/*' => Http::response([
                     'result' => 'OK',
                     'esiti' => [['ammesso' => true, 'codice' => 'ammesso']],

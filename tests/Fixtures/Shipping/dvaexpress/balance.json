@@ -2,7 +2,6 @@
   "result": "OK",
   "errorcode": 0,
   "errormessage": "BALANCE OK",
-  "credito_master": "245.50",
   "balance_master": 245.50,
   "balance_customer": 23.75,
   "timestamp": "2026-10-19 12:19:18",

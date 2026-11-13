@@ -697,8 +697,9 @@ class OrdersController extends Controller
             // The carrier refused (validation): show its message on the form, no state change.
             return back()->withErrors(['label' => $e->getMessage()])->with('error', $e->getMessage());
         } catch (LabelProviderUnavailable $e) {
-            // Transient/infrastructure problem: error flash, nothing changed (already logged with a reference id).
-            return back()->with('error', $e->getMessage());
+            // Transient/infrastructure problem, nothing changed (already logged with a reference id). Also on the form:
+            // a toast alone disappears before the admin reads it.
+            return back()->withErrors(['label' => $e->getMessage()])->with('error', $e->getMessage());
         }
 
         if ($wantsLabel) {

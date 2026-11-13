@@ -123,14 +123,34 @@ it('shows the carriers message on a carrier rejection and does not change the or
     Queue::assertNothingPushed();
 });
 
-it('flashes an error and changes nothing when the provider is unavailable', function () {
+it('shows an error on the form and changes nothing when the provider is unavailable', function () {
     $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody([
         'parcels' => [['weight' => 0.001]], // the fake driver treats a near-zero weight as "provider down"
-    ]))->assertSessionHas('error');
+    ]))->assertSessionHas('error')->assertSessionHasErrors('label');
 
     expect($this->order->fresh()->status)->toBe('processing')
         ->and(Shipment::where('order_id', $this->order->id)->count())->toBe(0);
     Queue::assertNothingPushed();
+});
+
+it('keeps a failed purchase in the admin banner on every admin page until the next label is bought', function () {
+    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody([
+        'parcels' => [['weight' => 999]],
+    ]))->assertSessionHasErrors('label');
+
+    $this->actingAs($this->admin)->get(route('admin.orders.index'))->assertInertia(fn (Assert $page) => $page
+        ->has('shippingAlerts', 1)
+        ->where('shippingAlerts.0.kind', 'label_failed')
+        ->where('shippingAlerts.0.context.order_number', $this->order->order_number));
+
+    // customers never get it
+    $this->actingAs(User::factory()->create(['role' => 'customer']))->get(route('home'))
+        ->assertInertia(fn (Assert $page) => $page->where('shippingAlerts', []));
+
+    $this->actingAs($this->admin)->post(route('admin.orders.process-ship', $this->order), labelShipBody())->assertSessionHas('success');
+
+    $this->actingAs($this->admin)->get(route('admin.orders.index'))
+        ->assertInertia(fn (Assert $page) => $page->where('shippingAlerts', []));
 });
 
 it('streams the label PDF to the admin and 403s a customer', function () {

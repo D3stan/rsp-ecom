@@ -35,13 +35,13 @@ beforeEach(function () {
 |--------------------------------------------------------------------------
 */
 
-it('dvaexpress rate provider parses quotation.json into RateQuote DTOs and balance.json into AccountBalance', function () {
+it('dvaexpress rate provider parses quotation.json into RateQuote DTOs and apikeyinfo.json into AccountBalance', function () {
     $quotationFixture = json_decode(file_get_contents(base_path('tests/Fixtures/Shipping/dvaexpress/quotation.json')), true);
-    $balanceFixture = json_decode(file_get_contents(base_path('tests/Fixtures/Shipping/dvaexpress/balance.json')), true);
+    $accountFixture = json_decode(file_get_contents(base_path('tests/Fixtures/Shipping/dvaexpress/apikeyinfo.json')), true);
 
     Http::fake([
         'https://api.easyparcel.it/quotation/test-dva-rate-key*' => Http::response($quotationFixture, 200),
-        'https://api.easyparcel.it/balance/test-dva-rate-key*' => Http::response($balanceFixture, 200),
+        'https://api.easyparcel.it/apikeyinfo/test-dva-rate-key*' => Http::response($accountFixture, 200),
     ]);
 
     $config = [
@@ -105,17 +105,15 @@ it('dvaexpress rate provider parses quotation.json into RateQuote DTOs and balan
     expect($filteredQuotes)->toHaveCount(1)
         ->and($filteredQuotes[0]->carrierCode)->toBe('sda');
 
-    // 3. Test balance()
+    // 3. Test balance(): the prepaid credit an order is charged against (apikeyinfo), not the network master balance
     $balance = $provider->balance();
     expect($balance)->toBeInstanceOf(AccountBalance::class)
         ->and($balance->provider)->toBe('dvaexpress')
-        ->and($balance->balance)->toBe(245.50)
-        ->and($balance->currency)->toBe('EUR');
+        ->and($balance->balance)->toBe(125.00)
+        ->and($balance->currency)->toBe('EUR')
+        ->and($balance->live)->toBeTrue();
 
-    Http::assertSent(function ($request) {
-        return str_contains($request->url(), '/balance/test-dva-rate-key')
-            && ($request['call'] ?? null) === 'balance';
-    });
+    Http::assertSent(fn ($request) => str_contains($request->url(), '/apikeyinfo/test-dva-rate-key') && ($request['call'] ?? null) === 'apikeyinfo');
 });
 
 it('dvaexpress rate provider ignores 0.01 placeholder quote request entries like DVA and DVALM', function () {

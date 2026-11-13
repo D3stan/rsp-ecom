@@ -7,6 +7,7 @@ use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
 use App\Shipping\Labels\Exceptions\LabelRejected;
 use App\Shipping\Rates\Exceptions\RateProviderUnavailable;
 use App\Shipping\Rates\Exceptions\RateRejected;
+use App\Shipping\Support\ShippingAlerts;
 use App\Shipping\Tracking\Exceptions\TrackingProviderUnavailable;
 use App\Shipping\Tracking\Exceptions\TrackingRejected;
 use Closure;
@@ -21,9 +22,18 @@ class DvaexpressClient
 {
     public const DEFAULT_BASE_URL = 'https://api.easyparcel.it';
 
-    private const AUTH_ERROR_CODES = [101, 102, 103, 107, 120];
+    public const NAME = 'dvaexpress';
 
-    private const AVAILABILITY_ERROR_CODES = [101, 102, 103, 104, 107, 120, 131];
+    /** Error 120 "Credito esaurito": the prepaid credit does not cover the purchase. Not an auth or outage problem. */
+    public const INSUFFICIENT_CREDIT = 120;
+
+    public const TEST_MODE_MESSAGE = 'DVA Express is in TEST mode: labels are not real and no courier will pick them up. Ask DVA Express to activate the API key (live mode), then buy the label again.';
+
+    private const AUTH_ERROR_CODES = [101, 102, 103, 107];
+
+    private const AVAILABILITY_ERROR_CODES = [101, 102, 103, 104, 107, 131];
+
+    private const ACCOUNT_INFO_TTL_SECONDS = 300;
 
     private readonly string $baseUrl;
 
@@ -52,6 +62,60 @@ class DvaexpressClient
     public function getBaseUrl(): string
     {
         return $this->baseUrl;
+    }
+
+    /**
+     * The API key's account ("apikeyinfo" details, key removed): `credito_prepagato` is the credit an order is charged
+     * against and `live` = "false" means test mode, where orders are simulated (placeholder waybill, nothing charged,
+     * nothing picked up). Cached for a few minutes; reading it also raises or clears the admin's test-mode alert.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws Throwable when the API cannot be read
+     */
+    public function accountInfo(): array
+    {
+        $info = Cache::remember('shipping:dvaexpress:apikeyinfo:'.sha1($this->baseUrl.$this->apiKey), self::ACCOUNT_INFO_TTL_SECONDS, function (): array {
+            $response = $this->postRate('apikeyinfo', ['call' => 'apikeyinfo']);
+            $details = (array) ($response['response']['dettagli'] ?? $response['dettagli'] ?? []);
+            unset($details['apikey']);
+
+            return $details;
+        });
+
+        $live = self::liveFlag($info);
+        if ($live === false) {
+            app(ShippingAlerts::class)->raise(self::NAME, ShippingAlerts::TEST_MODE, self::TEST_MODE_MESSAGE);
+        } elseif ($live === true) {
+            app(ShippingAlerts::class)->clear(self::NAME, ShippingAlerts::TEST_MODE);
+        }
+
+        return $info;
+    }
+
+    /**
+     * Whether orders are real: true live, false test mode, null when the account cannot be read (callers must not
+     * treat an outage as test mode).
+     */
+    public function isLive(): ?bool
+    {
+        try {
+            return self::liveFlag($this->accountInfo());
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $info
+     */
+    private static function liveFlag(array $info): ?bool
+    {
+        if (! array_key_exists('live', $info)) {
+            return null;
+        }
+
+        return filter_var($info['live'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
     }
 
     /**
@@ -192,6 +256,11 @@ class DvaexpressClient
             $defaultMsg = $errorCode !== null ? "Dvaexpress error {$errorCode}" : "Dvaexpress request failed (HTTP {$httpStatus})";
             $message = $this->redact(self::flattenErrorMessage($data, $defaultMsg));
 
+            if ($errorCode === self::INSUFFICIENT_CREDIT) {
+                // the admin must top up: show it on the form, like any other refusal
+                throw $makeRejected(self::insufficientCreditMessage($message), $httpStatus, null);
+            }
+
             if ($errorCode !== null && in_array($errorCode, self::AUTH_ERROR_CODES, true)) {
                 $this->alertAuth("Error {$errorCode}: {$message}");
             }
@@ -205,6 +274,22 @@ class DvaexpressClient
         }
 
         return $data;
+    }
+
+    /**
+     * "Credito insufficiente (credito: 0.11, costo: 5.22)" as an instruction the admin can act on.
+     */
+    public static function insufficientCreditMessage(string $carrierMessage): string
+    {
+        if (preg_match('/credito:\s*(\d+(?:[.,]\d+)?).*?costo:\s*(\d+(?:[.,]\d+)?)/i', $carrierMessage, $m)) {
+            return sprintf(
+                'DVA Express prepaid credit is too low for this label: EUR %s available, EUR %s needed. Top up the DVA Express account, then buy the label again.',
+                $m[1],
+                $m[2],
+            );
+        }
+
+        return "DVA Express prepaid credit is too low for this label ({$carrierMessage}). Top up the DVA Express account, then buy the label again.";
     }
 
     public function redact(string $message): string

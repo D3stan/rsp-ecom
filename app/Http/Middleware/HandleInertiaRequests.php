@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Order;
 use App\Settings\Settings;
+use App\Shipping\Support\ShippingAlerts;
 use App\Support\Locales;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
@@ -74,6 +75,9 @@ class HandleInertiaRequests extends Middleware
             ],
             // Admin sidebar badge; lazy so it only runs for admins and only when a page reads it.
             'adminPendingOrders' => fn (): ?int => $request->user()?->isAdmin() ? Order::pending()->count() : null,
+            // Shipping problems the admin must not miss (carrier in test mode, failed label purchase): a banner on every
+            // admin page until solved. Read from cache only, never a carrier call per request.
+            'shippingAlerts' => fn (): array => $request->user()?->isAdmin() ? app(ShippingAlerts::class)->all() : [],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // Session flashes set by controllers (->with('success'|'error'|'warning', ...)); rendered as toasts by the
             // FlashToaster. `id` is fresh per flash (null when there is no message) so the client shows each one once.

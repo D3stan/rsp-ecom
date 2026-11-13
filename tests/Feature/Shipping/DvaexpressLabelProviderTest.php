@@ -258,8 +258,9 @@ it('calls POST /getwaybill/{APIKEY} and returns LabelDocument on fallback label(
 it('cancels shipment via POST /richiesta-storno: succeeds on ammesso, throws LabelRejected on stato_non_ammesso/tracking_presente, throws LabelProviderUnavailable on tracking_non_verificabile', function () {
     $provider = new DvaexpressLabelProvider(dvaexpressLabelConfig());
 
-    // 1. Success on esiti[0].ammesso === true
+    // 1. Success on esiti[0].ammesso === true (live account: the cancellation really goes to DVA; cached for the cases below)
     Http::fake([
+        'https://api.easyparcel.it/apikeyinfo/test-label-dva-key*' => Http::response(['response' => ['dettagli' => ['live' => 'true']]], 200),
         'https://api.easyparcel.it/richiesta-storno/test-label-dva-key*' => Http::response([
             'result' => 'OK',
             'esiti' => [

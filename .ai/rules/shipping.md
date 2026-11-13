@@ -42,6 +42,9 @@ Carrier plugins (tracking, labels, rates), their config and the tracking sync. D
 - Rate fixtures in `tests/Fixtures/spediamo/probes` come from the live API; the label adapter was built from docs. Unverified: confirm with one real test shipment before enabling labels in production.
 - `config/shipping.php` loads after `config/settings.php`, which therefore `require`s it directly; do not rely on `config('shipping...')` inside the settings catalogue.
 - The default `rates.default` is `fake`; real quotes need `SHIPPING_RATES_DRIVER`.
+- A DVA Express key in test mode (`apikeyinfo` `live: "false"`) accepts orders but only simulates them: waybill `123456789000`, a blank label, nothing charged or picked up. Production refuses to buy with it (`DvaexpressLabelProvider::createShipment`), and a test-mode cancel skips DVA. Enforced by `DvaexpressTestModeTest.php`.
+- DVA has two credits: `balance` returns the network master's, `apikeyinfo` `credito_prepagato` is the one an order is charged against; the ship page shows the latter. Error 120 is "credito esaurito" (a refusal), not an auth failure.
+- Problems the admin must see (test mode, last failed purchase) go through `App\Shipping\Support\ShippingAlerts`: banner on every admin page, Settings > System, Telegram for failed purchases. A provider raises/clears its own; `ShippingService` handles purchase failures. Enforced by `LabelShippingTest.php` (banner) and `DvaexpressTestModeTest.php`.
 
 ## Operate
 - `php artisan tracking:sync`, `php artisan setup:test-tracking` (local test data), `php artisan shipping:test-rates` (inspect rate payloads without the UI).

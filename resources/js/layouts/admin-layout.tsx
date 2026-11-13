@@ -1,4 +1,5 @@
 import { AdminSidebar } from '@/components/admin-sidebar';
+import ShippingAlertsBanner from '@/components/admin/shipping-alerts-banner';
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
@@ -12,6 +13,7 @@ export default function AdminLayout({ children, breadcrumbs = [] }: PropsWithChi
             {/* overflow-x-clip, not -hidden: hidden makes this a scroll container and breaks position: sticky inside pages */}
             <AppContent variant="sidebar" className="overflow-x-clip">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
+                <ShippingAlertsBanner />
                 {children}
             </AppContent>
         </AppShell>

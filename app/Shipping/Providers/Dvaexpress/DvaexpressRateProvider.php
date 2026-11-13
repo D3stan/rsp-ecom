@@ -280,19 +280,32 @@ class DvaexpressRateProvider implements InspectsBalance, RateProvider
     }
 
     /**
-     * Inspect current prepaid balance.
+     * The prepaid credit a label purchase is charged against ("apikeyinfo" credito_prepagato) and whether the account
+     * is live. The "balance" call returns the network master's credit instead, which only matches for a single
+     * account: it is the fallback when apikeyinfo gives no credit.
      */
     public function balance(): AccountBalance
     {
-        $res = $this->client->postRate('balance', ['call' => 'balance']);
+        $info = $this->client->accountInfo();
 
-        $balance = (float) ($res['credito_master'] ?? $res['balance_master'] ?? $res['balance'] ?? $res['credito'] ?? 0.0);
+        if (isset($info['credito_prepagato']) && is_numeric($info['credito_prepagato'])) {
+            return new AccountBalance(
+                provider: self::NAME,
+                balance: (float) $info['credito_prepagato'],
+                currency: (string) ($info['valuta'] ?? 'EUR'),
+                raw: $info,
+                live: $this->client->isLive(),
+            );
+        }
+
+        $res = $this->client->postRate('balance', ['call' => 'balance']);
 
         return new AccountBalance(
             provider: self::NAME,
-            balance: $balance,
+            balance: (float) ($res['balance_master'] ?? $res['balance'] ?? 0.0),
             currency: 'EUR',
             raw: $res,
+            live: $this->client->isLive(),
         );
     }
 

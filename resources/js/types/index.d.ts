@@ -32,6 +32,14 @@ export interface NavItem {
     children?: NavItem[];
 }
 
+export interface ShippingAlert {
+    provider: string;
+    kind: 'test_mode' | 'label_failed' | string;
+    message: string;
+    context?: { order_id?: number; order_number?: string; [key: string]: unknown };
+    at: string;
+}
+
 export interface SharedData {
     name: string;
     supportedLocales: string[];
@@ -41,6 +49,8 @@ export interface SharedData {
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
     adminPendingOrders?: number;
+    // admins only: App\Shipping\Support\ShippingAlerts, shown by ShippingAlertsBanner
+    shippingAlerts?: ShippingAlert[];
     flash?: { success: string | null; error: string | null; warning: string | null; id: string | null };
     [key: string]: unknown;
 }

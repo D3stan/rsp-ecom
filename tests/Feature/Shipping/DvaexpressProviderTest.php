@@ -95,7 +95,7 @@ it('parses golden tracking fixture into TrackingResult with Delivered status and
     }
 });
 
-it('classifies EasyParcel error codes 101, 102, 104, 120 as TrackingProviderUnavailable and logs rate-limited Log::critical on 101/120', function () {
+it('classifies EasyParcel error codes 101, 102, 104 as TrackingProviderUnavailable (rate-limited Log::critical on 101) and 120 as an insufficient-credit refusal', function () {
     $provider = new DvaexpressProvider(dvaexpressTrackingConfig());
 
     // Error 101: Invalid API Key -> Unavailable + rate-limited critical alert
@@ -121,7 +121,8 @@ it('classifies EasyParcel error codes 101, 102, 104, 120 as TrackingProviderUnav
 
     Log::shouldHaveReceived('critical')->once();
 
-    // Error 120: Account suspended -> Unavailable + rate-limited critical alert
+    // Error 120 is "credito esaurito" (docs/vendor/dvaexpress/errors.md), not an auth problem: a refusal the admin can
+    // act on (top up), with no "check credentials" alert
     Cache::flush();
     Log::spy();
 
@@ -130,14 +131,15 @@ it('classifies EasyParcel error codes 101, 102, 104, 120 as TrackingProviderUnav
         'https://api.easyparcel.it/tracking/secret-dva-key-12345*' => Http::response([
             'result' => 'KO',
             'errorcode' => 120,
-            'errormessage' => 'Account cliente bloccato o sospeso',
+            'errormessage' => 'CREDIT - Credito insufficiente (credito: 0.11, costo: 5.22)',
         ], 200),
     ]);
 
     expect(fn () => $provider->track(new TrackingRequest('TRK2', 'sda')))
-        ->toThrow(TrackingProviderUnavailable::class, 'Account cliente bloccato o sospeso');
+        ->toThrow(TrackingRejected::class, 'EUR 0.11 available, EUR 5.22 needed');
 
-    Log::shouldHaveReceived('critical')->twice();
+    // still only the 101 alert from above (Log::spy() keeps the same spy)
+    Log::shouldHaveReceived('critical')->once();
 
     // Error 102: Invalid credentials -> Unavailable
     Http::swap(new Factory);

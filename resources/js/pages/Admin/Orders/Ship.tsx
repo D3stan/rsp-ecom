@@ -107,6 +107,8 @@ export interface DriverBalance {
     balance?: number;
     amount?: number;
     currency?: string;
+    // false: the carrier account is in test mode, labels bought with it are not real
+    live?: boolean | null;
     [key: string]: unknown;
 }
 
@@ -441,8 +443,11 @@ export default function OrderShip({
         ? sortedQuotes
         : sortedQuotes.filter((quote, i) => (pinnedQuotes.length > 0 ? pinnedQuotes.includes(quote) : i < VISIBLE_QUOTES));
 
-    // the selected provider's prepaid balance, shown only when it would cover just a few more labels
+    // the selected provider's prepaid balance (the credit a purchase is charged against), highlighted when it covers
+    // only a few more labels
     const selectedBalance = selected ? balanceAmount(rates.balances[selected.provider]) : null;
+    const selectedBalanceInfo = selected ? rates.balances[selected.provider] : null;
+    const selectedTestMode = typeof selectedBalanceInfo === 'object' && selectedBalanceInfo !== null && selectedBalanceInfo.live === false;
     const balanceState =
         selected && selectedBalance !== null
             ? selectedBalance < selected.total_price
@@ -977,30 +982,50 @@ export default function OrderShip({
                                                 onFixed={() => setRefreshCount((n) => n + 1)}
                                             />
 
-                                            {selected && balanceState && (
+                                            {selected && selectedTestMode && (
+                                                <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
+                                                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                                    {t('admin.orders.ship.test_mode', { provider: driverName(selected.provider) })}
+                                                </div>
+                                            )}
+
+                                            {selected && selectedBalance !== null && (
                                                 <div
                                                     className={cn(
                                                         'flex items-center gap-2 rounded-md border p-2 text-xs',
                                                         balanceState === 'insufficient'
                                                             ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                                                            : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+                                                            : balanceState === 'low'
+                                                              ? 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                                                              : 'text-muted-foreground',
                                                     )}
                                                 >
                                                     <Wallet className="h-3.5 w-3.5 shrink-0" />
-                                                    {balanceState === 'insufficient'
-                                                        ? t('admin.orders.ship.balance_insufficient', {
-                                                              provider: driverName(selected.provider),
-                                                              amount: Number(selectedBalance).toFixed(2),
-                                                          })
-                                                        : t('admin.orders.ship.balance_low', {
-                                                              provider: driverName(selected.provider),
-                                                              amount: Number(selectedBalance).toFixed(2),
-                                                          })}
+                                                    {t(
+                                                        balanceState === 'insufficient'
+                                                            ? 'admin.orders.ship.balance_insufficient'
+                                                            : balanceState === 'low'
+                                                              ? 'admin.orders.ship.balance_low'
+                                                              : 'admin.orders.ship.balance_ok',
+                                                        {
+                                                            provider: driverName(selected.provider),
+                                                            amount: Number(selectedBalance).toFixed(2),
+                                                        },
+                                                    )}
                                                 </div>
                                             )}
 
                                             {(errors as Record<string, string>).label && (
-                                                <p className="text-sm text-destructive">{(errors as Record<string, string>).label}</p>
+                                                <div
+                                                    role="alert"
+                                                    className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+                                                >
+                                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                                                    <div>
+                                                        <p className="font-medium">{t('admin.orders.ship.label_failed')}</p>
+                                                        <p>{(errors as Record<string, string>).label}</p>
+                                                    </div>
+                                                </div>
                                             )}
                                             {errors.tracking_carrier && <p className="text-sm text-destructive">{errors.tracking_carrier}</p>}
                                         </div>

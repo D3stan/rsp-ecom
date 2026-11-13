@@ -8,6 +8,7 @@ use App\Models\OrderEmail;
 use App\Models\Shipment;
 use App\Models\User;
 use App\Services\EmailService;
+use App\Services\Ops\TelegramNotifier;
 use App\Shipping\Labels\Contracts\CancelsShipments;
 use App\Shipping\Labels\Contracts\ConfirmsPayment;
 use App\Shipping\Labels\Contracts\LabelProvider;
@@ -17,6 +18,7 @@ use App\Shipping\Labels\Exceptions\LabelProviderUnavailable;
 use App\Shipping\Labels\Exceptions\LabelRejected;
 use App\Shipping\Labels\LabelManager;
 use App\Shipping\Labels\ShipmentBuilder;
+use App\Shipping\Support\ShippingAlerts;
 use App\Shipping\Tracking\Contracts\PassiveProvider;
 use App\Shipping\Tracking\DTO\TrackingRequest;
 use App\Shipping\Tracking\ShipmentTrackingService;
@@ -221,15 +223,23 @@ class ShippingService
 
         $request = $this->builder->build($order, $input->carrierCode, $input->parcels, $input->insuranceAmount, $input->codAmount, $input->quoteToken, $input->pickupDate);
 
-        // 1. Carrier creates the shipment (may throw LabelRejected / LabelProviderUnavailable). A draft that still has to
-        // be paid on the carrier's site has no label yet: it is fetched later by completePurchase().
-        $result = $provider->createShipment($request);
+        try {
+            // 1. Carrier creates the shipment (may throw LabelRejected / LabelProviderUnavailable). A draft that still has
+            // to be paid on the carrier's site has no label yet: it is fetched later by completePurchase().
+            $result = $provider->createShipment($request);
 
-        // 2. Fetch the label and store the PDF on the private disk before any DB change, so the label is never lost
-        $path = null;
-        if (! $result->awaitingPayment) {
-            [$result, $path] = $this->fetchAndStoreLabel($provider, $result, $order);
+            // 2. Fetch the label and store the PDF on the private disk before any DB change, so the label is never lost
+            $path = null;
+            if (! $result->awaitingPayment) {
+                [$result, $path] = $this->fetchAndStoreLabel($provider, $result, $order);
+            }
+        } catch (LabelException $e) {
+            $this->reportLabelFailure($provider->name(), $order, $e);
+
+            throw $e;
         }
+
+        app(ShippingAlerts::class)->clear($provider->name(), ShippingAlerts::LABEL_FAILED);
 
         $shipmentDriver = $result->raw['driver'] ?? $provider->name();
         $trackingDriver = $this->resolveTrackingDriverForLabel($input, $shipmentDriver);
@@ -290,6 +300,26 @@ class ShippingService
 
         // No email yet: the customer is told when the carrier first scans the parcel (ShipmentTrackingService)
         return new ShipOutcome($shipment, false);
+    }
+
+    /**
+     * A failed purchase must reach the admin even when they missed the form error: it stays in the admin banner until
+     * the next successful purchase with this provider, and Telegram gets a pointer to it (once per provider and reason
+     * per hour).
+     */
+    private function reportLabelFailure(string $provider, Order $order, LabelException $e): void
+    {
+        app(ShippingAlerts::class)->raise($provider, ShippingAlerts::LABEL_FAILED, $e->getMessage(), [
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+        ]);
+
+        // no exception text in the alert (ops rule: a connection error can carry the request URL); the banner has it
+        app(TelegramNotifier::class)->sendOnce(
+            "label-failed:{$provider}:".sha1($e->getMessage()),
+            "⚠️ Label purchase failed for order {$order->order_number} ({$provider}). The reason is on the admin pages.",
+            60,
+        );
     }
 
     /**

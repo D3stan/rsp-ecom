@@ -49,7 +49,9 @@ function remember(id: string): void {
  * with a per-flash `id`) into toasts. Renders nothing; mount it once per layout.
  */
 export default function FlashToaster() {
-    const { flash } = usePage<SharedData>().props;
+    const { props, url } = usePage<SharedData>();
+    const { flash } = props;
+    const isAdminPage = url.startsWith('/admin');
     const { addToast } = useToast();
     const { t } = useTranslation();
 
@@ -63,7 +65,9 @@ export default function FlashToaster() {
         (['success', 'error', 'warning'] as const).forEach((type) => {
             const message = flash[type];
             if (message) {
-                addToast({ type, title: t(`flash.${type}`), description: message, duration: type === 'success' ? 5000 : 8000 });
+                // an error in the admin (failed label purchase, carrier refusal) stays until closed: the admin must read it
+                const duration = type === 'success' ? 5000 : type === 'error' && isAdminPage ? Infinity : 8000;
+                addToast({ type, title: t(`flash.${type}`), description: message, duration });
             }
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
