@@ -1494,9 +1494,9 @@
     "semantic_hash": ""
   },
   "database/factories/ProductVariantFactory.php": {
-    "mtime": 1772914720.3649113,
-    "seen": 1794594433.0341356,
-    "ast_hash": "6d989aee63d7b3ba28b23fbb85e487f8",
+    "mtime": 1794594944.0503628,
+    "seen": 1794595124.492739,
+    "ast_hash": "5db2e4be4b409872906e5f16ae41c406",
     "semantic_hash": ""
   },
   "database/factories/ReviewFactory.php": {
@@ -4356,9 +4356,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/PolicyCopyTest.php": {
-    "mtime": 1794588557.0345287,
-    "seen": 1794594433.0349348,
-    "ast_hash": "ec7e997d767b1e0fabaaeb64cae7da8a",
+    "mtime": 1794594964.1443086,
+    "seen": 1794595124.4935753,
+    "ast_hash": "a85512b08bd1e2dc6f8ccd03d5480a1d",
     "semantic_hash": ""
   },
   "tests/Feature/Reviews/ProductReviewsDisplayTest.php": {
@@ -4428,9 +4428,9 @@
     "semantic_hash": ""
   },
   "tests/Feature/Security/LogHygieneTest.php": {
-    "mtime": 1794588557.0405657,
-    "seen": 1794594433.034953,
-    "ast_hash": "88b4731e4aa86e10d86b5c75002a9e4c",
+    "mtime": 1794594964.2185354,
+    "seen": 1794595124.4935958,
+    "ast_hash": "445ed3502857f9493434dd39c60addaa",
     "semantic_hash": ""
   },
   "tests/Feature/Security/NotFoundStatusTest.php": {
@@ -4716,9 +4716,9 @@
     "semantic_hash": ""
   },
   "tests/Unit/Shipping/ArchitectureTest.php": {
-    "mtime": 1794588557.0862598,
-    "seen": 1794594433.0350976,
-    "ast_hash": "7725aa80baeefd437989de212bafd5e3",
+    "mtime": 1794594957.8760324,
+    "seen": 1794595124.4937534,
+    "ast_hash": "7acc8e52aa4ac0f337392973f2d65e82",
     "semantic_hash": ""
   },
   "tests/Unit/Shipping/CarrierCodeMapTest.php": {
