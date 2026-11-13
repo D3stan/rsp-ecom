@@ -37,6 +37,10 @@ class LogHygieneTest extends TestCase
 
     protected function tearDown(): void
     {
+        // Close the file before deleting it: on Windows an open handle keeps it, and the next test cannot reopen it
+        foreach ($this->app['log']->channel('sec_capture')->getLogger()->getHandlers() as $handler) {
+            $handler->close();
+        }
         @unlink($this->logFile);
         $this->tearDownOrderFixtures();
         parent::tearDown();

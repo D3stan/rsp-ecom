@@ -93,7 +93,7 @@ it('names concrete tracking drivers only in TrackingManager, Drivers, and Provid
     $offenders = [];
 
     foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator("{$root}/app", FilesystemIterator::SKIP_DOTS)) as $file) {
-        $relative = ltrim(substr($file->getPathname(), strlen($root)), '/');
+        $relative = ltrim(str_replace('\\', '/', substr($file->getPathname(), strlen($root))), '/');
 
         if (! $file->isFile() || ! str_ends_with($relative, '.php') || in_array($relative, $allowed, true)
             || str_starts_with($relative, 'app/Shipping/Tracking/Drivers/')
@@ -187,7 +187,7 @@ it('keeps every provider in app/Shipping/Providers/<Provider> isolated and self-
             $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator("{$root}/{$scanDir}", FilesystemIterator::SKIP_DOTS));
 
             foreach ($files as $file) {
-                $relative = ltrim(substr($file->getPathname(), strlen($root)), '/');
+                $relative = ltrim(str_replace('\\', '/', substr($file->getPathname(), strlen($root))), '/');
 
                 if (! $file->isFile() || ! preg_match('/\.(php|tsx?|jsx?|css|json)$/', $relative)
                     || in_array($relative, $allowed, true)

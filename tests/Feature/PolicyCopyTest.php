@@ -209,7 +209,7 @@ class PolicyCopyTest extends TestCase
                     continue;
                 }
 
-                $path = str_replace(base_path().'/', '', $file->getPathname());
+                $path = str_replace(str_replace('\\', '/', base_path()).'/', '', str_replace('\\', '/', $file->getPathname()));
                 $content = file_get_contents($file->getPathname());
 
                 // the threshold's own texts are allowed in the translation files, nothing else
