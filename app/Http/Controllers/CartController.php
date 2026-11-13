@@ -14,6 +14,7 @@ use App\Support\CheckoutTotals;
 use Artesaos\SEOTools\Facades\SEOMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -140,6 +141,7 @@ class CartController extends Controller
         if (! $variant->canAddToCart($validated['quantity'])) {
             return response()->json([
                 'error' => 'Not enough stock',
+                'message' => __('cart.not_enough_stock', ['available' => (int) $variant->stock_quantity]),
                 'available' => $variant->stock_quantity,
             ], 422);
         }
@@ -152,18 +154,33 @@ class CartController extends Controller
         // Get or create cart
         $cart = $this->getOrCreateCart();
 
-        // Check if item already in cart
-        $cartItem = $cart->cartItems()
-            ->where('product_id', $validated['product_id'])
-            ->where('product_variant_id', $validated['product_variant_id'])
-            ->first();
+        // The cart row lock serialises a double submit: without it both requests miss the line and the second
+        // insert breaks the (cart_id, product_variant_id) key.
+        $rejection = DB::transaction(function () use ($cart, $variant, $validated) {
+            Cart::whereKey($cart->id)->lockForUpdate()->first();
 
-        if ($cartItem) {
-            // Update quantity
+            // One line per variant: another variant of the same product is a separate line
+            $cartItem = $cart->cartItems()
+                ->where('product_variant_id', $variant->id)
+                ->first();
+
+            if (! $cartItem) {
+                $cart->cartItems()->create([
+                    'product_id' => $validated['product_id'],
+                    'product_variant_id' => $variant->id,
+                    'quantity' => $validated['quantity'],
+                    'price' => $variant->price,
+                    'size_id' => $variant->product->size_id,
+                ]);
+
+                return null;
+            }
+
             $newQuantity = $cartItem->quantity + $validated['quantity'];
             if (! $variant->canAddToCart($newQuantity)) {
                 return response()->json([
                     'error' => 'Not enough stock for total quantity',
+                    'message' => __('cart.not_enough_stock', ['available' => (int) $variant->stock_quantity]),
                     'available' => $variant->stock_quantity,
                 ], 422);
             }
@@ -171,15 +188,12 @@ class CartController extends Controller
                 return $exceeded;
             }
             $cartItem->update(['quantity' => $newQuantity]);
-        } else {
-            // Create new cart item
-            $cart->cartItems()->create([
-                'product_id' => $validated['product_id'],
-                'product_variant_id' => $validated['product_variant_id'],
-                'quantity' => $validated['quantity'],
-                'price' => $variant->price,
-                'size_id' => $variant->product->size_id,
-            ]);
+
+            return null;
+        });
+
+        if ($rejection) {
+            return $rejection;
         }
 
         app(FunnelTracker::class)->record(OpsEventType::AddToCart, $request);

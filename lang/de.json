@@ -763,6 +763,7 @@
         "email": "E-Mail"
     },
     "cart.max_qty_exceeded": "Höchstmenge pro Artikel: :max.",
+    "cart.not_enough_stock": "Nicht genügend Bestand: nur :available verfügbar.",
     "reviews.thank_you": "Vielen Dank für Ihre Bewertung!",
     "reviews.pending_moderation": "Vielen Dank für Ihre Bewertung! Sie erscheint auf der Produktseite, sobald unser Team sie freigegeben hat.",
     "reviews.photos_pending": "Vielen Dank für Ihre Bewertung! Ihre Fotos erscheinen, sobald unser Team sie geprüft hat.",

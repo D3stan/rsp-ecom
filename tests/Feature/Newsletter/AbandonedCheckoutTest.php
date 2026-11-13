@@ -22,6 +22,7 @@ use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Cashier\Events\WebhookReceived;
 use Tests\Feature\Orders\Support\BuildsStripeOrderFixtures;
+use Tests\Support\CatalogFixtures;
 use Tests\TestCase;
 
 /**
@@ -401,6 +402,26 @@ class AbandonedCheckoutTest extends TestCase
 
         $cart = Cart::where('user_id', $user->id)->with('cartItems')->sole();
         $this->assertCount(1, $cart->cartItems);
+    }
+
+    public function test_the_recovery_link_adds_its_variant_next_to_another_variant_of_the_same_product(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now()]);
+        $product = $this->makeProduct(25.00, 'Angel Eye Kit');
+        $otherVariant = CatalogFixtures::variant($product, ['stock_quantity' => 10, 'price' => 30, 'is_default' => false]);
+        $cart = Cart::create(['user_id' => $user->id]);
+        $cart->cartItems()->create([
+            'product_id' => $product->id, 'product_variant_id' => $otherVariant->id, 'quantity' => 1, 'price' => 30, 'size_id' => $this->size->id,
+        ]);
+        $snapshot = $this->consentedSnapshot(['user_id' => $user->id, 'guest_session_id' => null], $product);
+
+        $this->actingAs($user)->get($this->recoverUrl($snapshot))->assertRedirect(route('cart'));
+
+        $quantities = $cart->cartItems()->pluck('quantity', 'product_variant_id')->map(fn ($quantity) => (int) $quantity)->sortKeys()->all();
+        $this->assertSame(
+            collect([$otherVariant->id => 1, $product->defaultVariant->id => 2])->sortKeys()->all(),
+            $quantities,
+        );
     }
 
     public function test_the_recovery_link_is_refused_unsigned_expired_or_for_another_user(): void

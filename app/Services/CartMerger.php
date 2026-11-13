@@ -65,10 +65,7 @@ class CartMerger
             return;
         }
 
-        // cart_items is unique on (cart_id, product_id): one line per product. Another variant of the same product
-        // in the user's cart is replaced by the guest's line, the customer's latest choice.
-        $userItems->where('product_id', $guestItem->product_id)->each(fn (CartItem $item) => $item->delete());
-
+        // A cart line is one variant: another variant of the same product in the user's cart stays as its own line
         $userCart->cartItems()->create([
             'product_id' => $guestItem->product_id,
             'product_variant_id' => $guestItem->product_variant_id,

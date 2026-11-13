@@ -228,7 +228,7 @@ it('returns a guest who signs in from the cart (guest checkout on) to the checko
         ->assertRedirect(route('checkout.details'));
 });
 
-it('replaces a different variant of the same product with the guest line (one line per product in a cart)', function () {
+it('keeps a different variant of the same product as its own line next to the guest line', function () {
     $otherVariantX = CatalogFixtures::variant($this->productX, ['stock_quantity' => 50, 'price' => 12, 'is_default' => false]);
     guestCartAdd($this, $this->productX, $otherVariantX, 2);
     $user = User::factory()->create();
@@ -236,7 +236,7 @@ it('replaces a different variant of the same product with the guest line (one li
 
     $this->post('/login', ['email' => $user->email, 'password' => 'password']);
 
-    expect(cartPageQuantities($this))->toBe([$this->variantY->id => 1, $otherVariantX->id => 2]);
+    expect(cartPageQuantities($this))->toBe([$this->variantX->id => 1, $this->variantY->id => 1, $otherVariantX->id => 2]);
 });
 
 it('does not move a guest line whose variant is out of stock, and never shrinks the user line', function () {

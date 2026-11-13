@@ -763,6 +763,7 @@
         "email": "Correo"
     },
     "cart.max_qty_exceeded": "Cantidad máxima por artículo: :max.",
+    "cart.not_enough_stock": "Stock insuficiente: solo :available disponibles.",
     "reviews.thank_you": "¡Gracias por tu reseña!",
     "reviews.pending_moderation": "¡Gracias por tu reseña! Aparecerá en la página del producto cuando nuestro equipo la apruebe.",
     "reviews.photos_pending": "¡Gracias por tu reseña! Tus fotos aparecerán cuando nuestro equipo las haya revisado.",
