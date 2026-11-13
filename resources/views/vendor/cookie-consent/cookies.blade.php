@@ -69,6 +69,20 @@
 
 {{-- The banner is styled by resources/css/cookie-consent.css (shadcn theme tokens), bundled with app.css --}}
 
+{{--
+    The vendor script below cancels each form's submit and calls window.LaravelCookieConsent, which only the separate
+    @cookieconsentscripts file defines. When that file is blocked (cookie-notice blocklists match its URL) or fails
+    to load, the buttons threw and did nothing, so the visitor could neither consent nor close the banner. This
+    capture listener runs first and, without the global, stops the vendor handlers: the form then posts natively
+    to the consent route, which sets the cookie and redirects back.
+--}}
+<script data-cookie-consent>
+    document.getElementById('cookies-policy')?.addEventListener('submit', function (event) {
+        if (!window.LaravelCookieConsent) {
+            event.stopPropagation();
+        }
+    }, true);
+</script>
 <script data-cookie-consent>
     {!! file_get_contents(LCC_ROOT . '/dist/script.js') !!}
 </script>
