@@ -9,7 +9,7 @@ class ProductVariantFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->word(),
+            'name' => $this->faker->unique()->words(2, true),
             'sku_suffix' => '',
             'description' => $this->faker->sentence(),
             'price' => $this->faker->randomFloat(2, 10, 500),
